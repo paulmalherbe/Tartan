@@ -1,0 +1,49 @@
+=== modified file 'csv/seccmp.sys'
+--- csv/seccmp.sys	2014-12-30 15:37:38 +0000
++++ csv/seccmp.sys	2015-04-10 11:32:25 +0000
+@@ -16,4 +16,7 @@
+ scpmem
+ scprnd
+ scpsec
++telcon
++telgrp
++telmst
+ verupd
+
+=== modified file 'csv/tvguid.sys'
+--- csv/tvguid.sys	2014-03-28 07:32:49 +0000
++++ csv/tvguid.sys	2015-04-10 11:32:39 +0000
+@@ -1,3 +1,6 @@
++telcon
++telgrp
++telmst
+ tvguid
+ tvprog
+ verupd
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-04-10 10:19:18 +0000
++++ std/TartanClasses.py	2015-04-10 14:48:01 +0000
+@@ -13822,7 +13822,7 @@
+         self.bar = bar
+         if self.setVariables():
+             if self.mode == "B":
+-                if self.mf.window and self.smtp and self.smtp[1]:
++                if self.mf.window and self.smtp and self.smtp[0]:
+                     self.startBck()
+                     self.mf.startLoop()
+                 else:
+@@ -14061,10 +14061,10 @@
+ 
+     def endBckRes(self):
+         if self.mode == "B":
+-            if self.mf.window and self.smtp and self.smtp[1]:
++            if self.mf.window and self.smtp and self.smtp[0]:
+                 self.bu.closeProcess()
+             self.doBackup()
+-            if self.mf.window and self.smtp and self.smtp[1]:
++            if self.mf.window and self.smtp and self.smtp[0]:
+                 if self.bu.repprt[1][2]:
+                     err = sendMail(self.smtp, self.coys[0][2],
+                         self.bu.repprt[1][2],
+

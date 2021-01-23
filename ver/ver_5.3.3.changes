@@ -1,0 +1,7 @@
+1) Added a module to the stores toolbox to mark items, with zero balances and without any movements for the past number months, as redundant. The number of months defaults to 24 but can be changed.
+2) Altered all stores modules to ignore redundant items.
+3) Some minor bug fixes and improvements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

@@ -1,0 +1,12 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Added History option to Financial Statements. This will print the previous
+    3 year's history as well as the current year, budget and variance totals.
+ 2) Added a module in Utilities named 'Report Stream' which allows the user to
+    produce various selected reports and either print or mail them as
+    attachments.
+ 3) Some minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

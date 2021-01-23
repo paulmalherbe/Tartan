@@ -1,0 +1,319 @@
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-10-04 09:29:52 +0000
++++ doc/Downloads.rst	2015-10-13 07:46:07 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.1.1 and was released on the 4th October, 2015.
++The latest version of Tartan is 5.1.2 and was released on the 13th October, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.1.1.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.1.2.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.1.1.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.1.2.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.1.1.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.1.1.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.1.1.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.1.1.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.1.2.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.1.2.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.1.2.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.1.2.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2015-10-04 09:29:52 +0000
++++ doc/MB.rst	2015-10-13 07:46:07 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.1.1
++:Version:   5.1.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-10-04 09:29:52 +0000
++++ doc/MD.rst	2015-10-13 07:46:07 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.1.1
++:Version:   5.1.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2015-10-05 14:03:48 +0000
++++ gen/gl2030.py	2015-10-11 20:58:15 +0000
+@@ -2112,18 +2112,14 @@
+             self.sql.insRec("lonrte", data=[self.allcoy, self.lonacc,
+                 self.lonnum, self.trndat, self.newdri, self.newcri])
+             # Loans Ledger Masterfile
+-            self.othrtn = 2
+-            cap = self.othamt
+             self.sql.insRec("lonmf2", data=[self.allcoy, self.lonacc,
+                 self.lonnum, self.londes, self.trndat, self.lonmth,
+                 self.lonpay])
+-        else:
+-            # Loans Ledger Rest
+-            if self.glrtn == 6:
+-                self.othrtn = 4
+-            else:
+-                self.othrtn = 3
+         # Loans Ledger Transaction
++        if self.glrtn == 2:
++            self.othrtn = 1
++        else:
++            self.othrtn = 2
+         data = [self.allcoy, self.lonacc, self.lonnum, self.bh.batno,
+             self.othrtn, self.trndat, self.trnref, tramt, self.curdt,
+             self.alldet, "", self.opts["capnm"], self.sysdtw, 0]
+
+=== modified file 'mem/ml1010.py'
+--- mem/ml1010.py	2015-10-03 07:36:56 +0000
++++ mem/ml1010.py	2015-10-12 16:00:24 +0000
+@@ -1473,8 +1473,9 @@
+ 
+     def doStatusHistory(self):
+         recs = self.sql.getRec(tables="memsta", cols=["mls_capdt", "mls_date",
+-            "mls_status"], where=[("mls_cono", "=", self.opts["conum"]),
+-            ("mls_memno", "=", self.memno)], order="mls_seq")
++            "mls_status", "mls_capnm", "mls_capdt"], where=[("mls_cono", "=",
++            self.opts["conum"]), ("mls_memno", "=", self.memno)],
++            order="mls_seq")
+         if not recs:
+             return
+         data = []
+@@ -1493,13 +1494,16 @@
+                 stat = "Resigned"
+             elif dat[2] == "S":
+                 stat = "Suspended"
+-            data.append([dat[0], dat[1], stat])
++            capdt = CCD(dat[4], "d1", 10).disp
++            data.append([dat[0], dat[1], stat, dat[3], capdt])
+         tit = "Status History for Account: %s - %s %s %s" % \
+             (self.memno, self.title, self.initial, self.surname)
+         col = (
+             ("mls_capdt", "Cap-Date", 10, "d1", "N"),
+             ("mls_date", "Eff-Date", 10, "d1", "N"),
+-            ("mls_status", "Status", 9, "NA", "N"))
++            ("mls_status", "Status", 9, "NA", "N"),
++            ("mls_capnm", "Operator", 20, "NA", "N"),
++            ("mls_capdt", "Chnge-Date", 10, "NA", "N"))
+         state = self.df.disableButtonsTags()
+         SelectChoice(self.df.nb.Page6, tit, col, data, sort=False)
+         self.df.enableButtonsTags(state=state)
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2015-10-04 09:29:52 +0000
++++ men/stdmen.py	2015-10-06 09:44:23 +0000
+@@ -251,6 +251,7 @@
+     ["PYNN","st_rp","st3120",1,"Stock to Order"],
+     ["PYNN","st_tb","st6010",5,"Change Product Codes"],
+     ["PYYY","st_tb","st6020",5,"Revalue Stock Records",0],
++    ["PYYY","st_tb","st6030",5,"Delete Purchase Orders",0],
+     ["PYYY","mm_st","st4010",0,"Interrogation"]]
+ 
+ # Sales Invoicing Routines
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-10-04 09:29:52 +0000
++++ mst/ms0000.py	2015-10-13 07:46:07 +0000
+@@ -34,7 +34,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 1, 1)
++    VERSION = (5, 1, 2)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'sls/si2010.py'
+--- sls/si2010.py	2015-10-05 14:03:48 +0000
++++ sls/si2010.py	2015-10-12 11:14:15 +0000
+@@ -1578,11 +1578,11 @@
+             self.doGetDocno("I")
+             data = self.sql.getRec(tables="slsiv1", where=[("si1_cono", "=",
+                 self.opts["conum"]), ("si1_rtn", "=", self.typs), ("si1_docno",
+-                "=", self.actdoc)], limit=1)
++                "=", actdoc)], limit=1)
+             data[self.sql.slsiv1_col.index("si1_rtn")] = "I"
+             data[self.sql.slsiv1_col.index("si1_docno")] = self.docno
+             data[self.sql.slsiv1_col.index("si1_date")] = self.trdt
+-            ordno = CCD(self.actdoc, "Na", 9).work
++            ordno = CCD(actdoc, "Na", 9).work
+             data[self.sql.slsiv1_col.index("si1_our_ord")] = ordno
+             data[self.sql.slsiv1_col.index("si1_capnm")] = self.opts["capnm"]
+             data[self.sql.slsiv1_col.index("si1_capdt")] = self.sysdtw
+@@ -1592,16 +1592,16 @@
+             # Update order/quote header by inserting the invoice number
+             self.sql.updRec("slsiv1", cols=["si1_invno"], data=[self.docno],
+                 where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
+-                self.typs), ("si1_docno", "=", self.actdoc)])
++                self.typs), ("si1_docno", "=", actdoc)])
+             # Move the order/quote body lines to the new invoice
+             self.sql.updRec("slsiv2", cols=["si2_rtn", "si2_docno"],
+                 data=["I", self.docno], where=[("si2_cono", "=",
+-                self.opts["conum"]), ("si2_rtn", "=", self.typs), ("si2_docno",
+-                "=", self.actdoc)])
++                self.opts["conum"]), ("si2_rtn", "=", self.typs),
++                ("si2_docno", "=", actdoc)])
+             self.sql.updRec("slsiv3", cols=["si3_rtn", "si3_docno"],
+                 data=["I", self.docno], where=[("si3_cono", "=",
+-                self.opts["conum"]), ("si3_rtn", "=", self.typs), ("si3_docno",
+-                "=", self.actdoc)])
++                self.opts["conum"]), ("si3_rtn", "=", self.typs),
++                ("si3_docno", "=", actdoc)])
+             self.typs = "I"
+         else:
+             actdoc = None
+
+=== added file 'str/st6030.py'
+--- str/st6030.py	1970-01-01 00:00:00 +0000
++++ str/st6030.py	2015-10-06 09:48:07 +0000
+@@ -0,0 +1,126 @@
++#! /usr/bin/env python
++
++"""
++SYNOPSIS
++    Purchase Order Deletions.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2015 Paul Malherbe.
++"""
++
++import time
++from TartanClasses import CCD, GetCtl, MyFpdf, ProgressBar, Sql, TartanDialog
++from tartanFunctions import getModName, doPrinter, showError
++
++class st6030:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["crsmst", "strloc", "strpom",
++            "strpot"], prog=__name__)
++        if self.sql.error:
++            return
++        gc = GetCtl(self.opts["mf"])
++        strctl = gc.getCtl("strctl", self.opts["conum"])
++        if not strctl:
++            return
++        self.locs = strctl["cts_locs"]
++        t = time.localtime()
++        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
++        return True
++
++    def mainProcess(self):
++        self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
++            "Purchase Order Deletions (%s)" % __name__)
++        loc = {
++            "stype": "R",
++            "tables": ("strloc",),
++            "cols": (
++                ("srl_loc", "", 0, "L"),
++                ("srl_desc", "", 0, "Description", "Y")),
++            "where": [("srl_cono", "=", self.opts["conum"])]}
++        self.orm = {
++            "stype": "R",
++            "tables": ("strpom",),
++            "cols": (
++                ("pom_ordno", "", 0, "OrderNo"),
++                ("pom_acno", "", 0, "Crs-Num"),
++                ("pom_date", "", 0, "Order-Date")),
++            "where": [
++                ("pom_cono", "=", self.opts["conum"]),
++                ("pom_delno", "=", "")],
++            "whera": [("T", "pom_loc", 0)],
++            "order": "pom_ordno"}
++        if self.locs == "N":
++            self.locw = "1"
++            fld = [
++                (("T",0,0,0),"OUA",1,"Location")]
++        else:
++            fld = [
++                (("T",0,0,0),"IUA",1,"Location","",
++                    "1","Y",self.doLoc,loc,None,None)]
++        fld.extend([
++            (("T",0,1,0),"IUI",9,"From Order Number","From Order Number",
++                "","Y",self.doOrd,self.orm,None,None),
++            (("T",0,2,0),"IUI",9,"To   Order Number","To Order Number",
++                "","Y",self.doOrd,self.orm,None,None)])
++        tnd = ((self.doEnd,"y"), )
++        txt = (self.doExit, )
++        self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
++            tend=tnd, txit=txt)
++        if self.locs == "N":
++            self.df.loadEntry("T", 0, 0, data=self.locw)
++
++    def doLoc(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec(tables="strloc", cols=["srl_desc"],
++            where=[("srl_cono", "=", self.opts["conum"]),
++            ("srl_loc", "=", w)], limit=1)
++        if not acc:
++            return "Invalid Location"
++        self.locw = w
++
++    def doOrd(self, frt, pag, r, c, p, i, w):
++        if p == 2 and w < self.ord1:
++            return "Invalid, Last Order < First Order"
++        acc = self.sql.getRec(tables="strpom", where=[("pom_cono", "=",
++            self.opts["conum"]), ("pom_ordno", "=", w), ("pom_loc", "=",
++            self.locw), ("pom_delno", "=", "")], limit=1)
++        if not acc:
++            return "Invalid Order Number"
++        if p == 1:
++            self.ord1 = w
++        else:
++            self.ord2 = w
++
++    def doEnd(self):
++        self.df.closeProcess()
++        whr = [
++            ("pom_cono", "=", self.opts["conum"]),
++            ("pom_loc", "=", self.locw),
++            ("pom_ordno", ">=", self.ord1),
++            ("pom_ordno", "<=", self.ord2),
++            ("pom_delno", "=", "")]
++        recs = self.sql.getRec(tables="strpom", cols=["pom_ordno"], where=whr)
++        for rec in recs:
++            self.sql.updRec("strpom", cols=["pom_delno"], data=["cancel"],
++                where=[("pom_cono", "=", self.opts["conum"]), ("pom_ordno",
++                "=", rec[0])])
++            self.sql.delRec("strpot", where=[("pot_cono", "=",
++                self.opts["conum"]), ("pot_ordno", "=", rec[0])])
++        self.opts["mf"].dbm.commitDbase(ask=True)
++        self.opts["mf"].closeLoop()
++
++    def doExit(self):
++        self.df.closeProcess()
++        self.closeProcess()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+

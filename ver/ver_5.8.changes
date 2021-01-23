@@ -1,0 +1,13 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Fixed an error with PAYE over 75 rebate.
+ 2) Fixed an error with Salaries & Wages Interrogation.
+ 3) Fixed an error with Debtor's Sales History report when exporting to XLS.
+ 4) Added the facilty to do random team draws in bowls tabs-in draw.
+ 5) Added Import and Export facilities to General Ledger Report Generator.
+ 6) Some minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.0 or later.
+If you have an older version than 5.0 please contact me for assistance.

@@ -1,0 +1,12 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Added a routine to flag creditor's accounts as redundant (Toolbox).
+ 2) Added a routine to flag debtor's accounts as redundant (Toolbox).
+ 3) Added a routine to cancel outstanding sales documents (Toolbox).
+ 4) Added cancelled sales invoices and credit notes to debtor's audit trail.
+ 5) Some other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.4 or later.
+If you have an older version than 5.4 please contact me for assistance.

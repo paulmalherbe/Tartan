@@ -1,0 +1,11 @@
+1) Improved the V.A.T. Statement report and spreadsheet.
+2) Updated and improved the creditor's and debtor's toolbox transaction
+   re-allocations.
+3) Added the facility to print outstanding sales quotations.
+4) Made changes to tabs-in draw to enable the printing of score cards.
+5) Made some more changes to facilitate the upgrade to python version 3.
+6) Some other minor bug fixes and improvements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

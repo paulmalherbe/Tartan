@@ -1,0 +1,635 @@
+=== modified file '.bzrignore'
+--- .bzrignore	2015-05-20 16:03:01 +0000
++++ .bzrignore	2015-06-20 09:32:08 +0000
+@@ -5,40 +5,43 @@
+ bwl/bc2010.try
+ bwl/clr2.py
+ changes.txt
++chg.py
+ csv/all_data_types.py
+ csv/test.py
+-doc/bankserv.txt
+-doc/bkmdoc.py
+ doc/Bowls.pdf
+ doc/Bowls.rst
+ doc/Bwlclb.rst
+ doc/Changes.rst
+ doc/Contact.rst
+ doc/Downloads.rst
++doc/Manual.pdf
++doc/Manual.rst
++doc/QuickStart.pdf
++doc/Rnehol.rst
++doc/Rsync.rst
++doc/Seccmp.rst
++doc/Support.rst
++doc/Tartan.rst
++doc/WinPkg.txt
++doc/bankserv.txt
++doc/bkmdoc.py
+ doc/gnugpl.rst
+ doc/gnugpl.txt
+ doc/manual.css
+-doc/Manual.pdf
+-doc/Manual.rst
+ doc/mystylesheet
+ doc/nfs_setup.rst
+ doc/nut_ups.odt
+-doc/QuickStart.pdf
+-doc/Rnehol.rst
+-doc/Rsync.rst
++doc/postfix_vacation.txt
+ doc/stylesheet
+-doc/Support.rst
+ doc/tarlic.pdf
+ doc/tarlic.rst
+-doc/Tartan.rst
+-doc/postfix_vacation.txt
+ doc/vnc_setup.rst
+ doc/volmoed_client.sh
+-doc/WinPkg.txt
+ mem/chk.py
+ mst/csv
+ mst/doc
+ mst/img
++profile
+ scp/all.sh
+ scp/doitall
+ scp/pop.py
+@@ -69,8 +72,10 @@
+ std/xlwt/
+ sve/
+ tmp/
++upg223.py
+ uty/SumatraPDF-settings.txt
+ uty/SumatraPDF.exe
++uty/chksms.py
+ uty/gzip.exe
+ uty/pdfp.exe
+ uty/pdftops.exe
+@@ -84,4 +89,3 @@
+ wag/wg3030.new
+ wag/wg3030.old
+ web
+-uty/chksms.py
+
+=== modified file 'bwl/bc2010.py'
+--- bwl/bc2010.py	2015-06-17 15:23:42 +0000
++++ bwl/bc2010.py	2015-06-22 14:22:17 +0000
+@@ -96,8 +96,6 @@
+ class bc2010:
+     def __init__(self, **opts):
+         self.opts = opts
+-        if not "test" in opts:
+-            self.opts["test"] = None
+         if self.setVariables():
+             self.mainProcess()
+             self.opts["mf"].startLoop()
+@@ -608,41 +606,6 @@
+                 for b in xrange(3, 6):
+                     exec "self.df.setWidget(self.df.B%i, 'normal')" % b
+                 self.df.focusField("T", 1, 1)
+-            elif self.opts["test"]:
+-                if type(self.opts["test"]) == int and self.opts["test"] > 20120000:
+-                    tabs = self.sql.getRec(tables="bwldrt", cols=["bdt_tab"],
+-                        where=[("bdt_cono", "=", self.opts["conum"]),
+-                        ("bdt_date", "=", self.opts["test"])])
+-                    self.opts["test"] = []
+-                    for tab in tabs:
+-                        self.opts["test"].append(tab[0])
+-                if type(self.opts["test"]) == list:
+-                    tabs = self.sql.getRec(tables="bwltab", cols=["btb_tab",
+-                        "btb_surname", "btb_names", "btb_gender", "btb_pos1",
+-                        "btb_rate1", "btb_pos2", "btb_rate2"],
+-                        where=[("btb_cono", "=", self.opts["conum"]),
+-                        ("btb_tab", "in", self.opts["test"])])
+-                    for tab in tabs:
+-                        if self.rating == "Y" and tab[3] == "F":
+-                            self.alltabs[tab[0]] = tab[1:4] + tab[6:] + ["Y"]
+-                        else:
+-                            self.alltabs[tab[0]] = tab[1:6] + ["Y"]
+-                else:
+-                    r = self.sql.getRec(tables="bwltab", cols=["btb_tab",
+-                        "btb_surname", "btb_names", "btb_gender", "btb_pos1",
+-                        "btb_rate1", "btb_pos2", "btb_rate2"],
+-                        where=[("btb_cono", "=", self.opts["conum"])])
+-                    d = self.opts["test"] - len(r)
+-                    for x in xrange(d):
+-                        dat = r[x][:]
+-                        dat[0] += 300
+-                        r.append(dat)
+-                    random.shuffle(r)
+-                    for t in xrange(0, self.opts["test"]):
+-                        if self.rating == "Y" and r[t][3] == "F":
+-                            self.alltabs[r[t][0]] = r[t][1:4]+r[t][6:]+["Y"]
+-                        else:
+-                            self.alltabs[r[t][0]] = r[t][1:6]+["Y"]
+             else:
+                 self.alltabs = {}
+             self.df.loadEntry("T", 0, 7, data=len(self.alltabs))
+@@ -1567,37 +1530,3 @@
+         self.opts["mf"].rcdic["dfs"] = size
+         self.opts["mf"].setThemeFont()
+         self.opts["mf"].resizeChildren()
+-
+-if __name__ == "__main__":
+-    import getopt
+-    from TartanClasses import Dbase, MainFrame
+-    from tartanFunctions import loadRcFile
+-    try:
+-        opts, args = getopt.getopt(sys.argv[1:],"d:r:t:")
+-    except:
+-        print
+-        print "Usage: -r rcfile -d use tabs from date -t list of comma separated tabs"
+-        print
+-        sys.exit()
+-    rcfile = None
+-    test = 0
+-    for o, v in opts:
+-        if o == "-r":
+-            rcfile = v
+-        elif o == "-d":
+-            test = int(v)
+-        elif o == "-t":
+-            test = []
+-            for t in v.split(","):
+-                test.append(int(t))
+-    if not rcfile:
+-        sys.exit()
+-    rcdic = loadRcFile(rcfile)
+-    mf = MainFrame(rcdic=rcdic)
+-    mf.dbm = Dbase(rcdic)
+-    if not mf.dbm.err:
+-        mf.dbm.openDbase()
+-        bc2010(**{"mf": mf, "conum": 1, "conam": "WPCC Bowls", "test": test})
+-        mf.dbm.closeDbase()
+-
+-# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'bwl/bcc110.py'
+--- bwl/bcc110.py	2015-06-17 15:23:42 +0000
++++ bwl/bcc110.py	2015-06-22 15:14:29 +0000
+@@ -53,6 +53,7 @@
+         r1s = (("Yes","Y"),("No","N"))
+         r2s = (("Position","P"),("Rating","R"),("Combined","C"))
+         r3s = (("Ascending","A"),("Descending","D"))
++        r4s = (("S32L-S32L","A"),("S32L-L23S","B"))
+         if not self.memctl:
+             self.fld = [
+                 (("T",0,0,0),["ORB",r1s],0,"M/L Integration")]
+@@ -82,7 +83,9 @@
+             (("T",0,10,0),"IUD",5.2,"Rate - Visitor","",
+                 self.acc[11],"N",None,None,None,("efld",)),
+             (("T",0,11,0),"IUA",6,"Greens","",
+-                self.acc[12],"N",self.doGreens,None,None,("notblank",))])
++                self.acc[12],"N",self.doGreens,None,None,("notblank",)),
++            (("T",0,12,0),("IRB",r4s),0,"Draw Format","",
++                self.acc[12],"N",None,None,None,None)])
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
+             ("Quit",None,self.doExit,1,None,None))
+
+=== modified file 'csv/bwlctl_fld.csv'
+--- csv/bwlctl_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/bwlctl_fld.csv	2015-06-22 12:00:32 +0000
+@@ -11,3 +11,4 @@
+ 10,"ctb_ratem","UD","5.2","Rate - Member","RateM"
+ 11,"ctb_ratev","UD","5.2","Rate - Visitor","RateV"
+ 12,"ctb_greens","UA","6.0","Greens","Greens"
++13,"ctb_drfmat","UA","1.0","Draw Format","F"
+
+=== modified file 'doc/BC.rst'
+--- doc/BC.rst	2015-06-17 15:23:42 +0000
++++ doc/BC.rst	2015-06-22 15:17:58 +0000
+@@ -18,6 +18,9 @@
+ + **Rate - Member** - The member's rate.
+ + **Rate - Visitor** - The visitor's rate.
+ + **Greens** - The available green codes e.g. AB
+++ **Draw Format** - The format to print the draw sheets as follows:
++  + **S32L-S32L** - Skip, 3rd, 2nd, Lead - Skip, 3rd, 2nd, Lead
++  + **S32L-L23S** - Skip, 3rd, 2nd, Lead - Lead, 2nd, 3rd, Skip
+ 
+ Club's Records
+ ++++++++++++++
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-06-19 16:06:22 +0000
++++ doc/Downloads.rst	2015-06-24 07:32:26 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.17 and was released on the 19th June, 2015.
++The latest version of Tartan is 5.0.18 and was released on the 24th June, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.17.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.18.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.17.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.18.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.17.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.17.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.17.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.17.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.18.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.18.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.18.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.18.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2015-06-19 16:06:22 +0000
++++ doc/MB.rst	2015-06-24 07:32:26 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.0.17
++:Version:   5.0.18
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-06-19 16:06:22 +0000
++++ doc/MD.rst	2015-06-24 07:32:26 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.17
++:Version:   5.0.18
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'mem/ml3060.py'
+--- mem/ml3060.py	2015-05-20 16:03:01 +0000
++++ mem/ml3060.py	2015-06-20 10:59:43 +0000
+@@ -29,6 +29,7 @@
+                     self.start = CCD(self.opts["args"][1], "D1", 10)
+                 else:
+                     self.start = CCD(self.opts["args"][0], "D1", 10)
++                self.dte = long("%08i000000" % self.start.work)
+                 self.end = CCD(self.opts["args"][1], "D1", 10)
+                 self.chgtyp = "A"
+                 self.cat = ""
+@@ -116,6 +117,7 @@
+ 
+     def doStartDate(self, frt, pag, r, c, p, i, w):
+         self.start = CCD(w, "d1", 10)
++        self.dte = long("%08i000000" % self.start.work)
+         if self.reptyp == "P":
+             self.end = self.start
+             self.df.loadEntry(frt, pag, p+1, data=self.end.work)
+@@ -164,7 +166,6 @@
+                 data = doChkCatChg(self.opts["mf"], self.opts["conum"],
+                     rec[0], self.start.work)
+                 if data:
+-                    self.dte = long("%08i000000" % self.start.work)
+                     self.sql.insRec("chglog", data=["memcat", "D",
+                         "%03i%06i%1s%02i" % (self.opts["conum"], rec[0],
+                         "B", data[0]), "", self.dte, "", str(data[1]),
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2015-06-17 15:23:42 +0000
++++ men/stdmen.py	2015-06-21 09:08:55 +0000
+@@ -87,6 +87,7 @@
+     ["PYYN","mm_ms","msy020",6,"Change Year End Date"],
+     ["PYNN","mm_uy","bm1010",3,"Bulk Mail/SMS Utility"],
+     ["PNNN","mm_uy","fc1010",0,"Loan/Lease Calculator"],
++    ["PNNY","mm_uy","pm1010",0,"Password Manager"],
+     ["PNNY","mm_uy","rp1010",2,"Report Generator"],
+     ["PNNN","mm_uy","tp1010",5,"Template Manager"],
+     ["F","mm_hp","doAbout",0,"About"],
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-06-19 16:06:22 +0000
++++ mst/ms0000.py	2015-06-24 07:32:26 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 17)
++    VERSION = (5, 0, 18)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms1010.py'
+--- mst/ms1010.py	2015-04-10 10:19:18 +0000
++++ mst/ms1010.py	2015-06-21 16:13:03 +0000
+@@ -159,6 +159,11 @@
+     def doCoyNum(self, frt, pag, r, c, p, i, w):
+         if w == 0:
+             return "Invalid Company Number"
++        elif not w == 1:
++            chk = self.sql.getRec(tables="ctlmst", where=[("ctm_cono", "=", 1)],
++                limit=1)
++            if not chk:
++                return "Company 1 Must First Exist"
+         self.opts["conum"] = w
+         self.click = []
+         self.old = self.sql.getRec(tables="ctlmst", where=[("ctm_cono", "=",
+
+=== modified file 'mst/ms1010_rne.py'
+--- mst/ms1010_rne.py	2015-02-07 06:31:11 +0000
++++ mst/ms1010_rne.py	2015-06-21 16:15:47 +0000
+@@ -146,6 +146,11 @@
+     def doCoyNum(self, frt, pag, r, c, p, i, w):
+         if w == 0:
+             return "Invalid Company Number"
++        elif not w == 1:
++            chk = self.sql.getRec(tables="ctlmst", where=[("ctm_cono", "=", 1)],
++                limit=1)
++            if not chk:
++                return "Company 1 Must First Exist"
+         self.opts["conum"] = w
+         self.click = []
+         self.old = self.sql.getRec(tables="ctlmst", where=[("ctm_cono", "=",
+@@ -154,8 +159,7 @@
+             self.new = True
+         else:
+             self.new = False
+-            self.opts["conam"] = \
+-                    self.old[self.sql.ctlmst_col.index("ctm_name")]
++            self.opts["conam"] = self.old[self.sql.ctlmst_col.index("ctm_name")]
+             for x in xrange(1, self.df.topq[pag]):
+                 data = self.old[x]
+                 self.df.loadEntry(frt, pag, x, data=data)
+@@ -259,7 +263,7 @@
+             if self.img:
+                 self.img.destroyImage()
+         else:
+-            self.logo = os.path.abspath(w)
++            self.logo = os.path.normpath(w)
+             if self.displayLogo(self.logo):
+                 return "Invalid Logo Image"
+             self.df.loadEntry(frt, pag, p, data=self.logo)
+@@ -267,7 +271,10 @@
+     def displayLogo(self, logo):
+         try:
+             if self.img:
+-                self.img.destroyImage()
++                try:
++                    self.img.destroyImage()
++                except:
++                    pass
+             self.img = ShowImage(self.df.nb.Page4, logo,
+                 wrkdir=self.opts["mf"].rcdic["wrkdir"], msiz=640)
+         except:
+
+=== modified file 'mst/msy010.py'
+--- mst/msy010.py	2015-06-17 15:23:42 +0000
++++ mst/msy010.py	2015-06-20 13:17:16 +0000
+@@ -24,12 +24,8 @@
+         if self.setVariables():
+             if "args" in self.opts:
+                 self.final = self.oldf
+-                self.commit = self.opts["args"][1]
+-                self.auto = True
+-                self.doProcess()
++                self.doEnd()
+             else:
+-                self.commit = True
+-                self.auto = False
+                 self.drawScreen()
+                 self.opts["mf"].startLoop()
+ 
+@@ -95,18 +91,15 @@
+             (("T",0,0,0),"OD1",10,"Starting Date","",
+                 self.start,"N",None,None,None,None,("efld",)),
+             [("T",0,1,0),"ID1",10,"Ending Date ","Ending Date",
+-                self.end,"N",self.doEnd,None,None,None,("efld",)],
++                self.end,"N",self.doDate,None,None,None,("efld",)],
+             (("T",0,2,0),("IRB",r1s),0,"Finalise","",
+                 self.oldf,"N",self.doFinal,None,None,None,None,"""Finalising a financial period prevents any further data capture for that period as well as any previous periods i.e. if you finalise a period all previous financial periods are also automatically finalised.""")]
+         if self.last:
+             fld[1][1] = "OD1"
+-        but = (
+-            ("Apply",None,self.doProcess,1,("T",0,0),("T",0,1)),
+-            ("Cancel",None,self.doExit,1,("T",0,2),("T",0,1)))
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
+-            tend=(None,), txit=(self.doExit,), butt=but)
++            tend=((self.doEnd,"y"),), txit=(self.doExit,))
+ 
+-    def doEnd(self, frt, pag, r, c, p, i, w):
++    def doDate(self, frt, pag, r, c, p, i, w):
+         self.end = w
+         if self.end <= self.start:
+             return "Invalid Year End Date"
+@@ -114,21 +107,26 @@
+     def doFinal(self, frt, pag, r, c, p, i, w):
+         self.final = w
+ 
+-    def doProcess(self, widget=None):
++    def doEnd(self):
+         if not "args" in self.opts:
+             self.df.closeProcess()
++            pb = ProgressBar(self.opts["mf"].body,
++                typ=("G", "Processing Periods"))
+         for per in xrange(0, self.c_per + 1):
++            if not "args" in self.opts:
++                pb.displayProgress()
+             chk = self.sql.getRec(tables="ctlynd", cols=["cye_final"],
+                 where=[("cye_cono", "=", self.opts["conum"]), ("cye_period",
+                 "=", per)], limit=1)
+             if self.oldf == "Y" or chk[0] == "N":
+                 self.retinc = 0
+                 self.doYearEnd(per)
++        if not "args" in self.opts:
++            pb.closeProgress()
+         if self.years:
+             self.doDropYears()
+-        if self.commit:
+-            self.opts["mf"].dbm.commitDbase()
+-        if not self.auto:
++        self.opts["mf"].dbm.commitDbase()
++        if not "args" in self.opts:
+             self.doExit()
+ 
+     def doYearEnd(self, per):
+@@ -264,13 +262,12 @@
+             if len(tab) > 3:
+                 tabs.append(tab[3])
+         if not "args" in self.opts:
+-            pb = ProgressBar(self.opts["mf"].body, typ=("F",
+-                "Dropping Periods Older Than %s Years - Please Wait" % \
+-                self.years), mxs=len(TABLES))
++            pb = ProgressBar(self.opts["mf"].body, typ=("G",
++                "Dropping Periods Older Than %s Years" % self.years))
+         sql = Sql(self.opts["mf"].dbm, tabs, prog=__name__)
+-        for num, tab in enumerate(TABLES):
++        for tab in TABLES:
+             if not "args" in self.opts:
+-                pb.displayProgress(num)
++                pb.displayProgress()
+             if not tab[0] in ourtab:
+                 continue
+             if tab[0] == "chglog":
+@@ -554,7 +551,6 @@
+         print("Usage: -c conum -p period -f final -r rcfile")
+         print("")
+         sys.exit()
+-    commit = True
+     coy = 1
+     num = None
+     fin = "N"
+@@ -578,7 +574,7 @@
+         if per[1] and per[2]:
+             per = (num, (per[0].work, per[0].disp), (per[1].work, per[1].disp))
+             ex = msy010(**{"mf": mf, "conum": coy, "period": per,
+-                "args": (fin, commit)})
++                "args": fin})
+         else:
+             print("Invalid Period %s for Company %s" % (num, coy))
+         mf.dbm.closeDbase()
+
+=== modified file 'mst/msy010_rne.py'
+--- mst/msy010_rne.py	2015-06-17 15:23:42 +0000
++++ mst/msy010_rne.py	2015-06-20 13:33:39 +0000
+@@ -87,18 +87,15 @@
+             (("T",0,0,0),"OD1",10,"Starting Date","",
+                 self.start,"N",None,None,None,None,("efld",)),
+             [("T",0,1,0),"ID1",10,"Ending Date ","Ending Date",
+-                self.end,"N",self.doEnd,None,None,None,("efld",)],
++                self.end,"N",self.doDate,None,None,None,("efld",)],
+             (("T",0,2,0),("IRB",r1s),0,"Finalise","",
+                 self.oldf,"N",self.doFinal,None,None,None,None,"""Finalising a financial period prevents any further data capture for that period as well as any previous periods i.e. if you finalise a period all previous financial periods are also automatically finalised.""")]
+         if self.last:
+             fld[1][1] = "OD1"
+-        but = (
+-            ("Apply",None,self.doProcess,1,("T",0,0),("T",0,1)),
+-            ("Cancel",None,self.doExit,1,("T",0,2),("T",0,1)))
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
+-            tend=(None,), txit=(self.doExit,), butt=but)
++            tend=((self.doEnd,"y"),), txit=(self.doExit,))
+ 
+-    def doEnd(self, frt, pag, r, c, p, i, w):
++    def doDate(self, frt, pag, r, c, p, i, w):
+         self.end = w
+         if self.end <= self.start:
+             return "Invalid Year End Date"
+@@ -106,12 +103,12 @@
+     def doFinal(self, frt, pag, r, c, p, i, w):
+         self.final = w
+ 
+-    def doProcess(self, widget=None):
++    def doEnd(self, widget=None):
+         self.df.closeProcess()
+-        pb = ProgressBar(self.opts["mf"].body, typ="Processing Periods",
+-            mxs=self.c_per + 1)
++        pb = ProgressBar(self.opts["mf"].body,
++            typ=("G", "Processing Periods"))
+         for per in xrange(0, self.c_per + 1):
+-            pb.displayProgress(per)
++            pb.displayProgress()
+             chk = self.sql.getRec(tables="ctlynd", cols=["cye_final"],
+                 where=[("cye_cono", "=", self.opts["conum"]), ("cye_period",
+                 "=", per)], limit=1)
+@@ -256,12 +253,11 @@
+                 tabs.append(tab[0])
+             if len(tab) > 3:
+                 tabs.append(tab[3])
+-        pb = ProgressBar(self.opts["mf"].body, typ=("F",
+-            "Dropping Periods Older Than %s Years - Please Wait" % \
+-            self.years), mxs=len(TABLES))
++        pb = ProgressBar(self.opts["mf"].body, typ=("G",
++            "Dropping Periods Older Than %s Years" % self.years))
+         sql = Sql(self.opts["mf"].dbm, tabs, prog=__name__)
+-        for num, tab in enumerate(TABLES):
+-            pb.displayProgress(num)
++        for tab in TABLES:
++            pb.displayProgress()
+             if not tab[0] in ourtab:
+                 continue
+             if tab[0] == "chglog":
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-06-20 09:30:07 +0000
++++ std/TartanClasses.py	2015-06-24 07:02:25 +0000
+@@ -2433,6 +2433,11 @@
+                 self.cu.execute("Set generator gen_%s_id to 0" % table)
+             self.db.commit()
+         elif self.dbase == "PgSQL":
++            self.cu.execute("Select * from pg_catalog.pg_group where "\
++                "groname = '%s'" % self.dbname)
++            chk = self.cu.fetchall()
++            if not chk:
++                self.cu.execute("Create group %s" % self.dbname)
+             self.cu.execute("Grant ALL on %s to group %s" % \
+                 (table, self.dbname))
+             if sequence:
+@@ -11935,6 +11940,7 @@
+         if not bwlctl:
+             return
+         self.nstart = bwlctl["ctb_nstart"]
++        self.drfmat = bwlctl["ctb_drfmat"]
+         self.sql = Sql(self.mf.dbm, ["bwldrm", "bwldrt"], prog=__name__)
+         if self.sql.error:
+             return False
+@@ -12086,8 +12092,12 @@
+                     greens[grn][rnk] = [[[], [], [], []], [[], [], [], []]]
+                 for pos, tab in enumerate(adraw[num][2:]):
+                     greens[grn][rnk][0][pos] = tab
+-                for pos, tab in enumerate(adraw[num+1][2:]):
+-                    greens[grn][rnk][1][pos] = tab
++                if self.drfmat == "A":
++                    fmat = (0, 1, 2, 3)
++                else:
++                    fmat = (3, 2, 1, 0)
++                for num, tab in enumerate(adraw[num+1][2:]):
++                    greens[grn][rnk][1][fmat[num]] = tab
+             keys = greens.keys()
+             keys.sort()
+             for grn in keys:
+@@ -12152,9 +12162,12 @@
+             self.fpdf.drawText(" ")
+             self.fpdf.drawText(" ")
+             self.fpdf.drawText(" ")
++            text = self.position[:]
+             for x in xrange(2):
+-                for txt in ("Skip", "Third", "Second", "Lead"):
+-                    if x == 1 and txt == "Lead":
++                if x == 1 and self.drfmat == "B":
++                    text = ["Lead", "Second", "Third", "Skip"]
++                for txt in text:
++                    if x == 1 and txt == text[3]:
+                         ln = 1
+                     else:
+                         ln = 0
+@@ -15743,8 +15756,8 @@
+     def letterhead(self, cmc, ctm, fld, img):
+         if not img and "LETTERHEAD" in os.environ:
+             img = os.environ["LETTERHEAD"]
+-        if img and not getFileName(ctm[cmc.index("ctm_logo")],
+-                                        wrkdir=self.wrkdir):
++        if not img and not getFileName(ctm[cmc.index("ctm_logo")],
++                                            wrkdir=self.wrkdir):
+             del self.tptp[fld]
+             for col in ("ctm_regno", "ctm_taxno", "ctm_tel", "ctm_fax"):
+                 if col in self.tptp:
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2015-06-17 15:23:42 +0000
++++ tab/tb1020.py	2015-06-22 12:01:38 +0000
+@@ -441,6 +441,8 @@
+                         new = "C"
+                     elif self.table == "bwlctl" and csf[2] == "ctb_order":
+                         new = old[olddic["ctb_rtype"][0]]
++                    elif self.table == "bwlctl" and csf[2] == "ctb_drfmat":
++                        new = "A"
+                     elif self.table == "bwlflf" and csf[2] == "bff_gender":
+                         new = "B"
+                     elif self.table == "bwlflf" and csf[2] == "bff_sets":
+

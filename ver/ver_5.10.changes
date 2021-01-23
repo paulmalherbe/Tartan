@@ -1,0 +1,21 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Added the 2021 PAYE tax tables.
+ 2) Applied line separators in record selection routines.
+ 3) Modified the loans interrogation module to show more details.
+ 4) Added the facility to delete a bowls drawn game to enable altering the
+    results captured for a previous game.
+ 5) Updated and changed the bowls tabs-in module.
+ 6) Added the facilty to do random team draws in bowls tabs-in draw to
+    cater for snowball type draws.
+ 7) Some other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.4 or later.
+If you have an older version than 5.4 please contact me for assistance.
+
+NNB:
+----
+As Python version 2 has now been deprecated this will be the last Tartan
+version supporting Python 2. All future upgrades will be for Python 3.

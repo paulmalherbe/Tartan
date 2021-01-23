@@ -1,0 +1,746 @@
+=== modified file 'crs/cr3320_rne.py'
+--- crs/cr3320_rne.py	2018-05-31 15:57:14 +0000
++++ crs/cr3320_rne.py	2018-06-04 10:20:57 +0000
+@@ -344,21 +344,26 @@
+         self.fpdf.drawText()
+         txt = "R N E HOLDINGS (PTY) LIMITED"
+         if self.bname:
+-            txt = "%-30s       Supplied To: %-30s" % (txt, self.bname)
++            txt = "%-30s       Supplied To: %-30s (%s)" % (txt,
++                self.bname, self.depno)
+         self.fpdf.drawText(txt)
+         txt = "Major Square"
++        adr = False
+         if self.badd1:
++            adr = True
+             txt = "%-50s%-30s" % (txt, self.badd1)
++        self.fpdf.drawText(txt)
+         txt = "Beacon Bay"
+-        if self.badd2:
++        if adr and self.badd2:
+             txt = "%-50s%-30s" % (txt, self.badd2)
+         self.fpdf.drawText(txt)
+         txt = "5200"
+-        if self.badd3:
++        if adr and self.badd3:
+             txt = "%-50s%-30s" % (txt, self.badd3)
+-        self.fpdf.drawText(txt)
+-        if self.bcode:
+-            txt = "%-50s%-30s" % ("", self.bcode)
++            self.fpdf.drawText(txt)
++            txt = ""
++        if adr and self.bcode:
++            txt = "%-50s%-30s" % (txt, self.bcode)
+         self.fpdf.drawText(txt)
+         txt = "VAT Registration: 4460156583"
+         if self.vatno:
+
+=== modified file 'csv/ctlpwu_fld.csv'
+--- csv/ctlpwu_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/ctlpwu_fld.csv	2018-06-13 12:10:27 +0000
+@@ -2,5 +2,6 @@
+ 1,"usr_fnam","NA","30.0","Full Name","Full Name"
+ 2,"usr_pwd","HA","30.0","Password","Password"
+ 3,"usr_last","d1","10.0","Last Change","Last-Chged"
+-4,"usr_coy","NA","30.0","Allowed Companies","Allowed Companies"
+-5,"usr_lvl","UI","1.0","Security Level","S"
++4,"usr_acoy","NA","30.0","Allowed Companies","Allowed Companies"
++5,"usr_dcoy","NA","30.0","DisAllowed Companies","DisAllowed Companies"
++6,"usr_lvl","UI","1.0","Security Level","S"
+
+=== modified file 'csv/ctlsys_fld.csv'
+--- csv/ctlsys_fld.csv	2015-10-03 07:36:56 +0000
++++ csv/ctlsys_fld.csv	2018-06-05 08:07:44 +0000
+@@ -14,4 +14,3 @@
+ 13,"sys_spwd","TX","20.0","SMS Password","SMS-Password"
+ 14,"sys_gl_dep","UA","1.0","G/L Departments","D"
+ 15,"sys_gl_dig","UI","1.0","Number of Digits","N"
+-16,"sys_regdet","UA","1.0","Registration Flag","F"
+
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2018-05-31 15:57:14 +0000
++++ doc/BKS.rst	2018-06-18 06:16:08 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.9
++:Version:   5.3.10
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2018-05-31 15:57:14 +0000
++++ doc/BWM.rst	2018-06-18 06:16:08 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.9
++:Version:   5.3.10
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2018-05-31 15:57:14 +0000
++++ doc/Downloads.rst	2018-06-18 06:16:08 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.9 and was released on the 31st May, 2018.
++The latest version of Tartan is 5.3.10 and was released on the 18th June, 2018.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.9.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.10.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.9.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.10.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.9.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.9.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.9.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.9.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.10.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.10.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.10.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.10.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2018-05-31 15:57:14 +0000
++++ doc/MST.rst	2018-06-18 06:16:08 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.9
++:Version:   5.3.10
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2018-05-31 15:57:14 +0000
++++ doc/SEC.rst	2018-06-18 06:16:08 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.9
++:Version:   5.3.10
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2018-02-17 07:36:43 +0000
++++ gen/gl2030.py	2018-06-13 14:23:51 +0000
+@@ -783,7 +783,7 @@
+                     autoref = True
+                     ref = memo.work.split()
+                     if amount.work < 0 and ref[0] == "CHEQUE" and \
+-                                           ref[1] != "CASHED":
++                                 len(ref) > 1 and ref[1] != "CASHED":
+                         # Nedbank cheque number
+                         refno = ref[1][1:8]
+                     else:
+
+=== modified file 'gen/gl3130_rne.py'
+--- gen/gl3130_rne.py	2018-02-17 07:36:43 +0000
++++ gen/gl3130_rne.py	2018-06-15 08:36:26 +0000
+@@ -762,8 +762,8 @@
+     def doStockVal(self):
+         self.dat1 = []  # Stock report: [bcd, bnm, coy, nam, ost, pur, sls,
+                         # slc, inc, adv, stk, cst, stt, alw, dif, wag, per])
+-        self.dat2 = {}  # GP report: {bcd: [bnm, {dep: [prf, sls] ...}] ...}
+-        self.dat3 = {}  # NP report: {bcd: [bnm, {dep: [prf, sls] ...}] ...}
++        self.dat2 = {}  # GP report: {bcd: [bnm, {dep: [prf, sls] ..}] ..}
++        self.dat3 = {}  # NP report: {bcd: [bnm, {dep: [prf, sls, lnp] ..}] ..}
+         txt = "Generating Stock Values"
+         exc = [("gqb_bcod", "<>", 999)]
+         sdt = (self.sper * 100) + 1
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2018-05-31 15:57:14 +0000
++++ mst/ms0000.py	2018-06-18 06:16:08 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 9)
++    VERSION = (5, 3, 10)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2018-05-31 15:57:14 +0000
++++ mst/msc000.py	2018-06-13 14:13:26 +0000
+@@ -12,13 +12,13 @@
+ import cStringIO, fpdf, getpass, gc, glob, os, platform, sys, time
+ from TartanClasses import AboutTartan, CCD, Dbase, DBCreate, FileDialog
+ from TartanClasses import GetCtl, GUI, MainFrame, MkWindow, PwdConfirm
+-from TartanClasses import ScrollText, SelectChoice, SplashScreen, Sql
+-from TartanClasses import TarBckRes, TartanConfig, TartanDialog, TartanMenu
++from TartanClasses import ScrollText, SelectChoice, Sql, TarBckRes
++from TartanClasses import TartanConfig, TartanDialog, TartanMenu
+ from TartanClasses import TartanUser
+ from tartanFunctions import askQuestion, b64Convert, copyList, dateDiff
+ from tartanFunctions import ftpDownload, getPeriods, getPrgPath
+ from tartanFunctions import internetConnect, loadRcFile, parsePrg, projectDate
+-from tartanFunctions import runModule, sendMail, showError, showException
++from tartanFunctions import runModule, showError, showException
+ 
+ class msc000:
+     def __init__(self, version, opts, args):
+@@ -352,10 +352,6 @@
+             self.db.openDbase()
+             self.doVersionCheck()
+             self.db.closeDbase()
+-        if not self.nocheck and not self.reg:
+-            self.db.openDbase()
+-            self.doAskRegister()
+-            self.db.closeDbase()
+         if self.query:
+             if self.user["lvl"] == 9:
+                 err = self.doSqlCmd()
+@@ -414,7 +410,8 @@
+         self.sss = {}
+         self.men = []
+         self.mod = []
+-        self.cono = []
++        self.acoy = []
++        self.dcoy = []
+         for s in stdmen.systems:
+             self.sss[s[0]] = s[1]
+             try:
+@@ -516,23 +513,37 @@
+                 self.user["last"] = usr[sql.ctlpwu_col.index("usr_last")]
+             else:
+                 self.user["last"] = 0
+-            self.user["coy"] = usr[sql.ctlpwu_col.index("usr_coy")]
++            if "usr_coy" in sql.ctlpwu_dic:
++                self.user["acoy"] = usr[sql.ctlpwu_col.index("usr_coy")]
++                self.user["dcoy"] = ""
++            else:
++                self.user["acoy"] = usr[sql.ctlpwu_col.index("usr_acoy")]
++                self.user["dcoy"] = usr[sql.ctlpwu_col.index("usr_dcoy")]
+             self.user["lvl"] = usr[sql.ctlpwu_col.index("usr_lvl")]
+             if pwdchk and self.user["pwd"] and self.userCheckPwd(pwd):
+                 self.user = {}
+             if self.user:
+-                self.cono = []
++                self.acoy = []
++                self.dcoy = []
+                 self.usrnam = self.user["name"]
+                 self.pwd = self.user["pwd"]
+-                coy = self.user["coy"]
++                acoy = self.user["acoy"]
++                dcoy = self.user["dcoy"]
+                 self.lvl = self.user["lvl"]
+-                if coy:
+-                    coy = coy.split(",")
+-                else:
+-                    coy = []
+-                for co in coy:
+-                    if int(co):
+-                        self.cono.append(int(co))
++                if acoy:
++                    acoy = acoy.split(",")
++                else:
++                    acoy = []
++                for co in acoy:
++                    if int(co):
++                        self.acoy.append(int(co))
++                if dcoy:
++                    dcoy = dcoy.split(",")
++                else:
++                    dcoy = []
++                for co in dcoy:
++                    if int(co):
++                        self.dcoy.append(int(co))
+                 nos = []
+                 # All systems not in the company modules
+                 for sss in self.sss:
+@@ -801,7 +812,10 @@
+         self.mf.closeLoop()
+ 
+     def conoCheck(self, coy, prg=None, ctl=False):
+-        if self.cono and not self.cono.count(coy):
++        if self.acoy and not self.acoy.count(coy):
++            self.conum = None
++            return "Unavailable Company Number"
++        if self.dcoy and self.dcoy.count(coy):
+             self.conum = None
+             return "Unavailable Company Number"
+         gcl = GetCtl(self.mf)
+@@ -831,8 +845,8 @@
+         self.prg = prg
+         self.pertyp = period
+         sql = Sql(self.db, "ctlmst", prog="msc000")
+-        if self.cono:
+-            whr = [("ctm_cono", "in", tuple(self.cono))]
++        if self.acoy:
++            whr = [("ctm_cono", "in", tuple(self.acoy))]
+         else:
+             whr = None
+         coy = sql.getRec(tables="ctlmst", where=whr, order="ctm_cono")
+@@ -850,8 +864,8 @@
+                 self.finper = None
+                 return
+         if not self.conum:
+-            if self.cono:
+-                self.conum = self.cono[0]
++            if self.acoy:
++                self.conum = self.acoy[0]
+             else:
+                 self.conum = 1
+         csel = {
+@@ -861,8 +875,8 @@
+                 ("ctm_cono", "", 0, "Com"),
+                 ("ctm_name", "", 0, "Name", "Y")),
+             "order": "ctm_cono"}
+-        if self.cono:
+-            csel["where"] = [("ctm_cono", "in", tuple(self.cono))]
++        if self.acoy:
++            csel["where"] = [("ctm_cono", "in", tuple(self.acoy))]
+         if self.coys == 1:
+             # Single Company
+             tit = (self.conam,)
+@@ -1394,60 +1408,6 @@
+         if not dbopen:
+             self.db.closeDbase()
+ 
+-    def doAskRegister(self):
+-        if not self.xdisplay:
+-            return
+-        if not internetConnect():
+-            return
+-        tit = ("Registration to Receive Notification of Updates",)
+-        r1s = (("Yes","Y"), ("Not-Now","N"), ("Never","X"))
+-        fld = (
+-            (("T",0,0,0),("IRB",r1s),0,"Register","",
+-                "Y","N",self.doReg,None,None,None,None, "Register to "\
+-                "Receive Notification of Updates and New Releases"),
+-            (("T",0,1,0),"ITX",50,"Name","Your Name",
+-                "","N",None,None,None,("notblank",)),
+-            (("T",0,2,0),"ITX",50,"E-Mail Address","Your E-Mail Address",
+-                "","N",None,None,None,("email",)))
+-        but = (("Quit", None, self.xitReg, 1, ("T",0,1), ("T",0,0)),)
+-        self.rg = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
+-            butt=but, tend=((self.endReg, "y"),), txit=(self.xitReg,))
+-        self.mf.startLoop()
+-
+-    def doReg(self, frt, pag, r, c, p, i, w):
+-        self.newreg = w
+-        if self.newreg == "N":
+-            return "xt"
+-        if self.newreg == "X":
+-            return "nd"
+-
+-    def endReg(self):
+-        self.rg.closeProcess()
+-        sp = SplashScreen(self.mf.body, "Please Wait .... Initialising System")
+-        sql = Sql(self.db, "ctlmst", prog="msc000")
+-        coy = sql.getRec(tables="ctlmst", cols=["ctm_name", "ctm_email"],
+-            where=[("ctm_cono=1",)], limit=1)
+-        if self.newreg == "Y":
+-            nam = self.rg.t_work[0][0][1]
+-            eml = self.rg.t_work[0][0][2]
+-        else:
+-            nam = "Unknown"
+-            eml = coy[1]
+-        mes = "%s - %s - %s" % (coy[0], nam, eml)
+-        svr = ["tartan.co.za", 465, 2, 1, "register", "pakati10"]
+-        ok = sendMail(svr, eml, "register@tartan.co.za", mes)
+-        print ok
+-        if ok or self.newreg == "X":
+-            sql = Sql(self.db, "ctlsys", prog="msc000")
+-            sql.updRec("ctlsys", cols=["sys_regdet"], data=[self.newreg])
+-            self.db.commitDbase()
+-        sp.closeSplash()
+-        self.mf.closeLoop()
+-
+-    def xitReg(self):
+-        self.rg.closeProcess()
+-        self.mf.closeLoop()
+-
+     def doVersionCheck(self, vtype="chk"):
+         error = None
+         self.oldver = (0, 0, 0)
+@@ -1671,12 +1631,7 @@
+             self.execCommand("PNNY", "msc110", tit="System Record Maintenance",
+                 menu=False, password=False)
+             rec = sql.getRec(tables="ctlsys", limit=1)
+-        if rec:
+-            if "sys_regdet" in sql.ctlsys_col:
+-                self.reg = rec[sql.ctlsys_col.index("sys_regdet")]
+-            else:
+-                self.reg = ""
+-        else:
++        if not rec:
+             return "error"
+ 
+     def doCheckMst(self):
+
+=== modified file 'mst/msc000_rne.py'
+--- mst/msc000_rne.py	2018-02-17 07:36:43 +0000
++++ mst/msc000_rne.py	2018-06-13 12:44:40 +0000
+@@ -409,7 +409,8 @@
+         self.sss = {}
+         self.men = []
+         self.mod = []
+-        self.cono = []
++        self.acoy = []
++        self.dcoy = []
+         for s in stdmen.systems:
+             self.sss[s[0]] = s[1]
+             try:
+@@ -511,23 +512,33 @@
+                 self.user["last"] = usr[sql.ctlpwu_col.index("usr_last")]
+             else:
+                 self.user["last"] = 0
+-            self.user["coy"] = usr[sql.ctlpwu_col.index("usr_coy")]
++            self.user["acoy"] = usr[sql.ctlpwu_col.index("usr_acoy")]
++            self.user["dcoy"] = usr[sql.ctlpwu_col.index("usr_dcoy")]
+             self.user["lvl"] = usr[sql.ctlpwu_col.index("usr_lvl")]
+             if pwdchk and self.user["pwd"] and self.userCheckPwd(pwd):
+                 self.user = {}
+             if self.user:
+-                self.cono = []
++                self.acoy = []
++                self.dcoy = []
+                 self.usrnam = self.user["name"]
+                 self.pwd = self.user["pwd"]
+-                coy = self.user["coy"]
++                acoy = self.user["acoy"]
++                dcoy = self.user["dcoy"]
+                 self.lvl = self.user["lvl"]
+-                if coy:
+-                    coy = coy.split(",")
+-                else:
+-                    coy = []
+-                for co in coy:
+-                    if int(co):
+-                        self.cono.append(int(co))
++                if acoy:
++                    acoy = acoy.split(",")
++                else:
++                    acoy = []
++                for co in acoy:
++                    if int(co):
++                        self.acoy.append(int(co))
++                if dcoy:
++                    dcoy = dcoy.split(",")
++                else:
++                    dcoy = []
++                for co in dcoy:
++                    if int(co):
++                        self.dcoy.append(int(co))
+                 nos = []
+                 # All systems not in the company modules
+                 for sss in self.sss:
+@@ -796,7 +807,10 @@
+         self.mf.closeLoop()
+ 
+     def conoCheck(self, coy, prg=None, ctl=False):
+-        if self.cono and not self.cono.count(coy):
++        if self.acoy and not self.acoy.count(coy):
++            self.conum = None
++            return "Unavailable Company Number"
++        if self.dcoy and self.dcoy.count(coy):
+             self.conum = None
+             return "Unavailable Company Number"
+         gcl = GetCtl(self.mf)
+@@ -826,8 +840,8 @@
+         self.prg = prg
+         self.pertyp = period
+         sql = Sql(self.db, "ctlmst", prog="msc000")
+-        if self.cono:
+-            whr = [("ctm_cono", "in", tuple(self.cono))]
++        if self.acoy:
++            whr = [("ctm_cono", "in", tuple(self.acoy))]
+         else:
+             whr = None
+         coy = sql.getRec(tables="ctlmst", where=whr, order="ctm_cono")
+@@ -845,8 +859,8 @@
+                 self.finper = None
+                 return
+         if not self.conum:
+-            if self.cono:
+-                self.conum = self.cono[0]
++            if self.acoy:
++                self.conum = self.acoy[0]
+             else:
+                 self.conum = 1
+         csel = {
+@@ -856,8 +870,8 @@
+                 ("ctm_cono", "", 0, "Com"),
+                 ("ctm_name", "", 0, "Name", "Y")),
+             "order": "ctm_cono"}
+-        if self.cono:
+-            csel["where"] = [("ctm_cono", "in", tuple(self.cono))]
++        if self.acoy:
++            csel["where"] = [("ctm_cono", "in", tuple(self.acoy))]
+         if self.coys == 1:
+             # Single Company
+             tit = (self.conam,)
+
+=== modified file 'mst/msc110.py'
+--- mst/msc110.py	2017-08-24 07:49:34 +0000
++++ mst/msc110.py	2018-06-05 08:11:14 +0000
+@@ -35,7 +35,7 @@
+         self.acc = self.sql.getRec(tables="ctlsys", limit=1)
+         if not self.acc:
+             self.new = True
+-            self.acc = [0,"N",0,0,0,"",0,0,0,"","","N","","","N",0,""]
++            self.acc = [0,"N",0,0,0,"",0,0,0,"","","N","","","N",0]
+         else:
+             self.new = False
+         return True
+@@ -81,8 +81,7 @@
+                 "G/L Account Numbers include Department Numbers"),
+             (("T",0,15,0),"IUI",1,"Number of Digits","",
+                 0,"N",None,None,None,None,None,
+-                "The Number of Digits used for Department Numbers"),
+-            (("T",0,16,0),"OUA",1,"Registration Code"))
++                "The Number of Digits used for Department Numbers"))
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
+             ("Quit",None,self.doExit,1,None,None))
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2018-05-31 15:57:14 +0000
++++ std/TartanClasses.py	2018-06-15 09:46:22 +0000
+@@ -4184,13 +4184,13 @@
+     cxit   =  A list of functions to execute on exiting a data frame by page
+ 
+     view   =  An entry field asking whether you would like to view the report
+-              It is a tuple (csv, "D") where:
++              It is a tuple (csv, dft) where:
+                 csv is whether to have an export facility:
+                     Y - Yes
+                     C - CSV only
+                     X - XLS only
+                     N - No
+-                "D" is the default e.g. ("(V)iew", "(P)rint" or "(X)port")
++                dft is the default e.g. ("(V)iew", "(P)rint" or "(X)port")
+               A list self.repprt is created having 3 fields as follows:
+                 1) Y or N output widget created
+                 2) Query widget contents
+@@ -13773,7 +13773,16 @@
+             elif line[:1] == "N":
+                 self.refno = CCD(line[1:], "Na", 9)
+             elif line[:1] == "P":
+-                self.payee = line[1:]
++                if line[1:2] == "#":
++                    data = line.split()
++                    self.refno = CCD(data[0][2:], "Na", 9)
++                    for num, dat in enumerate(data[1:]):
++                        if not num:
++                            self.payee = dat
++                        else:
++                            self.payee = "%s %s" % (self.payee, dat)
++                else:
++                    self.payee = line[1:]
+             elif line[:1] == "T":
+                 self.amount = CCD(line[1:].replace(",", ""), "SD", 13.2)
+         self.trans.sort()
+@@ -14808,7 +14817,8 @@
+             "cols": (
+                 ("usr_name", "", 0, "User-Name"),
+                 ("usr_fnam", "", 0, "Full-Name", "Y"),
+-                ("usr_coy", "", 0, "Allowed-Companies"),
++                ("usr_acoy", "", 0, "Allowed-Companies"),
++                ("usr_dcoy", "", 0, "Disallowed-Companies"),
+                 ("usr_lvl", "", 0, "L"))}
+         scoy = {
+             "stype": "R",
+@@ -14869,10 +14879,13 @@
+                 "N","N",self.doCopyUser1,None,None,None),
+             (("T",0,4,0),"INA",20,"Copy User Name","User Name to Copy",
+                 "","N",self.doCopyUser2,susr,None,None),
+-            (("T",0,5,0),"INA",30,"Valid Companies","",
++            (("T",0,5,0),"INA",30,"Allowed Companies","",
+                 "All","N",self.doValCoy,None,None,None,None,
+-                "Comma Seperated List of Valid Company Numbers e.g. 1,2,3"),
+-            (("T",0,6,0),"IUI",1,"Security Level","",
++                "Comma Seperated List of Allowed Companies e.g. 1,2,3"),
++            (("T",0,6,0),"INA",30,"Disallowed Companies","",
++                "All","N",self.doDisCoy,None,None,None,None,
++                "Comma Seperated List of Disallowed Companies e.g. 1,2,3"),
++            (("T",0,7,0),"IUI",1,"Security Level","",
+                 0,"N",self.doSecLvl,slvl,None,("between",0,9)),
+             (("C",0,0,0),"IUI",3,"Coy","Company",
+                 "r","N",self.doCoy,scoy,None,None),
+@@ -14908,16 +14921,21 @@
+             self.new_usr = "n"
+             self.fnam = usr[self.sql.ctlpwu_col.index("usr_fnam")]
+             self.pwd = usr[self.sql.ctlpwu_col.index("usr_pwd")]
+-            self.coy = usr[self.sql.ctlpwu_col.index("usr_coy")]
++            self.acoy = usr[self.sql.ctlpwu_col.index("usr_acoy")]
++            self.dcoy = usr[self.sql.ctlpwu_col.index("usr_dcoy")]
+             self.lvl = usr[self.sql.ctlpwu_col.index("usr_lvl")]
+             self.df.loadEntry(frt, pag, p+1, data=self.fnam)
+             self.df.loadEntry(frt, pag, p+2, data=b64Convert("decode",self.pwd))
+             self.df.loadEntry(frt, pag, p+3, data=b64Convert("decode",self.pwd))
+-            if not self.coy:
++            if not self.acoy:
+                 self.df.loadEntry(frt, pag, p+6, data="All")
+             else:
+-                self.df.loadEntry(frt, pag, p+6, data=self.coy)
+-            self.df.loadEntry(frt, pag, p+7, data=self.lvl)
++                self.df.loadEntry(frt, pag, p+6, data=self.acoy)
++            if not self.dcoy:
++                self.df.loadEntry(frt, pag, p+7, data="None")
++            else:
++                self.df.loadEntry(frt, pag, p+7, data=self.acoy)
++            self.df.loadEntry(frt, pag, p+8, data=self.lvl)
+             self.doLoadMods(focus=False)
+         if self.unam == "admin":
+             return "sk1"
+@@ -14937,7 +14955,7 @@
+             return "Passwords Do Not Match"
+         if self.unam == "admin":
+             self.cpy = "N"
+-            self.coy = ""
++            self.acoy = ""
+             self.lvl = 9
+             return "sk4"
+ 
+@@ -14952,16 +14970,17 @@
+         if not usr:
+             return "Invalid User Name"
+         self.cnam = w
+-        self.coy = usr[self.sql.ctlpwu_col.index("usr_coy")]
++        self.acoy = usr[self.sql.ctlpwu_col.index("usr_acoy")]
++        self.dcoy = usr[self.sql.ctlpwu_col.index("usr_dcoy")]
+         self.lvl = usr[self.sql.ctlpwu_col.index("usr_lvl")]
+-        if not self.coy:
++        if not self.acoy:
+             self.df.loadEntry(frt, pag, p+1, data="All")
+         else:
+-            self.df.loadEntry(frt, pag, p+1, data=self.coy)
++            self.df.loadEntry(frt, pag, p+1, data=self.acoy)
+         self.df.loadEntry(frt, pag, p+2, data=self.lvl)
+ 
+     def doValCoy(self, frt, pag, r, c, p, i, w):
+-        self.coy = ""
++        self.acoy = ""
+         if w and w != "All":
+             for c in w.replace(" ", "").split(","):
+                 try:
+@@ -14969,13 +14988,32 @@
+                         "=", int(c))], limit=1)
+                     if not chk:
+                         raise Exception
+-                    if self.coy:
+-                        self.coy = "%s,%s" % (self.coy, c)
+-                    else:
+-                        self.coy = "%s" % c
+-                except:
+-                    return "Invalid Company Number (%s)" % c
+-            self.df.loadEntry(frt, pag, i, data=self.coy)
++                    if self.acoy:
++                        self.acoy = "%s,%s" % (self.acoy, c)
++                    else:
++                        self.acoy = "%s" % c
++                except:
++                    return "Invalid Company Number (%s)" % c
++            self.df.loadEntry(frt, pag, i, data=self.acoy)
++        else:
++            self.df.loadEntry(frt, pag, i, data="All")
++
++    def doDisCoy(self, frt, pag, r, c, p, i, w):
++        self.dcoy = ""
++        if w and w != "None":
++            for c in w.replace(" ", "").split(","):
++                try:
++                    chk = self.sql.getRec(tables="ctlmst", where=[("ctm_cono",
++                        "=", int(c))], limit=1)
++                    if not chk:
++                        raise Exception
++                    if self.dcoy:
++                        self.dcoy = "%s,%s" % (self.dcoy, c)
++                    else:
++                        self.dcoy = "%s" % c
++                except:
++                    return "Invalid Company Number (%s)" % c
++            self.df.loadEntry(frt, pag, i, data=self.dcoy)
+         else:
+             self.df.loadEntry(frt, pag, i, data="All")
+ 
+@@ -14990,7 +15028,8 @@
+         else:
+             pwd = ""
+             dte = 0
+-        data = [self.unam, self.fnam, pwd, dte, self.coy, self.lvl]
++        data = [self.unam, self.fnam, pwd, dte, self.acoy,
++            self.dcoy, self.lvl]
+         if self.new_usr == "y":
+             self.sql.insRec("ctlpwu", data=data)
+         else:
+@@ -15016,8 +15055,8 @@
+         self.sql.delRec("ctlpwm", where=[("mpw_usr", "=", self.unam)])
+ 
+     def doCoy(self, frt, pag, r, c, p, i, w):
+-        if w and self.coy:
+-            coys = self.coy.split(",")
++        if w and self.acoy:
++            coys = self.acoy.split(",")
+             if str(w) not in coys:
+                 return "Invalid Company for This User"
+         self.con = w
+@@ -16657,9 +16696,9 @@
+                 mm = portrait[0]
+             else:
+                 mm = portrait[1]
+-            for size in xrange(mm, 40, -1):
++            for size in xrange(mm, 30, -1):
+                 siz = round(size / 10.0, 1)
+-                self.chgt = round(siz * .4, 1)
++                self.chgt = round(siz * .4, 2)
+                 if border:
+                     self.chgt += 1
+                 self.setFont(family, "", siz, default=True)
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2018-04-08 06:05:45 +0000
++++ std/tartanFunctions.py	2018-06-03 08:41:50 +0000
+@@ -167,6 +167,8 @@
+                     rcfile = os.path.normpath("C:/Tartan/tartanrc")
+                 else:
+                     rcfile = os.path.join(tardir, "tartanrc")
++            elif os.path.isfile(os.path.join(tardir, "tartanrc")):
++                rcfile = os.path.join(tardir, "tartanrc")
+             else:
+                 rcfile = os.path.join(os.path.expanduser("~"), ".tartanrc")
+     try:
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2017-08-24 07:49:34 +0000
++++ tab/tb1020.py	2018-06-13 12:48:32 +0000
+@@ -482,6 +482,10 @@
+                         new = "F"
+                     elif self.table == "crstrn" and csf[2] == "crt_capnm":
+                         new = "Unknown"
++                    elif self.table == "ctlpwu" and csf[2] == "usr_acoy":
++                        new = old[olddic["usr_coy"][0]]
++                    elif self.table == "ctlpwu" and csf[2] == "usr_dcoy":
++                        new = ""
+                     elif self.table == "ctlsys" and csf[2] == "sys_msvr":
+                         new = self.msvr
+                     elif self.table == "ctlsys" and csf[2] == "sys_mprt":
+

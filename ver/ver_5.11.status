@@ -1,0 +1,45 @@
+removed:
+  mst/msc000.py
+modified:
+  ass/ar2030.py
+  ass/arc110.py
+  bkm/bkc110.py
+  bwl/bc2050.py
+  crs/cr2010.py
+  crs/cr6030.py
+  crs/crc110.py
+  doc/BKSMST.rst
+  doc/BWLMST.rst
+  doc/CSHMST.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SECMST.rst
+  drs/dr1020.py
+  drs/dr2010.py
+  drs/dr2020.py
+  drs/dr3020.py
+  drs/dr6030.py
+  drs/drc110.py
+  gen/gl3130_rne.py
+  lon/ln2010.py
+  lon/lnc110.py
+  mem/ml1010.py
+  mem/ml2010.py
+  mem/ml2020.py
+  mem/mlc110.py
+  mem/mlm010.py
+  mst/ms0000.py
+  mst/msy010.py
+  rca/rc1010.py
+  rca/rcc110.py
+  rtl/rt1010.py
+  std/TartanClasses.py
+  std/tartanWork.py
+  str/stc110.py
+  tab/tb1020.py
+  uty/pkgprg.py
+  uty/upload.sh
+  wag/wg1010.py
+  wag/wgc110.py
+unknown:
+  doc/Manual.rst

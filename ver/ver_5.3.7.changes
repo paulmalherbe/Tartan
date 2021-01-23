@@ -1,0 +1,6 @@
+1) Fixed a V.A.T. problem with Sales Orders produced before April 2018 but only Supplied and Invoiced in April 2018.
+2) Some other minor bug fixes and improvements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

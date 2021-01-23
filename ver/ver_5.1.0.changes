@@ -1,0 +1,22 @@
+1) Various minor bug fixes and improvements.
+2) Provided for up to 15 months financial period.
+3) Changed financial report values to include ',' thousand separators.
+4) Added the facility to add an Email Message to some of the emailed documents.
+5) Added a new system, Loan's Ledger, managing fixed and variable term loans.
+   The system can be run standalone or integrated with the General Ledger.
+6) General code changes to facilitate the future move to python 3.
+
+Summary
+-------
+New modules     =  12
+Renamed modules =   5
+Changed modules > 200
+
+Notes:
+------
+You can only upgrade to this version if your current version is 4.1.10 or later.
+
+You will be asked if you would like to register in order to receive notification of updates and improvements.
+
+When creating New purchase orders, the order number will only be generated once
+ the heading details have been confirmed.

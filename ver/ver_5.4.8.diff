@@ -1,0 +1,3375 @@
+=== modified file '.bzrignore'
+--- .bzrignore	2019-04-13 11:46:28 +0000
++++ .bzrignore	2019-04-20 12:25:13 +0000
+@@ -1,13 +1,6 @@
+ butt.py
+ buttons.txt
+-flake.ign
+-flakes
+-licchg.py
+-sdy/
+-sve/
+-thm/
+-ver/
+-web/
++changes.txt
+ doc/Bksclb.rst
+ doc/Bwlclb.rst
+ doc/Cshana.rst
+@@ -31,15 +24,23 @@
+ doc/vnc_setup.rst
+ doc/volmoed_client.sh
+ doc/vpn_files.txt
++flake.ign
++flakes
+ img/ptrust.jpg
+-mst/doc@
+-mst/img@
+-mst/thm@
+-pos/img@
++licchg.py
++mst/doc
++mst/img
++mst/thm
++pos/img
+ scp/all.sh
+ scp/doitall
+ scp/pop.py
+ scp/states
++sdy/
++sve/
++thm/
+ uty/SumatraPDF.exe
+ uty/chksms.py
+-uty/img@
++uty/img
++ver/
++web/
+
+=== modified file 'bwl/bc3020.py'
+--- bwl/bc3020.py	2019-01-13 16:38:59 +0000
++++ bwl/bc3020.py	2019-04-27 08:14:06 +0000
+@@ -52,6 +52,9 @@
+         self.curdt = time.strftime("%Y-%m", t)
+         self.image = os.path.join(self.opts["mf"].rcdic["prgdir"], "img",
+             "bowls.png")
++        self.drawn = "Y"
++        self.bounce = "N"
++        self.teams = "N"
+         return True
+ 
+     def mainProcess(self):
+@@ -64,7 +67,15 @@
+             (("T",0,1,0),"Id2",7,"Ending Period","",
+                 "","N",self.doEndPeriod,None,None,("efld",)),
+             (("T",0,2,0),("IRB",r1s),0,"All Tabs","",
+-                "Y","N",self.doTabs,None,None,None))
++                "Y","N",self.doTabs,None,None,None),
++            (("T",0,3,0),("ICB","Tabs-In"),0,"Draw Types","",
++                self.drawn,"N",self.doType,None,None,None),
++            (("T",0,3,0),("ICB","Bounce"),0,"","",
++                self.bounce,"N",self.doType,None,None,None),
++            (("T",0,3,0),("ICB","Teams"),0,"","",
++                self.teams,"N",self.doType,None,None,None),
++            (("T",0,4,0),("IRB",r1s),0,"Totals Only","",
++                "N","N",self.doTots,None,None,None))
+         tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+         self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
+@@ -86,13 +97,31 @@
+     def doTabs(self, frt, pag, r, c, p, i, w):
+         self.whole = w
+ 
++    def doType(self, frt, pag, r, c, p, i, w):
++        if p == 3:
++            self.drawn = w
++        elif p == 4:
++            self.bounce = w
++        else:
++            self.teams = w
++
++    def doTots(self, frt, pag, r, c, p, i, w):
++        self.tots = w
++
+     def doEnd(self):
+         self.df.closeProcess()
+         dat = []
++        tps = []
++        if self.drawn == "Y":
++            tps.extend(["B", "D"])
++        if self.bounce == "Y":
++            tps.append("A")
++        if self.teams == "Y":
++            tps.append("C")
+         where = [
+             ("bdt_cono", "=", self.opts["conum"]),
+             ("bdt_tab", "<", self.nstart),
+-            ("bdt_flag", "in", ("B", "D"))]
++            ("bdt_flag", "in", tps)]
+         if self.start.work:
+             where.append(("bdt_date", ">=", self.start.work))
+         if self.end.work:
+@@ -115,7 +144,6 @@
+         c = self.sql.bwldrt_col
+         l = ""
+         self.dic = {}
+-        self.heading = "main"
+         for r in rec:
+             dte = CCD(r[c.index("bdt_date")], "D1", 10)
+             tim = r[c.index("bdt_time")]
+@@ -153,31 +181,42 @@
+             l = self.tab
+         self.fpdf = MyFpdf(name=__name__, head=120, auto=True, foot=True)
+         self.fpdf.header = self.pageHeading
+-        self.fpdf.add_page()
+-        cwth = self.fpdf.get_string_width("X")
+-        for d in dat:
+-            if not d:
+-                self.fpdf.drawText(txt="", w=0, h=5, border=0, ln=1)
+-            else:
+-                self.fpdf.cell(w=cwth*21, h=5, txt=d[0], border=0, ln=0)
+-                self.fpdf.cell(w=cwth*11, h=5, txt=d[1], border=0, ln=0)
+-                if d[2][0]:
+-                    self.fpdf.cell(w=cwth*21, h=5, txt=d[2][1], border=1, ln=0)
+-                else:
+-                    self.fpdf.cell(w=cwth*21, h=5, txt=d[2][1], border=0, ln=0)
+-                if d[3][0]:
+-                    self.fpdf.cell(w=cwth*21, h=5, txt=d[3][1], border=1, ln=0)
+-                else:
+-                    self.fpdf.cell(w=cwth*21, h=5, txt=d[3][1], border=0, ln=0)
+-                if d[4][0]:
+-                    self.fpdf.cell(w=cwth*21, h=5, txt=d[4][1], border=1, ln=0)
+-                else:
+-                    self.fpdf.cell(w=cwth*21, h=5, txt=d[4][1], border=0, ln=0)
+-                if d[5][0]:
+-                    self.fpdf.cell(w=cwth*21, h=5, txt=d[5][1], border=1, ln=1)
+-                else:
+-                    self.fpdf.cell(w=cwth*21, h=5, txt=d[5][1], border=0, ln=1)
+-        if self.whole == "Y":
++        if self.tots == "N":
++            # Print teams
++            self.heading = "main"
++            self.fpdf.add_page()
++            cwth = self.fpdf.get_string_width("X")
++            for d in dat:
++                if not d:
++                    self.fpdf.drawText(txt="", w=0, h=5, border=0, ln=1)
++                else:
++                    self.fpdf.cell(w=cwth*21, h=5, txt=d[0], border=0, ln=0)
++                    self.fpdf.cell(w=cwth*11, h=5, txt=d[1], border=0, ln=0)
++                    if d[2][0]:
++                        self.fpdf.cell(w=cwth*21, h=5, txt=d[2][1], border=1,
++                            ln=0)
++                    else:
++                        self.fpdf.cell(w=cwth*21, h=5, txt=d[2][1], border=0,
++                            ln=0)
++                    if d[3][0]:
++                        self.fpdf.cell(w=cwth*21, h=5, txt=d[3][1], border=1,
++                            ln=0)
++                    else:
++                        self.fpdf.cell(w=cwth*21, h=5, txt=d[3][1], border=0,
++                            ln=0)
++                    if d[4][0]:
++                        self.fpdf.cell(w=cwth*21, h=5, txt=d[4][1], border=1,
++                            ln=0)
++                    else:
++                        self.fpdf.cell(w=cwth*21, h=5, txt=d[4][1], border=0,
++                            ln=0)
++                    if d[5][0]:
++                        self.fpdf.cell(w=cwth*21, h=5, txt=d[5][1], border=1,
++                            ln=1)
++                    else:
++                        self.fpdf.cell(w=cwth*21, h=5, txt=d[5][1], border=0,
++                            ln=1)
++        if self.whole == "Y" or self.tots == "Y":
+             # Print top attendees
+             self.heading = "summary"
+             whr = copyList(where)
+@@ -232,18 +271,16 @@
+             "btb_names", "btb_rate1"], where=[("btb_tab", "=", tab)],
+             limit=1)
+         if not rec:
+-            rec = ["VISITOR", "A", 0]
+-            nam = "VISITOR, A"
++            return "VISITOR, A"
++        if rec[1]:
++            nam = "%s, %s" % (rec[0], rec[1][0])
+         else:
+-            if rec[1]:
+-                nam = "%s, %s" % (rec[0], rec[1][0])
+-            else:
+-                nam = rec[0]
+-            nam = nam.replace("VAN DER", "V D")
+-            nam = nam.replace("JANSE VAN", "J V")
+-            if tab in self.dic[self.tab]:
+-                self.clash = True
+-            self.dic[self.tab].append(tab)
++            nam = rec[0]
++        nam = nam.replace("VAN DER", "V D")
++        nam = nam.replace("JANSE VAN", "J V")
++        if tab in self.dic[self.tab]:
++            self.clash = True
++        self.dic[self.tab].append(tab)
+         return nam
+ 
+     def pageHeading(self):
+
+=== modified file 'crs/cr3020.py'
+--- crs/cr3020.py	2019-04-13 11:46:28 +0000
++++ crs/cr3020.py	2019-04-22 10:04:27 +0000
+@@ -91,11 +91,14 @@
+             "order": "crt_type, crt_curdt, crt_batch"}
+         r1s = (("Financial","F"),("Capture","C"))
+         r2s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["F", "", "", "", "", "", "", "Y"]
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = [
+             (("T",0,0,0),("IRB",r1s),0,"Period Type","",
+                 var[0],"Y",self.doPtyp,None,None,None),
+@@ -115,12 +118,6 @@
+                 var[7],"N",self.doTots,None,None,None)]
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'crs/cr3030.py'
+--- crs/cr3030.py	2019-04-13 11:46:28 +0000
++++ crs/cr3030.py	2019-04-22 10:04:58 +0000
+@@ -59,11 +59,14 @@
+             "Creditors Transactions Due For Payment (%s)" % __name__)
+         r1s = (("Monthly","M"),("Daily","D"),("Both","B"))
+         r2s = (("No","N"),("Yes","Y"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["M", "N", "", 0]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Terms Base","",
+                 var[0],"Y",self.doPerTyp,None,None,None),
+@@ -78,12 +81,6 @@
+                 var[3],"N",self.doLeeway,None,None, ("between",0,30)))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+@@ -160,7 +157,7 @@
+             if p.quit:
+                 break
+             acno = CCD(rec[self.sql.crsmst_col.index("crm_acno")], "NA", 7)
+-            name = CCD(rec[self.sql.crsmst_col.index("crm_acno")], "NA", 30)
++            name = CCD(rec[self.sql.crsmst_col.index("crm_name")], "NA", 30)
+             bnam = rec[self.sql.crsmst_col.index("crm_bname")]
+             bibt = rec[self.sql.crsmst_col.index("crm_bibt")]
+             bacc = rec[self.sql.crsmst_col.index("crm_bacc")]
+
+=== modified file 'crs/cr3040.py'
+--- crs/cr3040.py	2019-04-13 11:46:28 +0000
++++ crs/cr3040.py	2019-04-22 10:05:33 +0000
+@@ -58,11 +58,14 @@
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "Creditors Outstanding Transactions (%s)" % __name__)
+         r1s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["Y", "N"]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Report Period","",
+                 self.curdt,"Y",self.doRepPer,None,None,("efld",)),
+@@ -70,12 +73,6 @@
+                 var[1],"N",self.doNewPage,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'crs/cr3050.py'
+--- crs/cr3050.py	2019-04-13 11:46:28 +0000
++++ crs/cr3050.py	2019-04-22 10:06:03 +0000
+@@ -72,11 +72,14 @@
+         r1s = (("Agedt","A"),("Curdt","C"))
+         r2s = (("Yes","Y"),("No","N"))
+         r3s = (("Yes","Y"),("No","N"),("Only","O"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["A", "", "N", "", "", 0, "Y", "Y"]
++            view = ("Y", "V")
++            mail = ("Y", "N")
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Base","",
+                 var[0],"Y",self.doBase,None,None,None),
+@@ -96,12 +99,6 @@
+                 var[7],"N",self.doZero,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y", "V")
+-            mail = ("Y", "N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+@@ -260,7 +257,7 @@
+             self.pageHeading()
+         if self.fpdf.page:
+             self.grandTotal()
+-            if "args" in self.opts and "noprint" not in self.opts["args"]:
++            if "args" not in self.opts or "noprint" not in self.opts["args"]:
+                 pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+                     self.opts["conum"], ext="pdf")
+                 self.fpdf.output(pdfnam, "F")
+
+=== modified file 'doc/BKSMST.rst'
+--- doc/BKSMST.rst	2019-04-13 11:46:28 +0000
++++ doc/BKSMST.rst	2019-04-30 09:07:18 +0000
+@@ -1,13 +1,14 @@
+ ==================================
+  Tartan Systems - Reference Manual
+ ==================================
++.. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.4.7
++:Version:   5.4.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+ :Copyright: Paul Malherbe (C) 2004-2019.
+-:Licence:   Free use of this software and all it's modules is granted under the terms of the Licence.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the GNU General Public License (GPL_).
+ 
+ :Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
+ 
+@@ -78,6 +79,7 @@
+ + pysmb                 # Netbios file names
+ + python-chart          # PDF Charts
+ + python-escpos         # POS esc commands
+++ send2trash            # Move files to recycle bin
+ + tkinterhtml           # HTML Viewer
+ + xlrd                  # Excel Read
+ + xlwt                  # Excel Write
+@@ -242,6 +244,10 @@
+     + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear either `In-Line` or in a `List` below the entry field, for selection.
+     + **Tool-tips** - Whether tool-tips will display as you hover your cursor over certain entry fields.
+     + **Error Alarm** - Whether or not to sound an audible alarm with errors. This can be No, Yes or Multimedia. Use Multimedia if you do not have an internal speaker.
++    + **Work Files** - Select the default action for work files when exiting Tartan.
++        + **Trash** - Send the files to the *Recycle Bin*.
++        + **Delete** - Delete the files.
++        + **Keep** - Keep the files in the work directory.
+ 
+ + **Dialog**
+ 
+
+=== modified file 'doc/BWLMST.rst'
+--- doc/BWLMST.rst	2019-04-13 11:46:28 +0000
++++ doc/BWLMST.rst	2019-04-30 09:07:18 +0000
+@@ -1,13 +1,14 @@
+ ==================================
+  Tartan Systems - Reference Manual
+ ==================================
++.. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.4.7
++:Version:   5.4.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+ :Copyright: Paul Malherbe (C) 2004-2019.
+-:Licence:   Free use of this software and all it's modules is granted under the terms of the Licence.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the GNU General Public License (GPL_).
+ 
+ :Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
+ 
+@@ -78,6 +79,7 @@
+ + pysmb                 # Netbios file names
+ + python-chart          # PDF Charts
+ + python-escpos         # POS esc commands
+++ send2trash            # Move files to recycle bin
+ + tkinterhtml           # HTML Viewer
+ + xlrd                  # Excel Read
+ + xlwt                  # Excel Write
+@@ -304,6 +306,10 @@
+     + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear either `In-Line` or in a `List` below the entry field, for selection.
+     + **Tool-tips** - Whether tool-tips will display as you hover your cursor over certain entry fields.
+     + **Error Alarm** - Whether or not to sound an audible alarm with errors. This can be No, Yes or Multimedia. Use Multimedia if you do not have an internal speaker.
++    + **Work Files** - Select the default action for work files when exiting Tartan.
++        + **Trash** - Send the files to the *Recycle Bin*.
++        + **Delete** - Delete the files.
++        + **Keep** - Keep the files in the work directory.
+ 
+ + **Dialog**
+ 
+
+=== modified file 'doc/CSHMST.rst'
+--- doc/CSHMST.rst	2019-04-13 11:46:28 +0000
++++ doc/CSHMST.rst	2019-04-30 09:07:19 +0000
+@@ -1,13 +1,14 @@
+ ==================================
+  Tartan Systems - Reference Manual
+ ==================================
++.. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.4.7
++:Version:   5.4.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+ :Copyright: Paul Malherbe (C) 2004-2019.
+-:Licence:   Free use of this software and all it's modules is granted under the terms of the Licence.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the GNU General Public License (GPL_).
+ 
+ :Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
+ 
+@@ -78,6 +79,7 @@
+ + pysmb                 # Netbios file names
+ + python-chart          # PDF Charts
+ + python-escpos         # POS esc commands
+++ send2trash            # Move files to recycle bin
+ + tkinterhtml           # HTML Viewer
+ + xlrd                  # Excel Read
+ + xlwt                  # Excel Write
+@@ -242,6 +244,10 @@
+     + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear either `In-Line` or in a `List` below the entry field, for selection.
+     + **Tool-tips** - Whether tool-tips will display as you hover your cursor over certain entry fields.
+     + **Error Alarm** - Whether or not to sound an audible alarm with errors. This can be No, Yes or Multimedia. Use Multimedia if you do not have an internal speaker.
++    + **Work Files** - Select the default action for work files when exiting Tartan.
++        + **Trash** - Send the files to the *Recycle Bin*.
++        + **Delete** - Delete the files.
++        + **Keep** - Keep the files in the work directory.
+ 
+ + **Dialog**
+ 
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2019-04-13 11:46:28 +0000
++++ doc/Downloads.rst	2019-04-30 09:07:19 +0000
+@@ -11,27 +11,27 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.4.7 and was released on the 13th April, 2019.
++The latest version of Tartan is 5.4.8 and was released on the 30th April, 2019.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Manual: http://www.tartan.co.za/cgi-bin/simple_web.py/Manual
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.4.7.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.4.8.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.4.7.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.4.8.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.4.7.tgz
+-.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.4.7.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.4.7.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.4.7.exe
+-.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.4.7.tgz
+-.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.4.7.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.4.7.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.4.7.exe
++.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.4.8.tgz
++.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.4.8.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.4.8.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.4.8.exe
++.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.4.8.tgz
++.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.4.8.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.4.8.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.4.8.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/GEN.rst'
+--- doc/GEN.rst	2019-04-07 13:32:42 +0000
++++ doc/GEN.rst	2019-04-20 09:59:23 +0000
+@@ -526,7 +526,7 @@
+ + **Stream Number** - To print the reports as enumerated in a stream record as created using `Stream Records (GL)`_.
+ + **Report Type** - Select the relevant report type as follows:
+     + **Short** - Last Year, Description, Actual, Budget, Variance
+-    + **History** - Description, Last 3 Years, Actual, Budget, Variance
++    + **History** - Description, Last 3 Years Actual, Budget, Variance
+     + **Long** - Acc-Num, Description, Current Month, Year-to-Date
+     + **Month** - Acc-Num, Description, Open-Bal, Months x 12, Close-Bal
+     + **Custom** - Customised Report
+@@ -535,6 +535,7 @@
+ + **General Report** - Select whether or not the report is a general report.
+ + **Contents** - Select which values to use in the report.
+ + **Detail Code** - If `Detail` was selected above, enter the detail code as created using `Detail Records (GL)`_.
+++ **Variance** - Select which values to use as a variance or None for no variances.
+ + **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
+ + **Print Options** - Select whether or not to include the selected options on the report heading.
+ + **Account Numbers** - Select whether or not to include the account numbers in the report.
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2019-04-13 11:46:28 +0000
++++ doc/MST.rst	2019-04-30 09:07:19 +0000
+@@ -1,13 +1,14 @@
+ ==================================
+  Tartan Systems - Reference Manual
+ ==================================
++.. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.4.7
++:Version:   5.4.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+ :Copyright: Paul Malherbe (C) 2004-2019.
+-:Licence:   Free use of this software and all it's modules is granted under the terms of the Licence.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the GNU General Public License (GPL_).
+ 
+ :Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
+ 
+@@ -82,6 +83,7 @@
+ + pysmb                 # Netbios file names
+ + python-chart          # PDF Charts
+ + python-escpos         # POS esc commands
+++ send2trash            # Move files to recycle bin
+ + tkinterhtml           # HTML Viewer
+ + xlrd                  # Excel Read
+ + xlwt                  # Excel Write
+@@ -341,6 +343,10 @@
+     + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear either `In-Line` or in a `List` below the entry field, for selection.
+     + **Tool-tips** - Whether tool-tips will display as you hover your cursor over certain entry fields.
+     + **Error Alarm** - Whether or not to sound an audible alarm with errors. This can be No, Yes or Multimedia. Use Multimedia if you do not have an internal speaker.
++    + **Work Files** - Select the default action for work files when exiting Tartan.
++        + **Trash** - Send the files to the *Recycle Bin*.
++        + **Delete** - Delete the files.
++        + **Keep** - Keep the files in the work directory.
+ 
+ + **Dialog**
+ 
+
+=== modified file 'doc/SECMST.rst'
+--- doc/SECMST.rst	2019-04-13 11:46:28 +0000
++++ doc/SECMST.rst	2019-04-30 09:07:19 +0000
+@@ -1,13 +1,14 @@
+ ==================================
+  Tartan Systems - Reference Manual
+ ==================================
++.. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.4.7
++:Version:   5.4.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+ :Copyright: Paul Malherbe (C) 2004-2019.
+-:Licence:   Free use of this software and all it's modules is granted under the terms of the Licence.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the GNU General Public License (GPL_).
+ 
+ :Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
+ 
+@@ -78,6 +79,7 @@
+ + pysmb                 # Netbios file names
+ + python-chart          # PDF Charts
+ + python-escpos         # POS esc commands
+++ send2trash            # Move files to recycle bin
+ + tkinterhtml           # HTML Viewer
+ + xlrd                  # Excel Read
+ + xlwt                  # Excel Write
+@@ -242,6 +244,10 @@
+     + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear either `In-Line` or in a `List` below the entry field, for selection.
+     + **Tool-tips** - Whether tool-tips will display as you hover your cursor over certain entry fields.
+     + **Error Alarm** - Whether or not to sound an audible alarm with errors. This can be No, Yes or Multimedia. Use Multimedia if you do not have an internal speaker.
++    + **Work Files** - Select the default action for work files when exiting Tartan.
++        + **Trash** - Send the files to the *Recycle Bin*.
++        + **Delete** - Delete the files.
++        + **Keep** - Keep the files in the work directory.
+ 
+ + **Dialog**
+ 
+
+=== modified file 'doc/UTY.rst'
+--- doc/UTY.rst	2019-04-13 11:46:28 +0000
++++ doc/UTY.rst	2019-04-20 09:56:06 +0000
+@@ -23,9 +23,9 @@
+ 
+ Bulk Mail Utility
+ .................
+-Use this routine to send bulk MAIL or bulk SMSes. In order to use the MAIL facility you must enter a valid SMTP server in the `System Control Record`. In order to use the SMS facility you must register with www.smsportal.co.za and then enter your username and password in the `System Control Record` using `System Record Maintenance`_.
++Use this routine to send bulk MAIL or bulk SMSes. In order to use the MAIL facility you must enter a valid SMTP server in the `System Record`. In order to use the SMS facility you must register with www.smsportal.co.za and then enter your username and password in the `System Record` using `System Record Maintenance`_.
+ 
+-+ **Delivery Type** - The available delivery types will depend on what is entered in the `System Control Record` and can be either E-Mail, SMS or both.
+++ **Delivery Type** - The available delivery types will depend on what is entered in the `System Record` and can be either E-Mail, SMS or both.
+ 
+ + **List to Use** - The available lists will depend on the systems being used and can contain Bookings, Bowls, Creditors, Debtors, Members and Directory (Telephone). In addition to the lists, CSV or XLS files can also be used, as long as they contain a name and an email address and or a cell number. Please note that Creditors and Debtors do not have SMS capabilities.
+ 
+@@ -126,12 +126,14 @@
+ + **Output** - Select whether to E-Mail or Print the reports.
+ + **Printer Name** - Select the printer on which to print the reports.
+ + **From Address** - The mail address for replies.
+-+ **To   Address** - The mail address to send the reports to.
+++ **To   Address** - The mail address(es), comma separated, to send the reports to.
+ 
+ A list of available reports will be displayed. Select the reports to generate and then click on *Accept*.
+ 
+ Each report dialog will be displayed and at the end of the last report you will be prompted whether to actually *Print" or *Mail* the reports.
+ 
++In the event of Financial Statements (gl3050), if there are available Report Streams, you will be asked if you want to apply a report stream.
++
+ Template Manager
+ ................
+ Use this routine to create, edit or delete templates.
+
+=== modified file 'drs/dr3020.py'
+--- drs/dr3020.py	2019-04-13 11:46:28 +0000
++++ drs/dr3020.py	2019-04-22 10:06:27 +0000
+@@ -92,11 +92,14 @@
+             "order": "drt_type, drt_curdt, drt_batch"}
+         r1s = (("Financial","F"),("Capture","C"))
+         r2s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["F", "", "", "", "", "", "", "Y"]
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = [
+             (("T",0,0,0),("IRB",r1s),0,"Period Type","",
+                 var[0],"Y",self.doPtyp,None,None,None),
+@@ -116,12 +119,6 @@
+                 var[7],"N",self.doTots,None,None,None)]
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'drs/dr3030.py'
+--- drs/dr3030.py	2019-04-13 11:46:28 +0000
++++ drs/dr3030.py	2019-04-22 10:07:13 +0000
+@@ -56,17 +56,17 @@
+     def mainProcess(self):
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "Debtors Transactions Due For Payment (%s)" % __name__)
++        if "args" in self.opts and "noprint" in self.opts["args"]:
++            view = None
++            mail = None
++        else:
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID1",10,"Payment Date","",
+                 self.sysdtw,"Y",self.doPayDate,None,None,("efld",)),)
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'drs/dr3040.py'
+--- drs/dr3040.py	2019-04-13 11:46:28 +0000
++++ drs/dr3040.py	2019-04-22 10:07:37 +0000
+@@ -58,11 +58,14 @@
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "Debtors Outstanding Transactions (%s)" % __name__)
+         r1s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["", "N"]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Report Period","",
+                 self.curdt,"Y",self.doRepPer,None,None,("efld",)),
+@@ -70,12 +73,6 @@
+                 var[1],"N",self.doNewPage,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'drs/dr3050.py'
+--- drs/dr3050.py	2019-04-13 11:46:28 +0000
++++ drs/dr3050.py	2019-04-22 10:08:05 +0000
+@@ -76,11 +76,14 @@
+         r1s = (("Agedt","A"),("Curdt","C"))
+         r2s = (("Yes","Y"),("No","N"))
+         r3s = (("Yes","Y"),("No","N"),("Only","O"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["A", "", "N", "", "", 0, "Y", "Y"]
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Base","",
+                 var[0],"Y",self.doBase,None,None,None),
+@@ -100,12 +103,6 @@
+                 var[7],"N",self.doZero,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'gen/gl1030.py'
+--- gen/gl1030.py	2019-02-24 15:37:36 +0000
++++ gen/gl1030.py	2019-04-27 06:47:35 +0000
+@@ -27,7 +27,7 @@
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
+-from TartanClasses import GetCtl, RepPrt, Sql, TartanDialog
++from TartanClasses import GetCtl, RepPrt, SelectChoice, Sql, TartanDialog
+ from tartanFunctions import askQuestion, showError
+ 
+ class gl1030:
+@@ -308,8 +308,9 @@
+             self.doT2Exit, self.doT2Exit, self.doT2Exit, self.doT2Exit,
+             self.doT2Exit, self.doT2Exit)
+         but = (
++            ("Copy",None,self.doCpyRpt,0,("T",0,3),(("T",0,2),("T",0,4))),
+             ("Re-Sequence",None,self.doReSeq,0,("T",1,1),("T",1,2)),
+-            ("Copy",None,self.doCpyRpt,0,("T",0,3),(("T",0,2),("T",0,4))),
++            ("Preview",None,self.doPreview,0,("T",1,1),("T",1,2)),
+             ("Print",None,self.doPrint,0,("T",1,1),("T",1,2)),
+             ("Quit",None,self.doT0Exit,1,None,None))
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld, tend=tnd,
+@@ -444,12 +445,108 @@
+             self.sql.insRec("genrpt", data=rec)
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
++    def doPreview(self, widget=None):
++        self.cols = [
++            ("a", "Seq-Num", 7.2, "UD"),
++            ("b", "T", 1, "UA"),
++            ("c", "Grp", 3, "Na"),
++            ("d", "Lvl", 3, "Na"),
++            ("e", "Acc-Num", 7, "Na"),
++            ("f", "Description", 30, "NA")]
++        self.data = []
++        self.newp = []
++        recs = self.sql.getRec(tables="genrpt", where=[("glr_cono", "=",
++            self.selcoy), ("glr_repno", "=", self.repno)], order="glr_seq")
++        pgp = 0
++        lsq = 0
++        rpc = self.sql.genrpt_col
++        for num, rec in enumerate(recs):
++            seq = rec[rpc.index("glr_seq")]
++            rtp = rec[rpc.index("glr_type")]
++            if rtp in ("B", "P", "O"):
++                self.titl = rec[rpc.index("glr_desc")]
++                continue
++            des = rec[rpc.index("glr_desc")]
++            prt = rec[rpc.index("glr_print")]
++            if prt == "N":
++                continue
++            if rtp == "H":
++                if rec[rpc.index("glr_ffeed")] == "Y":
++                    self.data.append((seq, "N", "", "", "",
++                        "---------- New Page ----------"))
++                elif lsq:
++                    ptp = recs[lsq][rpc.index("glr_type")]
++                    utp = recs[lsq][rpc.index("glr_uline")]
++                    if ptp == "H" or (ptp == "U" and utp == "B"):
++                        pass
++                    else:
++                        self.data.append((seq, "", "", "", "", ""))
++                self.data.append((seq, rtp, "", "", "", des))
++                self.data.append((seq, "", "", "", "", ""))
++            elif rtp == "L":
++                frm = rec[rpc.index("glr_from")]
++                too = rec[rpc.index("glr_to")]
++                whr = [("glm_cono", "=", self.selcoy)]
++                if too:
++                    whr.append(("glm_acno", "between", frm, too))
++                else:
++                    whr.append(("glm_acno", "=", frm))
++                accs = self.sql.getRec(tables="genmst", cols=["glm_acno",
++                    "glm_desc"], where=whr, order="glm_acno")
++                for acc in accs:
++                    self.data.append((seq, rtp, "", "", acc[0], acc[1]))
++            elif rtp == "G":
++                grp = rec[rpc.index("glr_group")]
++                if not pgp or grp != pgp:
++                    self.data.append((seq, rtp, grp, "", "", des))
++                pgp = grp
++            elif rtp == "T":
++                tot = rec[rpc.index("glr_total")]
++                self.data.append((seq, rtp, "", tot, "", des))
++            elif rtp == "S":
++                self.data.append((seq, rtp, "", "", "", des))
++            elif rtp == "U":
++                utp = rec[rpc.index("glr_uline")]
++                if utp == "B":
++                    des = ""
++                elif utp == "S":
++                    des = "-" * 30
++                else:
++                    des = "=" * 30
++                self.data.append((seq, rtp, "", "", "", des))
++            else:
++                continue
++            lsq = num
++        self.pprt = False
++        self.sc = SelectChoice(self.opts["mf"].window, self.titl, self.cols,
++            self.data, sort=False, butt=(("Print", self.doPrePrt),))
++        if self.pprt:
++            cols = []
++            for col in self.cols:
++                cols.append([col[0], col[3], col[2], col[1], "y"])
++            state = self.df.disableButtonsTags()
++            self.df.setWidget(self.df.mstFrame, "hide")
++            RepPrt(self.opts["mf"], name=__name__, tables=self.data,
++                heads=[self.titl], cols=cols, ttype="D",
++                prtdia=(("Y","V"),("Y","N")))
++            self.df.setWidget(self.df.mstFrame, "show")
++            self.df.enableButtonsTags(state=state)
++            self.df.focusField("T", 1, 1)
++        elif self.sc.selection:
++            self.df.doKeyPressed("T", 1,  0, self.sc.selection[1])
++            self.df.doKeyPressed("T", 1,  1, self.sc.selection[2])
++        else:
++            self.df.focusField("T", 1, 1)
++
++    def doPrePrt(self):
++        self.pprt = True
++
+     def doPrint(self, widget=None):
+         table = ["genrpt"]
+         heads = ["General Ledger Report %s Layout" % self.repno]
+         state = self.df.disableButtonsTags()
+         self.df.setWidget(self.df.mstFrame, "hide")
+-        RepPrt(self.opts["mf"], name="gl1030", tables=table, heads=heads,
++        RepPrt(self.opts["mf"], name=__name__, tables=table, heads=heads,
+             where=[("glr_cono", "=", self.selcoy), ("glr_repno", "=",
+             self.repno)], order="glr_seq asc", prtdia=(("Y","V"),("Y","N")))
+         self.df.setWidget(self.df.mstFrame, "show")
+
+=== modified file 'gen/gl1040.py'
+--- gen/gl1040.py	2019-01-13 16:38:59 +0000
++++ gen/gl1040.py	2019-04-19 07:50:56 +0000
+@@ -48,20 +48,22 @@
+         cod_sel = {
+             "stype": "R",
+             "tables": ("gendtm",),
+-            "cols": (("gdm_code", "", 0, "Cod"),
+-                    ("gdm_desc", "", 0, "Description", "Y")),
++            "cols": (
++                ("gdm_code", "", 0, "Cod"),
++                ("gdm_desc", "", 0, "Description", "Y")),
+             "where": [("gdm_cono", "=", self.opts["conum"])]}
+         per_sel = {
+             "stype": "R",
+             "tables": ("gendtt",),
+-            "cols": (("gdt_curdt", "", 0, "Period"),
+-                    ("gdt_value", "", 0, "Value")),
++            "cols": (
++                ("gdt_curdt", "", 0, "Period"),
++                ("gdt_value", "", 0, "Value")),
+             "where": [
+                 ("gdt_cono", "=", self.opts["conum"]),
+                 ("gdt_curdt", "between", self.sper, self.eper)],
+             "whera": (("T","gdt_code", 0),)}
+         fld = (
+-            (("T",0,0,0,4),"INA",2,"Code","",
++            (("T",0,0,0,4),"INa",2,"Code","",
+                 "","Y",self.doCode,cod_sel,None,("notblank",)),
+             (("T",0,0,0),"INA",30,"Description","",
+                 "","N",self.doDesc,None,self.doDelCode,("notblank",)),
+
+=== modified file 'gen/gl1050.py'
+--- gen/gl1050.py	2019-01-13 16:38:59 +0000
++++ gen/gl1050.py	2019-04-19 11:09:55 +0000
+@@ -91,6 +91,7 @@
+             "head": ("C", "Description"),
+             "data": (
+                 ("S", "YTD Report"),
++                ("H", "Last 3 Years YTD Report"),
+                 ("L", "MTD and YTD Report"),
+                 ("M", "Monthly Report"),
+                 ("C", "Customised Report"))}
+@@ -126,6 +127,13 @@
+                 ("C", "Actuals and Budgets"),
+                 ("X", "Variance to Budget"),
+                 ("D", "Detail"))}
++        det = {
++            "stype": "R",
++            "tables": ("gendtm",),
++            "cols": (
++                ("gdm_code", "", 0, "Cod"),
++                ("gdm_desc", "", 0, "Description")),
++            "where": [("gdm_cono", "=", self.opts["conum"])]}
+         self.printers = showPrinters()
+         self.printers.insert(1, "Export")
+         prt = {
+@@ -141,7 +149,8 @@
+             (("C",0,0,0),"IUI",3,"Seq","Sequence Number",
+                 "i","N",self.doSeq,st2,None,("efld",)),
+             (("C",0,0,1),"IUA",1,"T","Report Type",
+-                "S","N",self.doTyp,typ,self.doDelLin,("in",("S","L","M","C"))),
++                "S","N",self.doTyp,typ,self.doDelLin,
++                ("in",("S","H","L","M","C"))),
+             (("C",0,0,2),"IUI",2,"CN","Custom Number",
+                 0,"N",self.doCus,rpc,None,("efld",)),
+             (("C",0,0,3),"IUA",1,"C","Consolidate (Y/N)",
+@@ -152,12 +161,12 @@
+                 "N","N",self.doGen,None,None,("in",("Y","N"))),
+             (("C",0,0,6),"IUA",1,"V","Report Contents",
+                 "V","N",self.doContent,con,None,("in",("V","B","C","X","D"))),
+-            (("C",0,0,7),"IUI",3,"Cod","Details Code",
+-                "","N",self.doCod,None,None,None),
+-            (("C",0,0,8),"IUA",1,"V","Variance (B/P)",
+-                "B","N",None,None,None,("in",("B","P"))),
++            (("C",0,0,7),"INa",2,"Cod","Details Code",
++                "","N",self.doCod,det,None,None),
++            (("C",0,0,8),"IUA",1,"V","Variance (B/P/N)",
++                "B","N",self.doVar,None,None,("in",("B","P","N"))),
+             (("C",0,0,9),"IUA",1,"Z","Ignore Zeros (Y/N)",
+-                "N","N",None,None,None,("in",("Y","N"))),
++                "Y","N",None,None,None,("in",("Y","N"))),
+             (("C",0,0,10),"IUA",1,"O","Print Options (Y/N)",
+                 "N","N",None,None,None,("in",("Y","N"))),
+             (("C",0,0,11),"IUA",1,"N","Print Numbers (Y/N)",
+@@ -258,7 +267,7 @@
+             return
+         self.df.loadEntry(frt, pag, p+1, data="")
+         if self.typ == "M":
+-            self.df.loadEntry(frt, pag, p+2, data="B")
++            self.df.loadEntry(frt, pag, p+2, data="N")
+             return "sk2"
+         return "sk1"
+ 
+@@ -269,9 +278,13 @@
+         if not d:
+             return "Invalid Detail Code"
+         if self.typ == "M":
+-            self.df.loadEntry(frt, pag, p+2, data="B")
++            self.df.loadEntry(frt, pag, p+2, data="N")
+             return "sk1"
+ 
++    def doVar(self, frt, pag, r, c, p, i, w):
++        if self.typ == "C" and w not in ("B", "P"):
++            return "Invalid Variance, Only B or P"
++
+     def doPrt(self, frt, pag, r, c, p, i, w):
+         if w not in self.printers:
+             return "Invalid Printer"
+@@ -348,7 +361,8 @@
+         self.df.clearFrame("C", 0)
+         pos = 0
+         recs = self.sql.getRec(tables="genstr", where=[("gls_cono", "=",
+-            self.opts["conum"]), ("gls_strm", "=", self.strm)])
++            self.opts["conum"]), ("gls_strm", "=", self.strm)],
++            order="gls_seq")
+         for row, rec in enumerate(recs):
+             for num, dat in enumerate(rec):
+                 if num < 3:
+
+=== modified file 'gen/gl3020.py'
+--- gen/gl3020.py	2019-04-13 11:46:28 +0000
++++ gen/gl3020.py	2019-04-22 10:00:46 +0000
+@@ -93,11 +93,14 @@
+             "order": "glt_type, glt_curdt, glt_batch"}
+         r1s = (("Financial","F"),("Capture","C"))
+         r2s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["F", "", "", "", "", "", "", "Y"]
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = [
+             (("T",0,0,0),("IRB",r1s),0,"Period Type","",
+                 var[0],"Y",self.doPtyp,None,None,None),
+@@ -121,12 +124,6 @@
+                     "N","N",self.doCoy,None,None,None))
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'gen/gl3030.py'
+--- gen/gl3030.py	2019-04-13 11:46:28 +0000
++++ gen/gl3030.py	2019-04-22 10:01:42 +0000
+@@ -69,13 +69,16 @@
+             "order": "glm_acno"}
+         r1s = (("Yes","Y"),("Range","R"),("Singles", "S"))
+         r2s = (("Yes","Y"), ("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
+             self.accs = self.opts["args"]["work"][1]
++            view = None
++            mail = None
+         else:
+             var = ["S", "", 0, "", "", "N"]
+             self.accs = []
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Whole File","",
+                 var[0],"Y",self.doWhole,None,None,None),
+@@ -91,12 +94,6 @@
+                 var[5],"N",self.doPages,None,None,None))
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'gen/gl3040.py'
+--- gen/gl3040.py	2019-04-13 11:46:28 +0000
++++ gen/gl3040.py	2019-04-22 10:02:15 +0000
+@@ -66,11 +66,14 @@
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "General Ledger Trial Balance (%s)" % __name__)
+         r1s = (("Yes","Y"), ("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["N", "Y", "", "", "Y"]
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Opening Balances Only","",
+                 var[0],"Y",self.doOpeBal1,None,None,None),
+@@ -84,12 +87,6 @@
+                 var[4],"N",self.doZerBal,None,None,None))
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'gen/gl3050.py'
+--- gen/gl3050.py	2019-04-13 11:46:28 +0000
++++ gen/gl3050.py	2019-04-22 10:03:56 +0000
+@@ -35,7 +35,16 @@
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+-            if "args" in self.opts and "noprint" not in self.opts["args"]:
++            if "args" in self.opts and "stream" in self.opts["args"]:
++                self.strm = 0
++                self.repprt = ['N', 'N', '']
++                self.repeml = ['N', 'N', '', '', 'Y']
++                for arg in self.opts["args"]:
++                    if arg in ("stream", "noprint"):
++                        continue
++                    setattr(self, arg, self.opts["args"][arg])
++                self.doMainEnd()
++            elif "args" in self.opts and "noprint" not in self.opts["args"]:
+                 self.end, self.typ, self.rep, self.val, self.var, self.zer, \
+                     self.repprt, self.repeml, self.fpdf = self.opts["args"]
+                 yed = CCD(mthendDate((self.end * 100) + 1), "D1", 10)
+@@ -102,9 +111,11 @@
+             m += 1
+             if m > 12:
+                 m = 1
+-        self.colss = [7, 2, 3, 4, 5, 6]
++        self.colsn = [7, 2, 3]
++        self.colsv = [7, 2, 3, 4, 5, 6]
+         self.colsh = [2, 7, 7, 7, 3, 4, 5, 6]
+-        self.colsl = [2, 3, 4, 5, 6, 3, 4, 5, 6, 7]
++        self.colln = [2, 3, 3, 7]
++        self.collv = [2, 3, 4, 5, 6, 3, 4, 5, 6, 7]
+         self.colsm = [2, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 10]
+         self.colsc = []
+         self.ulc = "X"                          # Temporary Underline Character
+@@ -156,22 +167,27 @@
+             ("Detail","D"))
+         r4s = (
+             ("Budgets","B"),
+-            ("Previous Year","P"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++            ("Previous-Year","P"),
++            ("None","N"))
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            var[1] = 0
++            view = None
++            mail = None
+         else:
+-            var = ["", 0, "S", "N", "N", 1, "N", "V", "", "", "B",
+-                "Y", "Y", "Y"]
++            var = ["",0,"S","N","N",1,"N","V","","","B","Y","Y","Y"]
++            view = ("Y", "V")
++            mail = ("Y", "N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Ending Period","Ending Period (YYYYMM)",
+                 self.e_per,"Y",self.doRepPer,None,None,None),
+             (("T",0,1,0),"IUI",3,"Stream Number","",
+                 var[1],"N",self.doRepStr,stm,None,None),
+             (("T",0,2,0),("IRB",r1s),0,"Report Type","",
+-                var[2],"N",self.doType,None,None,None,None,"""Valid Report Types:
++                var[2],"N",self.doType,None,None,None,None,
++                """Valid Report Types:
+ 
+-Short   - Previous Year, Description, Actual, Budget, Variance
++Short   - Last-Year, Description, Actual, Budget, Variance
+ History - Description, Previous 3 Years, Actual, Budget, Variance
+ Long    - Acc-Num, Description, Current Month, Year-to-Date
+ Month   - Acc-Num, Description, Opening Balance, Months x 12, Closing Balance
+@@ -186,7 +202,7 @@
+                 var[6],"N",self.doRepGen,None,None,None),
+             (("T",0,7,0),("IRB",r3s),0,"Contents","",
+                 var[7],"N",self.doRepVal,None,None,None),
+-            (("T",0,8,0),"INA",2,"Detail Code","",
++            (("T",0,8,0),"INa",2,"Detail Code","",
+                 var[8],"N",self.doRepDet,det,None,("notblank",)),
+             (("T",0,8,0),"ONA",30,""),
+             (("T",0,9,0),("IRB",r4s),0,"Variance","",
+@@ -199,12 +215,6 @@
+                 var[13],"N",self.doNumber,None,None,None))
+         tnd = ((self.doMainEnd,"y"), )
+         txt = (self.doMainExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y", "V")
+-            mail = ("Y", "N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+@@ -224,6 +234,10 @@
+             self.df.topf[pag][10][5] = "B"
+         else:
+             self.df.topf[pag][10][5] = "P"
++        if "args" in self.opts and "noprint" in self.opts["args"]:
++            self.strm = 0
++            self.df.loadEntry(frt, pag, p+1, data=0)
++            return "sk1"
+ 
+     def doRepStr(self, frt, pag, r, c, p, i, w):
+         self.strm = w
+@@ -280,8 +294,12 @@
+             err = self.getRepDetails()
+             if err:
+                 return err
++            self.df.loadEntry(frt, pag, p+1, data=self.gen)
++            if self.typ == "C":
++                self.val = "V"
++                self.df.loadEntry(frt, pag, p+2, data=self.val)
++                return "sk4"
+             else:
+-                self.df.loadEntry(frt, pag, p+1, data=self.gen)
+                 return "sk1"
+         elif self.con == "Y":
+             return "Invalid Report, Not A General Report"
+@@ -290,7 +308,13 @@
+         if self.con == "Y" and w == "N":
+             return "Invalid"
+         self.gen = w
+-        return self.getRepDetails()
++        err = self.getRepDetails()
++        if err:
++            return err
++        if self.typ == "C":
++            self.val = "V"
++            self.df.loadEntry(frt, pag, p+2, data=self.val)
++            return "sk3"
+ 
+     def doRepVal(self, frt, pag, r, c, p, i, w):
+         if w in ("B", "C", "X") and self.typ != "M":
+@@ -301,7 +325,7 @@
+         self.df.loadEntry(frt, pag, p+1, data="")
+         self.df.loadEntry(frt, pag, p+2, data="")
+         if self.typ == "M":
+-            self.var = "B"
++            self.var = "N"
+             self.df.loadEntry(frt, pag, p+3, data=self.var)
+             return "sk3"
+         return "sk2"
+@@ -364,9 +388,11 @@
+                     self.val = rep[col.index("gls_val")]
+                     self.det = rep[col.index("gls_det")]
+                     if self.typ == "M":
+-                        self.var = "B"
++                        self.var = "N"
+                     else:
+                         self.var = rep[col.index("gls_var")]
++                        if not self.var:
++                            self.var = "B"
+                     self.zer = rep[col.index("gls_zer")]
+                     self.opt = rep[col.index("gls_opt")]
+                     if not self.opt:
+@@ -756,7 +782,7 @@
+ 
+     def doColumn(self, frt, pag, r, c, p, i, w):
+         if not w:
+-            for x in xrange(p, 20):
++            for x in xrange(p, 21):
+                 if not x % 3:
+                     continue
+                 self.cr.loadEntry(frt, pag, x, data="")
+@@ -844,10 +870,15 @@
+             self.val = "V"
+             self.det = None
+         if self.var == "B":
++            self.actdes = "          Actual"
+             self.vardes = "       Budget"
+-        else:
+-            self.vardes = "    Prev-Year"
+-            self.titles[4][0] = "Prev-Year"
++        elif self.var == "P":
++            self.actdes = "    Current-Year"
++            self.vardes = "    Last-Year"
++            self.titles[4][0] = "Last-Year"
++        elif self.var == "N" and self.typ in ("S", "L"):
++            self.actdes = "    Current-Year"
++            self.titles[3][0] = "Current-Year"
+         ####################################################################
+         # RTYPE Determines the basis of the sign check i.e. MTD or YTD value
+         # Maybe this should be an interactive request (Y=YTD, M=MTD)
+@@ -885,32 +916,52 @@
+         self.expheads.append("TYPE")
+         self.expcolsh = [[]]
+         self.expforms = []
+-        colsl = copyList(self.colsl)
+         if self.typ == "S":
+-            for h in self.colss:
++            if self.var == "N":
++                colss = copyList(self.colsn)
++            else:
++                colss = copyList(self.colsv)
++            for h in colss:
+                 self.expcolsh[0].append(self.titles[h][0])
+                 self.expforms.append(self.titles[h][1:])
+         elif self.typ == "H":
+             for n, h in enumerate(self.colsh):
+                 if h == 7:
+-                    ly = CCD(self.fin.pers[n]["e_per"], "D2", 7).disp
++                    if self.fin.pers[n]:
++                        ly = CCD(self.fin.pers[n]["e_per"], "D2", 7).disp
++                    else:
++                        ly = ""
+                     self.expcolsh[0].append(ly)
+                 else:
+                     self.expcolsh[0].append(self.titles[h][0])
+                 self.expforms.append(self.titles[h][1:])
+         elif self.typ == "L":
+-            if self.num == "Y":
+-                colsl.insert(0, 1)
+-                self.expcolsh = [["", "", ["************** Current-Month "\
+-                    "**************", 2, 5], ["************** Year-to-Date "\
+-                    "**************", 6, 9], ""], []]
++            if self.var == "N":
++                colsl = copyList(self.colln)
++                if self.num == "Y":
++                    colsl.insert(0, 1)
++                    self.expcolsh = [["", "", ["", 2, 5], ["", 6, 9], ""], []]
++                else:
++                    self.expcolsh = [["", ["", 1, 4], ["", 5, 8], ""], []]
++                for h in colsl:
++                    self.expcolsh[1].append(self.titles[h][0])
++                    self.expforms.append(self.titles[h][1:])
+             else:
+-                self.expcolsh = [["", ["************** Current-Month "\
+-                    "**************", 1, 4], ["************** Year-to-Date "\
+-                    "**************", 5, 8], ""], []]
+-            for h in colsl:
+-                self.expcolsh[1].append(self.titles[h][0])
+-                self.expforms.append(self.titles[h][1:])
++                colsl = copyList(self.collv)
++                if self.num == "Y":
++                    colsl.insert(0, 1)
++                    self.expcolsh = [["", "",
++                        ["************** Current-Month **************", 2, 5],
++                        ["************** Year-to-Date  **************", 6, 9],
++                        ""], []]
++                else:
++                    self.expcolsh = [["",
++                        ["************** Current-Month **************", 1, 4],
++                        ["************** Year-to-Date  **************", 5, 8],
++                        ""], []]
++                for h in colsl:
++                    self.expcolsh[1].append(self.titles[h][0])
++                    self.expforms.append(self.titles[h][1:])
+         elif self.typ == "M":
+             if self.num == "Y":
+                 self.colsm.insert(0, 1)
+@@ -968,81 +1019,153 @@
+         self.linw = ""
+         self.last = False
+         if self.typ == "S":
+-            self.head.append("%03u %-30s %73s" % (self.opts["conum"],
+-                self.opts["conam"], self.sysdttm))
+-            self.head.append("")
+-            self.head.append("")
+-            self.head.append("%-17s  %-30s  %-17s  %-14s  %-14s  %-7s" % \
+-                ("       Last-Year", "Description", "          Actual",
+-                self.vardes, "     Variance", " Var-%"))
+-            self.linu = "%s  %31s  %s  %s  %s  %s" % (self.ulc*16, "",
+-                self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7)
++            if self.var == "N":
++                self.head.append("%03u %-30s %40s" % (self.opts["conum"],
++                    self.opts["conam"], self.sysdttm))
++            else:
++                self.head.append("%03u %-30s %73s" % (self.opts["conum"],
++                    self.opts["conam"], self.sysdttm))
++            self.head.append("")
++            self.head.append("")
++            if self.var == "N":
++                self.head.append("%-17s  %-38s  %-17s" % ("       Last-Year",
++                    "Description", "    Current-Year"))
++                self.linu = "%s  %39s  %s" % (self.ulc*16, "", self.ulc*16)
++            else:
++                self.head.append("%-17s  %-30s  %-17s  %-14s  %-14s  %-7s" % \
++                    ("       Last-Year", "Description", "    Current-Year",
++                    self.vardes, "     Variance", " Var-%"))
++                self.linu = "%s  %31s  %s  %s  %s  %s" % (self.ulc*16, "",
++                    self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7)
+             self.width = self.head[0]
+         elif self.typ == "H":
+-            self.head.append("%03u %-30s %111s" % (self.opts["conum"],
+-                self.opts["conam"], self.sysdttm))
+-            self.head.append("")
+-            self.head.append("")
+-            ly1 = CCD(self.fin.pers[1]["e_per"], "D2", 7).disp
+-            ly2 = CCD(self.fin.pers[2]["e_per"], "D2", 7).disp
+-            ly3 = CCD(self.fin.pers[3]["e_per"], "D2", 7).disp
+-            self.head.append("%-30s  %16s   %16s   %16s   %-17s  %-14s  "\
+-                "%-14s  %-7s" % ("Description", ly1, ly2, ly3,
+-                "          Actual", self.vardes, "     Variance", " Var-%"))
+-            self.linu = "%30s  %s   %s   %s   %s  %s  %s  %s" % ("",
+-                self.ulc*16, self.ulc*16, self.ulc*16, self.ulc*16,
+-                self.ulc*14, self.ulc*14, self.ulc*7)
++            if self.var == "N":
++                self.head.append("%03u %-30s %70s" % (self.opts["conum"],
++                    self.opts["conam"], self.sysdttm))
++            else:
++                self.head.append("%03u %-30s %111s" % (self.opts["conum"],
++                    self.opts["conam"], self.sysdttm))
++            self.head.append("")
++            self.head.append("")
++            hd = "%-30s  " % "Description"
++            ln = "%30s  " % ""
++            for x in range(3):
++                if self.fin.pers[x+1]:
++                    hd = "%s%16s   " % (hd,
++                        CCD(self.fin.pers[x+1]["e_per"], "D2", 7).disp)
++                    ln = "%s%s   " % (ln, self.ulc*16)
++                else:
++                    hd = "%s%16s   " % (hd, "")
++                    ln = "%s%16s   " % (ln, "")
++            if self.var == "N":
++                self.head.append("%s%-17s" % (hd, "    Current-Year"))
++                self.linu = "%s%s" % (ln, self.ulc*16)
++            else:
++                self.head.append("%s%-17s  %-14s  %-14s  %-7s" % (hd,
++                    "    Current-Year", self.vardes, "     Variance", " Var-%"))
++                self.linu = "%s%s  %s  %s  %s" % (ln, self.ulc*16, self.ulc*14,
++                    self.ulc*14, self.ulc*7)
+             self.width = self.head[0]
+         elif self.typ == "L":
+-            if self.num == "Y":
+-                self.head.append("%03u %-30s %123s" % (self.opts["conum"],
+-                    self.opts["conam"], self.sysdttm))
+-            else:
+-                self.head.append("%03u %-30s %112s" % (self.opts["conum"],
+-                    self.opts["conam"], self.sysdttm))
+-            self.head.append("")
+-            self.head.append("")
+-            if self.num == "Y":
+-                self.head.append("%-7s  %-30s  %-57s   %-57s" % (
+-                    "", "",
+-                    "*********************"\
+-                    " Current-Month "\
+-                    "*********************",
+-                    "*********************"\
+-                    " Year-to-Date "\
+-                    "**********************"))
+-            else:
+-                self.head.append("%-30s  %-57s   %-57s" % (
+-                    "",
+-                    "*********************"\
+-                    " Current-Month "\
+-                    "*********************",
+-                    "*********************"\
+-                    " Year-to-Date "\
+-                    "**********************"))
+-            if self.num == "Y":
+-                hdr = "%-7s  "
+-                hdt = ["Acc-Num"]
+-                lin = "%7s  "
+-                ldt = [""]
+-            else:
+-                hdr = ""
+-                hdt = []
+-                lin = ""
+-                ldt = []
+-            hdr = hdr + "%-30s  %-17s  %-14s  %-14s  %-7s  %-17s  %-14s  "\
+-                "%-14s  %-7s  %-17s"
+-            hdt.extend(["Description",
+-                "          Actual", self.vardes, "     Variance", " Var-%",
+-                "          Actual", self.vardes, "     Variance", " Var-%",
+-                "       Last-Year"])
+-            self.head.append(hdr % tuple(hdt))
+-            lin = lin + "%30s  %s  %s  %s  %s   %s  %s  %s  %s"
+-            self.linu = lin % tuple(ldt + ["", self.ulc*16, self.ulc*14,
+-                self.ulc*14, self.ulc*7, self.ulc*16, self.ulc*14,
+-                self.ulc*14, self.ulc*7])
+-            self.linb = lin % tuple(ldt + ["", " "*16, " "*14, " "*14, " "*7,
+-                self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7])
++            if self.var == "N":
++                if self.num == "Y":
++                    self.head.append("%03u %-30s %60s" % (self.opts["conum"],
++                        self.opts["conam"], self.sysdttm))
++                else:
++                    self.head.append("%03u %-30s %51s" % (self.opts["conum"],
++                        self.opts["conam"], self.sysdttm))
++                self.head.append("")
++                self.head.append("")
++                if self.num == "Y":
++                    hdr = "%-7s  "
++                    hdt = ["Acc-Num"]
++                    lin = "%7s  "
++                    ldt = [""]
++                else:
++                    hdr = ""
++                    hdt = []
++                    lin = ""
++                    ldt = []
++                hdr = hdr + "%-30s  %-17s  %-17s %17s"
++                hdt.extend(["Description", "   Current-Month",
++                    "    Current-Year", "       Last-Year"])
++                self.head.append(hdr % tuple(hdt))
++                lin = lin + "%30s  %s   %s   %s"
++                self.linb = lin % tuple(ldt + ["", " "*16, self.ulc*16,
++                    self.ulc*16])
++                self.linu = lin % tuple(ldt + ["", self.ulc*16, self.ulc*16,
++                    self.ulc*16])
++            else:
++                if self.var == "P":
++                    self.cdes = "    Current-Year"
++                else:
++                    self.cdes = "          Actual"
++                if self.var == "P":
++                    hds = 114
++                else:
++                    hds = 134
++                if self.num == "Y":
++                    hds += 9
++                hft = "%03u %-30s"
++                hft = "%s %s%s%s" % (hft, "%", hds, "s")
++                self.head.append(hft % (self.opts["conum"], self.opts["conam"],
++                    self.sysdttm))
++                self.head.append("")
++                self.head.append("")
++                if self.num == "Y":
++                    self.head.append("%-7s  %-30s  %-57s   %-57s" % (
++                        "", "",
++                        "*********************"\
++                        " Current-Month "\
++                        "*********************",
++                        "*********************"\
++                        " Year-to-Date "\
++                        "**********************"))
++                else:
++                    self.head.append("%-30s  %-57s   %-57s" % (
++                        "",
++                        "*********************"\
++                        " Current-Month "\
++                        "*********************",
++                        "*********************"\
++                        " Year-to-Date "\
++                        "**********************"))
++                if self.num == "Y":
++                    hdr = "%-7s  "
++                    hdt = ["Acc-Num"]
++                    lin = "%7s  "
++                    ldt = [""]
++                else:
++                    hdr = ""
++                    hdt = []
++                    lin = ""
++                    ldt = []
++                hdr = hdr + "%-30s  %-17s  %-14s  %-14s  %-7s  %-17s  "\
++                    "%-14s  %-14s  %-7s"
++                hdt.extend(["Description",
++                    self.cdes, self.vardes, "     Variance", " Var-%",
++                    self.cdes, self.vardes, "     Variance", " Var-%"])
++                lin = lin + "%30s  %s  %s  %s  %s   %s  %s  %s  %s"
++                if self.var == "P":
++                    self.linu = lin % tuple(ldt + ["",
++                        self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7,
++                        self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7])
++                    self.linb = lin % tuple(ldt + ["",
++                        " "*16, " "*14, " "*14, " "*7,
++                        self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7])
++                else:
++                    hdr = hdr + "  %-17s"
++                    hdt.extend(["       Last-Year"])
++                    lin = lin + "   %s"
++                    self.linu = lin % tuple(ldt + ["",
++                        self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7,
++                        self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7,
++                        self.ulc*16])
++                    self.linb = lin % tuple(ldt + ["",
++                        " "*16, " "*14, " "*14, " "*7,
++                        self.ulc*16, self.ulc*14, self.ulc*14, self.ulc*7,
++                        self.ulc*16])
++                self.head.append(hdr % tuple(hdt))
+             self.width = self.head[0]
+         elif self.typ == "M":
+             if self.num == "Y":
+@@ -1099,14 +1222,20 @@
+             self.stop = None
+             for col in self.cols:
+                 col = list(col)
+-                if col[0] == 4:
+-                    col[2] = self.vardes
+                 if col[0] == 8:
+                     for x in range(3):
+-                        hdr = CCD(self.fin.pers[x+1]["e_per"], "D2", 7)
++                        if self.fin.pers[x+1]:
++                            hdr = CCD(self.fin.pers[x+1]["e_per"], "D2", 7)
++                        else:
++                            hdr = ""
+                         col[2] = hdr.disp
+                         self.doLoadLine(col)
+                 else:
++                    if self.var == "P":
++                        if col[1] == "Actual":
++                            col[1] = col[2] = self.actdes
++                        elif col[1] == "Budget":
++                            col[1] = col[2] = self.vardes
+                     if not col[2]:
+                         col[2] = col[1]
+                     self.doLoadLine(col)
+@@ -1120,7 +1249,7 @@
+             self.linw = self.linw[:-1]
+             self.heds.append(self.lhead)
+             self.width = self.lhead
+-        if "args" not in self.opts or "noprint" in self.opts["args"]:
++        if "args" not in self.opts or "noprint" in self.opts["args"] or "stream" in self.opts["args"]:
+             self.fpdf = MyFpdf(name=__name__, head=self.width)
+         self.pgnum = 0
+         self.pglin = 999
+@@ -1237,50 +1366,63 @@
+             if self.typ in ("C", "H"):
+                 lyr = []
+                 for x in range(3):
+-                    lyr.append(CCD(line[8][x+1], "CD", 17.2))
++                    if self.fin.pers[x+1]:
++                        lyr.append(CCD(line[8][x+1], "CD", 17.2))
++                    else:
++                        lyr.append(CCD("", "NA", 17))
+             else:
+                 lyr = CCD(line[8][3], "CD", 17.2)
+             if self.typ == "L":
+                 mth = CCD(line[8][4], "CD", 17.2)
+-                bud = CCD(long(line[8][5]), "CI", 14)
++                if self.var == "N":
++                    bud = CCD(0, "CI", 14)
++                    vmt = CCD("", "NA", 14)
++                    vmtper = CCD("", "NA", 7)
++                else:
++                    bud = CCD(long(line[8][5]), "CI", 14)
++                    if typ == "P":
++                        vmt = CCD("", "NA", 14)
++                        vmtper = CCD("", "NA", 7)
++                    else:
++                        if sgn == "N" or (self.var == "P" and bud.work < 0):
++                            vmt = long(long(mth.work) - bud.work)
++                        else:
++                            vmt = long(bud.work - long(mth.work))
++                        vmt = CCD(vmt, "CI", 14)
++                        if bud.work:
++                            vmtper = round(vmt.work * 100.0 / bud.work, 2)
++                            if vmtper > 0 and vmtper > 999.99:
++                                vmtper = 999.99
++                            elif vmtper < 0 and vmtper < -999.99:
++                                vmtper = -999.99
++                        else:
++                            vmtper = 0
++                        vmtper = CCD(vmtper, "SD", 7.2)
++            ytd = CCD(line[8][6], "CD", 17.2)
++            if self.var == "N":
++                btd = CCD(0, "CI", 14)
++                vtd = CCD("", "NA", 14)
++                vtdper = CCD("", "NA", 7)
++            else:
++                btd = CCD(long(line[8][7]), "CI", 14)
+                 if typ == "P":
+-                    vmt = CCD(0, "NA", 14)
+-                    vmtper = CCD(0, "NA", 7)
+-                else:
+-                    if sgn == "N" or (self.var == "P" and bud.work < 0):
+-                        vmt = long(long(mth.work) - bud.work)
+-                    else:
+-                        vmt = long(bud.work - long(mth.work))
+-                    vmt = CCD(vmt, "CI", 14)
+-                    if bud.work:
+-                        vmtper = round(vmt.work * 100.0 / bud.work, 2)
+-                        if vmtper > 0 and vmtper > 999.99:
+-                            vmtper = 999.99
+-                        elif vmtper < 0 and vmtper < -999.99:
+-                            vmtper = -999.99
+-                    else:
+-                        vmtper = 0
+-                    vmtper = CCD(vmtper, "SD", 7.2)
+-            ytd = CCD(line[8][6], "CD", 17.2)
+-            btd = CCD(long(line[8][7]), "CI", 14)
+-            if typ == "P":
+-                vtd = CCD(0, "NA", 14)
+-                vtdper = CCD(0, "NA", 7)
+-            else:
+-                if sgn == "N" or (self.var == "P" and btd.work < 0):
+-                    vtd = long(long(ytd.work) - btd.work)
+-                else:
+-                    vtd = long(btd.work - long(ytd.work))
+-                vtd = CCD(vtd, "CI", 14)
+-                if btd.work:
+-                    vtdper = round(vtd.work * 100.0 / btd.work, 2)
+-                    if vtdper > 0 and vtdper > 999.99:
+-                        vtdper = 999.99
+-                    elif vtdper < 0 and vtdper < -999.99:
+-                        vtdper = -999.99
+-                else:
+-                    vtdper = 0
+-                vtdper = CCD(vtdper, "SD", 7.2)
++                    vtd = CCD("", "NA", 14)
++                    vtdper = CCD("", "NA", 7)
++                else:
++                    if sgn == "N" or (self.var == "P" and btd.work < 0):
++                        vtd = long(long(ytd.work) - btd.work)
++                    else:
++                        vtd = long(btd.work - long(ytd.work))
++                    vtd = CCD(vtd, "CI", 14)
++                    if btd.work:
++                        vtdper = round(vtd.work * 100.0 / btd.work, 2)
++                        if vtdper > 0 and vtdper > 999.99:
++                            vtdper = 999.99
++                        elif vtdper < 0 and vtdper < -999.99:
++                            vtdper = -999.99
++                    else:
++                        vtdper = 0
++                    vtdper = CCD(vtdper, "SD", 7.2)
+         else:
+             for x in xrange(0, 14):
+                 if self.val == "X" and sgn == "N":
+@@ -1299,11 +1441,18 @@
+                     and not btd.work and not vtd.work:
+                 return
+             if self.repprt[2] == "export":
+-                self.expdatas.append([txt, [lyr.work, des.work, ytd.work,
+-                    btd.work, vtd.work, vtdper.work]])
++                if self.var == "N":
++                    self.expdatas.append([txt, [lyr.work, des.work, ytd.work]])
++                else:
++                    self.expdatas.append([txt, [lyr.work, des.work, ytd.work,
++                        btd.work, vtd.work, vtdper.work]])
+             else:
+-                self.fpdf.drawText("%s  %s  %s  %s  %s  %s" % (lyr.disp,
+-                    des.disp, ytd.disp, btd.disp, vtd.disp, vtdper.disp))
++                if self.var == "N":
++                    self.fpdf.drawText("%s  %s          %s" % (lyr.disp,
++                        des.disp, ytd.disp))
++                else:
++                    self.fpdf.drawText("%s  %s  %s  %s  %s  %s" % (lyr.disp,
++                        des.disp, ytd.disp, btd.disp, vtd.disp, vtdper.disp))
+                 self.pglin += 1
+                 self.last = True
+         elif self.typ == "H":
+@@ -1312,12 +1461,21 @@
+                     and not vtd.work:
+                 return
+             if self.repprt[2] == "export":
+-                self.expdatas.append([txt, [des.work, lyr[0].work, lyr[1].work,
+-                    lyr[2].work, ytd.work, btd.work, vtd.work, vtdper.work]])
++                if self.var == "N":
++                    self.expdatas.append([txt, [des.work, lyr[0].work,
++                        lyr[1].work, lyr[2].work, ytd.work]])
++                else:
++                    self.expdatas.append([txt, [des.work, lyr[0].work,
++                        lyr[1].work, lyr[2].work, ytd.work, btd.work,
++                        vtd.work, vtdper.work]])
+             else:
+-                self.fpdf.drawText("%s  %s  %s  %s  %s  %s  %s  %s" %
+-                    (des.disp, lyr[0].disp, lyr[1].disp, lyr[2].disp,
+-                    ytd.disp, btd.disp, vtd.disp, vtdper.disp))
++                if self.var == "N":
++                    self.fpdf.drawText("%s  %s  %s  %s  %s" % (des.disp,
++                        lyr[0].disp, lyr[1].disp, lyr[2].disp, ytd.disp))
++                else:
++                    self.fpdf.drawText("%s  %s  %s  %s  %s  %s  %s  %s" %
++                        (des.disp, lyr[0].disp, lyr[1].disp, lyr[2].disp,
++                        ytd.disp, btd.disp, vtd.disp, vtdper.disp))
+                 self.pglin += 1
+                 self.last = True
+         elif self.typ == "L":
+@@ -1327,50 +1485,93 @@
+                 pass
+             elif line[1] == "B":
+                 if self.repprt[2] == "export":
+-                    if self.num == "Y":
+-                        self.expdatas.append([txt, [acc.work, des.work, "",
+-                            "", "", "", ytd.work, btd.work, vtd.work,
+-                            vtdper.work, lyr.work]])
++                    if self.var == "N":
++                        if self.num == "Y":
++                            self.expdatas.append([txt, [acc.work, des.work, "",
++                                ytd.work, lyr.work]])
++                        else:
++                            self.expdatas.append([txt, [des.work, "", ytd.work,
++                                lyr.work]])
+                     else:
+-                        self.expdatas.append([txt, [des.work, "", "", "",
+-                            "", ytd.work, btd.work, vtd.work, vtdper.work,
+-                            lyr.work]])
++                        if self.num == "Y":
++                            self.expdatas.append([txt, [acc.work, des.work, "",
++                                "", "", "", ytd.work, btd.work, vtd.work,
++                                vtdper.work, lyr.work]])
++                        else:
++                            self.expdatas.append([txt, [des.work, "", "", "",
++                                "", ytd.work, btd.work, vtd.work, vtdper.work,
++                                lyr.work]])
+                 else:
+-                    if self.num == "Y":
+-                        self.fpdf.drawText("%s  %s  %17s  %-14s  %-14s  "\
+-                            "%-7s  %s  %s  %s  %s  %s" % (acc.disp,
+-                            des.disp, "", "", "", "", ytd.disp, btd.disp,
+-                            vtd.disp, vtdper.disp, lyr.disp))
++                    if self.var == "N":
++                        if self.num == "Y":
++                            self.fpdf.drawText("%s  %s  %17s  %s  %s" %
++                                (acc.disp, des.disp, "", ytd.disp, lyr.disp))
++                        else:
++                            self.fpdf.drawText("%s  %17s  %s  %s" %
++                                (des.disp, "", ytd.disp, lyr.disp))
++                    elif self.var == "P":
++                        if self.num == "Y":
++                            self.fpdf.drawText("%s  %s  %17s  %-14s  %-14s  "\
++                                "%-7s  %s  %s  %s  %s" % (acc.disp,
++                                des.disp, "", "", "", "", ytd.disp, btd.disp,
++                                vtd.disp, vtdper.disp))
++                        else:
++                            self.fpdf.drawText("%s  %17s  %-14s  %-14s  %-7s  "\
++                                "%s  %s  %s  %s" % (des.disp, "", "", "",
++                                "", ytd.disp, btd.disp, vtd.disp, vtdper.disp))
+                     else:
+-                        self.fpdf.drawText("%s  %17s  %-14s  %-14s  %-7s  "\
+-                            "%s  %s  %s  %s  %s" % (des.disp, "", "", "",
+-                            "", ytd.disp, btd.disp, vtd.disp, vtdper.disp,
+-                            lyr.disp))
++                        if self.num == "Y":
++                            self.fpdf.drawText("%s  %s  %17s  %-14s  %-14s  "\
++                                "%-7s  %s  %s  %s  %s  %s" % (acc.disp,
++                                des.disp, "", "", "", "", ytd.disp, btd.disp,
++                                vtd.disp, vtdper.disp, lyr.disp))
++                        else:
++                            self.fpdf.drawText("%s  %17s  %-14s  %-14s  %-7s  "\
++                                "%s  %s  %s  %s  %s" % (des.disp, "", "", "",
++                                "", ytd.disp, btd.disp, vtd.disp, vtdper.disp,
++                                lyr.disp))
+                     self.pglin += 1
+                     self.last = True
+             else:
+                 if self.repprt[2] == "export":
+-                    if self.num == "Y":
+-                        self.expdatas.append([txt, [acc.work, des.work,
+-                            mth.work, bud.work, vmt.work, vmtper.work,
+-                            ytd.work, btd.work, vtd.work, vtdper.work,
+-                            lyr.work]])
++                    if self.var == "N":
++                        if self.num == "Y":
++                            self.expdatas.append([txt, [acc.work, des.work,
++                                mth.work, ytd.work, lyr.work]])
++                        else:
++                            self.expdatas.append([txt, [des.work,
++                                mth.work, ytd.work, lyr.work]])
+                     else:
+-                        self.expdatas.append([txt, [des.work,
+-                            mth.work, bud.work, vmt.work, vmtper.work,
+-                            ytd.work, btd.work, vtd.work, vtdper.work,
+-                            lyr.work]])
++                        if self.num == "Y":
++                            self.expdatas.append([txt, [acc.work, des.work,
++                                mth.work, bud.work, vmt.work, vmtper.work,
++                                ytd.work, btd.work, vtd.work, vtdper.work,
++                                lyr.work]])
++                        else:
++                            self.expdatas.append([txt, [des.work,
++                                mth.work, bud.work, vmt.work, vmtper.work,
++                                ytd.work, btd.work, vtd.work, vtdper.work,
++                                lyr.work]])
+                 else:
+-                    if self.num == "Y":
+-                        self.fpdf.drawText("%s  %s  %s  %s  %s  %s  %s  %s  "\
+-                            "%s  %s  %s" % (acc.disp, des.disp, mth.disp,
+-                            bud.disp, vmt.disp, vmtper.disp, ytd.disp,
+-                            btd.disp, vtd.disp, vtdper.disp, lyr.disp))
++                    if self.var == "N":
++                        if self.num == "Y":
++                            self.fpdf.drawText("%s  %s  %s  %s  %s" % (acc.disp,
++                                des.disp, mth.disp, ytd.disp, lyr.disp))
++                        else:
++                            self.fpdf.drawText("%s  %s  %s  %s" % (des.disp,
++                                mth.disp, ytd.disp, lyr.disp))
+                     else:
+-                        self.fpdf.drawText("%s  %s  %s  %s  %s  %s  %s  %s  "\
+-                            "%s  %s" % (des.disp, mth.disp, bud.disp,
+-                            vmt.disp, vmtper.disp, ytd.disp, btd.disp,
+-                            vtd.disp, vtdper.disp, lyr.disp))
++                        if self.num == "Y":
++                            self.fpdf.drawText("%s  %s  %s  %s  %s  %s  "\
++                                "%s  %s  %s  %s  %s" % (acc.disp, des.disp,
++                                mth.disp, bud.disp, vmt.disp, vmtper.disp,
++                                ytd.disp, btd.disp, vtd.disp, vtdper.disp,
++                                lyr.disp))
++                        else:
++                            self.fpdf.drawText("%s  %s  %s  %s  %s  %s  "\
++                                "%s  %s  %s  %s" % (des.disp, mth.disp,
++                                bud.disp, vmt.disp, vmtper.disp, ytd.disp,
++                                btd.disp, vtd.disp, vtdper.disp, lyr.disp))
+                     self.pglin += 1
+                     self.last = True
+         elif self.typ == "M":
+@@ -1449,12 +1650,12 @@
+                 elif self.titles[col[0]][0] == "Description":
+                     disp.append(des.disp)
+                     work.append(des.work)
+-                elif self.titles[col[0]][0] == "Actual":
++                elif self.titles[col[0]][0] in ("Current-Year", "Actual"):
+                     disp.append(ytd.disp)
+                     work.append(ytd.work)
+                     if ytd.work:
+                         zero = False
+-                elif self.titles[col[0]][0] in ("Budget", "Prev-Year"):
++                elif self.titles[col[0]][0] == "Budget":
+                     disp.append(btd.disp)
+                     work.append(btd.work)
+                     if btd.work:
+@@ -1466,10 +1667,16 @@
+                     disp.append(vtdper.disp)
+                     work.append(vtdper.work)
+                 elif self.titles[col[0]][0] == "Last-Year":
+-                    disp.append(lyr[2].disp)
+-                    work.append(lyr[2].work)
+-                    if lyr[2].work:
+-                        zero = False
++                    if self.var == "P":
++                        disp.append(btd.disp)
++                        work.append(btd.work)
++                        if btd.work:
++                            zero = False
++                    else:
++                        disp.append(lyr[2].disp)
++                        work.append(lyr[2].work)
++                        if lyr[2].work:
++                            zero = False
+                 elif self.titles[col[0]][0] == "Last-3-Years":
+                     for x in range(3):
+                         disp.append(lyr[x].disp)
+@@ -1597,12 +1804,13 @@
+                         self.fpdf.drawText("%-135s %4s %5s" % (head,
+                             "Page", self.pgnum))
+                     elif self.typ == "L":
++                        hfs = 138
++                        if self.var == "B":
++                            hfs += 20
+                         if self.num == "Y":
+-                            self.fpdf.drawText("%-147s %4s %5s" % (head,
+-                                "Page", self.pgnum))
+-                        else:
+-                            self.fpdf.drawText("%-138s %4s %5s" % (head,
+-                                "Page", self.pgnum))
++                            hfs += 9
++                        hft = "%s-%s%s %s %s" % ("%", hfs, "s", "%4s", "%5s")
++                        self.fpdf.drawText(hft % (head, "Page", self.pgnum))
+                     elif self.typ == "M":
+                         head = "%s (%s)" % (head, self.des1)
+                         if self.num == "Y":
+@@ -1622,27 +1830,31 @@
+                     self.fpdf.drawText()
+                     self.pglin += 1
+                 elif line[1] == "B" and num == 3:
+-                    self.fpdf.drawText(data.replace(
+-                        "*********************"\
+-                        " Current-Month "\
+-                        "*********************",
+-                        "                     "\
+-                        "               "\
+-                        "                     "))
++                    if self.var == "N":
++                        self.fpdf.drawText(data.replace("Current-Month",
++                            "             "))
++                    else:
++                        self.fpdf.drawText(data.replace(
++                            "*********************"\
++                            " Current-Month "\
++                            "*********************",
++                            "                     "\
++                            "               "\
++                            "                     "))
+                     self.pglin += 1
+                 elif line[1] == "B" and num == 4:
+-                    if data.count("Prev-Year"):
+-                        self.fpdf.drawText(data.replace(
+-                            "Description                               "\
+-                            "Actual       Prev-Year        Variance    Var-%",
+-                            "Description                               "\
+-                            "                                               "))
+-                    else:
++                    if self.var == "B":
+                         self.fpdf.drawText(data.replace(
+                             "Description                               "\
+                             "Actual          Budget        Variance    Var-%",
+                             "Description                               "\
+                             "                                               "))
++                    else:
++                        self.fpdf.drawText(data.replace(
++                            "Description                         Current-"\
++                            "Year       Last-Year        Variance    Var-%",
++                            "Description                               "\
++                            "                                               "))
+                     self.pglin += 1
+                 else:
+                     self.fpdf.drawText(data)
+
+=== removed file 'img/delete.png'
+Binary files img/delete.png	2019-01-13 16:38:59 +0000 and img/delete.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2019-04-13 11:46:28 +0000
++++ mst/ms0000.py	2019-04-30 09:07:18 +0000
+@@ -43,7 +43,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2].strip()))
+ else:
+-    VERSION = (5, 4, 7)
++    VERSION = (5, 4, 8)
+     os.environ["TARVER"] = "%s.%s.%s" % VERSION
+ if __name__ == "__main__":
+     # Run Tartan
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2019-02-24 15:37:36 +0000
++++ mst/msc000.py	2019-04-23 10:44:51 +0000
+@@ -27,12 +27,17 @@
+ from TartanClasses import GetCtl, GUI, MainFrame, MkWindow, PwdConfirm
+ from TartanClasses import ScrollText, SelectChoice, Sql, TarBckRes
+ from TartanClasses import TartanConfig, TartanDialog, TartanMenu, TartanUser
+-from tartanFunctions import askQuestion, b64Convert, copyList, dateDiff
+-from tartanFunctions import getPeriods, getPrgPath, internetConnect
++from tartanFunctions import askQuestion, askChoice, b64Convert, copyList
++from tartanFunctions import dateDiff, getPeriods, getPrgPath, internetConnect
+ from tartanFunctions import loadRcFile, parsePrg, projectDate, runModule
+ from tartanFunctions import showError, showException
+ from tartanWork import finsys, tabdic, tarmen
+ try:
++    from send2trash import send2trash
++    TRASH = True
++except:
++    TRASH = False
++try:
+     import tarmod
+     TARMOD = True
+ except:
+@@ -208,8 +213,8 @@
+             except:
+                 print("%-16s: %s" % ("Fpdf", "Not Installed"))
+             try:
+-                from PIL import VERSION
+-                print("%-16s: %s" % ("PIL", VERSION))
++                from PIL import PILLOW_VERSION
++                print("%-16s: %s" % ("PIL", PILLOW_VERSION))
+             except:
+                 print("%-16s: %s" % ("PIL", "Not Installed"))
+             try:
+@@ -1671,10 +1676,34 @@
+             fles.extend(glob.glob(os.path.join(self.rcdic["wrkdir"],
+                 "*.%s" % tp)))
+         if fles:
+-            ask = askQuestion(self.mf.body, "Temporary Files",
+-                "Do you wish to Keep the Temporary Report Files "\
+-                "in the wrk Directory?", default="no")
+-            if ask == "no":
++            dft = None
++            if "wrkf" in self.mf.rcdic:
++                if self.mf.rcdic["wrkf"] == "T":
++                    dft = "Trash"
++                elif self.mf.rcdic["wrkf"] == "D":
++                    dft = "Delete"
++                else:
++                    dft = "Keep"
++            if TRASH:
++                but = [("Trash", "T")]
++                if not dft:
++                    dft = "Trash"
++            else:
++                but = []
++                if not dft:
++                    dft = "Delete"
++            but.extend([("Delete", "D"), ("Keep", "K")])
++            but = (("Trash", "T"), ("Delete", "D"), ("Keep", "K"))
++            ask = askChoice(self.mf.body, "Temporary Files",
++                "What do you wish to do with the Temporary Report Files "\
++                "in the wrk Directory?", butt=but, default=dft)
++            if ask == "T":
++                for fle in fles:
++                    try:
++                        send2trash(fle)
++                    except:
++                        pass
++            elif ask == "D":
+                 for fle in fles:
+                     try:
+                         os.remove(fle)
+
+=== modified file 'mst/msy010.py'
+--- mst/msy010.py	2019-01-13 16:38:59 +0000
++++ mst/msy010.py	2019-04-15 11:18:36 +0000
+@@ -785,8 +785,8 @@
+                                 typ = 5
+                             data.extend([bal[0], edate, typ, "Bal-Fwd",
+                                 "Bal-Fwd", "", bal[1], bal[2], 0, ecurdt,
+-                                "Brought Forward", 0, "", "", "", 0, 0, 0,
+-                                "", self.opts["capnm"], self.sysdtw, 0])
++                                "Brought Forward", 0, "", "", "", 0, "",
++                                self.opts["capnm"], self.sysdtw, 0])
+                             sql.insRec(tab[0], data=data)
+         if "args" not in self.opts:
+             pb.closeProgress()
+
+=== modified file 'sls/si2010.py'
+--- sls/si2010.py	2019-04-07 13:32:42 +0000
++++ sls/si2010.py	2019-04-15 11:31:17 +0000
+@@ -1729,7 +1729,7 @@
+                 cost = float(ASD(0) - ASD(cst))
+                 data = [self.opts["conum"], self.grp, self.code, self.loc,
+                     self.trdt, 5, self.othno, self.batch, ref2, quan, cost, 0,
+-                    self.curdt, self.name, self.chain, self.acno, 0, "INV", 0,
++                    self.curdt, self.name, self.chain, self.acno, "", "INV", 0,
+                     "", self.opts["capnm"], self.sysdtw, 0]
+                 self.sql.insRec("strtrn", data=data)
+             # If Integrated Create GL Transaction (Sales & Cost of Sales)
+
+=== modified file 'sls/si3020.py'
+--- sls/si3020.py	2019-04-13 11:46:28 +0000
++++ sls/si3020.py	2019-04-22 10:44:28 +0000
+@@ -71,7 +71,7 @@
+ 
+     def mainProcess(self):
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-            "Sales By Product Repoprt (%s)" % __name__)
++            "Sales By Product Report (%s)" % __name__)
+         loc = {
+             "stype": "R",
+             "tables": ("strloc",),
+@@ -84,11 +84,14 @@
+             "cols": (("gpm_group", "", 0, "Grp"),
+                 ("gpm_desc", "", 0, "Description", "Y")),
+             "where": [("gpm_cono", "=", self.opts["conum"])]}
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["", "", ""]
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Cut-Off Period","",
+                 int(self.sysdtw / 100),"Y",self.doCut,None,None,("efld",)),
+@@ -98,12 +101,6 @@
+                 var[2],"N",self.doGroup,grp,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'sls/si3030.py'
+--- sls/si3030.py	2019-04-13 11:46:28 +0000
++++ sls/si3030.py	2019-04-22 10:45:22 +0000
+@@ -58,7 +58,7 @@
+ 
+     def mainProcess(self):
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-            "Sales By Product Repoprt (%s)" % __name__)
++            "Period Sales By Product Report (%s)" % __name__)
+         loc = {
+             "stype": "R",
+             "tables": ("strloc",),
+@@ -71,11 +71,14 @@
+             "cols": (("gpm_group", "", 0, "Grp"),
+                 ("gpm_desc", "", 0, "Description", "Y")),
+             "where": [("gpm_cono", "=", self.opts["conum"])]}
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["", "", ""]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Period","",
+                 int(self.sysdtw / 100),"Y",self.doPer,None,None,("efld",)),
+@@ -85,13 +88,6 @@
+                 var[2],"N",self.doGroup,grp,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'sls/si3040.py'
+--- sls/si3040.py	2019-04-13 11:46:28 +0000
++++ sls/si3040.py	2019-04-22 10:10:58 +0000
+@@ -94,11 +94,16 @@
+             "where": (("chm_cono", "=", self.opts["conum"]),)}
+         r1s = (("Quantity","Q"),("Value","V"),("Profit","P"))
+         r2s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            self.accs = self.opts["args"]["work"][1]
++            view = None
++            mail = None
+         else:
+             var = ["", "V", "", "", 0, "Y"]
++            self.accs = []
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Cut-Off Period","",
+                 int(self.sysdtw / 100),"Y",self.doCut,None,None,("efld",)),
+@@ -114,12 +119,6 @@
+                 var[5],"N",self.doDrsAcc,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+@@ -168,7 +167,8 @@
+         if self.chain:
+             whr.append(("drm_chain", "=", self.chain))
+         acc = getSingleRecords(self.opts["mf"], "drsmst", ("drm_acno",
+-            "drm_name"), where=whr, order="drm_chain, drm_acno")
++            "drm_name"), where=whr, order="drm_chain, drm_acno",
++            items=[0, self.accs])
+         for a in acc:
+             self.acno.append(a[2])
+ 
+@@ -208,6 +208,7 @@
+                 self.printReport(recs)
+         if "args" in self.opts and "noprint" in self.opts["args"]:
+             self.t_work = [self.df.t_work[0][0]]
++            self.t_work.append(self.acno)
+         self.closeProcess()
+ 
+     def exportReport(self, recs):
+
+=== modified file 'sls/si3050.py'
+--- sls/si3050.py	2019-04-13 11:46:28 +0000
++++ sls/si3050.py	2019-04-22 10:11:28 +0000
+@@ -92,11 +92,14 @@
+                 ("dtp_code", "", 0, "Cod"),
+                 ("dtp_desc", "", 0, "Description", "Y"))}
+         r1s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["", "", "", "", "", "", "Y"]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Start Period","",
+                 int(self.sysdtw / 100),"Y",self.doSdate,None,None,("efld",)),
+@@ -114,12 +117,6 @@
+                 var[6],"N",self.doVals,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'sls/si3060.py'
+--- sls/si3060.py	2019-04-13 11:46:28 +0000
++++ sls/si3060.py	2019-04-22 10:11:48 +0000
+@@ -63,11 +63,14 @@
+                 ("rpm_rep", "", 0, "Rep"),
+                 ("rpm_name", "", 0, "Name", "Y")),
+             "where": [("rpm_cono", "=", self.opts["conum"])]}
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["", "", ""]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Start Period","",
+                 int(self.sysdtw / 100),"Y",self.doSdate,None,None,("efld",)),
+@@ -77,12 +80,6 @@
+                 var[2],"N",self.doRep,rpm,None,("efld",)))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'sls/si3070.py'
+--- sls/si3070.py	2019-04-13 11:46:28 +0000
++++ sls/si3070.py	2019-04-22 10:12:17 +0000
+@@ -63,11 +63,14 @@
+                 ("rpm_rep", "", 0, "Rep"),
+                 ("rpm_name", "", 0, "Name", "Y")),
+             "where": [("rpm_cono", "=", self.opts["conum"])]}
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["", "", ""]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Ending Period","",
+                 int(self.sysdtw / 100),"Y",self.doDat,None,None,("efld",)),
+@@ -77,12 +80,6 @@
+                 var[2],"N",self.doRep2,rep,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2019-04-13 11:46:28 +0000
++++ std/TartanClasses.py	2019-04-27 06:43:31 +0000
+@@ -190,6 +190,7 @@
+         "crsquery": os.path.join(imgdir, "question.png"),
+         "declaration": os.path.join(imgdir, "print.png"),
+         "deladd": os.path.join(imgdir, "truck.png"),
++        "delete": os.path.join(imgdir, "close.png"),
+         "deposits": os.path.join(imgdir, "print.png"),
+         "detail": os.path.join(imgdir, "show.png"),
+         "display": os.path.join(imgdir, "show.png"),
+@@ -4301,7 +4302,6 @@
+                    "Y" = Address Field (noblank) - Entered Address
+                    "N" = No Address Field (default N) - Address from account
+                    "B" = Address Field (efld) - Combination of both
+-                   "D" = No Address or Email Field, defaults to Y.
+                 prnt  is "Y" or "N" to choose to view/print emailed docs or not
+                 dflt is the default answer
+                 desc is the description to replace the default description
+@@ -4495,72 +4495,63 @@
+             if self.repeml[0] == "Y":
+                 # Email dialog
+                 yns = (("Yes","Y"),("No","N"))
+-                if self.mail[0].lower() == "d":
+-                    self.repeml[1] = "Y"
+-                else:
+-                    if len(self.mail) == 4:
+-                        dflt = self.mail[2]
+-                        desc = self.mail[3]
+-                    else:
+-                        desc = "Email Document"
+-                    if len(self.mail) == 3:
+-                        dflt = self.mail[2]
+-                    else:
+-                        dflt = "N"
+-                    row += 1
+-                    self.eflds.append((("T",0,row,col),("IRB",yns),0,
+-                        desc,"",dflt,"N",self.setMail,None,None,None))
+-                if self.mail[0].lower() in ("b", "d", "y"):
+-                    if self.mail[0].lower in ("b", "y"):
+-                        # Email addresses
+-                        data = []
+-                        sql = Sql(self.mf.dbm, ["telmst", "telcon"],
+-                            prog=__name__)
+-                        tdm = sql.getRec(tables="telmst", cols=["tdm_name",
+-                            "tdm_email"], where=[("tdm_email", "<>", "")],
+-                            order="tdm_name")
+-                        for t in tdm:
+-                            data.append([t[0], "", "", t[1]])
+-                        tdc = sql.getRec(tables="telcon", cols=["tdc_name",
+-                            "tdc_contact", "tdc_desig", "tdc_email"],
+-                            where=[("tdc_email", "<>", "")],
+-                            order="tdc_name, tdc_contact")
+-                        if tdc:
+-                            data.extend(tdc)
+-                        adr = {
+-                            "stype": "C",
+-                            "titl": "Available Addresses",
+-                            "head": (
+-                                "Name", "Contact", "Designation", "Address"),
+-                            "typs": (("NA",0,"Y"),("NA",0),("NA",0),("NA",0)),
+-                            "data": data,
+-                            "mode": "M",
+-                            "comnd": self.getAddr}
+-                    else:
+-                        adr = None
++                if len(self.mail) == 4:
++                    dflt = self.mail[2]
++                    desc = self.mail[3]
++                else:
++                    desc = "Email Document"
++                if len(self.mail) == 3:
++                    dflt = self.mail[2]
++                else:
++                    dflt = "N"
++                row += 1
++                self.eflds.append((("T",0,row,col),("IRB",yns),0,
++                    desc,"",dflt,"N",self.setMail,None,None,None))
++                if self.mail[0].lower() in ("b", "y"):
++                    # Email addresses
++                    data = []
++                    sql = Sql(self.mf.dbm, ["telmst", "telcon"],
++                        prog=__name__)
++                    tdm = sql.getRec(tables="telmst", cols=["tdm_name",
++                        "tdm_email"], where=[("tdm_email", "<>", "")],
++                        order="tdm_name")
++                    for t in tdm:
++                        data.append([t[0], "", "", t[1]])
++                    tdc = sql.getRec(tables="telcon", cols=["tdc_name",
++                        "tdc_contact", "tdc_desig", "tdc_email"],
++                        where=[("tdc_email", "<>", "")],
++                        order="tdc_name, tdc_contact")
++                    if tdc:
++                        data.extend(tdc)
++                    adr = {
++                        "stype": "C",
++                        "titl": "Available Addresses",
++                        "head": (
++                            "Name", "Contact", "Designation", "Address"),
++                        "typs": (("NA",0,"Y"),("NA",0),("NA",0),("NA",0)),
++                        "data": data,
++                        "mode": "M",
++                        "comnd": self.getAddr}
+                     row += 1
+                     a = [("T",0,row,col),"ITX",50,"E-Mail Address","",
+                         "","N",self.setAddr,adr,None]
+-                    if self.mail[0].lower() in ("d", "y"):
++                    if self.mail[0].lower() == "y":
+                         a.append(("email", False))
+                     else:
+                         a.append(("email", True))
+                     a.extend([None,"E-Mail Addresses, Comma Separated"])
+                     self.eflds.append(tuple(a))
+-                if self.mail[0].lower() == "d":
+-                    pass
+-                else:
+-                    # Email message and additional attachments
++                # Email message and additional attachments
++                row += 1
++                self.eflds.append((
++                    ("T",0,row,col),("IRB",yns),0,"E-Mail Message","",
++                        "N","N",self.setMess,None,None,None))
++                if self.mail[1].lower() == "y":
++                    # View/Print emailed document
+                     row += 1
+-                    self.eflds.append((
+-                        ("T",0,row,col),("IRB",yns),0,"E-Mail Message","",
+-                            "N","N",self.setMess,None,None,None))
+-                    if self.mail[1].lower() == "y":
+-                        # View/Print emailed document
+-                        row += 1
+-                        self.eflds.append((("T",0,row,col),("IRB",yns),0,
+-                            "View/Print Emailed Document","","N","Y",
+-                            self.setPrint,None,None,None))
++                    self.eflds.append((("T",0,row,col),("IRB",yns),0,
++                        "View/Print Emailed Document","","N","Y",
++                        self.setPrint,None,None,None))
+         if not self.eflds:
+             return
+         #=======================================================================
+@@ -8330,7 +8321,8 @@
+         r2s = (("Left", "L"), ("Centre", "C"), ("Right", "R"))
+         r3s = (("Yes", "Y"), ("No", "N"))
+         r4s = (("In-Line", "I"), ("List", "L"), ("None", "N"))
+-        r5s = (
++        r5s = (("Trash", "T"), ("Delete", "D"), ("Keep", "K"))
++        r6s = (
+             ("Red", "R"),
+             ("Green", "G"),
+             ("Blue", "B"),
+@@ -8406,6 +8398,8 @@
+                 self.rcdic["ttip"].upper(),"N",None,None,None,None),
+             (("T",2,14,0),("IRB",r3s),0,"Error Alarm","",
+                 self.rcdic["errs"].upper(),"N",None,None,None,None),
++            (("T",2,15,0),("IRB",r5s),0,"Work Files","",
++                self.rcdic["wrkf"].upper(),"N",None,None,None,None),
+             (("T",3,0,0),"INA",30,"Menu Font Name","",
+                 self.rcdic["mft"],"N",self.doFtNam,aft,None,("in",self.aft),
+                 None,"The Font to be used for the Menu"),
+@@ -8421,7 +8415,7 @@
+             (("T",3,2,0),"INA",30,"Theme","",
+                 self.rcdic["theme"],"N",self.doTheme,thm,None,("in",self.thm),
+                 None,"The Theme to be used"),
+-            (("T",3,3,0),("IRB",r5s),0,"Label Colour Scheme","",
++            (("T",3,3,0),("IRB",r6s),0,"Label Colour Scheme","",
+                 self.rcdic["lsc"],"N",self.doScheme,None,None,None,
+                 None,"The Colour Scheme to be used"),
+             (("T",3,4,0),"INA",20,"Normal Label      FG","",
+@@ -8431,7 +8425,7 @@
+                 self.rcdic["nbg"],"N",self.doColour,bgc,None,("notblank",),
+                 None,"Normal Label Background Colour"),
+             (("T",3,4,0),"OTv",10," "),
+-            (("T",3,5,0),("IRB",r5s),0,"Button Colour Scheme","",
++            (("T",3,5,0),("IRB",r6s),0,"Button Colour Scheme","",
+                 self.rcdic["bsc"],"N",self.doScheme,None,None,None,
+                 None,"The Colour Scheme to be used"),
+             (("T",3,6,0),"INA",20,"Normal Button     FG","",
+@@ -8695,6 +8689,7 @@
+         self.df.loadEntry("T",2,12,self.rcdic["acnf"].upper())
+         self.df.loadEntry("T",2,13,self.rcdic["ttip"].upper())
+         self.df.loadEntry("T",2,14,self.rcdic["errs"].upper())
++        self.df.loadEntry("T",2,15,self.rcdic["wrkf"].upper())
+         #Font and Theme
+         self.df.loadEntry("T",3,0,self.rcdic["mft"])
+         self.df.loadEntry("T",3,1,self.rcdic["mfs"])
+@@ -8797,6 +8792,7 @@
+             ["acnf", self.df.t_work[2][0][12]],
+             ["ttip", self.df.t_work[2][0][13]],
+             ["errs", self.df.t_work[2][0][14]],
++            ["wrkf", self.df.t_work[2][0][15]],
+             ["mft", self.df.t_work[3][0][0]],
+             ["mfs", self.df.t_work[3][0][1]],
+             ["dft", self.df.t_work[3][0][2]],
+@@ -10143,6 +10139,7 @@
+ 
+     as well as the following parameters:
+ 
++    mf       = The Mainframe class
+     sysdp    = The Department Parameters - (Y or N, Digits and Department(s))
+     conum    = The Company to be used
+     period   = The Financial Period to be used
+@@ -10307,14 +10304,17 @@
+                 self.processRecords()
+ 
+     def getDcode(self):
+-        acc = self.sql.getRec(tables=["gendtm", "gendtt"],
+-            cols=["gdm_desc", "round(sum(gdt_value), 2)"],
+-            where=[("gdm_cono", "=", self.conum), ("gdm_code",
+-            "=", self.dcode), ("gdt_cono=gdm_cono",),
+-            ("gdt_cono=gdm_cono",), ("gdt_code=gdm_code",),
+-            ("gdt_curdt", "between", self.pers[0]["s_per"],
+-            self.curdt)], group="gdm_desc", limit=1)
+-        self.ddet = [acc[0], CCD(acc[1], "SD", 13.2).disp]
++        dtm = self.sql.getRec(tables="gendtm", cols=["gdm_desc"],
++            where=[("gdm_cono", "=", self.conum), ("gdm_code", "=",
++            self.dcode)], limit=1)
++        dtt = self.sql.getRec(tables="gendtt", cols=["sum(gdt_value)"],
++            where=[("gdt_cono", "=", self.conum), ("gdt_code", "=",
++            self.dcode), ("gdt_curdt", "between", self.pers[0]["s_per"],
++            self.curdt)], limit=1)
++        if not dtt:
++            self.ddet = [dtm[0], CCD(0, "SD", 13.2).disp]
++        else:
++            self.ddet = [dtm[0], CCD(dtt[0], "SD", 13.2).disp]
+ 
+     def processRecords(self):
+         if self.grpind:
+@@ -10879,6 +10879,8 @@
+                     ("glt_curdt", "=", curdt)], limit=1)[0]
+                 if self.varcd == "P":
+                     bud = lyr[2]
++                elif self.varcd == "N":
++                    bud = 0
+                 else:
+                     bud = self.sql.getRec(tables="genbud",
+                         cols=["sum(glb_tramt)"], where=[("glb_cono",
+@@ -10903,6 +10905,8 @@
+                     ("glt_curdt", "=", curdt)], limit=1)[0]
+                 if self.varcd == "P":
+                     bud = lyr[2]
++                elif self.varcd == "N":
++                    bud = 0
+                 else:
+                     bud = self.sql.getRec(tables="genbud",
+                         cols=["sum(glb_tramt)"], where=[("glb_cono",
+@@ -10929,6 +10933,8 @@
+                 ("glt_curdt", "=", curdt)], limit=1)[0]
+             if self.varcd == "P":
+                 bud = lyr[2]
++            elif self.varcd == "N":
++                bud = 0
+             else:
+                 bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
+                     where=[("glb_cono", "in", self.consol), ("glb_acno", "%",
+@@ -10952,6 +10958,8 @@
+                 "=", curdt)], limit=1)[0]
+             if self.varcd == "P":
+                 bud = lyr[2]
++            elif self.varcd == "N":
++                bud = 0
+             else:
+                 bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
+                     where=[("glb_cono", "in", self.consol), ("glb_acno", "=",
+@@ -10980,16 +10988,17 @@
+ 
+     def doDcode(self):
+         curdt = self.pers[0]["s_per"]
+-        val_d = [0,0,0]
++        val_d = [0,0,0,0,0]
+         mth_d = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+-        val_p = [0,0,0,0,0,0]
++        val_p = [0,0,0,0,0,0,0,0]
+         mth_p = [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+         for mth in xrange(1, 13):
+             lyr, cyr = self.getDbal(curdt)
+-            val_d[0] = float(ASD(val_d[0]) + ASD(lyr))
++            for x in range(3):
++                val_d[x] = float(ASD(val_d[x]) + ASD(lyr[x]))
+             if curdt == self.curdt:
+-                val_d[1] = cyr
+-            val_d[2] = float(ASD(val_d[2]) + ASD(cyr))
++                val_d[3] = cyr
++            val_d[4] = float(ASD(val_d[4]) + ASD(cyr))
+             if self.s_accum == "Y":
+                 mth_d[mth] = float(ASD(mth_d[mth-1]) + \
+                     ASD(mth_d[mth]) + ASD(cyr))
+@@ -11007,22 +11016,30 @@
+                     y += 1
+                     m = m - 12
+                 curdt = (y * 100) + m
+-        if val_d[0] == 0:
++        if val_d[2] == 0:
+             val_p[1] = 0
+         else:
+-            val_p[1] = round((self.val[3] / val_d[0]) * 100, 2)
++            val_p[1] = round((self.val[1] / val_d[2]) * 100, 2)
+         if val_d[1] == 0:
+             val_p[2] = 0
++        else:
++            val_p[2] = round((self.val[2] / val_d[1]) * 100, 2)
++        if val_d[0] == 0:
+             val_p[3] = 0
+         else:
+-            val_p[2] = round((self.val[4] / val_d[1]) * 100, 2)
+-            val_p[3] = round((self.val[5] / val_d[1]) * 100, 2)
+-        if val_d[2] == 0:
++            val_p[3] = round((self.val[3] / val_d[0]) * 100, 2)
++        if val_d[3] == 0:
+             val_p[4] = 0
+             val_p[5] = 0
+         else:
+-            val_p[4] = round((self.val[6] / val_d[2]) * 100, 2)
+-            val_p[5] = round((self.val[7] / val_d[2]) * 100, 2)
++            val_p[4] = round((self.val[4] / val_d[3]) * 100, 2)
++            val_p[5] = round((self.val[5] / val_d[3]) * 100, 2)
++        if val_d[4] == 0:
++            val_p[6] = 0
++            val_p[7] = 0
++        else:
++            val_p[6] = round((self.val[6] / val_d[4]) * 100, 2)
++            val_p[7] = round((self.val[7] / val_d[4]) * 100, 2)
+         for x in xrange(0, 14):
+             if mth_d[x] == 0:
+                 mth_p[x] = 0
+@@ -14413,9 +14430,9 @@
+         self.mf.startLoop()
+ 
+     def doPrtEnd(self):
++        self.xits = False
+         self.repprt = copyList(self.pd.repprt)
+         self.repeml = copyList(self.pd.repeml)
+-        self.xits = False
+         self.pd.closeProcess()
+         self.mf.closeLoop()
+ 
+@@ -14733,11 +14750,11 @@
+                 if pb.quit:
+                     break
+             if self.ttype == "D" and recs[x] == ["BLANK"]:
+-                if self.repprt[2] != "export":
++                if self.repprt[2] == "export":
++                    self.expdatas.append(recs[x])
++                else:
+                     self.fpdf.drawText()
+                     self.pglin += 1
+-                else:
+-                    self.expdatas.append(recs[x])
+                 continue
+             fn = self.l3
+             num = 0
+@@ -14807,11 +14824,11 @@
+                         stot = stot + ldic[gt].work
+                     setattr(self, "%s_%s_stot" % (gt, idx), stot)
+                     idx += 1
+-            if self.repprt[2] != "export":
++            if self.repprt[2] == "export":
++                self.expdatas.append(["BODY", cld])
++            else:
+                 self.fpdf.drawText(txt=self.h5hf % tuple(fld))
+                 self.pglin += 1
+-            else:
+-                self.expdatas.append(["BODY", cld])
+         if self.pbar:
+             pb.closeProgress()
+             if pb.quit:
+@@ -16127,10 +16144,14 @@
+                 "M","N",self.doAct,None,None,None,None),
+             (("T",0,1,0),("IRB",r2s),0,"Select Chart","",
+                 "L","N",self.doCht,None,None,None,None)]
+-        if PYCHART and PYGAL or not PYCHART and CVTSVG:
++        if (PYCHART and PYGAL) or (PYGAL and CVTSVG):
+             r3s = [("PDF","P"),("SVG","S")]
+             fld.append((("T",0,2,0),("IRB",r3s),0,"View As","",
+                 "P","N",self.doVwr,None,None,None,None))
++        elif PYCHART:
++            self.vwr = "P"
++        else:
++            self.vwr = "S"
+         self.dc = TartanDialog(self.mf, title=tit, eflds=fld,
+             tend=((self.doChtEnd, "y"),), txit=(self.doChtExit,),
+             mail=("Y","N"))
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2019-04-13 11:46:28 +0000
++++ std/tartanFunctions.py	2019-04-25 13:43:51 +0000
+@@ -155,6 +155,7 @@
+         "acnf": ["L"],
+         "ttip": ["Y"],
+         "errs": ["Y"],
++        "wrkf": ["D"],
+         "mft": ["DejaVu Serif", "Arial"],
+         "mfs": [0],
+         "dft": ["DejaVu Sans Mono", "Courier New"],
+@@ -631,7 +632,7 @@
+             chk = pdfnam.split(".")[-1]
+             if chk == "svg":
+                 import webbrowser
+-                webbrowser.open(pdfnam)
++                webbrowser.open_new(pdfnam)
+             else:
+                 vwr = mf.rcdic["vwr"]
+                 if sys.platform == "win32" and not os.path.exists(vwr):
+
+=== modified file 'std/tartanWork.py'
+--- std/tartanWork.py	2019-04-13 11:46:28 +0000
++++ std/tartanWork.py	2019-04-19 12:13:34 +0000
+@@ -2084,7 +2084,7 @@
+     "gendtm": {
+         "fld": [
+             [0, 'gdm_cono', 'UI', 3.0, 'Company Number', 'Coy'],
+-            [1, 'gdm_code', 'NA', 2.0, 'Detail Code', 'Cd'],
++            [1, 'gdm_code', 'Na', 2.0, 'Detail Code', 'Cd'],
+             [2, 'gdm_desc', 'NA', 30.0, 'Description', 'Description']],
+         "idx": [
+             ['General Ledger Detail Records', 1, 'U', 'gdm_cono',
+@@ -2092,7 +2092,7 @@
+     "gendtt": {
+         "fld": [
+             [0, 'gdt_cono', 'UI', 3.0, 'Company Number', 'Coy'],
+-            [1, 'gdt_code', 'NA', 2.0, 'Detail Code', 'Cd'],
++            [1, 'gdt_code', 'Na', 2.0, 'Detail Code', 'Cd'],
+             [2, 'gdt_curdt', 'D2', 7.0, 'Current Date', 'Cur-Date'],
+             [3, 'gdt_value', 'SD', 13.2, 'Value or Amount', 'Value']],
+         "idx": [
+@@ -2260,8 +2260,8 @@
+             [7, 'gls_rep', 'UI', 3.0, 'Report Number', 'Num'],
+             [8, 'gls_gen', 'UA', 1.0, 'General report (Y/N)', 'G'],
+             [9, 'gls_val', 'UA', 1.0, 'Contents (V/B/C/D)', 'C'],
+-            [10, 'gls_det', 'UI', 3.0, 'Detail Code', 'Det'],
+-            [11, 'gls_var', 'UA', 1.0, 'Variance (B/P)', 'V'],
++            [10, 'gls_det', 'Na', 2.0, 'Detail Code', 'DC'],
++            [11, 'gls_var', 'UA', 1.0, 'Variance (B/P/N)', 'V'],
+             [12, 'gls_zer', 'UA', 1.0, 'Include Zeros (Y/N)', 'Z'],
+             [13, 'gls_opt', 'UA', 1.0, 'Print Options (Y/N)', 'O'],
+             [14, 'gls_num', 'UA', 1.0, 'Print Numbers (Y/N)', 'N'],
+
+=== modified file 'std/tartanWork_rne.py'
+--- std/tartanWork_rne.py	2019-04-07 13:32:42 +0000
++++ std/tartanWork_rne.py	2019-04-19 12:13:45 +0000
+@@ -1097,14 +1097,14 @@
+     "gendtm": {
+         "fld": [
+             [0, "gdm_cono", "UI", 3.0, "Company Number", "Coy"],
+-            [1, "gdm_code", "NA", 2.0, "Detail Code", "Cd"],
++            [1, "gdm_code", "Na", 2.0, "Detail Code", "Cd"],
+             [2, "gdm_desc", "NA", 30.0, "Description", "Description"]],
+         "idx": [
+             ["General Ledger Detail Records", 1, "U", "gdm_cono", "gdm_code"]]},
+     "gendtt": {
+         "fld": [
+             [0, "gdt_cono", "UI", 3.0, "Company Number", "Coy"],
+-            [1, "gdt_code", "NA", 2.0, "Detail Code", "Cd"],
++            [1, "gdt_code", "Na", 2.0, "Detail Code", "Cd"],
+             [2, "gdt_curdt", "D2", 7.0, "Current Date", "Cur-Date"],
+             [3, "gdt_value", "SD", 13.2, "Value or Amount", "Value"]],
+         "idx": [
+@@ -1321,8 +1321,8 @@
+             [7, "gls_rep", "UI", 3.0, "Report Number", "Num"],
+             [8, "gls_gen", "UA", 1.0, "General report (Y/N)", "G"],
+             [9, "gls_val", "UA", 1.0, "Contents (V/B/C/D)", "C"],
+-            [10, "gls_det", "UI", 3.0, "Detail Code", "Det"],
+-            [11, "gls_var", "UA", 1.0, "Variance (B/P)", "V"],
++            [10, "gls_det", "Na", 2.0, "Detail Code", "DC"],
++            [11, "gls_var", "UA", 1.0, "Variance (B/P/N)", "V"],
+             [12, "gls_zer", "UA", 1.0, "Include Zeros (Y/N)", "Z"],
+             [13, "gls_opt", "UA", 1.0, "Print Options (Y/N)", "O"],
+             [14, "gls_num", "UA", 1.0, "Print Numbers (Y/N)", "N"],
+
+=== modified file 'str/st2010.py'
+--- str/st2010.py	2019-02-24 15:37:36 +0000
++++ str/st2010.py	2019-04-15 11:31:40 +0000
+@@ -926,7 +926,7 @@
+                 qty = self.qty
+             data = [self.opts["conum"], self.grp, self.code, self.loc,
+                 self.deldt, 1, self.othno, self.batch, self.delno, qty,
+-                self.excamt, 0, curdt, self.name, 0, self.acno, 0, "STR",
++                self.excamt, 0, curdt, self.name, 0, self.acno, "", "STR",
+                 self.disrat, "", self.opts["capnm"], self.sysdtw, 0]
+             self.sql.insRec("strtrn", data=data)
+             if self.mkup == "Y":
+
+=== modified file 'str/st3020.py'
+--- str/st3020.py	2019-04-13 11:46:28 +0000
++++ str/st3020.py	2019-04-22 10:08:30 +0000
+@@ -77,11 +77,14 @@
+             "order": "stt_type, stt_curdt, stt_batch"}
+         r1s = (("Financial","F"),("Capture","C"))
+         r2s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["F", "", "", "", "", "", "", "Y"]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Period Type","",
+                 var[0],"Y",self.doPtyp,None,None,None),
+@@ -101,12 +104,6 @@
+                 var[7],"N",self.doTots,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'str/st3080.py'
+--- str/st3080.py	2019-04-13 11:46:28 +0000
++++ str/st3080.py	2019-04-22 10:09:17 +0000
+@@ -80,11 +80,14 @@
+                 ("gpm_desc", "", 0, "Description", "Y")),
+             "where": [("gpm_cono", "=", self.opts["conum"])]}
+         r1s = (("Yes","Y"), ("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["", "", "", "Y", "Y"]
++            view = ("Y","V")
++            mail = ("Y","N")
+         fld = [
+             (("T",0,0,0),"ID2",7,"Reporting Period","",
+                 int(self.sysdtw / 100),"Y",self.doPeriod,None,None,("efld",)),
+@@ -100,12 +103,6 @@
+             fld[1][1] = "OUA"
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("Y","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'str/st3090.py'
+--- str/st3090.py	2019-04-13 11:46:28 +0000
++++ str/st3090.py	2019-04-22 10:09:41 +0000
+@@ -73,11 +73,14 @@
+                 ("gpm_desc", "", 0, "Description", "Y")),
+             "where": [("gpm_cono", "=", self.opts["conum"])]}
+         r1s = (("Yes","Y"),("No","N"))
+-        if "args" in self.opts and "noprint" in self.opts["args"] \
+-                and self.opts["args"]["work"]:
++        if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
++            view = None
++            mail = None
+         else:
+             var = ["", "", "", "", "N"]
++            view = ("N","V")
++            mail = ("Y","N")
+         fld = [
+             (("T",0,0,0),"ID2",7,"Start Period","",
+                 int(self.sysdtw / 100),"Y",self.doSdate,None,None,("efld",)),
+@@ -93,12 +96,6 @@
+             fld[2][1] = "OUA"
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+-        if "args" in self.opts and "noprint" in self.opts["args"]:
+-            view = None
+-            mail = None
+-        else:
+-            view = ("N","V")
+-            mail = ("Y","N")
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2019-04-13 11:46:28 +0000
++++ uty/pkgprg.py	2019-04-22 15:23:18 +0000
+@@ -140,7 +140,7 @@
+         "st3070", "st3080", "st3090", "st3100", "st3110", "st3120", "st4010",
+         "st5010", "st5020", "st5030", "st5040", "st6010", "st6020", "st6030",
+         "st6040", "stc220", "stc320", "stc410", "stc420", "tb1010", "tb1040",
+-        "tb3010", "bm1010", "pm1010", "pw1010", "rs1010"]
++        "tb3010", "bm1010", "pm1010", "pw1010", "rp1020"]
+ elif system == "s":
+     system = "seccmp"
+     chgfle = "tarchg"
+@@ -173,9 +173,12 @@
+             newver = "%s.%s.%s" % (ver[0], ver[1], ver[2])
+     else:
+         ver = list(newver.split("."))
++        if len(ver) != 3:
++            print("Invalid -v option (%s)" % newver)
++            sys.exit()
+         for x in range(3):
+             ver[x] = int(ver[x])
+-    if newver:
++    if newver and newver != "%s.%s.%s" % VERSION:
+         if not os.path.isfile("%s/changes.txt" % pypath):
+             raw_input("changes.txt File Not Found! Ctl-C to Abort")
+         try:
+@@ -512,6 +515,7 @@
+         if system == "tartan":
+             # Dropbox
+             exeCmd("rm /home/paul/Dropbox/Updates/%s*" % csys)
++            exeCmd("cp %s/TartanExe/%s_%s.%s.%s.tgz /home/paul/Dropbox/Updates/" % (bd, csys, ver[0], ver[1], ver[2]))
+             exeCmd("cp %s/TartanExe/%s_%s.%s.%s.exe /home/paul/Dropbox/Updates/" % (bd, csys, ver[0], ver[1], ver[2]))
+         # FTP Server
+         exeCmd("ssh root@server rm /srv/ftp/%s*" % csys)
+@@ -614,5 +618,13 @@
+     # Make CD iso
+     exeCmd("mkisofs -r -J -l -D -V 'Tartan Systems %s.%s.%s' -p 'Paul Malherbe paul@tartan.co.za' -copyright 'Paul Malherbe' -o %s/TartanCD/Tartan.iso -graft-points /\=%s/tempcd" % (ver[0], ver[1], ver[2], bd, bd))
+     shutil.rmtree("%s/tempcd" % bd)
++if windows and publish and system == "tartan":
++    # Sourceforge
++    os.chdir("/home/paul/TartanExe")
++    exeCmd('curl -H "Accept: application/json" -X PUT -d "default=windows&default=linux" -d "api_key=d3e8753f-9775-4f22-8ed3-141eb2d2e1c0" https://sourceforge.net/projects/tartansystems/files/Tartan_%s.%s.%s.tgz' % (ver[0], ver[1], ver[2]))
++    exeCmd('curl -H "Accept: application/json" -X PUT -d "default=windows&default=linux" -d "api_key=d3e8753f-9775-4f22-8ed3-141eb2d2e1c0" https://sourceforge.net/projects/tartansystems/files/Tartan_%s.%s.%s.exe' % (ver[0], ver[1], ver[2]))
++    os.chdir("%s/doc" % pypath)
++    shutil("Manual.rst", "readme.rst")
++    exeCmd('curl -H "Accept: application/json" -X PUT -d "default=windows&default=linux" -d "api_key=d3e8753f-9775-4f22-8ed3-141eb2d2e1c0" https://sourceforge.net/projects/tartansystems/files/readme.rst')
+ print("DONE")
+ # END
+
+=== modified file 'uty/rp1010.py'
+--- uty/rp1010.py	2019-02-24 15:37:36 +0000
++++ uty/rp1010.py	2019-04-25 16:31:37 +0000
+@@ -47,8 +47,11 @@
+         #======================================================================
+         # Get list of available tables
+         #======================================================================
+-        exc = ("ffield", "frelat", "ftable", "verupd",
+-            "ctlpwm", "ctlpwr", "ctlpwu", "ctlynd")
++        exc = (
++            "ffield", "frelat", "ftable", "verupd", "ctlpwm", "ctlpwr",
++            "ctlpwu", "ctlynd", "genrpc", "genrpt", "rptcol", "rptexc",
++            "rptjon", "rptmst", "rptord", "rptstm", "rptstr", "rpttab",
++            "rptvar")
+         whr = [
+             ("ft_seq", "=", 1),
+             ("ft_tabl", "not", "in", exc),
+
+=== modified file 'uty/rp1020.py'
+--- uty/rp1020.py	2019-04-13 11:46:28 +0000
++++ uty/rp1020.py	2019-04-29 11:09:13 +0000
+@@ -59,38 +59,85 @@
+             showError(self.opts["mf"].body, "From Error",
+                 "There is NO Email Address on the Company Record!")
+             return
++        # Modules
+         mods = []
+         for x in xrange(0, len(ctlmst["ctm_modules"].rstrip()), 2):
+             mods.append(ctlmst["ctm_modules"][x:x+2])
+         self.sql = Sql(self.opts["mf"].dbm, tables=["rptstm", "rptstr",
+-            "emllog"], prog=__name__)
++            "genstr", "emllog"], prog=__name__)
+         if self.sql.error:
+             return
+         amod = {
+-            "GL": ["GEN",
+-                "gl3020", "gl3030", "gl3040", "gl3050"],
+-            "CR": ["CRS",
+-                "cr3020", "cr3030", "cr3040", "cr3050"],
+-            "DR": ["DRS",
+-                "dr3020", "dr3030", "dr3040", "dr3050"],
+-            "ST": ["STR",
+-                "st3020", "st3080", "st3090"],
+-            "SI": ["INV",
+-                "si3020", "si3030", "si3040", "si3050", "si3060", "si3070"]}
++            "GL": ["GEN", {
++                "gl3020": [
++                    ["F", "", "", "", "", "", "", "Y"], []],
++                "gl3030": [
++                    ["S", "", 0, "", "", "N"], []],
++                "gl3040": [
++                    ["N", "Y", "", "", "Y"], []],
++                "gl3050": [
++                    ["",0,"S","N","N",1,"N","V","","","B","Y","Y","Y"], []]}],
++            "CR": ["CRS", {
++                "cr3020": [
++                    ["F", "", "", "", "", "", "", "Y"], []],
++                "cr3030": [
++                    ["M", "N", "", 0], []],
++                "cr3040": [
++                    ["Y", "N"], []],
++                "cr3050": [
++                    ["A", "", "N", "", "", 0, "Y", "Y"], []]}],
++            "DR": ["DRS", {
++                "dr3020": [
++                    ["F", "", "", "", "", "", "", "Y"], []],
++                "dr3030": [
++                    [], []],
++                "dr3040": [
++                    ["", "N"], []],
++                "dr3050": [
++                    ["A", "", "N", "", "", 0, "Y", "Y"], []]}],
++            "ST": ["STR", {
++                "st3020": [
++                    ["F", "", "", "", "", "", "", "Y"], []],
++                "st3080": [
++                    ["", "", "", "Y", "Y"], []],
++                "st3090": [
++                    ["", "", "", "", "N"], []]}],
++            "SI": ["INV", {
++                "si3020": [
++                    ["", "", ""], []],
++                "si3030": [
++                    ["", "", ""], []],
++                "si3040": [
++                    ["", "V", "", "", 0, "Y"], []],
++                "si3050": [
++                    ["", "", "", "", "", "", "Y"], []],
++                "si3060": [
++                    ["", "", ""], []],
++                "si3070": [
++                    ["", "", ""], []]}]}
+         self.mods = []
++        self.vars = {}
+         for mod in mods:
+             if mod not in amod:
+                 continue
+             sss = finsys[amod[mod][0]][0]
+-            for rpt in amod[mod][1:]:
++            key = list(amod[mod][1].keys())
++            key.sort()
++            for rpt in key:
+                 for men in tarmen["%smod" % mod.lower()]:
+                     if men[2] == rpt:
+                         self.mods.append([rpt, sss, men[4], men[0]])
++                        self.vars[rpt] = amod[mod][1][rpt]
++        # Periods
++        self.s_per = int(self.opts["period"][1][0] / 100)
++        self.e_per = int(self.opts["period"][2][0] / 100)
++        # Variables
++        self.strm = None
+         self.tadd = ""
+         return True
+ 
+     def mainProcess(self):
+-        self.tit = "Email Reports"
++        self.tit = "Stream Reports"
+         prts = showPrinters()
+         grp = {
+             "stype": "R",
+@@ -196,34 +243,41 @@
+                 data.append(["", mod[0], mod[1], mod[2]])
+         sc = SelectChoice(self.opts["mf"].body, titl, cols, data)
+         if sc.selection:
++            self.count = 1
+             self.fles = []
+-            tmp = os.path.join(self.opts["mf"].rcdic["wrkdir"], "temp")
+-            if os.path.exists(tmp):
+-                shutil.rmtree(tmp)
+-            os.mkdir(tmp)
++            self.tmp = os.path.join(self.opts["mf"].rcdic["wrkdir"], "temp")
++            if os.path.exists(self.tmp):
++                shutil.rmtree(self.tmp)
++            os.mkdir(self.tmp)
+             if self.styp == "E":
+                 self.mess = "Attached please find the following reports:\n"
+             else:
+                 self.mess = "Reports to Print:\n"
+-            for num, mod in enumerate(sc.selection):
++            for mod in sc.selection:
++                if mod[1] == "gl3050":
++                    self.doGetStream()
++                if self.strm:
++                    self.strm = None
++                    continue
+                 self.opts["mf"].head.configure(text="")
+                 if mod[1] in self.smod:
+                     work = eval(self.smod[mod[1]][-1])
+                 else:
+-                    work = None
++                    work = self.vars[mod[1]]
+                 var = callModule(self.opts["mf"], None, mod[1],
+                     coy=(self.opts["conum"], self.opts["conam"]),
+                     period=self.opts["period"], user=self.opts["capnm"],
+                     args={"noprint": True, "work": work}, ret=["fpdf",
+                     "t_work"])
+                 if var:
+-                    nam = os.path.join(tmp, "report%s.pdf" % (num + 1))
++                    nam = os.path.join(self.tmp, "report%s.pdf" % self.count)
+                     self.fles.append(nam)
+                     var["fpdf"].output(nam)
+-                    self.mess = "%s\n%2s) %s - %s" % (self.mess, num+1,
++                    self.mess = "%s\n%2s) %s - %s" % (self.mess, self.count,
+                         mod[2], mod[3])
+                     self.sql.insRec("rptstr", data=[self.opts["conum"],
+                         self.rgrp, mod[1], str(var["t_work"])])
++                    self.count += 1
+             if self.fles:
+                 if self.styp == "E":
+                     self.mess = "%s\n\nRegards" % self.mess
+@@ -236,40 +290,142 @@
+                         self.mess, default="yes")
+                     if ok == "yes":
+                         self.doPrintReps()
++                for fle in self.fles:
++                    os.remove(fle)
+         self.opts["mf"].dbm.commitDbase(True)
+         self.closeProcess()
+ 
++    def doGetStream(self):
++        chk = self.sql.getRec(tables="genstr", where=[("gls_cono", "=",
++            self.opts["conum"])], limit=1)
++        if not chk:
++            self.strm = None
++            return
++        if "gl3050" in self.smod:
++            var = ["Y", eval(self.smod["gl3050"][0])[0][1]]
++        else:
++            var = ["N", 0]
++        tit = "Financial Statements"
++        self.opts["mf"].head.configure(text="%03i %s - %s (%s)" %
++            (self.opts["conum"], self.opts["conam"], tit, "gl3050"))
++        stm = {
++            "stype": "R",
++            "tables": ("genstr",),
++            "cols": (
++                ("gls_strm", "", 0, "Num"),
++                ("gls_desc", "", 0, "Description", "Y"),
++                ("count(*)", "UI", 3, "Qty")),
++            "where": [("gls_cono", "=", self.opts["conum"])],
++            "group": "gls_strm"}
++        r1s = (("No", "N"), ("Yes", "Y"))
++        fld = (
++            (("T",0,0,0),("IRB",r1s),0,"Report Stream","",
++                var[0],"Y",self.doRepStr,None,None,None),
++            (("T",0,1,0),"IUI",3,"Stream Number","",
++                var[1],"N",self.doStrNum,stm,None,None),
++            (("T",0,2,0),"ID2",7,"Ending Period","",
++                self.e_per,"N",self.doStrPer,None,None,None))
++        self.rs = TartanDialog(self.opts["mf"], tops=True, title=tit,
++            eflds=fld, tend=((self.strEnd,"y"),), txit=(self.strExit,))
++        self.opts["mf"].startLoop()
++
++    def doRepStr(self, frt, pag, r, c, p, i, w):
++        if w == "N":
++            return "xt"
++
++    def doStrNum(self, frt, pag, r, c, p, i, w):
++        self.strm = self.sql.getRec(tables="genstr", where=[("gls_cono", "=",
++            self.opts["conum"]), ("gls_strm", "=", w)], order="gls_seq")
++        if not self.strm:
++            self.strm = None
++            return "Invalid Stream Number"
++        self.stno = w
++
++    def doStrPer(self, frt, pag, r, c, p, i, w):
++        if w < self.s_per or w > self.e_per:
++            return "Invalid Period"
++        self.end = w
++
++    def strEnd(self):
++        self.rs.closeProcess()
++        col = self.sql.genstr_col
++        for rep in self.strm:
++            args = {"stream": True}
++            args["end"] = self.end
++            args["typ"] = rep[col.index("gls_typ")]
++            args["cno"] = rep[col.index("gls_cno")]
++            args["con"] = rep[col.index("gls_con")]
++            args["dep"] = "N"
++            args["dpl"] = [0]
++            args["rep"] = rep[col.index("gls_rep")]
++            args["gen"] = rep[col.index("gls_gen")]
++            args["val"] = rep[col.index("gls_val")]
++            args["det"] = rep[col.index("gls_det")]
++            if args["typ"] == "M":
++                args["var"] = "N"
++            else:
++                args["var"] = rep[col.index("gls_var")]
++                if not args["var"]:
++                    args["var"] = "B"
++            args["zer"] = rep[col.index("gls_zer")]
++            args["opt"] = rep[col.index("gls_opt")]
++            if not args["opt"]:
++                args["opt"] = "N"
++            args["num"] = rep[col.index("gls_num")]
++            if not args["num"]:
++                args["num"] = "Y"
++            var = callModule(self.opts["mf"], None, "gl3050",
++                coy=(self.opts["conum"], self.opts["conam"]),
++                period=self.opts["period"], args=args,
++                ret=["fpdf", "emlhead"])
++            if var:
++                nam = os.path.join(self.tmp, "report%s.pdf" % self.count)
++                self.fles.append(nam)
++                var["fpdf"].output(nam)
++                des = var["emlhead"].lower()
++                des = " ".join(w.capitalize() for w in des.split())
++                self.mess = "%s\n%2s) %s - %s" % (self.mess, self.count,
++                    "General Ledger", des)
++                self.count += 1
++        if var:
++            self.sql.insRec("rptstr", data=[self.opts["conum"],
++                self.rgrp, "gl3050", str([[self.end, self.stno, "S", "N",
++                "N", 1, "N", "V", "", "", "B", "Y", "Y", "Y"]])])
++        self.opts["mf"].closeLoop()
++
++    def strExit(self):
++        self.strm = None
++        self.rs.closeProcess()
++        self.opts["mf"].closeLoop()
++
+     def doEmailReps(self):
+         subj = "Sundry Reports"
+         ok = False
+         while not ok:
+-            tadd = ""
+             emls = self.tadd.split(",")
+             for eml in emls:
+-                tadd = "%s%s\n" % (tadd, eml)
+-            sp = SplashScreen(self.opts["mf"].body, "E-Mailing the "\
+-                "Message to\n\n%s\n\nPlease Wait........" % tadd)
+-            ok = sendMail(self.smtp, self.fadd, self.tadd, subj,
+-                mess=self.mess, attach=self.fles)
+-            sp.closeSplash()
+-            if not ok:
+-                if self.skip == "Y":
+-                    ok = "SKIPPED"
+-                else:
+-                    ok = askQuestion(self.opts["mf"].body, "E-Mail Error",
+-                        "Problem Delivering This Message.\n\nTo: "\
+-                        "%s\nSubject: %s\n\nWould You Like to Retry?" \
+-                        % (self.tadd, subj))
+-                if ok == "yes":
+-                    ok = False
+-                else:
+-                    ok = "FAILED"
+-            else:
+-                ok = "OK"
+-        # Log the email attempt into table emllog.
+-        self.sql.insRec("emllog", data=[self.fadd, self.tadd, subj,
+-            "%04i-%02i-%02i %02i:%02i" % time.localtime()[0:5], ok])
+-        self.opts["mf"].dbm.commitDbase()
++                sp = SplashScreen(self.opts["mf"].body, "E-Mailing the "\
++                    "Message to\n\n%s\n\nPlease Wait........" % eml)
++                ok = sendMail(self.smtp, self.fadd, eml, subj,
++                    mess=self.mess, attach=self.fles)
++                sp.closeSplash()
++                if not ok:
++                    if self.skip == "Y":
++                        ok = "SKIPPED"
++                    else:
++                        ok = askQuestion(self.opts["mf"].body, "E-Mail Error",
++                            "Problem Delivering This Message.\n\nTo: "\
++                            "%s\nSubject: %s\n\nWould You Like to Retry?" \
++                            % (eml, subj))
++                    if ok == "yes":
++                        ok = False
++                    else:
++                        ok = "FAILED"
++                else:
++                    ok = "OK"
++                # Log the email attempt into table emllog.
++                self.sql.insRec("emllog", data=[self.fadd, self.tadd, subj,
++                    "%04i-%02i-%02i %02i:%02i" % time.localtime()[0:5], ok])
+ 
+     def doPrintReps(self):
+         repprt = ["Y", "P", self.sprt]
+

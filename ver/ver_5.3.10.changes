@@ -1,0 +1,7 @@
+1) Fixed a bank statement qif import error.
+2) Added disallowed companies on the user's record.
+3) Some other minor bug fixes and improvements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

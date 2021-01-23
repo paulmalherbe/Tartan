@@ -1,0 +1,8 @@
+1) The manual has some further updates.
+2) Included works orders in sales invoicing system.
+3) Added export to spreadsheet in stores master listing.
+4) Some small bug fixes including fixing VAT anomaly in G/L.
+
+Note:
+-----
+You can only upgrade to this version if your current version is 4.1.10 or later.

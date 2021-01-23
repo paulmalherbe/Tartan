@@ -1,0 +1,37 @@
+added:
+  gen/gl6060.py
+  img/entries.png
+  img/results.png
+renamed:
+  gen/gl6060.py => gen/gl6070.py
+modified:
+  .bzrignore
+  bkm/bk3020.py
+  bwl/bc2010.py
+  csv/genqrc_fld.csv
+  csv/genqrp_fld.csv
+  doc/BKM.rst
+  doc/BKS.rst
+  doc/BWL.rst
+  doc/BWM.rst
+  doc/Downloads.rst
+  doc/GEN.rst
+  doc/GEN_rne.rst
+  doc/MST.rst
+  doc/SEC.rst
+  gen/gl3050.py
+  gen/gl3130_rne.py
+  gen/glc410_rne.py
+  lon/ln2030.py
+  men/stdmen.py
+  mst/ms0000.py
+  mst/msc000.py
+  std/TartanClasses.py
+  std/tartanFunctions.py
+  str/st2010.py
+  str/st2020.py
+  uty/pm1010.py
+  gen/gl6070.py
+unknown:
+  doc/BWL.rst.new
+  doc/Tartan.rst

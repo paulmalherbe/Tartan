@@ -1,0 +1,376 @@
+=== modified file 'doc/BKSMST.rst'
+--- doc/BKSMST.rst	2019-01-15 09:24:43 +0000
++++ doc/BKSMST.rst	2019-01-15 12:20:58 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.1
++:Version:   5.4.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWLMST.rst'
+--- doc/BWLMST.rst	2019-01-15 09:24:43 +0000
++++ doc/BWLMST.rst	2019-01-15 12:20:58 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.1
++:Version:   5.4.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/CSHMST.rst'
+--- doc/CSHMST.rst	2019-01-15 09:24:43 +0000
++++ doc/CSHMST.rst	2019-01-15 12:20:58 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.1
++:Version:   5.4.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2019-01-15 09:24:43 +0000
++++ doc/Downloads.rst	2019-01-15 12:20:58 +0000
+@@ -11,27 +11,27 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.4.1 and was released on the 15th January, 2019.
++The latest version of Tartan is 5.4.2 and was released on the 15th January, 2019.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.4.1.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.4.2.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.4.1.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.4.2.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.4.1.tgz
+-.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.4.1.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.4.1.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.4.1.exe
+-.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.4.1.tgz
+-.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.4.1.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.4.1.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.4.1.exe
++.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.4.2.tgz
++.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.4.2.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.4.2.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.4.2.exe
++.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.4.2.tgz
++.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.4.2.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.4.2.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.4.2.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2019-01-15 09:24:43 +0000
++++ doc/MST.rst	2019-01-15 12:20:58 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.1
++:Version:   5.4.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SECMST.rst'
+--- doc/SECMST.rst	2019-01-15 09:24:43 +0000
++++ doc/SECMST.rst	2019-01-15 12:20:58 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.1
++:Version:   5.4.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2019-01-15 09:24:43 +0000
++++ mst/ms0000.py	2019-01-15 12:20:58 +0000
+@@ -43,7 +43,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2].strip()))
+ else:
+-    VERSION = (5, 4, 1)
++    VERSION = (5, 4, 2)
+     os.environ["TARVER"] = "%s.%s.%s" % VERSION
+ if __name__ == "__main__":
+     # Run Tartan
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2019-01-15 09:24:43 +0000
++++ mst/msc000.py	2019-01-15 12:18:05 +0000
+@@ -23,7 +23,7 @@
+ """
+ 
+ import fpdf, getpass, gc, glob, os, platform, sys, requests, time
+-from TartanClasses import AboutTartan, CCD, Dbase, DBCreate, FileDialog
++from TartanClasses import AboutTartan, Dbase, DBCreate, FileDialog
+ from TartanClasses import GetCtl, GUI, MainFrame, MkWindow, PwdConfirm
+ from TartanClasses import ScrollText, SelectChoice, Sql, TarBckRes
+ from TartanClasses import TartanConfig, TartanDialog, TartanMenu, TartanUser
+@@ -31,7 +31,7 @@
+ from tartanFunctions import getPeriods, getPrgPath, internetConnect
+ from tartanFunctions import loadRcFile, parsePrg, projectDate, runModule
+ from tartanFunctions import showError, showException
+-from tartanWork import finsys, tarmen
++from tartanWork import finsys, tabdic, tarmen
+ try:
+     import tarmod
+     TARMOD = True
+@@ -1503,50 +1503,24 @@
+             self.db.closeDbase()
+ 
+     def doVersionCheck(self, vtype="chk"):
+-        error = None
+-        self.ovlst = (0, 0, 0)
+-        self.ovtxt = "%s.%s.%s" % self.ovlst
+         if not self.db.dbopen:
+             self.db.openDbase()
+             dbopend = True
+         else:
+             dbopend = False
+-        upddate = CCD(0, "d1", 10)
+-        sql = Sql(self.db, "verupd", prog="msc000")
+-        if sql.error:
+-            self.doExit()
+-        ver = sql.getRec(tables="verupd", limit=1)
+-        if ver:
+-            v = ver[0].split(".")
+-            self.ovlst = (int(v[0]), int(v[1]), int(v[2]))
+-            self.ovtxt = "%s.%s.%s" % self.ovlst
+-            upd = sql.getRec(tables="verupd", cols=["ver_upddate"],
+-                where=[("ver_version", "=", ver[0])], limit=1)
+-            if upd:
+-                upddate = CCD(upd[0], "d1", 10)
+-        if dbopend:
+-            self.db.closeDbase()
+-        if vtype == "chk" and not self.nocheck:
+-            if self.ovlst == (0, 0, 0):
+-                error = "not"
+-            elif self.ovlst < (4, 1, 10):
+-                error = "tooold"
+-            elif self.ovlst < self.current[0]:
+-                error = "newer"
+-            elif self.ovlst > self.current[0]:
+-                error = "older"
+-        elif vtype == "upd":
+-            if self.ovlst == (0, 0, 0):
+-                pass
+-            elif self.ovlst == self.current[0]:
+-                error = "updated"
+-            elif self.ovlst > self.current[0]:
+-                error = "older"
+         if self.xdisplay:
+             scrn = self.mf.window
+         else:
+             scrn = "text"
+-        if error == "tooold":
++        sql = Sql(self.db, ["ftable", "ffield", "verupd"])
++        chk = sql.getRec(tables="verupd", limit=1)
++        if not chk:
++            showError(scrn, "Version Error", "Missing verupd Table")
++            self.doExit()
++        v = chk[0].split(".")
++        ovlst = (int(v[0]), int(v[1]), int(v[2]))
++        #ovtxt = "%s.%s.%s" % ovlst
++        if ovlst < (4, 1, 10):
+             showError(scrn, "Version Error",
+                 """The Version of the Data, %s.%s.%s, is too Old.
+ 
+@@ -1554,35 +1528,69 @@
+ 
+ or
+ 
+-Email info@tartan.co.za, with your current version number, for assistance.""" % self.ovlst)
++Email paul@tartan.co.za, with your version number, for assistance.""" % ovlst)
+             self.doExit()
+-        elif error in ("not", "newer"):
+-            if self.lvl < 8:
+-                showError(scrn, "Version Error", """Your Version of TARTAN (%s) Is Newer than the File Formats!
++        if ovlst > self.current[0]:
++            if dbopend:
++                self.db.closeDbase()
++            showError(scrn, "Version Error", """Your Version of TARTAN (%s) Is Older than the File Formats!
+ 
+-Please ask your Administrator to Update the File Formats.""" % self.current[1])
+-                self.doExit()
+-            else:
+-                ok = askQuestion(scrn, "Version Error", """Your Version of TARTAN (%s) Is Newer than the File Formats!
++Please Upgrade Your Version of TARTAN.""" % self.current[1])
++            return "older"
++        if vtype == "upd":
++            if dbopend:
++                self.db.closeDbase()
++            return
++        if ovlst != self.current[0]:
++            err = True
++        else:
++            err = False
++        chg = False
++        for tb in tabdic:
++            for ext in ("fld", "idx"):
++                lines = tabdic[tb][ext]
++                f1 = []
++                for line in lines:
++                    f1.append(line)
++                if ext == "fld":
++                    fle = sql.getRec(tables="ffield", where=[("ff_tabl",
++                        "=", tb)], order="ff_seq")
++                    f2 = []
++                    for f in fle:
++                        tp = [int(f[1]), f[2], f[3], float(f[4])]
++                        tp.extend(f[5:])
++                        f2.append(tp)
++                else:
++                    fle = sql.getRec(tables="ftable", where=[("ft_tabl",
++                        "=", tb)], order="ft_seq")
++                    f2 = []
++                    for f in fle:
++                        tp = [f[1], int(f[2]), f[3]]
++                        for t in f[4:]:
++                            if t:
++                                tp.append(t)
++                        f2.append(tp)
++                if not f1 == f2:
++                    chg = True
++                    break
++        if dbopend:
++            self.db.closeDbase()
++        if chg or err:
++            ok = askQuestion(scrn, "Version Error",
++                """Your Version of TARTAN (%s) Needs Updating,
+ 
+ Do You Want to Update Your File Formats Now?""" % self.current[1],
+                 default="yes")
+-                if ok == "yes":
+-                    error = None
+-                    self.tarUpd(True)
+-                else:
+-                    self.doExit()
+-        elif error == "older":
+-            showError(scrn, "Version Error", """Your Version of TARTAN (%s) Is Older than the File Formats!
+-
+-Please Upgrade Your Version of TARTAN.""" % self.current[1])
+-        elif error == "updated":
+-            ok = askQuestion(scrn, "Version Error", """Your File Formats for TARTAN (%s) were Already Updated on %s.
+-
+-Do You Want to Run the Update Again?""" % (self.current[1], upddate.disp))
+             if ok == "yes":
+-                error = None
+-        return error
++                self.tarUpd(True)
++            else:
++                self.doExit()
++        if chg and err:
++            return("Tables and Version needs updating")
++        elif chg:
++            return("Tables need updating")
++        elif err:
++            return("Version needs updating")
+ 
+     def tarBck(self):
+         self.db.openDbase()
+
+=== modified file 'rca/rc3040.py'
+--- rca/rc3040.py	2019-01-13 16:38:59 +0000
++++ rca/rc3040.py	2019-01-15 12:18:16 +0000
+@@ -132,6 +132,7 @@
+         mst = self.sql.rcatnm_col
+         con = self.sql.rcacon_col
+         self.tots = [0, 0, 0, 0, 0, 0]
++        self.cred = [0, 0, 0, 0, 0, 0]
+         for num, dat in enumerate(recs):
+             p.displayProgress(num)
+             if p.quit:
+@@ -230,11 +231,23 @@
+                 stat.disp, dep.disp, rtl.disp, fee.disp, srv.disp, rep.disp,
+                 bal.disp))
+             self.tots[0] = float(ASD(self.tots[0]) + ASD(dep.work))
++            if dep.work < 0:
++                self.cred[0] = float(ASD(self.cred[0]) + ASD(dep.work))
+             self.tots[1] = float(ASD(self.tots[1]) + ASD(rtl.work))
++            if rtl.work < 0:
++                self.cred[1] = float(ASD(self.cred[1]) + ASD(rtl.work))
+             self.tots[2] = float(ASD(self.tots[2]) + ASD(fee.work))
++            if fee.work < 0:
++                self.cred[2] = float(ASD(self.cred[2]) + ASD(fee.work))
+             self.tots[3] = float(ASD(self.tots[3]) + ASD(srv.work))
++            if srv.work < 0:
++                self.cred[3] = float(ASD(self.cred[3]) + ASD(srv.work))
+             self.tots[4] = float(ASD(self.tots[4]) + ASD(rep.work))
++            if rep.work < 0:
++                self.cred[4] = float(ASD(self.cred[4]) + ASD(rep.work))
+             self.tots[5] = float(ASD(self.tots[5]) + ASD(bal.work))
++            if bal.work < 0:
++                self.cred[5] = float(ASD(self.cred[5]) + ASD(bal.work))
+             self.pglin += 1
+         t = []
+         for x in xrange(6):
+@@ -243,6 +256,13 @@
+         self.fpdf.drawText("%27s %-30s %29s %-13s %-13s %-13s %-13s "\
+             "%-13s %-13s" % ("", "Grand Totals", "", t[0], t[1], t[2],
+             t[3], t[4], t[5]))
++        t = []
++        for x in xrange(6):
++            t.append(CCD(self.cred[x], "SD", 13.2).disp)
++        self.fpdf.underLine(txt=self.head)
++        self.fpdf.drawText("%27s %-30s %29s %-13s %-13s %-13s %-13s "\
++            "%-13s %-13s" % ("", "Credits", "", t[0], t[1], t[2],
++            t[3], t[4], t[5]))
+         p.closeProgress()
+         if self.fpdf.page and not p.quit:
+             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2019-01-13 16:38:59 +0000
++++ tab/tb1020.py	2019-01-15 12:18:27 +0000
+@@ -933,11 +933,20 @@
+         self.sql.delRec("ffield", cols=["ff_tabl"], data=[t])
+ 
+     def doFinal(self):
+-        chk1 = self.sql.getRec(tables="ffield", cols=["count(*)"],
+-            where=[("ff_head", "=", "None")], limit=1)
+-        chk2 = self.sql.getRec(tables="ftable", cols=["ft_desc"],
+-            where=[("ft_tabl", "=", "ffield")], limit=1)
+-        if not chk1[0] and chk2[0] == tabdic["ffield"]["idx"][0][0]:
++        chg = False
++        chk1 = self.sql.getRec(tables="ffield", where=[("ff_tabl", "in",
++            ("ffield", "ftable"))])
++        for tab in ("ffield", "ftable"):
++            for num, chk in enumerate(chk1):
++                if chk[6] != tabdic[tab]["fld"][num][5]:
++                    chg = True
++                    break
++        if not chg:
++            chk2 = self.sql.getRec(tables="ftable", cols=["ft_desc"],
++                where=[("ft_tabl", "=", "ffield")], limit=1)
++            if chk2[0] != tabdic["ffield"]["idx"][0][0]:
++                chg = True
++        if not chg:
+             return
+         if self.opts["mf"] and self.opts["mf"].window:
+             spl = SplashScreen(self.opts["mf"].body,
+

@@ -1,0 +1,31 @@
+removed:
+  img/apply.png
+  img/cancel.png
+modified:
+  .bzrignore
+  bkm/bk1010.py
+  bkm/bk1020.py
+  bkm/bk2010.py
+  bkm/bk3030.py
+  bkm/bk3040.py
+  bkm/bk3080.py
+  bkm/bkc210.py
+  csv/bkmrtt_fld.csv
+  csv/bkmrtt_idx.csv
+  csv/bkmunm_fld.csv
+  csv/bkmunm_idx.csv
+  csv/tpldet.dat
+  doc/Downloads.rst
+  doc/MD.rst
+  img/no.png
+  img/yes.png
+  mst/ms0000.py
+  std/TartanClasses.py
+  tab/tb1020.py
+  uty/bm1010.py
+unknown:
+  .idea/
+  bkm/fields.txt
+  csv/bkmunr_fld.csv
+  csv/bkmunr_idx.csv
+  uty/tdc110.py

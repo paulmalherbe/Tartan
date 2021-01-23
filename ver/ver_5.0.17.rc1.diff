@@ -1,0 +1,35 @@
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-06-19 16:06:22 +0000
++++ std/TartanClasses.py	2015-06-20 09:30:07 +0000
+@@ -14593,7 +14593,9 @@
+         self.mf.startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.mf.dbm, ["ctlnot", "ctlpwu"], prog=__name__)
++        self.dbm = Dbase(self.mf.rcdic)
++        self.dbm.openDbase()
++        self.sql = Sql(self.dbm, ["ctlnot", "ctlpwu"], prog=__name__)
+         t = time.localtime()
+         self.sysdtw = ((t[0] * 10000) + (t[1] * 100) + t[2])
+ 
+@@ -14723,7 +14725,8 @@
+         self.sql.updRec("ctlnot", cols=["not_aflag", "not_adate", "not_auser"],
+             data=[self.chgflag, self.chgdate, self.chguser], where=[("not_seq",
+             "=", self.nseq)])
+-        self.mf.dbm.commitDbase()
++        self.dbm.commitDbase()
++        self.dbm.closeDbase()
+         self.doNExit()
+ 
+     def doNExit(self, widget=None):
+@@ -14743,7 +14746,8 @@
+             self.sysdtw, self.user, self.note, self.actflag, self.actdate,
+             self.actuser, 0])
+         if self.commit:
+-            self.mf.dbm.commitDbase()
++            self.dbm.commitDbase()
++        self.dbm.closeDbase()
+         self.mf.closeLoop()
+ 
+     def doExit(self, widget=None):
+

@@ -1,0 +1,10 @@
+1) Fixed creditor's data capture module (Loans).
+2) Fixed debtor's statement module (Range).
+3) Fixed staff loan's masterfile maintenance.
+4) Fixed g/l financial statements with streams, emails and exports.
+5) Improved bowls competition points structure for drawn & s v s games.
+6) Some other minor bug fixes.
+
+Notes:
+------
+You can only upgrade to this version if your current version is 4.1.10 or later.

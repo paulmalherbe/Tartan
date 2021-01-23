@@ -1,0 +1,483 @@
+=== modified file 'bkm/bk1010.py'
+--- bkm/bk1010.py	2014-08-27 09:27:53 +0000
++++ bkm/bk1010.py	2014-08-28 15:27:40 +0000
+@@ -41,7 +41,7 @@
+             ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
+             if not ctlctl:
+                 return
+-            ctls = ["bkm_ctl", "bkm_sls", "vat_ctl"]
++            ctls = ["bank_1", "vat_ctl", "bkm_chq", "bkm_csh", "bkm_ctl"]
+             if gc.chkRec(self.opts["conum"], ctlctl, ctls):
+                 return
+             self.bnkctl = ctlctl["bank_1"]
+@@ -488,7 +488,10 @@
+ 
+     def doUQty(self, frt, pag, r, c, p, i, w):
+         if self.uqty and w > self.uqty:
+-            return "Invalid Quantity, Exceeds Capacity"
++            ok = askQuestion(self.opts["mf"].window, "Quantity",
++                "Quantity Exceeds Unit Quantity", default="no")
++            if ok == "no":
++                return "rf"
+         if self.ucod.split("-")[0] == "A":
+             if (self.aqty + w) > self.guests:
+                 return "Invalid Quantity, Exceeds Booking"
+
+=== added file 'bkm/bkc610.py'
+--- bkm/bkc610.py	1970-01-01 00:00:00 +0000
++++ bkm/bkc610.py	2014-08-29 08:26:36 +0000
+@@ -0,0 +1,270 @@
++#! /usr/bin/env python
++
++"""
++SYNOPSIS
++    Booking Contacts Maintenance.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2014 Paul Malherbe.
++"""
++
++import time
++from TartanClasses import FileImport, GetCtl, ProgressBar, PwdConfirm, Sql
++from TartanClasses import TabPrt, TartanDialog
++from tartanFunctions import askQuestion, callModule, showError
++
++class bkc610:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["chglog", "bkmcon", "bkmmst"],
++            prog=__name__)
++        if self.sql.error:
++            return
++        gc = GetCtl(self.opts["mf"])
++        bkmctl = gc.getCtl("bkmctl", self.opts["conum"])
++        if not bkmctl:
++            return
++        t = time.localtime()
++        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
++        return True
++
++    def mainProcess(self):
++        tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
++                "Contacts Maintenance (%s)" % __name__)
++        con = {
++            "stype": "R",
++            "tables": ("bkmcon",),
++            "cols": (
++                ("bkc_ccode", "", 0, "Code"),
++                ("bkc_title", "", 0, "Title"),
++                ("bkc_sname", "", 0, "Surame", "Y"),
++                ("bkc_names", "", 0, "Names", "F"),
++                ("bkc_addr1", "", 0, "Address Line 1"))}
++        self.fld = (
++            (("T",0,0,0),"IUA",7,"Code","",
++                "","Y",self.doCode,con,None,None),
++            (("T",0,1,0),"ITX",6,"Title","",
++                "","N",self.doTitle,None,self.doDelete,("notblank",)),
++            (("T",0,2,0),"ITX",30,"Surname","",
++                "","N",self.doSurname,None,None,("notblank",)),
++            (("T",0,3,0),"ITX",30,"Names","",
++                "","N",self.doNames,None,None,("notblank",)),
++            (("T",0,4,0),"ITX",30,"Address Line 1","",
++                "","N",None,None,None,("notblank",)),
++            (("T",0,5,0),"ITX",30,"Address Line 2","",
++                "","N",None,None,None,("efld",)),
++            (("T",0,6,0),"ITX",30,"Address Line 3","",
++                "","N",None,None,None,("efld",)),
++            (("T",0,7,0),"IUI",4,"Postal Code","",
++                "","N",None,None,None,("efld",)),
++            (("T",0,8,0),"ITX",20,"Telephone Number","",
++                "","N",None,None,None,("efld",)),
++            (("T",0,9,0),"ITX",20,"Fax Number","",
++                "","N",None,None,None,("efld",)),
++            (("T",0,10,0),"ITX",20,"Mobile Number","",
++                "","N",None,None,None,("efld",)),
++            (("T",0,11,0),"ITX",30,"E-Mail Address","",
++                "","N",None,None,None,("email",)),
++            (("T",0,12,0),"ITX",30,"Group Name","",
++                "","N",None,None,None,("efld",)),
++            (("T",0,13,0),"INA",10,"V.A.T Number","",
++                "","N",None,None,None,("efld",)))
++        but = (
++            ("Import",None,self.doImport,0,("T",0,1),("T",0,2),
++                "Import Contact Details from a CSV or XLS File."),
++            ("Accept",None,self.doAccept,0,("T",0,2),("T",0,1)),
++            ("Print", None, self.doPrint,0,("T",0,2),("T",0,1)),
++            ("Quit", None, self.doExit,1,None,None))
++        tnd = ((self.doAccept,"N"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], title=tit,
++            screen=self.opts["mf"].body, eflds=self.fld,
++            butt=but, tend=tnd, txit=txt, clicks=self.doClick)
++
++    def doClick(self, *opts):
++        if self.click:
++            self.df.loadEntry("T", self.click[0], self.click[1],
++                data=self.df.t_work[self.click[0]][0][self.click[1]])
++        self.click = opts[0]
++        self.df.focusField("T", opts[0][0], opts[0][1] + 1)
++
++    def doCode(self, frt, pag, r, c, p, i, w):
++        self.ccode = w
++        self.click = []
++        if w:
++            self.oldcon = self.sql.getRec(tables="bkmcon", where=[("bkc_cono",
++                "=", self.opts["conum"]), ("bkc_ccode", "=", w)], limit=1)
++            if not self.oldcon:
++                return "Invalid Contact Code"
++            self.newcon = False
++            self.title = self.oldcon[self.sql.bkmcon_col.index("bkc_title")]
++            self.sname = self.oldcon[self.sql.bkmcon_col.index("bkc_sname")]
++            self.names = self.oldcon[self.sql.bkmcon_col.index("bkc_names")]
++            self.email = self.oldcon[self.sql.bkmcon_col.index("bkc_email")]
++            for num, dat in enumerate(self.oldcon[1:]):
++                self.df.loadEntry("T", 0, num, data=dat)
++        else:
++            self.newcon = True
++        self.acno = w
++        self.click = []
++
++    def doTitle(self, frt, pag, r, c, p, i, w):
++        self.title = w
++
++    def doSurname(self, frt, pag, r, c, p, i, w):
++        self.sname = w
++
++    def doNames(self, frt, pag, r, c, p, i, w):
++        self.names = w
++
++    def doEmail(self, frt, pag, r, c, p, i, w):
++        self.email = w
++
++    def doDelete(self, widget=None):
++        chk = self.sql.getRec(tables="bkmmst", cols=["count(*)"],
++            where=[("bkm_cono", "=", self.opts["conum"]), ("bkm_ccode",
++            "=", self.ccode)], limit=1)
++        if chk[0]:
++            return "Bookings Exist, Not Deleted"
++        dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++        self.sql.delRec("bkmcon", where=[("bkc_cono", "=", self.opts["conum"]),
++            ("bkc_ccode", "=", self.ccode)])
++        self.sql.insRec("chglog", data=["bkmcon", "D", "%03i%-7s" % \
++            (self.opts["conum"], self.ccode), "", dte, self.opts["capnm"],
++            "", "", 0])
++        self.opts["mf"].dbm.commitDbase()
++        self.df.focusField("T", 0, 1)
++
++    def doAccept(self, widget=None):
++        frt, pag, col, mes = self.df.doCheckFields()
++        if mes:
++            self.df.focusField(frt, pag, (col+1), err=mes)
++            return
++        # Create/Update Record
++        if self.newcon:
++            self.ccode = self.genCode(self.sname)
++            self.df.loadEntry("T", 0, 0, data=self.ccode)
++        dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++        data = [self.opts["conum"]]
++        for x in range(len(self.df.t_work[0][0])):
++            data.append(self.df.t_work[0][0][x])
++        if self.newcon:
++            self.sql.insRec("bkmcon", data=data)
++        elif data != self.oldcon:
++            self.sql.updRec("bkmcon", data=data, where=[("bkc_cono", "=",
++                self.opts["conum"]), ("bkc_ccode", "=", self.ccode)])
++            for num, dat in enumerate(self.oldcon):
++                if dat != data[num]:
++                    self.sql.insRec("chglog", data=["bkmcon", "U",
++                        "%03i%-7s" % (self.opts["conum"], self.ccode),
++                        self.sql.bkmcon_col[num], dte, self.opts["capnm"],
++                        str(dat), str(data[num]), 0])
++        self.opts["mf"].dbm.commitDbase()
++        self.df.focusField("T", 0, 1)
++
++    def doImport(self, widget=None):
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        fi = FileImport(self.opts["mf"], imptab="bkmcon", impskp=["bkc_cono"])
++        sp = ProgressBar(self.opts["mf"].body,
++            typ="Importing Contacts", mxs=len(fi.impdat), esc=False)
++        err = None
++        for num, line in enumerate(fi.impdat):
++            sp.displayProgress(num)
++            if not line[0]:
++                if not line[2]:
++                    err = "Blank Code and Blank Surname"
++                    break
++                chk = self.sql.getRec(tables="bkmcon", where=[("bkc_cono", "=",
++                    self.opts["conum"]), ("bkc_sname", "=", line[2]),
++                    ("bkc_names", "=", line[3])], limit=1)
++                if chk:
++                    err = "%s: %s %s: %s\n\nAlready Exists" % (fi.impcol[2][0],
++                        line[2], fi.impcol[3][0], line[3])
++                    break
++                for x in xrange(1, 100):
++                    line[0] = self.genCode(line[2])
++                    chk = self.sql.getRec(tables="bkmcon", where=[("bkc_cono",
++                        "=", self.opts["conum"]), ("bkc_ccode", "=", line[0])],
++                        limit=1)
++                    if not chk:
++                        break
++            else:
++                chk = self.sql.getRec(tables="bkmcon", where=[("bkc_cono", "=",
++                    self.opts["conum"]), ("bkc_ccode", "=", line[0])], limit=1)
++                if chk:
++                    err = "%s: %s %s: %s\n\nAlready Exists" % (fi.impcol[0][0],
++                        line[0], fi.impcol[2][0], line[2])
++                    break
++            if not line[2]:
++                err = "Blank Title"
++                break
++            if not line[2]:
++                err = "Blank Surname"
++                break
++            if not line[3]:
++                err = "Blank Names"
++                break
++            if not line[4]:
++                err = "Blank Address"
++                break
++            line.insert(0, self.opts["conum"])
++            self.sql.insRec("bkmcon", data=line)
++        sp.closeProgress()
++        if err:
++            err = "Line %s: %s" % ((num + 1), err)
++            showError(self.opts["mf"].body, "Import Error", """%s
++
++Please Correct your Import File and then Try Again.""" % err)
++            self.opts["mf"].dbm.rollbackDbase()
++        else:
++            self.opts["mf"].dbm.commitDbase()
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++
++    def doPrint(self, widget=None):
++        state = self.df.disableButtonsTagsTags()
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        TabPrt(self.opts["mf"], self.opts["conum"], self.opts["conam"],
++            name=__name__, tabs="bkmcon", where=[("drm_cono", "=",
++            self.opts["conum"]), ("drm_chain", "=", self.chain),
++            ("drm_acno", "=", self.acno)])
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.enableButtonsTagsTags(state=state)
++        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++
++    def genCode(self, sname):
++        # Remove invalid characters
++        sname = sname.replace(" ", "")
++        for c in (" ", ".", ",", ";", ":", "'", '"'):
++            sname = sname.replace(c, "")
++        if len(sname) < 5:
++            sname = sname + ("0" * (5 - len(sname)))
++        ccod1 = ""
++        for c in xrange(0, 5):
++            ccod1 = (ccod1 + sname[c]).upper()
++        ccod1 = ccod1.strip()
++        text = "%s%0" + str((7 - len(ccod1))) + "d"
++        for x in xrange(1, 100):
++            ccod2 = text % (ccod1, x)
++            chk = self.sql.getRec(tables="bkmcon",
++                where=[("bkc_cono", "=", self.opts["conum"]),
++                ("bkc_ccode", "=", ccod2)], limit=1)
++            if not chk:
++                break
++        return ccod2
++
++    def doExit(self, widget=None):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2014-03-28 07:32:49 +0000
++++ doc/Downloads.rst	2014-08-30 12:52:39 +0000
+@@ -11,16 +11,16 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.0 and was released on the 31st October, 2013.
++The latest version of Tartan is 5.0.1 and was released on the 30th August, 2014.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.0.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.1.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.10.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.0.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.1.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.10.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+
+=== modified file 'doc/Main.rst'
+--- doc/Main.rst	2014-08-06 15:44:15 +0000
++++ doc/Main.rst	2014-08-30 12:52:39 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.0
++:Version:   5.0.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -76,7 +76,7 @@
+ 
+ or
+ 
+-+ Mysql >= 5.0.0
+++ Mysql >= 5.0.1
+ + Mysql-python >= 1.2.0
+ 
+ Download the following file from ftp://ftp.tartan.co.za
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2014-08-27 09:27:53 +0000
++++ men/stdmen.py	2014-08-29 06:50:45 +0000
+@@ -304,6 +304,7 @@
+     ["PYNY","bk_fm","bkc310",5,"Unit Records"],
+     ["PYNY","bk_fm","bkc410",5,"Rate Records"],
+     ["PYNY","bk_fm","bkc510",5,"Booking Letters"],
++    ["PYNY","bk_fm","bkc610",5,"Contacts"],
+     ["PYNY","mm_bk","bk1010",5,"Bookings"],
+     ["PYNN","bk_rp","bk3010",1,"Deposits Listing"],
+     ["PYYN","bk_rp","bk3020",1,"Transaction Audit Trail"],
+
+=== modified file 'mst/ms0000.py' (properties changed: -x to +x)
+--- mst/ms0000.py	2014-08-27 09:27:53 +0000
++++ mst/ms0000.py	2014-08-30 12:52:39 +0000
+@@ -35,9 +35,9 @@
+ # Set the version of Tartan
+ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+-    VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
++VERSION = (5, 0, 1)
+ else:
+-    VERSION = (5, 0, 0)
++VERSION = (5, 0, 1)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'rca/rcm010.py'
+--- rca/rcm010.py	2014-06-14 08:55:57 +0000
++++ rca/rcm010.py	2014-08-29 10:56:00 +0000
+@@ -262,6 +262,12 @@
+             self.sql.insRec("gentrn", data=data)
+         if self.prm[0]:
+             cma = round((tot * self.prm[0] / 100.0), 2)
++            acc = getVatRate(self.sql, self.opts["conum"], self.taxdf,
++                self.nxtdt)
++            if not acc:
++                rate = 0
++            else:
++                rate = float(acc[0])
+             cmv = round((cma * rate / 100.0), 2)
+             cmt = float(ASD(cma) + ASD(cmv))
+             cma = float(ASD(0) - ASD(cma))
+@@ -269,7 +275,7 @@
+             des = "Commission @ %3.5s%s Inclusive" % (self.prm[0], "%")
+             data = self.con[:2]
+             data.extend([4, ref, self.batch, self.nxtdt, cmt, cmv, self.nxtcd,
+-                des, self.vatdf, "", self.opts["capnm"], self.sysdtw, 0])
++                des, self.taxdf, "", self.opts["capnm"], self.sysdtw, 0])
+             self.sql.insRec("rcaowt", data=data)
+             if self.glint == "Y":
+                 # Update Owner Control
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2014-08-27 09:27:53 +0000
++++ std/TartanClasses.py	2014-08-29 08:00:54 +0000
+@@ -14330,14 +14330,16 @@
+                         for col in self.impcol:
+                             d = CCD(dat[col[1]], col[2], col[3])
+                             if d.err:
++                                if not self.impign == "Y":
++                                    showError(self.mf.body, "Column Error",
++                                        "Row %s, %s is Invalid" % (num, col[0]))
+                                 raise Exception
+                             lin.append(d.work)
+                         self.impdat.append(lin)
+                     except:
+                         if not self.impign == "Y":
+                             showError(self.mf.body, "Column Error",
+-                                "Line Number %s is Invalid\n\n%s has "\
+-                                "Invalid Data %s" % (num, col[0], dat[col[1]]))
++                                "Row %s, %s is Invalid" % (num, col[0]))
+                             raise Exception
+             except:
+                 imperr = True
+@@ -14367,12 +14369,14 @@
+                             if col == self.impcol[-1]:
+                                 self.impdat.append(lin)
+                             else:
+-                                raise Exception
++                                if not self.impign == "Y":
++                                    showError(self.mf.body, "Column Error",
++                                        "Row Number %s is Invalid" % x)
++                                    raise Exception
+                     except:
+                         if not self.impign == "Y":
+                             showError(self.mf.body, "Column Error",
+-                                "Line Number %s is Invalid\n\n%s has "\
+-                                "Invalid Data %s" % (x, col[0], dat))
++                                "Row Number %s is Invalid" % x)
+                             raise Exception
+             except:
+                 imperr = True
+@@ -14394,13 +14398,16 @@
+                                     col[2] = "d1"
+                             dat = CCD(dat, col[2], col[3])
+                             if dat.err:
++                                if not self.impign == "Y":
++                                    showError(self.mf.body, "Column Error",
++                                        "Row Number %s is Invalid" % row)
+                                 raise Exception
+                             lin.append(dat.work)
+                         self.impdat.append(lin)
+                     except:
+                         if not self.impign == "Y":
+                             showError(self.mf.body, "Column Error",
+-                                "This Line Number, %s, is Invalid" % row)
++                                "Row Number %s is Invalid" % row)
+                             raise Exception
+             except:
+                 imperr = True
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2014-08-06 15:44:15 +0000
++++ std/tartanFunctions.py	2014-08-29 09:53:51 +0000
+@@ -511,7 +511,7 @@
+                     else:
+                         ok = askQuestion(mf.window, "E-Mail Error", "Problem "\
+                             "Delivering This Message.\n\nTo: %s\nSubject: "\
+-                            "%s\n\nWould You Like to Retry?" % (mail, head))
++                            "%s\n\nWould You Like to Retry?" % (mail, subj))
+                         if ok == "yes":
+                             ok = None
+                         else:
+@@ -527,8 +527,8 @@
+         try:
+             for tadd in mail:
+                 sql.insRec("emllog", data=[fadd.strip(), tadd.strip(),
+-                    head.strip(), "%04i-%02i-%02i %02i:%02i" %
+-                    time.localtime()[0:5], ok], excp=True)
++                    subj, "%04i-%02i-%02i %02i:%02i" % time.localtime()[0:5],
++                    ok], excp=True)
+         except:
+             pass
+         try:
+

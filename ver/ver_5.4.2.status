@@ -1,0 +1,13 @@
+modified:
+  doc/BKSMST.rst
+  doc/BWLMST.rst
+  doc/CSHMST.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SECMST.rst
+  mst/ms0000.py
+  mst/msc000.py
+  rca/rc3040.py
+  tab/tb1020.py
+unknown:
+  oldchg.txt

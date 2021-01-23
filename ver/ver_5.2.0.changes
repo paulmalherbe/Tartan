@@ -1,0 +1,10 @@
+1) Fixed a problem with OFX bank statement imports.
+2) Added the facility to add a message and/or an attachment to mailed documents.
+3) Added the 2016/2017 income tax tables for individuals.
+4) Added the facilty to string for 7 rinks for bowls competitions.
+5) Added a module 'Merge Duplicate Visitors' to the bowling clubs toolbox.
+6) Some other minor changes and bug fixes.
+
+Notes:
+------
+You can only upgrade to this version if your current version is 4.1.10 or later.

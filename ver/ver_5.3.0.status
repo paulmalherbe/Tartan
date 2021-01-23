@@ -1,0 +1,30 @@
+modified:
+  bks/bs1010.py
+  bwl/bc2040.py
+  bwl/bc2050.py
+  bwl/bc2070.py
+  csv/scpsys.py
+  doc/BKS.rst
+  doc/BWM.rst
+  doc/Downloads.rst
+  doc/GEN.rst
+  doc/MST.rst
+  doc/SEC.rst
+  doc/STR.rst
+  gen/gl6020.py
+  men/cshmen.py
+  men/rnemen.py
+  men/stdmen.py
+  mst/ms0000.py
+  mst/ms1010_rne.py
+  mst/msc000.py
+  std/TartanClasses.py
+  str/st2010.py
+  str/st2030.py
+  str/st3080.py
+  tab/tb1020.py
+  uty/pkgprg.py
+unknown:
+  bup/
+  fle/
+  upg/

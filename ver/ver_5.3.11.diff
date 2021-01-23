@@ -1,0 +1,1378 @@
+=== modified file 'crs/cr2020_rne.py'
+--- crs/cr2020_rne.py	2017-08-24 07:49:34 +0000
++++ crs/cr2020_rne.py	2018-07-06 06:37:01 +0000
+@@ -581,7 +581,7 @@
+                 self.refno = "CHQ%06i" % self.cheque
+             self.sql.updRec("crstrn", cols=["crt_ref2"], data=[self.refno],
+                 where=whr)
+-            # Create the crsage Record for the Transaction
++            # Create the crsage Record for the transaction being paid
+             curdt = int(self.paydt.work / 100)
+             data = [self.opts["conum"], self.acno.work, types.work, ref1.work,
+                 curdt, 5, self.refno, payamt, 0]
+@@ -705,6 +705,7 @@
+             data[8] = h
+             data[15] = vat
+             self.sql.insRec("crstrn", data=data)
++            # Create a CRS Ageing Record for the Discount
+             aget = [self.opts["conum"], self.acno.work, 6, self.refno, curdt,
+                 5, self.refno, g, 0]
+             self.sql.insRec("crsage", data=aget)
+@@ -721,6 +722,7 @@
+             data[8] = h
+             data[15] = vat
+             self.sql.insRec("crstrn", data=data)
++            # Create a CRS Ageing Record for the Incentive
+             aget = [self.opts["conum"], self.acno.work, 7, self.refno, curdt,
+                 5, self.refno, g, 0]
+             self.sql.insRec("crsage", data=aget)
+@@ -737,6 +739,7 @@
+             data[8] = h
+             data[15] = vat
+             self.sql.insRec("crstrn", data=data)
++            # Create a CRS Ageing Record for the Advertising
+             aget = [self.opts["conum"], self.acno.work, 8, self.refno, curdt,
+                 5, self.refno, g, 0]
+             self.sql.insRec("crsage", data=aget)
+
+=== modified file 'crs/cr3050.py'
+--- crs/cr3050.py	2017-08-24 07:49:34 +0000
++++ crs/cr3050.py	2018-07-05 14:27:09 +0000
+@@ -56,28 +56,34 @@
+                 ("crm_name", "", 0, "Name", "Y")),
+             "where": [("crm_cono", "=", self.opts["conum"])],
+             "autoc": False}
+-        r1s = (("Yes","Y"),("No","N"))
+-        r2s = (("Yes","Y"),("No","N"),("Only","O"))
++        r1s = (("Agedt","A"),("Curdt","C"))
++        r2s = (("Yes","Y"),("No","N"))
++        r3s = (("Yes","Y"),("No","N"),("Only","O"))
+         fld = (
+-            (("T",0,0,0),"Id2",7,"Cut-Off Period","",
+-                int(self.sysdtw / 100),"Y",self.doCutOff,None,None,None),
+-            (("T",0,1,0),("IRB",r1s),0,"Totals Only","",
+-                "N","Y",self.doTots,None,None,None),
+-            (("T",0,2,0),"INA",7,"First Account Number","",
+-                "","Y",self.doAcc1,crm,None,None),
+-            (("T",0,3,0),"INA",7,"Last Account Number","",
+-                "","Y",self.doAcc2,crm,None,None),
+-            (("T",0,4,0),"IUI",7,"Lower Balance Limit","",
+-                0,"Y",self.doLimit,None,None,None),
+-            (("T",0,5,0),("IRB",r2s),0,"Include Debit Balances",
+-                "Include Debit Balances","Y","Y",self.doDebit,None,None,None),
+-            (("T",0,6,0),("IRB",r1s),0,"Ignore Zero Balances",
+-                "Ignore Zero Balances","Y","Y",self.doZero,None,None,None))
++            (("T",0,0,0),("IRB",r1s),0,"Base","",
++                "A","Y",self.doBase,None,None,None),
++            (("T",0,1,0),"Id2",7,"Cut-Off Period","",
++                int(self.sysdtw / 100),"N",self.doCutOff,None,None,None),
++            (("T",0,2,0),("IRB",r2s),0,"Totals Only","",
++                "N","N",self.doTots,None,None,None),
++            (("T",0,3,0),"INA",7,"First Account Number","",
++                "","N",self.doAcc1,crm,None,None),
++            (("T",0,4,0),"INA",7,"Last Account Number","",
++                "","N",self.doAcc2,crm,None,None),
++            (("T",0,5,0),"IUI",7,"Lower Balance Limit","",
++                0,"N",self.doLimit,None,None,None),
++            (("T",0,6,0),("IRB",r3s),0,"Include Debit Balances","",
++                "Y","N",self.doDebit,None,None,None),
++            (("T",0,7,0),("IRB",r2s),0,"Ignore Zero Balances","",
++                "Y","N",self.doZero,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
+ 
++    def doBase(self, frt, pag, r, c, p, i, w):
++        self.base = w
++
+     def doCutOff(self, frt, pag, r, c, p, i, w):
+         self.cutoff = w
+         self.opts["period"] = self.df.t_disp[pag][r][p]
+@@ -85,8 +91,8 @@
+     def doTots(self, frt, pag, r, c, p, i, w):
+         self.totsonly = w
+         if self.totsonly == "Y":
+-            self.df.setWidget(self.df.topEntry[0][7][3][0], state="hide")
+-            self.df.setWidget(self.df.topEntry[0][7][4][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+             self.acc1 = ""
+             self.fm = "First"
+             self.acc2 = "zzzzzzz"
+@@ -101,8 +107,8 @@
+             self.df.loadEntry(frt, pag, p+5, data=self.zero)
+             return "sk5"
+         else:
+-            self.df.setWidget(self.df.topEntry[0][7][3][0], state="show")
+-            self.df.setWidget(self.df.topEntry[0][7][4][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+ 
+     def doAcc1(self, frt, pag, r, c, p, i, w):
+         self.acc1 = w
+@@ -235,9 +241,33 @@
+     def getValues(self, data):
+         acc = CCD(data[0], "NA", 7)
+         name = CCD(data[1], "NA", 30)
+-        bals = Balances(self.opts["mf"], "CRS", self.opts["conum"],
+-            self.cutoff, keys=(data[0],))
+-        obal, cbal, ages = bals.doAllBals()
++        if self.base == "A":
++            bals = Balances(self.opts["mf"], "CRS", self.opts["conum"],
++                self.cutoff, keys=(data[0],))
++            obal, cbal, ages = bals.doAllBals()
++        else:
++            pers = []
++            yr = self.cutoff / 100
++            mt = self.cutoff % 100
++            for x in range(4):
++                pers.append((yr * 100) + mt)
++                mt -= 1
++                if not mt:
++                    yr -= 1
++                    mt = 12
++            cbal = 0
++            ages = [0, 0, 0, 0, 0]
++            bals = self.sql.getRec(tables="crstrn", cols=["crt_curdt",
++                "sum(crt_tramt)"], where=[("crt_cono", "=", self.opts["conum"]),
++                ("crt_acno", "=", acc.work), ("crt_curdt", "<=", pers[0])],
++                group="crt_curdt", order="crt_curdt")
++            for bal in bals:
++                try:
++                    idx = pers.index(bal[0])
++                except:
++                    idx = 4
++                ages[idx] = float(ASD(ages[idx]) + ASD(bal[1]))
++                cbal = float(ASD(cbal) + ASD(bal[1]))
+         bal = CCD(cbal, "SD", 13.2)
+         if self.limit and bal.work < self.limit:
+             return
+
+=== modified file 'crs/cr3360_rne.py'
+--- crs/cr3360_rne.py	2017-08-24 07:49:34 +0000
++++ crs/cr3360_rne.py	2018-07-05 11:25:19 +0000
+@@ -163,8 +163,7 @@
+         self.refdt = CCD(ref[2], "D1", 10)
+         self.crt = self.sql.getRec(tables="crstrn", where=[("crt_cono", "=",
+             self.opts["conum"]), ("crt_acno", "=", self.acno.work),
+-            ("crt_type", "<>", 5), ("crt_ref2", "=", self.refno.work)],
+-            order="crt_seq")
++            ("crt_ref2", "=", self.refno.work)], order="crt_seq")
+         if not self.crt:
+             return
+         crm = self.sql.getRec(tables="crsmst", where=[("crm_cono", "=",
+
+=== modified file 'crs/cr6020.py'
+--- crs/cr6020.py	2018-05-31 15:57:14 +0000
++++ crs/cr6020.py	2018-07-06 07:12:31 +0000
+@@ -162,11 +162,11 @@
+             ("cra_acno", "=", self.acno)])
+         crc, cr = getTrn(self.opts["mf"].dbm, "crs", whr=[("crt_cono", "=",
+             self.opts["conum"]), ("crt_acno", "=", self.acno), ("crt_tramt",
+-            "<", 0)], zer="N")
++            "<", 0)], odr="crt_trdt", zer="N")
+         if cr:
+             drc, dr = getTrn(self.opts["mf"].dbm, "crs", whr=[("crt_cono",
+                 "=", self.opts["conum"]), ("crt_acno", "=", self.acno),
+-                ("crt_tramt", ">", 0)], neg=False, zer="N")
++                ("crt_tramt", ">", 0)], odr="crt_trdt", neg=False, zer="N")
+             if dr:
+                 if "args" not in self.opts:
+                     self.df.setWidget(self.df.mstFrame, state="hide")
+
+=== added file 'crs/cr6020_rne.py'
+--- crs/cr6020_rne.py	1970-01-01 00:00:00 +0000
++++ crs/cr6020_rne.py	2018-07-08 13:17:34 +0000
+@@ -0,0 +1,284 @@
++"""
++SYNOPSIS
++    Creditors Ledger Change Age Allocations.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2017 Paul Malherbe.
++"""
++
++import time
++from TartanClasses import AgeTrans, ASD, GetCtl, ProgressBar, Sql, TartanDialog
++from tartanFunctions import askQuestion, copyList, getTrn
++
++class cr6020:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            if "args" in opts:
++                self.curdt = opts["args"][0]
++                for self.acno in opts["args"][1]:
++                    self.doReAgeAuto()
++                self.opts["mf"].dbm.commitDbase()
++            else:
++                self.dataHeader()
++                self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["crsmst", "crstrn", "crsage"],
++            prog=__name__)
++        if self.sql.error:
++            return
++        gc = GetCtl(self.opts["mf"])
++        crsctl = gc.getCtl("crsctl", self.opts["conum"])
++        if not crsctl:
++            return
++        t = time.localtime()
++        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
++        self.curdt = int(self.sysdtw / 100)
++        return True
++
++    def dataHeader(self):
++        tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
++                "Creditors Change Allocations (%s)" % __name__)
++        crm = {
++            "stype": "R",
++            "tables": ("crsmst",),
++            "cols": (
++                ("crm_acno", "", 0, "Acc-Num"),
++                ("crm_name", "", 0, "Name", "Y")),
++            "where": [("crm_cono", "=", self.opts["conum"])]}
++        fld = [
++            [["T",0,0,0],"ID2",7,"Period","Current Financial Period",
++                self.curdt,"N",self.doCurdt,None,None,("efld",)],
++            [["T",0,1,0],"INA",7,"Acc-Num","Account Number",
++                "","N",self.doAccno,crm,None,("notblank",)],
++            [["T",0,1,0],"ONA",30,"Name"]]
++        tnd = ((self.endTop, "n"),)
++        txt = (self.exitTop,)
++        self.but = (
++            ("Normal", None, self.doReAgeNormal, 0, None, None,
++                "Only Show Unallocated Transactions"),
++            ("History", None, self.doReAgeHistory, 0, None, None,
++                "Show All Transactions, Including Already Allocated"),
++            ("Automatic", None, self.doReAgeAuto, 0, None, None,
++                "Automatically Re-Age the Account Based on Date"))
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld, tend=tnd,
++            txit=txt, butt=self.but)
++
++    def doCurdt(self, frt, pag, r, c, p, i, w):
++        self.curdt = w
++
++    def doAccno(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec(tables="crsmst", cols=["crm_name"],
++            where=[("crm_cono", "=", self.opts["conum"]), ("crm_acno", "=",
++            w)], limit=1)
++        if not acc:
++            return "Invalid Account Number"
++        self.acno = w
++        self.key = None
++        self.df.loadEntry("T", pag, p+1, data=acc[0])
++        self.opts["mf"].updateStatus("Select Routine")
++        for b in xrange(3):
++            wid = getattr(self.df, "B%s" % b)
++            self.df.setWidget(wid, "normal")
++        self.df.setWidget(self.df.B0, "focus")
++        self.opts["mf"].startLoop()
++        if self.key in ("normal", "history"):
++            return "nd"
++        elif self.key == "cancel":
++            return "nc"
++
++    def doCancel(self, widget=None):
++        if self.key == "move":
++            self.opts["mf"].dbm.rollbackDbase()
++            self.df.focusField("T", 0, 1)
++        else:
++            self.key = "cancel"
++            self.opts["mf"].closeLoop()
++
++    def doReAgeNormal(self, widget=None):
++        self.key = "normal"
++        self.doReAge()
++
++    def doReAgeHistory(self, widget=None):
++        self.key = "history"
++        self.doReAge()
++
++    def doReAge(self):
++        self.opts["mf"].updateStatus("")
++        for b in xrange(3):
++            wid = getattr(self.df, "B%s" % b)
++            self.df.setWidget(wid, "disabled")
++        col = ["crt_trdt","crt_ref1","crt_type","crt_tramt","paid","balance"]
++        whr = [
++            ("crt_cono", "=", self.opts["conum"]),
++            ("crt_acno", "=", self.acno)]
++        if self.key == "normal":
++            dtc, recs = getTrn(self.opts["mf"].dbm, "crs", whr=whr, zer="N")
++        else:
++            dtc, recs = getTrn(self.opts["mf"].dbm, "crs", whr=whr)
++        if recs:
++            data = []
++            for rec in recs:
++                dat = []
++                for c in col:
++                    dat.append(rec[dtc.index(c)])
++                data.append(dat)
++            age = AgeTrans(self.opts["mf"], "crs", data, 0, xits=False)
++            if not age.ccl and age.data:
++                if age.total.work:
++                    while not age.ccl:
++                        age.doAllocate()
++                        if age.ccl or not age.total.work:
++                            break
++                if age.ccl:
++                    self.key = "cancel"
++                    age.data = []
++                for tr in age.data:
++                    if tr[6]:
++                        w = copyList(whr)
++                        w.extend([("crt_type", "=", tr[2]),
++                            ("crt_ref1", "=", tr[1])])
++                        self.sql.insRec("crsage", data=[self.opts["conum"],
++                            self.acno, tr[2], tr[1], self.curdt, tr[2], tr[1],
++                            tr[6], 0])
++            else:
++                self.key = "cancel"
++        self.opts["mf"].closeLoop()
++
++    def doReAgeAuto(self, widget=None):
++        chk = self.sql.getRec(tables="crstrn", cols=["sum(crt_tramt)"],
++            where=[("crt_cono", "=", self.opts["conum"]), ("crt_acno",
++            "=", self.acno)], limit=1)
++        if chk[0]:
++            ok = askQuestion(self.opts["mf"].body, "Balance Error",
++                "This Account (%s) Balance is Not Zero. Continue Anyway?"
++                % self.acno)
++            if ok == "no":
++                if "args" not in self.opts:
++                    self.opts["mf"].closeLoop()
++                return
++        self.key = "normal"
++        if "args" not in self.opts:
++            for b in xrange(3):
++                wid = getattr(self.df, "B%s" % b)
++                self.df.setWidget(wid, "disabled")
++            self.opts["mf"].updateStatus("Re-Ageing .... Please Wait!")
++        self.sql.delRec("crsage", where=[("cra_cono", "=", self.opts["conum"]),
++            ("cra_acno", "=", self.acno)])
++        # EFT and CHQ
++        recs = self.sql.getRec("crstrn", where=[("crt_acno", "=", self.acno),
++            ("(", "crt_ref1", "like", "EFT______", "or", "crt_ref1", "like",
++            "CHQ______", ")")], order="crt_ref1")
++        chk = None
++        self.done = []
++        last = False
++        for num, rec in enumerate(recs):
++            data = rec[:4]
++            self.done.append(rec[:4])
++            data.extend([rec[10], 5, rec[3], rec[7], 0])
++            self.sql.insRec("crsage", data=data)
++            if num == (len(recs) - 1):
++                last = True
++            if not chk:
++                chk = rec[3]
++                amt = rec[7]
++                cdt = rec[10]
++            elif chk != rec[3] or last:
++                self.remitRecs(rec[0], rec[1], chk, amt, cdt)
++                chk = rec[3]
++                amt = rec[7]
++                cdt = rec[10]
++            else:
++                amt = float(ASD(amt) + ASD(rec[7]))
++        # Rest of records
++        crc, cr = getTrn(self.opts["mf"].dbm, "crs", whr=[("crt_cono", "=",
++            self.opts["conum"]), ("crt_acno", "=", self.acno), ("crt_tramt",
++            "<", 0)], odr="crt_trdt", zer="N")
++        if cr:
++            drc, dr = getTrn(self.opts["mf"].dbm, "crs", whr=[("crt_cono",
++                "=", self.opts["conum"]), ("crt_acno", "=", self.acno),
++                ("crt_tramt", ">", 0)], odr="crt_trdt", neg=False, zer="N")
++            if dr:
++                if "args" not in self.opts:
++                    self.df.setWidget(self.df.mstFrame, state="hide")
++                    txt = "Re-Allocating ... Please Wait"
++                    pb = ProgressBar(self.opts["mf"].body, typ=txt, mxs=len(cr))
++                for cno, ctr in enumerate(cr):
++                    if "args" not in self.opts:
++                        pb.displayProgress(cno)
++                    ccdt = ctr[crc.index("crt_curdt")]
++                    cbal = ctr[crc.index("balance")]
++                    camt = cbal
++                    for dno, dtr in enumerate(dr):
++                        dbal = dtr[drc.index("balance")]
++                        if not dbal:
++                            continue
++                        damt = float(ASD(dbal) + ASD(camt))
++                        if damt < 0:
++                            camt = damt
++                            damt = 0.00
++                        else:
++                            camt = 0.00
++                        diff = float(ASD(dbal) - ASD(damt))
++                        dr[dno][drc.index("balance")] = damt
++                        if diff:
++                            self.sql.insRec("crsage", data=[self.opts["conum"],
++                                self.acno, dtr[drc.index("crt_type")],
++                                dtr[drc.index("crt_ref1")], ccdt,
++                                ctr[drc.index("crt_type")],
++                                ctr[drc.index("crt_ref1")], diff, 0])
++                        if not camt:
++                            break
++                    diff = float(ASD(cbal) - ASD(camt))
++                    if diff:
++                        self.sql.insRec("crsage", data=[self.opts["conum"],
++                            self.acno,
++                            ctr[drc.index("crt_type")],
++                            ctr[drc.index("crt_ref1")], ccdt,
++                            ctr[drc.index("crt_type")],
++                            ctr[drc.index("crt_ref1")], diff, 0])
++                if "args" not in self.opts:
++                    pb.closeProgress()
++                    self.df.setWidget(self.df.mstFrame, state="show")
++        if "args" not in self.opts:
++            self.opts["mf"].closeLoop()
++
++    def remitRecs(self, cono, acno, refno, tramt, curdt):
++        tt2 = 0
++        twos = self.sql.getRec("crstrn", where=[("crt_cono", "=", cono),
++            ("crt_acno", "=", acno), ("crt_ref2", "=", refno)])
++        if not twos:
++            return
++        for two in twos:
++            data = two[:4]
++            self.done.append(two[:4])
++            data.extend([curdt, 5, refno, two[7], 0])
++            self.sql.insRec("crsage", data=data)
++            tt2 = float(ASD(tt2) - ASD(two[7]))
++
++    def endTop(self):
++        self.df.clearEntry("T", 0, 2)
++        self.df.clearEntry("T", 0, 3)
++        self.df.focusField("T", 0, 2)
++
++    def exitTop(self):
++        self.opts["mf"].dbm.commitDbase(ask=True)
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++if __name__ == "__main__":
++    from TartanClasses import Dbase, MainFrame
++    from tartanFunctions import loadRcFile
++    rcdic = loadRcFile("/home/paul/rcf/tartanrc_rnehol")
++    mf = MainFrame(rcdic=rcdic)
++    mf.dbm = Dbase(rcdic=rcdic)
++    mf.dbm.openDbase()
++    cr6020(**{"mf": mf, "conum": 1, "conam": "RNE Holdings"})
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2018-06-18 06:16:26 +0000
++++ doc/BKS.rst	2018-07-13 08:38:23 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.10
++:Version:   5.3.11
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2018-06-18 06:16:26 +0000
++++ doc/BWM.rst	2018-07-13 08:38:23 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.10
++:Version:   5.3.11
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Contact.rst'
+--- doc/Contact.rst	2015-05-20 16:03:01 +0000
++++ doc/Contact.rst	2018-06-27 06:51:15 +0000
+@@ -14,6 +14,6 @@
+ 
+ Other
+ =====
+-| Telephone: 27-28-3140092
++| Telephone: 27-82-9005260
+ | Facsimile: 27-86-2621838
+ | E-Mail: paul@tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2018-06-18 06:16:26 +0000
++++ doc/Downloads.rst	2018-07-13 08:38:23 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.10 and was released on the 18th June, 2018.
++The latest version of Tartan is 5.3.11 and was released on the 13th July, 2018.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.10.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.11.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.10.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.11.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.10.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.10.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.10.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.10.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.11.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.11.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.11.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.11.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2018-06-18 06:16:26 +0000
++++ doc/MST.rst	2018-07-13 08:38:23 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.10
++:Version:   5.3.11
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2018-06-18 06:16:26 +0000
++++ doc/SEC.rst	2018-07-13 08:38:23 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.10
++:Version:   5.3.11
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'drs/dr3050.py'
+--- drs/dr3050.py	2017-08-24 07:49:34 +0000
++++ drs/dr3050.py	2018-07-05 14:29:55 +0000
+@@ -60,28 +60,34 @@
+             "cols": (
+                 ("dtp_code", "", 0, "Cod"),
+                 ("dtp_desc", "", 0, "Description", "Y"))}
+-        r1s = (("Yes","Y"),("No","N"))
+-        r2s = (("Yes","Y"),("No","N"),("Only","O"))
++        r1s = (("Agedt","A"),("Curdt","C"))
++        r2s = (("Yes","Y"),("No","N"))
++        r3s = (("Yes","Y"),("No","N"),("Only","O"))
+         fld = (
+-            (("T",0,0,0),"ID2",7,"Cut-Off Period","",
++            (("T",0,0,0),("IRB",r1s),0,"Base","",
++                "A","Y",self.doBase,None,None,None),
++            (("T",0,1,0),"ID2",7,"Cut-Off Period","",
+                 int(self.sysdtw / 100),"Y",self.doCutOff,None,None,None),
+-            (("T",0,1,0),("IRB",r1s),0,"Totals Only","",
+-                "N","Y",self.doTots,None,None,None),
+-            (("T",0,2,0),"IUA",3,"Business Activity","",
+-                "","Y",self.doDrsAct,dra,None,None),
+-            (("T",0,3,0),"IUA",3,"Business Type","",
+-                "","Y",self.doDrsTyp,drt,None,None),
+-            (("T",0,4,0),"IUI",7,"Lower Balance Limit","",
+-                0,"Y",self.doLimit,None,None,None),
+-            (("T",0,5,0),("IRB",r2s),0,"Include Credit Balances", "",
+-                "Y","Y",self.doCredit,None,None,None),
+-            (("T",0,6,0),("IRB",r1s),0,"Ignore Zero Balances","",
+-                "Y","Y",self.doZero,None,None,None))
++            (("T",0,2,0),("IRB",r2s),0,"Totals Only","",
++                "N","N",self.doTots,None,None,None),
++            (("T",0,3,0),"IUA",3,"Business Activity","",
++                "","N",self.doDrsAct,dra,None,None),
++            (("T",0,4,0),"IUA",3,"Business Type","",
++                "","N",self.doDrsTyp,drt,None,None),
++            (("T",0,5,0),"IUI",7,"Lower Balance Limit","",
++                0,"N",self.doLimit,None,None,None),
++            (("T",0,6,0),("IRB",r3s),0,"Include Credit Balances", "",
++                "Y","N",self.doCredit,None,None,None),
++            (("T",0,7,0),("IRB",r2s),0,"Ignore Zero Balances","",
++                "Y","N",self.doZero,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
+ 
++    def doBase(self, frt, pag, r, c, p, i, w):
++        self.base = w
++
+     def doCutOff(self, frt, pag, r, c, p, i, w):
+         self.cutoff = w
+         self.opts["period"] = self.df.t_disp[pag][r][p]
+@@ -89,8 +95,8 @@
+     def doTots(self, frt, pag, r, c, p, i, w):
+         self.totsonly = w
+         if self.totsonly == "Y":
+-            self.df.setWidget(self.df.topEntry[0][7][3][0], state="hide")
+-            self.df.setWidget(self.df.topEntry[0][7][4][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+             self.drsact = "All"
+             self.df.loadEntry(frt, pag, p+1, data=self.drsact)
+             self.drstyp = "All"
+@@ -103,8 +109,8 @@
+             self.df.loadEntry(frt, pag, p+5, data=self.zero)
+             return "sk5"
+         else:
+-            self.df.setWidget(self.df.topEntry[0][7][3][0], state="show")
+-            self.df.setWidget(self.df.topEntry[0][7][4][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+ 
+     def doDrsAct(self, frt, pag, r, c, p, i, w):
+         if w:
+@@ -249,9 +255,34 @@
+         chn = CCD(data[0], "UI", 3)
+         acc = CCD(data[1], "NA", 7)
+         name = CCD(data[2], "NA", 30)
+-        bals = Balances(self.opts["mf"], "DRS", self.opts["conum"],
+-            self.cutoff, keys=(data[0], data[1]))
+-        obal, cbal, ages = bals.doAllBals()
++        if self.base == "A":
++            bals = Balances(self.opts["mf"], "DRS", self.opts["conum"],
++                self.cutoff, keys=(data[0], data[1]))
++            obal, cbal, ages = bals.doAllBals()
++        else:
++            pers = []
++            yr = self.cutoff / 100
++            mt = self.cutoff % 100
++            for x in range(4):
++                pers.append((yr * 100) + mt)
++                mt -= 1
++                if not mt:
++                    yr -= 1
++                    mt = 12
++            cbal = 0
++            ages = [0, 0, 0, 0, 0]
++            bals = self.sql.getRec(tables="drstrn", cols=["drt_curdt",
++                "sum(drt_tramt)"], where=[("drt_cono", "=", self.opts["conum"]),
++                ("drt_chain", "=", chn.work), ("drt_acno", "=", acc.work),
++                ("drt_curdt", "<=", pers[0])],
++                group="drt_curdt", order="drt_curdt")
++            for bal in bals:
++                try:
++                    idx = pers.index(bal[0])
++                except:
++                    idx = 4
++                ages[idx] = float(ASD(ages[idx]) + ASD(bal[1]))
++                cbal = float(ASD(cbal) + ASD(bal[1]))
+         bal = CCD(cbal, "SD", 13.2)
+         if self.limit and bal.work < self.limit:
+             return
+
+=== modified file 'drs/dr6020.py'
+--- drs/dr6020.py	2018-05-31 15:57:14 +0000
++++ drs/dr6020.py	2018-07-06 07:12:56 +0000
+@@ -198,12 +198,12 @@
+             ("dra_chain", "=", self.chain), ("dra_acno", "=", self.acno)])
+         crc, cr = getTrn(self.opts["mf"].dbm, "drs", whr=[("drt_cono", "=",
+             self.opts["conum"]), ("drt_chain", "=", self.chain), ("drt_acno",
+-            "=", self.acno), ("drt_tramt", "<", 0)], zer="N")
++            "=", self.acno), ("drt_tramt", "<", 0)], odr="drt_trdt", zer="N")
+         if cr:
+             drc, dr = getTrn(self.opts["mf"].dbm, "drs", whr=[("drt_cono",
+                 "=", self.opts["conum"]), ("drt_chain", "=", self.chain),
+                 ("drt_acno", "=", self.acno), ("drt_tramt", ">", 0)],
+-                neg=False, zer="N")
++                odr="drt_trdt", neg=False, zer="N")
+             if dr:
+                 if "args" not in self.opts:
+                     self.df.setWidget(self.df.mstFrame, state="hide")
+
+=== modified file 'gen/gl3130_rne.py'
+--- gen/gl3130_rne.py	2018-06-18 06:16:26 +0000
++++ gen/gl3130_rne.py	2018-07-03 10:28:50 +0000
+@@ -770,10 +770,10 @@
+         edt = mthendDate((self.rper * 100) + 1)
+         mths = dateDiff(sdt, edt, "months") + 1
+         bchs = self.sql.getRec(tables="genqrb", where=exc, order="gqb_name")
+-        recs = self.sql.getRec(tables="genqrc", where=[("gqc_gprp", "=", "Y")])
+-        deps = []
++        recs = self.sql.getRec(tables="genqrc")
++        deps = {}
+         for rec in recs:
+-            deps.append(rec[0])
++            deps[rec[0]] = rec[1:]
+         pb = ProgressBar(self.opts["mf"].body, mxs=len(bchs), typ=txt)
+         for num, bch in enumerate(bchs):
+             pb.displayProgress(num)
+@@ -792,7 +792,7 @@
+                 ost,pur,sls,inc,adv,cst,wag,stt,npr = self.getVals(
+                     coy, (self.sper, self.rper))
+                 # Get Last Year Values
+-                a,b,c,d,e,f,g,h,i = self.getVals(
++                a,b,c,d,e,f,g,h,lnp = self.getVals(
+                     coy, (self.sper - 100, self.rper - 100))
+                 # Calculate estimated closing stock
+                 avg = self.sql.getRec(tables="genqrp", cols=["gqp_rate",
+@@ -809,29 +809,29 @@
+                     per = round((wag * 100.0) / sls, 2)
+                 self.dat1.append([bcd, bnm, coy, nam, ost, pur, sls, slc, inc,
+                     adv, stk, cst, stt, alw, dif, wag, per])
+-                if sls and cst and dep in deps:
+-                    # Gross Profit
+-                    prf = sls + cst + inc + adv - ost - pur
+-                    if prf <= sls:
+-                        lgp = c + f + d + e - a - b
+-                        if lgp > c:
+-                            lgp = 0
+-                        if dep not in self.dat2[bnm][1]:
+-                            self.dat2[bnm][1][dep] = [prf, sls, lgp]
+-                        else:
+-                            self.dat2[bnm][1][dep][0] += prf
+-                            self.dat2[bnm][1][dep][1] += sls
+-                            self.dat2[bnm][1][dep][2] += lgp
+-                # Net Profit
+-                if not cst:
+-                    npr = float(ASD(npr) + ASD(stk))
+-                lnp = i
+-                if dep not in self.dat3[bnm][1]:
+-                    self.dat3[bnm][1][dep] = [npr, sls, lnp]
+-                else:
+-                    self.dat3[bnm][1][dep][0] += npr
+-                    self.dat3[bnm][1][dep][1] += sls
+-                    self.dat3[bnm][1][dep][2] += lnp
++                if dep in deps:
++                    if sls and cst and deps[dep][1] == "Y":
++                        # Gross Profit
++                        prf = sls + cst + inc + adv - ost - pur
++                        if prf <= sls:
++                            lgp = c + f + d + e - a - b
++                            if lgp > c:
++                                lgp = 0
++                            if dep not in self.dat2[bnm][1]:
++                                self.dat2[bnm][1][dep] = [prf, sls, lgp]
++                            else:
++                                self.dat2[bnm][1][dep][0] += prf
++                                self.dat2[bnm][1][dep][1] += sls
++                                self.dat2[bnm][1][dep][2] += lgp
++                    # Net Profit
++                    if not cst:
++                        npr = float(ASD(npr) + ASD(stk))
++                    if dep not in self.dat3[bnm][1]:
++                        self.dat3[bnm][1][dep] = [npr, sls, lnp]
++                    else:
++                        self.dat3[bnm][1][dep][0] += npr
++                        self.dat3[bnm][1][dep][1] += sls
++                        self.dat3[bnm][1][dep][2] += lnp
+         pb.closeProgress()
+ 
+     def getVals(self, coy, per):
+@@ -999,7 +999,7 @@
+                 w = 13 * self.fpdf.cwth
+                 self.fpdf.drawText(b, w=w, h=4, border="TLRB", ln=0)
+                 if self.rtyp == "D":
+-                    btot = 0
++                    bcyr = 0
+                     blyr = 0
+                 for dep in deps:
+                     if self.rtyp == "E" and dep == deps[-1]:
+@@ -1010,7 +1010,7 @@
+                         val = self.dat2[bch][1][dep[0]]
+                         if self.rtyp == "D":
+                             t = CCD(val[0], "SI", 13).disp
+-                            btot = float(ASD(btot) + ASD(val[0]))
++                            bcyr = float(ASD(bcyr) + ASD(val[0]))
+                             blyr = float(ASD(blyr) + ASD(val[2]))
+                         else:
+                             if val[1]:
+@@ -1033,7 +1033,7 @@
+                     self.fpdf.drawText(t, w=w, h=4, align="C",
+                         border="TLRB", ln=l)
+                 if self.rtyp == "D":
+-                    t = CCD(btot, "SI", 13).disp
++                    t = CCD(bcyr, "SI", 13).disp
+                     self.fpdf.drawText(t, w=w, h=4, align="C",
+                         border="TLRB", ln=0)
+                     t = CCD(blyr, "SI", 13).disp
+@@ -1079,52 +1079,163 @@
+         odr = "gqc_name"
+         deps = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
+         self.col5 = {
+-            "G": [["NA", 13, "Branch"]],
++            "G": {
++                "A": [
++                    [["NA", 13, "Branch"]],
++                    [["NA", 13, ""]]],
++                "B": [
++                    [["NA", 13, "Branch"]],
++                    [["NA", 13, ""]]]},
+             "H": [["NA", 13, "Branch"]]}
++        grpa = (1, 2, 3, 4, 8, 9, 11)
+         self.dat5 = {}
+         for dep in deps:
+-            self.col5["G"].append(["NA",13,"%s" % dep[1]])
++            if dep[0] in grpa:
++                self.col5["G"]["A"][0].append(["NA",13,"%s" % dep[1]])
++                self.col5["G"]["A"][1].append(["NA",13,"Current"])
++                self.col5["G"]["A"][1].append(["NA",13,"L-Year"])
++            else:
++                self.col5["G"]["B"][0].append(["NA",13,"%s" % dep[1]])
++                self.col5["G"]["B"][1].append(["NA",13,"Current"])
++                self.col5["G"]["B"][1].append(["NA",13,"L-Year"])
+             self.col5["H"].append(["NA",13,"%s" % dep[1]])
+             self.dat5[dep[0]] = [dep[1], {}]
+-        self.col5["G"].append(["NA",13,"%s" % "Totals"])
+-        self.col5["G"].append(["NA",13,"%s" % "L-Year"])
++        self.col5["G"]["A"][0].append(["NA",13,"%s" % "Totals"])
++        self.col5["G"]["A"][1].append(["NA",13,"%s" % "Current"])
++        self.col5["G"]["A"][1].append(["NA",13,"%s" % "L-Year"])
++        self.col5["G"]["B"][0].append(["NA",13,"%s" % "Totals"])
++        self.col5["G"]["B"][1].append(["NA",13,"%s" % "Current"])
++        self.col5["G"]["B"][1].append(["NA",13,"%s" % "L-Year"])
++        self.col5["G"]["B"][0].append(["NA",13,"%s" % "Grand Total"])
++        self.col5["G"]["B"][1].append(["NA",13,"%s" % "Current"])
++        self.col5["G"]["B"][1].append(["NA",13,"%s" % "L-Year"])
+         for self.rtyp in ("G", "H"):
+-            size = len(self.col5[self.rtyp]) * 13
++            if self.rtyp == "G":
++                size = len(self.col5[self.rtyp]["A"][1]) * 13
++            else:
++                size = len(self.col5[self.rtyp]) * 13
+             self.fpdf.def_orientation = "L"
+             self.fpdf.setValues("gl3130", size, font="courier")
+             self.fpdf.add_page()
+-            tots = {}
+             if self.rtyp == "G":
+                 txt = "Generating Net Profit Report"
+             else:
+                 txt = "Generating Net Profit %tage Report"
+             pb = ProgressBar(self.opts["mf"].body, mxs=len(bchs), typ=txt)
+-            for num, bch in enumerate(bchs):
+-                pb.displayProgress(num)
+-                prt = False
+-                for dep in deps:
+-                    if dep[0] in self.dat3[bch][1]:
+-                        prt = True
+-                if not prt:
+-                    continue
+-                b = CCD(bch, "NA", 13).disp
+-                w = 13 * self.fpdf.cwth
+-                self.fpdf.drawText(b, w=w, h=4, border="TLRB", ln=0)
+-                if self.rtyp == "G":
+-                    btot = 0
+-                    blyr = 0
+-                for dep in deps:
+-                    if self.rtyp == "H" and dep == deps[-1]:
+-                        l = 1
++            if self.rtyp == "G":
++                btot = {}
++                gtot = [0, 0, 0]
++                y = self.fpdf.get_y()
++                for grp in ("A", "B"):
++                    if grp == "B":
++                        self.fpdf.drawText()
++                        self.fpdf.drawText()
++                    x = self.fpdf.get_x()
++                    y = self.fpdf.get_y()
++                    for num, col in enumerate(self.col5[self.rtyp][grp][0]):
++                        if not num:
++                            w = int(col[1]) * self.fpdf.cwth
++                        else:
++                            w = int(col[1]) * self.fpdf.cwth * 2
++                        if col == self.col5[self.rtyp][grp][0][-1]:
++                            l = 1
++                        else:
++                            l = 0
++                        self.fpdf.drawText(col[2], x=x, y=y, w=w, h=5,
++                            font="B", align="C", border="TLRB", fill=True)
++                        x += w
++                    x = self.fpdf.get_x()
++                    y = self.fpdf.get_y()
++                    for num, col in enumerate(self.col5[self.rtyp][grp][1]):
++                        w = int(col[1]) * self.fpdf.cwth
++                        if col == self.col5[self.rtyp][grp][1][-1]:
++                            l = 1
++                        else:
++                            l = 0
++                        self.fpdf.drawText(col[2], x=x, y=y, w=w, h=5,
++                            font="B", align="C", border="TLRB", fill=True)
++                        x += w
++                    self.fpdf.setFont(self.font[0], "", self.font[1])
++                    tots = {}
++                    for num, bch in enumerate(bchs):
++                        pb.displayProgress(num)
++                        prt = False
++                        b = CCD(bch, "NA", 13).disp
++                        w = 13 * self.fpdf.cwth
++                        self.fpdf.drawText(b, w=w, h=4, border="TLRB", ln=0)
++                        bcyr = 0
++                        blyr = 0
++                        if bch not in btot:
++                            btot[bch] = [0, 0]
++                        for dep in deps:
++                            if grp == "A" and dep[0] not in grpa:
++                                continue
++                            if grp == "B" and dep[0] in grpa:
++                                continue
++                            l = 0
++                            if dep[0] in self.dat3[bch][1]:
++                                val = self.dat3[bch][1][dep[0]]
++                                t = CCD(val[0], "SI", 13).disp
++                                p = CCD(val[2], "SI", 13).disp
++                                bcyr = float(ASD(bcyr) + ASD(val[0]))
++                                blyr = float(ASD(blyr) + ASD(val[2]))
++                                if dep[1] not in tots:
++                                    tots[dep[1]] = [0, 0, 0]
++                                tots[dep[1]][0] += val[0]
++                                tots[dep[1]][1] += val[1]
++                                tots[dep[1]][2] += val[2]
++                                btot[bch][0] += val[0]
++                                btot[bch][1] += val[2]
++                                gtot[0] += val[0]
++                                gtot[1] += val[2]
++                            else:
++                                t = ""
++                                p = ""
++                            self.fpdf.drawText(t, w=w, h=4, align="C",
++                                border="TLRB", ln=l)
++                            self.fpdf.drawText(p, w=w, h=4, align="C",
++                                border="TLRB", ln=l)
++                        t = CCD(bcyr, "SI", 13).disp
++                        self.fpdf.drawText(t, w=w, h=4, align="C",
++                            border="TLRB", ln=0)
++                        t = CCD(blyr, "SI", 13).disp
++                        if grp == "A":
++                            self.fpdf.drawText(t, w=w, h=4, align="C",
++                                border="TLRB", ln=1)
++                        else:
++                            self.fpdf.drawText(t, w=w, h=4, align="C",
++                                border="TLRB", ln=0)
++                            t = CCD(btot[bch][0], "SI", 13).disp
++                            self.fpdf.drawText(t, w=w, h=4, align="C",
++                                border="TLRB", ln=0)
++                            t = CCD(btot[bch][1], "SI", 13).disp
++                            self.fpdf.drawText(t, w=w, h=4, align="C",
++                                border="TLRB", ln=1)
++                    if grp == "B":
++                        self.doTotal(tots, gtot)
+                     else:
+-                        l = 0
+-                    if dep[0] in self.dat3[bch][1]:
+-                        val = self.dat3[bch][1][dep[0]]
+-                        if self.rtyp == "G":
+-                            t = CCD(val[0], "SI", 13).disp
+-                            btot = float(ASD(btot) + ASD(val[0]))
+-                            blyr = float(ASD(blyr) + ASD(val[2]))
++                        self.doTotal(tots)
++                pb.closeProgress()
++            else:
++                tots = {}
++                for num, bch in enumerate(bchs):
++                    pb.displayProgress(num)
++                    prt = False
++                    for dep in deps:
++                        if dep[0] in self.dat3[bch][1]:
++                            prt = True
++                    if not prt:
++                        continue
++                    b = CCD(bch, "NA", 13).disp
++                    w = 13 * self.fpdf.cwth
++                    self.fpdf.drawText(b, w=w, h=4, border="TLRB", ln=0)
++                    for dep in deps:
++                        if dep == deps[-1]:
++                            l = 1
+                         else:
++                            l = 0
++                        if dep[0] in self.dat3[bch][1]:
++                            val = self.dat3[bch][1][dep[0]]
+                             if not val[1]:
+                                 gp = 0
+                             else:
+@@ -1135,27 +1246,20 @@
+                             else:
+                                 t = t.disp + "%"
+                             self.dat5[dep[0]][1][b.strip()] = gp
+-                        if dep[1] not in tots:
+-                            tots[dep[1]] = [0, 0, 0]
+-                        tots[dep[1]][0] += val[0]
+-                        tots[dep[1]][1] += val[1]
+-                        tots[dep[1]][2] += val[2]
+-                    else:
+-                        t = ""
+-                    self.fpdf.drawText(t, w=w, h=4, align="C",
+-                        border="TLRB", ln=l)
+-                if self.rtyp == "G":
+-                    t = CCD(btot, "SI", 13).disp
+-                    self.fpdf.drawText(t, w=w, h=4, align="C",
+-                        border="TLRB", ln=0)
+-                    t = CCD(blyr, "SI", 13).disp
+-                    self.fpdf.drawText(t, w=w, h=4, align="C",
+-                        border="TLRB", ln=1)
+-            pb.closeProgress()
+-            self.doTotal(tots)
++                            if dep[1] not in tots:
++                                tots[dep[1]] = [0, 0, 0]
++                            tots[dep[1]][0] += val[0]
++                            tots[dep[1]][1] += val[1]
++                            tots[dep[1]][2] += val[2]
++                        else:
++                            t = ""
++                        self.fpdf.drawText(t, w=w, h=4, align="C",
++                            border="TLRB", ln=l)
++                pb.closeProgress()
++                self.doTotal(tots)
+ 
+     def doHead(self):
+-        font = copyList(self.fpdf.font)
++        self.font = copyList(self.fpdf.font)
+         if self.rtyp == "A":
+             if self.name == "Totals":
+                 head = "Group Sales %s" % self.name
+@@ -1164,7 +1268,7 @@
+             head += " as at %s (Thousands)" % self.rperd
+             self.fpdf.drawText(head, align="C", font=("B", 14))
+             self.fpdf.drawText()
+-            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.setFont(self.font[0], "B", self.font[1])
+             w = 5 * self.fpdf.cwth
+             self.fpdf.drawText("Mth", w=w, h=5, border="TLRB", ln=0, fill=True)
+             w = 6 * self.fpdf.cwth
+@@ -1188,7 +1292,7 @@
+                 self.fpdf.drawText()
+                 self.fpdf.drawText()
+                 self.fpdf.drawText()
+-            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.setFont(self.font[0], "B", self.font[1])
+             self.fpdf.drawText("Branch", w=13*self.fpdf.cwth, h=5,
+                 border="TLRB", fill=True, ln=0)
+             for x in xrange(7):
+@@ -1208,7 +1312,7 @@
+         elif self.rtyp == "C":
+             head = "Stock Estimates as at %s (Thousands)" % self.rperd
+             self.fpdf.drawText(head, align="C", font=("B", 14))
+-            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.setFont(self.font[0], "B", self.font[1])
+             self.fpdf.drawText()
+             for num, col in enumerate(self.col2):
+                 w = (int(col[1]) + 1) * self.fpdf.cwth
+@@ -1233,7 +1337,7 @@
+             self.fpdf.drawText()
+             x = self.fpdf.get_x()
+             y = self.fpdf.get_y()
+-            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.setFont(self.font[0], "B", self.font[1])
+             for num, col in enumerate(self.col4[self.rtyp]):
+                 w = int(col[1]) * self.fpdf.cwth
+                 if col == self.col4[self.rtyp][-1]:
+@@ -1259,7 +1363,9 @@
+             self.fpdf.drawText()
+             x = self.fpdf.get_x()
+             y = self.fpdf.get_y()
+-            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.setFont(self.font[0], "B", self.font[1])
++            if self.rtyp == "G":
++                return
+             for num, col in enumerate(self.col5[self.rtyp]):
+                 w = int(col[1]) * self.fpdf.cwth
+                 if col == self.col5[self.rtyp][-1]:
+@@ -1269,10 +1375,10 @@
+                 self.fpdf.drawText(col[2], x=x, y=y, w=w, h=5, align="C",
+                     border="TLRB", fill=True)
+                 x += w
+-        self.fpdf.setFont(font[0], "", font[1])
++        self.fpdf.setFont(self.font[0], "", self.font[1])
+ 
+-    def doTotal(self, data):
+-        font = copyList(self.fpdf.font)
++    def doTotal(self, data, gtot=None):
++        self.font = copyList(self.fpdf.font)
+         if self.rtyp == "C":
+             self.fpdf.underLine()
+             if not data[1]:
+@@ -1280,7 +1386,7 @@
+             else:
+                 t = "Total %s" % data[1]
+             w = 35 * self.fpdf.cwth
+-            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.setFont(self.font[0], "B", self.font[1])
+             self.fpdf.drawText(t, w=w, ln=0)
+             for n, f in enumerate(data[2:]):
+                 if n == 12:
+@@ -1302,9 +1408,9 @@
+             w = 13 * self.fpdf.cwth
+             b = "TLRB"
+             f = True
+-            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.setFont(self.font[0], "B", self.font[1])
+             if self.rtyp == "D":
+-                gtot = 0
++                ctot = 0
+                 ltot = 0
+                 txt = "Total GP "
+             else:
+@@ -1317,7 +1423,7 @@
+                 if self.rtyp == "D":
+                     l = 0
+                     txt = CCD(data[dep][0], "SI", 13).disp
+-                    gtot = float(ASD(gtot) + ASD(data[dep][0]))
++                    ctot = float(ASD(ctot) + ASD(data[dep][0]))
+                     ltot = float(ASD(ltot) + ASD(data[dep][2]))
+                 else:
+                     if dep == keys[-1]:
+@@ -1333,19 +1439,19 @@
+                 self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
+                     fill=f, ln=l)
+             if self.rtyp == "D":
+-                txt = CCD(gtot, "SI", 13).disp
++                txt = CCD(ctot, "SI", 13).disp
+                 self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
+                     fill=f, ln=0)
+                 txt = CCD(ltot, "SI", 13).disp
+                 self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
+                     fill=f, ln=1)
+         elif self.rtyp in ("G", "H"):
+-            w = 13 * self.fpdf.cwth
+             b = "TLRB"
+             f = True
+-            self.fpdf.setFont(font[0], "B", font[1])
++            w = 13 * self.fpdf.cwth
++            self.fpdf.setFont(self.font[0], "B", self.font[1])
+             if self.rtyp == "G":
+-                gtot = 0
++                ctot = 0
+                 ltot = 0
+                 txt = "Total NP"
+             else:
+@@ -1354,11 +1460,15 @@
+             keys = list(data.keys())
+             keys.sort()
+             for dep in keys:
+-                w = 13 * self.fpdf.cwth
+                 if self.rtyp == "G":
+                     l = 0
+                     txt = CCD(data[dep][0], "SI", 13).disp
+-                    gtot = float(ASD(gtot) + ASD(data[dep][0]))
++                    self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
++                        fill=f, ln=l)
++                    txt = CCD(data[dep][2], "SI", 13).disp
++                    self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
++                        fill=f, ln=l)
++                    ctot = float(ASD(ctot) + ASD(data[dep][0]))
+                     ltot = float(ASD(ltot) + ASD(data[dep][2]))
+                 else:
+                     if dep == keys[-1]:
+@@ -1371,16 +1481,26 @@
+                         gp = round(data[dep][0] * 100.0 / data[dep][1], 2)
+                     t = CCD(gp, "SD", 6.2).disp
+                     txt = "%s%s" % (t, "%")
+-                self.fpdf.drawText(txt, w=w, h=5, align="C", border=b, fill=f,
+-                    ln=l)
++                    self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
++                        fill=f, ln=l)
+             if self.rtyp == "G":
+-                txt = CCD(gtot, "SI", 13).disp
++                txt = CCD(ctot, "SI", 13).disp
+                 self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
+                     fill=f, ln=0)
+                 txt = CCD(ltot, "SI", 13).disp
+-                self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
+-                    fill=f, ln=1)
+-        self.fpdf.setFont(font[0], "", font[1])
++                if not gtot:
++                    self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
++                        fill=f, ln=1)
++                else:
++                    self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
++                        fill=f, ln=0)
++                    txt = CCD(gtot[0], "SI", 13).disp
++                    self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
++                        fill=f, ln=0)
++                    txt = CCD(gtot[1], "SI", 13).disp
++                    self.fpdf.drawText(txt, w=w, h=5, align="C", border=b,
++                        fill=f, ln=1)
++        self.fpdf.setFont(self.font[0], "", self.font[1])
+ 
+     def doBarChart(self, xcol=[], vals=[], tgt=0, fill=False):
+         if not vals:
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2018-06-18 06:16:26 +0000
++++ mst/ms0000.py	2018-07-13 08:38:23 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 10)
++    VERSION = (5, 3, 11)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms3010.py'
+--- mst/ms3010.py	2018-05-31 15:57:14 +0000
++++ mst/ms3010.py	2018-07-13 08:28:15 +0000
+@@ -222,7 +222,8 @@
+             vtm.append(("vtm_cat", "=", self.cat))
+         if self.code:
+             vtm.append(("vtm_code", "=", self.code))
+-        recs = self.sql.getRec(tables="ctlvmf", where=vtm)
++        odr = "vtm_cat, vtm_code"
++        recs = self.sql.getRec(tables="ctlvmf", where=vtm, order=odr)
+         if not recs:
+             showError(self.opts["mf"].body, "Selection Error",
+                 "No Records Selected")
+
+=== modified file 'mst/msc000_rne.py'
+--- mst/msc000_rne.py	2018-06-18 06:16:26 +0000
++++ mst/msc000_rne.py	2018-06-27 07:03:02 +0000
+@@ -512,8 +512,12 @@
+                 self.user["last"] = usr[sql.ctlpwu_col.index("usr_last")]
+             else:
+                 self.user["last"] = 0
+-            self.user["acoy"] = usr[sql.ctlpwu_col.index("usr_acoy")]
+-            self.user["dcoy"] = usr[sql.ctlpwu_col.index("usr_dcoy")]
++            if "usr_coy" in sql.ctlpwu_dic:
++                self.user["acoy"] = usr[sql.ctlpwu_col.index("usr_coy")]
++                self.user["dcoy"] = ""
++            else:
++                self.user["acoy"] = usr[sql.ctlpwu_col.index("usr_acoy")]
++                self.user["dcoy"] = usr[sql.ctlpwu_col.index("usr_dcoy")]
+             self.user["lvl"] = usr[sql.ctlpwu_col.index("usr_lvl")]
+             if pwdchk and self.user["pwd"] and self.userCheckPwd(pwd):
+                 self.user = {}
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2018-06-18 06:16:26 +0000
++++ std/TartanClasses.py	2018-07-08 10:18:05 +0000
+@@ -3939,7 +3939,7 @@
+         if table == "ctlpwu" and self.put == "i":
+             sql = Sql(self.dbm, table, prog=__name__)
+             sql.insRec(table, data=["admin", "System Administrator",
+-                "", 0, "", 9])
++                "", 0, "", "", 9])
+ 
+ class TartanDialog(object):
+     """
+@@ -9083,7 +9083,15 @@
+         start = self.curdt - 199
+         if (start % 100) == 13:
+             start = start + 100 - 12
+-        if self.system == "DRS":
++        if self.system == "CRS":
++            col = ["crt_curdt", "crt_type", "round(sum(crt_tramt), 2)",
++                "round(sum(crt_taxamt), 2)"]
++            whr = [("crt_cono", "=", self.conum), ("crt_acno", "=", self.acno),
++                ("crt_curdt", "between", start, self.curdt)]
++            grp = "crt_curdt, crt_type"
++            bals = self.sql.getRec(tables="crstrn", cols=col, where=whr,
++                group=grp, order=grp)
++        elif self.system == "DRS":
+             col = ["drt_curdt", "drt_type", "round(sum(drt_tramt), 2)",
+                 "round(sum(drt_taxamt), 2)"]
+             whr = [("drt_cono", "=", self.conum), ("drt_chain", "=",
+@@ -9092,14 +9100,6 @@
+             grp = "drt_curdt, drt_type"
+             bals = self.sql.getRec(tables="drstrn", cols=col, where=whr,
+                 group=grp, order=grp)
+-        elif self.system == "CRS":
+-            col = ["crt_curdt", "crt_type", "round(sum(crt_tramt), 2)",
+-                "round(sum(crt_taxamt), 2)"]
+-            whr = [("crt_cono", "=", self.conum), ("crt_acno", "=", self.acno),
+-                ("crt_curdt", "between", start, self.curdt)]
+-            grp = "crt_curdt, crt_type"
+-            bals = self.sql.getRec(tables="crstrn", cols=col, where=whr,
+-                group=grp, order=grp)
+         for bal in bals:
+             if bal[1] in (1, 4):
+                 x = 0
+@@ -14873,7 +14873,7 @@
+                 "","N",self.doFullName,susr,self.doDelUser,("notblank",)),
+             (("T",0,2,0),"IHA",10,"User Password","",
+                 "","N",self.doUserPwd1,None,None,None),
+-            (("T",0,2,29),"IHA",10," Check ","Check Password",
++            (("T",0,2,31),"IHA",10," Check ","Check Password",
+                 "","N",self.doUserPwd2,None,None,None),
+             (("T",0,3,0),("IRB",r1s),0,"Copy Existing User","",
+                 "N","N",self.doCopyUser1,None,None,None),
+@@ -14934,7 +14934,7 @@
+             if not self.dcoy:
+                 self.df.loadEntry(frt, pag, p+7, data="None")
+             else:
+-                self.df.loadEntry(frt, pag, p+7, data=self.acoy)
++                self.df.loadEntry(frt, pag, p+7, data=self.dcoy)
+             self.df.loadEntry(frt, pag, p+8, data=self.lvl)
+             self.doLoadMods(focus=False)
+         if self.unam == "admin":
+@@ -14956,6 +14956,7 @@
+         if self.unam == "admin":
+             self.cpy = "N"
+             self.acoy = ""
++            self.dcoy = ""
+             self.lvl = 9
+             return "sk4"
+ 
+@@ -14977,7 +14978,11 @@
+             self.df.loadEntry(frt, pag, p+1, data="All")
+         else:
+             self.df.loadEntry(frt, pag, p+1, data=self.acoy)
+-        self.df.loadEntry(frt, pag, p+2, data=self.lvl)
++        if not self.dcoy:
++            self.df.loadEntry(frt, pag, p+2, data="None")
++        else:
++            self.df.loadEntry(frt, pag, p+2, data=self.dcoy)
++        self.df.loadEntry(frt, pag, p+3, data=self.lvl)
+ 
+     def doValCoy(self, frt, pag, r, c, p, i, w):
+         self.acoy = ""
+@@ -15015,7 +15020,7 @@
+                     return "Invalid Company Number (%s)" % c
+             self.df.loadEntry(frt, pag, i, data=self.dcoy)
+         else:
+-            self.df.loadEntry(frt, pag, i, data="All")
++            self.df.loadEntry(frt, pag, i, data="None")
+ 
+     def doSecLvl(self, frt, pag, r, c, p, i, w):
+         self.lvl = w
+@@ -15059,6 +15064,10 @@
+             coys = self.acoy.split(",")
+             if str(w) not in coys:
+                 return "Invalid Company for This User"
++        if w and self.dcoy:
++            coys = self.dcoy.split(",")
++            if str(w) in coys:
++                return "Invalid Company for This User"
+         self.con = w
+ 
+     def doSys(self, frt, pag, r, c, p, i, w):
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2018-05-31 15:57:14 +0000
++++ uty/pkgprg.py	2018-07-02 14:47:19 +0000
+@@ -133,9 +133,9 @@
+     custom = ["rne", ["ar6020", "ar6030", "cr1010", "cr2010", "cr2020",
+               "cr2030", "cr3030", "cr3070", "cr3310", "cr3320", "cr3330",
+               "cr3340", "cr3350", "cr3360", "cr3370", "cr3380", "cr3390",
+-              "cr4010", "cr6010", "gl3030", "gl3100", "gl3110", "gl3120",
+-              "gl3130", "gl3140", "gl3150", "glc310", "glc410", "glc510",
+-              "ln2020", "msc000", "ms1010", "msy030", "tartanWork"]]
++              "cr4010", "cr6010", "cr6020", "gl3030", "gl3100", "gl3110",
++              "gl3120", "gl3130", "gl3140", "gl3150", "glc310", "glc410",
++              "glc510", "ln2020", "msc000", "ms1010", "msy030", "tartanWork"]]
+     exclude = ["cr3080", "dr1020", "dr2030", "dr6030", "drc210", "drc220",
+                "drc310", "drc320", "drc510", "drc520", "drc610", "drc620",
+                "drc710", "drc810", "msy020", "si2020", "si3010", "si3070",
+

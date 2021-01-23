@@ -1,0 +1,38 @@
+This version has been in production since April 2013 and is a Major Version
+Change implementing, amongst many others, the following:
+
+1)  Replaced Gtk widgets with Tkinter. The reason for this change is that
+    Tkinter is the de facto standard for the python language and is packaged
+    with it. In addition it is Python version 3 ready. This change required
+    each and every module in the suite to be altered and tested resulting in
+    numerous changes and hopefully many enhancements.
+2)  Changed all modules to automatically alter the font size to fit the
+    window geometry selected in the System --> Preferences --> Dialog routine.
+3)  Modified the tooltip feature which can be turned on or off in the
+    System --> Preferences --> General routine.
+4)  Added colour schemes in the System --> Preferences --> Dialog routine.
+5)  Added an additional option to set the label and button colours in the
+    System --> Preferences --> Dialog routine.
+6)  Allowed the facility to click on entry fields in some modules e.g. File
+    Maintenance routines.
+7)  Changed the VAT system to allow for VAT rate changes by date. This will
+    facilitate any future VAT rate changes.
+8)  Added a username to all transactions so that they can be interrogated to
+    see which user generated them.
+9)  Added the facility to report by department in the general ledger financial
+    statements routine.
+10) Added a 'Sale of Assets' control account to general ledger integration.
+11) Changed some of the enquiry, F1, functions to support search filters.
+12) Introduced bulk record inserts resulting in quicker restores and updates.
+13) Added support for e-mail SMTP security and authentication in the
+    Control --> System Records routine.
+14) Improved the bulk mail utility to include additional systems and telephone
+    directory contacts.
+15) Implemented netbios file name resolution and access under linux.
+16) Added a new system, Booking's Manager, which is a system for managing short
+    term booking and letting of facilities like accomodation, functions and
+    conferences.
+
+Note:
+-----
+You can only upgrade to this version if your current version is 4.1.10 or later

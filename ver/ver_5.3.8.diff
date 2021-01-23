@@ -1,0 +1,227 @@
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2018-04-11 05:38:23 +0000
++++ doc/BKS.rst	2018-05-01 16:28:18 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.7
++:Version:   5.3.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2018-04-11 05:38:23 +0000
++++ doc/BWM.rst	2018-05-01 16:28:18 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.7
++:Version:   5.3.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2018-04-11 05:38:23 +0000
++++ doc/Downloads.rst	2018-05-01 16:28:18 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.7 and was released on the 11th April, 2018.
++The latest version of Tartan is 5.3.8 and was released on the 1st May, 2018.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.7.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.8.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.7.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.8.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.7.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.7.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.7.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.7.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.8.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.8.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.8.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.8.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2018-04-11 05:38:23 +0000
++++ doc/MST.rst	2018-05-01 16:28:18 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.7
++:Version:   5.3.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2018-04-11 05:38:23 +0000
++++ doc/SEC.rst	2018-05-01 16:28:18 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.7
++:Version:   5.3.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl3140_rne.py'
+--- gen/gl3140_rne.py	2018-03-30 21:03:30 +0000
++++ gen/gl3140_rne.py	2018-05-01 10:35:46 +0000
+@@ -77,7 +77,9 @@
+             (("T",0,2,0),"IUI",3,"Report Number","",
+                 2,"N",self.doRepNum,rpt,None,("notzero",)),
+             (("T",0,3,0),("IRB",r1s),0,"All Branches","",
+-                "Y","N",self.doAllBch,None,None,None))
++                "Y","N",self.doAllBch,None,None,None),
++            (("T",0,4,0),("IRB",r1s),0,"All Departments","",
++                "Y","N",self.doAllDep,None,None,None))
+         tnd = ((self.doMainEnd,"y"), )
+         txt = (self.doMainExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+@@ -124,6 +126,29 @@
+             if not self.bchs:
+                 return "No Branches Selected"
+ 
++    def doAllDep(self, frt, pag, r, c, p, i, w):
++        self.depp = []
++        if w == "Y":
++            deps = self.sql.getRec(tables=["genqrc", "genqrd"],
++                cols=["gqc_dcod", "gqc_name"], where=[("gqd_bcod",
++                "=", self.bch[0]), ("gqc_dcod=gqd_dcod",)],
++                group="gqc_dcod, gqc_name", order="gqc_dcod")
++            if not deps:
++                return "No Departments Available"
++        else:
++            bchs = []
++            for bch in self.bchs:
++                bchs.append(bch[0])
++            deps = getSingleRecords(self.opts["mf"],
++                ("genqrc", "genqrd"), ("gqc_dcod", "gqc_name"),
++                where=[("gqd_bcod", "in", bchs), ("gqc_dcod=gqd_dcod",)],
++                group=True, order="gqc_dcod")
++            if not deps:
++                return "No Branches Selected"
++        self.depp = []
++        for dep in deps:
++            self.depp.append(dep[0])
++
+     def doMainEnd(self):
+         self.df.closeProcess()
+         if self.df.repprt[2] == "export":
+@@ -159,9 +184,10 @@
+             p.displayProgress(num)
+             self.allfields = []
+             self.deps = self.sql.getRec(tables=["genqrd", "genqrc"],
+-                cols=["gqc_dcod", "gqc_name"], where=[("gqd_bcod",
+-                "=", self.bch[0]), ("gqc_dcod=gqd_dcod",)],
+-                group="gqc_dcod, gqc_name", order="gqc_dcod")
++                cols=["gqc_dcod", "gqc_name"], where=[("gqc_dcod",
++                "in", self.depp), ("gqd_bcod", "=", self.bch[0]),
++                ("gqc_dcod=gqd_dcod",)], group="gqc_dcod, gqc_name",
++                order="gqc_dcod")
+             deps = copyList(self.deps)
+             for num, dep in enumerate(deps):
+                 coys = []
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2018-04-11 05:38:23 +0000
++++ mst/ms0000.py	2018-05-01 16:28:18 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 7)
++    VERSION = (5, 3, 8)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms3010.py'
+--- mst/ms3010.py	2018-04-08 06:05:45 +0000
++++ mst/ms3010.py	2018-04-30 14:12:36 +0000
+@@ -295,9 +295,11 @@
+                     self.ctopv = float(ASD(self.ctopv) + ASD(inc.work))
+                     self.ctopt = float(ASD(self.ctopt) + ASD(tax.work))
+                     self.ttopv[self.pcat][vtr.disp] = \
+-                        float(ASD(self.ttopv[self.pcat]) + ASD(inc.work))
++                        float(ASD(self.ttopv[self.pcat][vtr.disp]) + \
++                        ASD(inc.work))
+                     self.ttopt[self.pcat][vtr.disp] = \
+-                        float(ASD(self.ttopt[self.pcat]) + ASD(tax.work))
++                        float(ASD(self.ttopt[self.pcat][vtr.disp]) + \
++                        ASD(tax.work))
+                     self.gtopv = float(ASD(self.gtopv) + ASD(inc.work))
+                     self.gtopt = float(ASD(self.gtopt) + ASD(tax.work))
+                 self.expdatas.append(line)
+
+=== modified file 'sls/si2010.py'
+--- sls/si2010.py	2018-04-11 05:38:23 +0000
++++ sls/si2010.py	2018-04-11 14:55:16 +0000
+@@ -1622,7 +1622,14 @@
+                 data=["I", self.docno], where=[("si2_cono", "=",
+                 self.opts["conum"]), ("si2_rtn", "=", self.typs),
+                 ("si2_docno", "=", actdoc)])
+-            # Check and change V.A.T. rates if applicable
++            #Update slsiv3
++            self.sql.updRec("slsiv3", cols=["si3_rtn", "si3_docno"],
++                data=["I", self.docno], where=[("si3_cono", "=",
++                self.opts["conum"]), ("si3_rtn", "=", self.typs),
++                ("si3_docno", "=", actdoc)])
++            self.typs = "I"
++            # Check and change V.A.T. rates if applicable and reload screen
++            chg = False
+             recs = self.sql.getRec(tables="slsiv2", where=[("si2_cono", "=",
+                 self.opts["conum"]), ("si2_rtn", "=", "I"), ("si2_docno", "=",
+                 self.docno)])
+@@ -1631,14 +1638,12 @@
+                 rat = rec[self.sql.slsiv2_col.index("si2_vat_rate")]
+                 chk = getVatRate(self.sql, rec[0], cod, self.trdt)
+                 if rat != chk:
++                    chg = True
+                     self.sql.updRec("slsiv2", cols=["si2_vat_rate"], data=[chk],
+                         where=[("si2_cono", "=", rec[0]), ("si2_rtn", "=", rec[1]),
+                         ("si2_docno", "=", rec[2]), ("si2_seq", "=", rec[3])])
+-            self.sql.updRec("slsiv3", cols=["si3_rtn", "si3_docno"],
+-                data=["I", self.docno], where=[("si3_cono", "=",
+-                self.opts["conum"]), ("si3_rtn", "=", self.typs),
+-                ("si3_docno", "=", actdoc)])
+-            self.typs = "I"
++            if chg:
++                self.doReadLoadStr()
+         else:
+             actdoc = None
+         # Create Stores Transactions
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2018-03-30 21:03:30 +0000
++++ uty/pkgprg.py	2018-04-30 13:58:19 +0000
+@@ -650,6 +650,7 @@
+             "keith@barrowdale.co.za",
+             "lawrence@hawcweb.co.za",
+             "lorraine@agfin.co.za",
++            "lorraine@acsaccounting.co.za",
+             "marindag@buildinn-el.co.za",
+             "marlene@acsonline.co.za",
+             "mcbagro@gmail.com",
+

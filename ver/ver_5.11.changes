@@ -1,0 +1,16 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Added a routine to Export a single company or linked companies to a
+    separate database named e.g. name001.db into a selected dictionary.
+    The prefix name would be the name of the database being exported and
+    001 would be the company number.
+ 2) Added a routine to Merge an exported company's database back into the
+    original database. Please refer to the reference manual for further
+    information.
+ 3) Added a routine to Print missing general ledger masterfile records.
+ 4) Some other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.4 or later.
+If you have an older version than 5.4 please contact me for assistance.

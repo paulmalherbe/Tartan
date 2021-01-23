@@ -1,0 +1,9 @@
+1) Fixed an error with the G/L Financial Report Stream option.
+2) Some minor bug fixes.
+
+Note:
+-----
+You can only upgrade to this version if your current version is 4.1.10 or later.
+
+Also please note that to enable VAT reports there must be a VAT Number in the
+Company Record.

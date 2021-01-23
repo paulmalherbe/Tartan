@@ -1,0 +1,123 @@
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2018-04-08 06:05:45 +0000
++++ doc/BKS.rst	2018-04-11 05:37:59 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.6
++:Version:   5.3.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2018-04-08 06:05:45 +0000
++++ doc/BWM.rst	2018-04-11 05:37:59 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.6
++:Version:   5.3.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2018-04-08 06:05:45 +0000
++++ doc/Downloads.rst	2018-04-11 05:37:59 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.6 and was released on the 8th April, 2018.
++The latest version of Tartan is 5.3.7 and was released on the 11th April, 2018.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.6.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.7.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.6.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.7.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.6.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.6.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.6.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.6.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.7.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.7.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.7.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.7.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2018-04-08 06:05:45 +0000
++++ doc/MST.rst	2018-04-11 05:37:59 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.6
++:Version:   5.3.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2018-04-08 06:05:45 +0000
++++ doc/SEC.rst	2018-04-11 05:37:59 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.6
++:Version:   5.3.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2018-04-08 06:05:45 +0000
++++ mst/ms0000.py	2018-04-11 05:37:59 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 6)
++    VERSION = (5, 3, 7)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'sls/si2010.py'
+--- sls/si2010.py	2018-02-17 07:36:43 +0000
++++ sls/si2010.py	2018-04-10 17:58:01 +0000
+@@ -1622,6 +1622,18 @@
+                 data=["I", self.docno], where=[("si2_cono", "=",
+                 self.opts["conum"]), ("si2_rtn", "=", self.typs),
+                 ("si2_docno", "=", actdoc)])
++            # Check and change V.A.T. rates if applicable
++            recs = self.sql.getRec(tables="slsiv2", where=[("si2_cono", "=",
++                self.opts["conum"]), ("si2_rtn", "=", "I"), ("si2_docno", "=",
++                self.docno)])
++            for rec in recs:
++                cod = rec[self.sql.slsiv2_col.index("si2_vat_code")]
++                rat = rec[self.sql.slsiv2_col.index("si2_vat_rate")]
++                chk = getVatRate(self.sql, rec[0], cod, self.trdt)
++                if rat != chk:
++                    self.sql.updRec("slsiv2", cols=["si2_vat_rate"], data=[chk],
++                        where=[("si2_cono", "=", rec[0]), ("si2_rtn", "=", rec[1]),
++                        ("si2_docno", "=", rec[2]), ("si2_seq", "=", rec[3])])
+             self.sql.updRec("slsiv3", cols=["si3_rtn", "si3_docno"],
+                 data=["I", self.docno], where=[("si3_cono", "=",
+                 self.opts["conum"]), ("si3_rtn", "=", self.typs),
+

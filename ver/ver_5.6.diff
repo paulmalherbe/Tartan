@@ -1,0 +1,1002 @@
+=== modified file 'crs/cr3020.py'
+--- crs/cr3020.py	2019-07-03 13:49:08 +0000
++++ crs/cr3020.py	2019-07-31 10:49:59 +0000
+@@ -27,8 +27,7 @@
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import doWriteExport, doPrinter, getModName, copyList
+-from tartanFunctions import showError
++from tartanFunctions import doWriteExport, doPrinter, getModName, showError
+ from tartanWork import crtrtp
+ 
+ class cr3020:
+@@ -191,13 +190,13 @@
+ 
+     def doEnd(self):
+         self.df.closeProcess()
++        jon = "left outer join crsmst on crt_cono=crm_cono and "\
++            "crt_acno=crm_acno"
+         col = ["crt_acno", "crt_trdt", "crt_type", "crt_ref1", "crt_batch",
+             "crt_tramt", "crt_taxamt", "crt_desc", "crt_taxind", "crm_name"]
+-        whr = copyList(self.whr)
+-        whr.extend([("crt_cono=crm_cono",), ("crt_acno=crm_acno",)])
+         odr = "crt_type, crt_batch, crt_trdt, crt_ref1"
+-        recs = self.sql.getRec(tables=["crsmst", "crstrn"], cols=col,
+-            where=whr, order=odr)
++        recs = self.sql.getRec(tables="crstrn", join=jon, cols=col,
++            where=self.whr, order=odr)
+         if not recs:
+             showError(self.opts["mf"].body, "Transaction Error",
+             "No Transactions Selected")
+
+=== modified file 'crs/cr6020.py'
+--- crs/cr6020.py	2019-07-03 13:49:08 +0000
++++ crs/cr6020.py	2019-07-11 11:40:19 +0000
+@@ -231,13 +231,4 @@
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+ 
+-if __name__ == "__main__":
+-    from TartanClasses import Dbase, MainFrame
+-    from tartanFunctions import loadRcFile
+-    rcdic = loadRcFile("/home/paul/rcf/tartanrc_rnehol")
+-    mf = MainFrame(rcdic=rcdic)
+-    mf.dbm = Dbase(rcdic=rcdic)
+-    mf.dbm.openDbase()
+-    cr6020(**{"mf": mf, "conum": 1, "conam": "RNE Holdings"})
+-
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'crs/cr6020_rne.py'
+--- crs/cr6020_rne.py	2019-07-03 13:49:08 +0000
++++ crs/cr6020_rne.py	2019-07-27 14:45:13 +0000
+@@ -181,30 +181,32 @@
+         self.sql.delRec("crsage", where=[("cra_cono", "=", self.opts["conum"]),
+             ("cra_acno", "=", self.acno)])
+         # EFT and CHQ
+-        recs = self.sql.getRec("crstrn", where=[("crt_acno", "=", self.acno),
+-            ("(", "crt_ref1", "like", "EFT______", "or", "crt_ref1", "like",
+-            "CHQ______", ")")], order="crt_ref1")
+-        chk = None
+-        self.done = []
+-        last = False
++        whr = [("crt_cono", "=", self.opts["conum"]), ("crt_acno", "=",
++            self.acno), ("crt_ref1", "like", "EFT______"), ("crt_ref2",
++            "like", "EFT______")]
++        self.sql.updRec("crstrn", cols=["crt_ref2"], data=[""], where=whr)
++        whr = [("crt_cono", "=", self.opts["conum"]), ("crt_acno", "=",
++            self.acno), ("crt_ref1", "like", "CHQ______"), ("crt_ref2",
++            "like", "CHQ______")]
++        self.sql.updRec("crstrn", cols=["crt_ref2"], data=[""], where=whr)
++        recs = self.sql.getRec("crstrn", where=[("crt_cono", "=",
++            self.opts["conum"]), ("crt_acno", "=", self.acno),
++            ("(", "crt_ref1", "like", "EFT______", "or", "crt_ref1",
++            "like", "CHQ______", ")")], order="crt_ref1")
+         for num, rec in enumerate(recs):
+             data = rec[:4]
+-            self.done.append(rec[:4])
+             data.extend([rec[10], 5, rec[3], rec[7], 0])
+             self.sql.insRec("crsage", data=data)
+-            if num == (len(recs) - 1):
+-                last = True
+-            if not chk:
+-                chk = rec[3]
+-                amt = rec[7]
+-                cdt = rec[10]
+-            elif chk != rec[3] or last:
+-                self.remitRecs(rec[0], rec[1], chk, amt, cdt)
+-                chk = rec[3]
+-                amt = rec[7]
+-                cdt = rec[10]
+-            else:
+-                amt = float(ASD(amt) + ASD(rec[7]))
++            if rec[2] != 5:
++                continue
++            twos = self.sql.getRec("crstrn", where=[("crt_cono", "=", rec[0]),
++                ("crt_acno", "=", rec[1]), ("crt_ref2", "=", rec[3])])
++            if not twos:
++                continue
++            for two in twos:
++                data = two[:4]
++                data.extend([rec[10], rec[2], rec[3], two[7], 0])
++                self.sql.insRec("crsage", data=data)
+         # Rest of records
+         crc, cr = getTrn(self.opts["mf"].dbm, "crs", whr=[("crt_cono", "=",
+             self.opts["conum"]), ("crt_acno", "=", self.acno), ("crt_tramt",
+@@ -258,19 +260,6 @@
+         if "args" not in self.opts:
+             self.agevar.set(False)
+ 
+-    def remitRecs(self, cono, acno, refno, tramt, curdt):
+-        tt2 = 0
+-        twos = self.sql.getRec("crstrn", where=[("crt_cono", "=", cono),
+-            ("crt_acno", "=", acno), ("crt_ref2", "=", refno)])
+-        if not twos:
+-            return
+-        for two in twos:
+-            data = two[:4]
+-            self.done.append(two[:4])
+-            data.extend([curdt, 5, refno, two[7], 0])
+-            self.sql.insRec("crsage", data=data)
+-            tt2 = float(ASD(tt2) - ASD(two[7]))
+-
+     def endTop(self):
+         self.df.clearEntry("T", 0, 2)
+         self.df.clearEntry("T", 0, 3)
+@@ -281,13 +270,4 @@
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+ 
+-if __name__ == "__main__":
+-    from TartanClasses import Dbase, MainFrame
+-    from tartanFunctions import loadRcFile
+-    rcdic = loadRcFile("/home/paul/rcf/tartanrc_rnehol")
+-    mf = MainFrame(rcdic=rcdic)
+-    mf.dbm = Dbase(rcdic=rcdic)
+-    mf.dbm.openDbase()
+-    cr6020(**{"mf": mf, "conum": 1, "conam": "RNE Holdings"})
+-
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'doc/BKSMST.rst'
+--- doc/BKSMST.rst	2019-07-03 13:49:08 +0000
++++ doc/BKSMST.rst	2019-08-20 08:41:03 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.5
++:Version:   5.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWLMST.rst'
+--- doc/BWLMST.rst	2019-07-03 13:49:08 +0000
++++ doc/BWLMST.rst	2019-08-20 08:41:03 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.5
++:Version:   5.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/CSHMST.rst'
+--- doc/CSHMST.rst	2019-07-03 13:49:08 +0000
++++ doc/CSHMST.rst	2019-08-20 08:41:03 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.5
++:Version:   5.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2019-07-03 13:49:08 +0000
++++ doc/Downloads.rst	2019-08-20 08:41:03 +0000
+@@ -11,27 +11,27 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.5 and was released on the 3rd July, 2019.
++The latest version of Tartan is 5.6 and was released on the 20th August, 2019.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Manual: http://www.tartan.co.za/cgi-bin/simple_web.py/Manual
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.5.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.6.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.5.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.6.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.5.tgz
+-.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.5.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.5.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.5.exe
+-.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.5.tgz
+-.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.5.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.5.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.5.exe
++.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.6.tgz
++.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.6.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.6.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.6.exe
++.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.6.tgz
++.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.6.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.6.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.6.exe
+ 
+ |linux| Linux
+ =============
+@@ -43,7 +43,7 @@
+ -----------------------------
+ If your current version is less than 4.1.10 you must upgrade as follows:
+ 
+-    * If your current version is less than 2.5.5
++    * If your current version is less than 2.5.6
+         - Make a backup.
+         - Download the last release of version 2, Tartan-2-lnx_
+         - Extract the downloaded version into your Tartan/prg directory.
+@@ -97,7 +97,7 @@
+ -----------------------------
+ If your current version is less than 5.0.0 you must upgrade as follows:
+ 
+-    * If your current version is less than 2.5.5
++    * If your current version is less than 2.5.6
+         - Make a backup.
+         - Download the last release of version 2, Tartan-2-win_
+         - Execute the downloaded version by double clicking on it.
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2019-07-03 13:49:08 +0000
++++ doc/MST.rst	2019-08-20 08:41:03 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.5
++:Version:   5.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SECMST.rst'
+--- doc/SECMST.rst	2019-07-03 13:49:08 +0000
++++ doc/SECMST.rst	2019-08-20 08:41:03 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.5
++:Version:   5.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'drs/dr3020.py'
+--- drs/dr3020.py	2019-07-03 13:49:08 +0000
++++ drs/dr3020.py	2019-08-20 07:25:06 +0000
+@@ -27,8 +27,7 @@
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import doWriteExport, getModName, doPrinter, copyList
+-from tartanFunctions import showError
++from tartanFunctions import doWriteExport, getModName, doPrinter, showError
+ from tartanWork import drtrtp
+ 
+ class dr3020:
+@@ -192,15 +191,14 @@
+ 
+     def doEnd(self):
+         self.df.closeProcess()
++        jon = "left outer join drsmst on drt_cono=drm_cono and "\
++            "drt_chain=drm_chain and drt_acno=drm_acno"
+         col = ["drt_chain", "drt_acno", "drt_trdt", "drt_type", "drt_ref1",
+             "drt_batch", "drt_tramt", "drt_taxamt", "drt_desc", "drt_taxind",
+             "drm_name"]
+-        whr = copyList(self.whr)
+-        whr.extend([("drt_cono=drm_cono",), ("drt_chain=drm_chain",),
+-            ("drt_acno=drm_acno",)])
+         odr = "drt_type, drt_batch, drt_trdt, drt_ref1"
+-        recs = self.sql.getRec(tables=["drsmst", "drstrn"], cols=col,
+-            where=whr, order=odr)
++        recs = self.sql.getRec(tables="drstrn", join=jon, cols=col,
++            where=self.whr, order=odr)
+         if not recs:
+             showError(self.opts["mf"].body, "Transaction Error",
+                 "No Transactions Selected")
+
+=== modified file 'drs/dr6020.py'
+--- drs/dr6020.py	2019-07-03 13:49:08 +0000
++++ drs/dr6020.py	2019-07-11 11:40:28 +0000
+@@ -25,7 +25,7 @@
+ """
+ 
+ import time
+-from TartanClasses import AgeTrans, ASD, CCD, GetCtl, ProgressBar, Sql
++from TartanClasses import AgeTrans, ASD, GetCtl, ProgressBar, Sql
+ from TartanClasses import TartanDialog, tk
+ from tartanFunctions import copyList, getTrn
+ 
+@@ -221,7 +221,7 @@
+                     if "args" not in self.opts:
+                         pb.displayProgress(cno)
+                     ccdt = ctr[crc.index("drt_curdt")]
+-                    cbal = CCD(ctr[crc.index("balance")], "SD", 13.2).work
++                    cbal = ctr[crc.index("balance")]
+                     camt = cbal
+                     for dno, dtr in enumerate(dr):
+                         dbal = dtr[drc.index("balance")]
+
+=== modified file 'gen/gl1040.py'
+--- gen/gl1040.py	2019-07-03 13:49:08 +0000
++++ gen/gl1040.py	2019-07-06 10:00:00 +0000
+@@ -89,30 +89,31 @@
+             where=[("gdm_cono", "=", self.opts["conum"]),
+             ("gdm_code", "=", self.code)], limit=1)
+         if not cod:
+-            self.newcod = "y"
++            self.newcod = True
+         else:
+-            self.newcod = "n"
++            self.newcod = False
+             self.df.loadEntry(frt, pag, p+1, data=cod[0])
+-            self.loadPeriods()
+-            return "nf"
++            self.loadPeriods(focus=False)
++
++    def doDesc(self, frt, pag, r, c, p, i, w):
++        self.desc = w
+ 
+     def doDelCode(self):
+         self.sql.delRec("gendtm", where=[("gdm_cono", "=", self.opts["conum"]),
+             ("gdm_code", "=", self.code)])
+         self.sql.delRec("gendtt", where=[("gdt_cono", "=", self.opts["conum"]),
+             ("gdt_code", "=", self.code)])
+-
+-    def doDesc(self, frt, pag, r, c, p, i, w):
+-        self.desc = w
++        self.exitData()
+ 
+     def endTops(self):
+         data = [self.opts["conum"], self.code, self.desc]
+-        if self.newcod == "y":
++        if self.newcod:
+             self.sql.insRec("gendtm", data=data)
++            self.df.focusField("C", 0, 1)
+         else:
+             self.sql.updRec("gendtm", data=data, where=[("gdm_cono", "=",
+-            self.opts["conum"]), ("gdm_code", "=", self.code)])
+-        self.df.focusField("C", 0, 1)
++                self.opts["conum"]), ("gdm_code", "=", self.code)])
++            self.df.focusField("C", 0, self.col)
+ 
+     def doPeriod(self, frt, pag, r, c, p, i, w):
+         if w < self.sper or w > self.eper:
+@@ -147,7 +148,7 @@
+             ("gdt_curdt", "=", self.per)])
+         self.loadPeriods()
+ 
+-    def loadPeriods(self):
++    def loadPeriods(self, focus=True):
+         self.df.clearFrame("C", 0)
+         pers = self.sql.getRec(tables="gendtt", cols=["gdt_curdt", "gdt_value"],
+             where=[("gdt_cono", "=", self.opts["conum"]), ("gdt_code", "=",
+@@ -156,7 +157,9 @@
+             p = (num * 2)
+             self.df.loadEntry("C", 0, p, data=per[0])
+             self.df.loadEntry("C", 0, p+1, data=per[1])
+-        self.df.focusField("C", 0, p+3)
++        self.col = p + 3
++        if focus:
++            self.df.focusField("C", 0, self.col)
+ 
+     def doCancel(self, widget=None):
+         self.opts["mf"].dbm.rollbackDbase()
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2019-07-03 13:49:08 +0000
++++ gen/gl2030.py	2019-08-14 11:39:12 +0000
+@@ -10,6 +10,7 @@
+         7 Bank Statements
+ 
+     Flags used:
++
+         self.incoac - Intercompany accounts posting
+         self.dorec  - Bank Statement capture
+         self.recon  - Transaction found during Statement Capture
+@@ -275,6 +276,22 @@
+             "cols": (
+                 ("ctm_cono", "", 0, "Coy"),
+                 ("ctm_name", "", 0, "Name", "Y"))}
++        glt = {
++            "stype": "R",
++            "title": "Transactions",
++            "tables": ("gentrn",),
++            "cols": (
++                ("glt_refno", "", 0, ""),
++                ("glt_trdt", "", 0, ""),
++                ("glt_tramt", "", 0, ""),
++                ("glt_desc", "", 0, "")),
++            "where": [
++                ("glt_cono", "=", self.opts["conum"]),
++                ("glt_acno", "=", self.conacc),
++                ("glt_type", "=", self.opts["rtn"]),
++                ("glt_batch", "=", self.bh.batno)],
++            "order": "glt_seq",
++            "comnd": self.doView}
+         glm = {
+             "stype": "R",
+             "tables": ("genmst",),
+@@ -485,7 +502,7 @@
+             [["T",0,0,0],"OUI",9,"Batch %s Quantity" % self.bh.batno],
+             [["T",0,0,0],"OSD",13.2,"Value"],
+             [["C",1,0,0],"INa",9,"Reference","Reference Number",
+-                "i","Y",self.doTrnRef,None,None,("notblank",)],
++                "i","Y",self.doTrnRef,glt,None,("notblank",)],
+             [["C",1,0,1],"ID1",10,"Date","Transaction Date",
+                 "r","N",self.doTrnDte,None,None,("efld",)],
+             [["C",1,0,2],"ISD",13.2,"Amount","Transaction Amount",
+@@ -1176,6 +1193,9 @@
+                 "      Button to Process them")
+             return "rf"
+ 
++    def doView(self, *event):
++        self.df.focusField("C", 1, 1)
++
+     def doTrnRef(self, frt, pag, r, c, p, i, w):
+         if self.pcash and not w:
+             a = self.sql.getRec(tables="gentrn", cols=["glt_refno"],
+
+=== modified file 'gen/gl3020.py'
+--- gen/gl3020.py	2019-07-03 13:49:08 +0000
++++ gen/gl3020.py	2019-07-12 12:32:29 +0000
+@@ -206,6 +206,8 @@
+ 
+     def doEnd(self):
+         self.df.closeProcess()
++        jon = "left outer join genmst on glt_cono=glm_cono and "\
++            "glt_acno=glm_acno"
+         col = ["glt_cono", "glt_acno", "glt_trdt", "glt_type", "glt_refno",
+             "glt_batch", "glt_tramt", "glt_taxamt", "glt_desc", "glt_taxind",
+             "glm_desc"]
+@@ -226,9 +228,8 @@
+             whr.append(("glt_type", "=", self.btyp))
+         if self.batch:
+             whr.append(("glt_batch", "=", self.batch))
+-        whr.extend([("glt_cono=glm_cono",), ("glt_acno=glm_acno",)])
+         odr = "glt_type, glt_batch, glt_trdt, glt_refno"
+-        recs = self.sql.getRec(tables=["genmst", "gentrn"], cols=col,
++        recs = self.sql.getRec(tables="gentrn", join=jon, cols=col,
+             where=whr, order=odr)
+         if not recs:
+             showError(self.opts["mf"].body, "Transaction Error",
+
+=== modified file 'gen/gl6020.py'
+--- gen/gl6020.py	2019-01-13 16:38:59 +0000
++++ gen/gl6020.py	2019-07-12 10:40:32 +0000
+@@ -25,7 +25,7 @@
+ """
+ 
+ from TartanClasses import ProgressBar, Sql, TartanDialog
+-from tartanFunctions import callModule, getPeriods
++from tartanFunctions import callModule, getPeriods, showError
+ 
+ class gl6020:
+     def __init__(self, **opts):
+@@ -40,6 +40,12 @@
+             "genmst", "gentrn", "genrpt", "genstr"], prog=__name__)
+         if self.sql.error:
+             return
++        chk = self.sql.getRec(tables="gentrn", where=[("glt_cono", "=",
++            self.opts["conum"])])
++        if chk:
++            showError(self.opts["mf"].body, "Import Error",
++                "General Ledger Transactions Exist.")
++            return
+         return True
+ 
+     def mainProcess(self):
+
+=== modified file 'ibt/ib2010.py'
+--- ibt/ib2010.py	2019-07-03 13:49:08 +0000
++++ ibt/ib2010.py	2019-07-10 14:02:01 +0000
+@@ -74,7 +74,7 @@
+         self.pr = TartanDialog(self.opts["mf"], tops=True, title=tit,
+             eflds=fld, tend=((self.doPrtClose,"y"),), txit=(self.doPrtExit,),
+             view=("N","P"))
+-        self.pr.wait_window()
++        self.pr.mstFrame.wait_window()
+ 
+     def doTplNam(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables="tplmst", where=[("tpm_tname", "=", w),
+
+=== modified file 'mem/ml3020.py'
+--- mem/ml3020.py	2019-07-03 13:49:08 +0000
++++ mem/ml3020.py	2019-07-12 12:32:43 +0000
+@@ -208,12 +208,13 @@
+         else:
+             self.repprt = self.df.repprt
+             self.repeml = self.df.repeml
++        jon = "left outer join memmst on mlt_cono=mlm_cono and "\
++            "mlt_memno=mlm_memno"
+         col = ["mlt_memno", "mlt_trdt", "mlt_type", "mlt_refno", "mlt_batch",
+             "mlt_tramt", "mlt_taxamt", "mlt_desc", "mlt_taxind", "mlm_surname",
+             "mlm_names"]
+-        self.whr.extend([("mlt_cono=mlm_cono",), ("mlt_memno=mlm_memno",)])
+         odr = "mlt_type, mlt_batch, mlt_trdt, mlt_refno"
+-        recs = self.sql.getRec(tables=["memmst", "memtrn"], cols=col,
++        recs = self.sql.getRec(tables="memtrn", join=jon, cols=col,
+             where=self.whr, order=odr)
+         if not recs:
+             showError(self.opts["mf"].body, "Transaction Error",
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2019-07-03 13:49:08 +0000
++++ mst/ms0000.py	2019-08-20 08:41:03 +0000
+@@ -43,7 +43,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (5, 5)
++    VERSION = (5, 6)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ if __name__ == "__main__":
+     # Run Tartan
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2019-07-03 13:49:08 +0000
++++ mst/msc000.py	2019-08-20 08:00:36 +0000
+@@ -253,7 +253,7 @@
+                 print("%-16s: %s" % ("Odfpy", "Not Installed"))
+             try:
+                 import ofxtools
+-                print("%-16s: %s" % ("Ofxtools", ">=5.2"))
++                print("%-16s: %s" % ("Ofxtools", ">= 5.2"))
+             except:
+                 print("%-16s: %s" % ("Ofxtools", "Not Installed"))
+             try:
+@@ -285,7 +285,7 @@
+                 print("%-16s: %s" % ("Pygal", "Not Installed"))
+             try:
+                 import smb
+-                print("%-16s: %s" % ("Pysmb", ">=1.0"))
++                print("%-16s: %s" % ("Pysmb", ">= 1.0"))
+             except:
+                 print("%-16s: %s" % ("Pysmb", "Not Installed"))
+             try:
+@@ -296,7 +296,7 @@
+                 print("%-16s: %s" % ("sqlite3", "Not Installed"))
+             try:
+                 import tkinterhtml
+-                print("%-16s: %s" % ("TkinterHtml", ">=0.7"))
++                print("%-16s: %s" % ("TkinterHtml", ">= 0.7"))
+             except:
+                 print("%-16s: %s" % ("TkinterHtml", "Not Installed"))
+             try:
+@@ -755,10 +755,11 @@
+                 if menu:
+                     self.tarmen.drawMenu()
+                 return
+-        try:
+-            rtn = int(rtn)
+-        except:
+-            rtn = None
++        if rtn is not None:
++            try:
++                rtn = int(rtn)
++            except:
++                rtn = None
+         if not self.db.dbopen:
+             self.db.openDbase()
+             dbopend = True
+@@ -1528,7 +1529,7 @@
+             self.doExit()
+         v = chk[0].split(".")
+         ov = (int(v[0]), int(v[1].rstrip()))
+-        if ov < (5, 0):
++        if ov < (5, 4):
+             showError(scrn, "Version Error",
+                 """The Version of the Data, %s.%s, is too Old.
+ 
+
+=== modified file 'mst/msc110.py'
+--- mst/msc110.py	2019-01-13 16:38:59 +0000
++++ mst/msc110.py	2019-07-17 07:27:53 +0000
+@@ -176,10 +176,8 @@
+         if svr:
+             prt = self.df.t_work[0][0][8]
+             sec = self.df.t_work[0][0][6]
+-            chk = sendMail([svr, prt, sec, "", "", ""], "", "", "", check=True)
+-            if not chk:
+-                showError(self.opts["mf"].body, "Server Error",
+-                    "The SMTP Server Settings are Invalid.")
++            if not sendMail([svr, prt, sec, "", "", ""], "", "", "",
++                    check=True, err=self.opts["mf"].body):
+                 self.df.focusField("T", 0, 6)
+                 return
+         tme = time.localtime()
+
+=== modified file 'rca/rc3010.py'
+--- rca/rc3010.py	2019-01-13 16:38:59 +0000
++++ rca/rc3010.py	2019-07-12 12:33:01 +0000
+@@ -27,7 +27,7 @@
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import doPrinter, getModName, copyList, showError
++from tartanFunctions import doPrinter, getModName, showError
+ from tartanWork import rttrtp
+ 
+ class rc3010:
+@@ -166,14 +166,15 @@
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+-        tab = ["rcaowm", "rcaowt"]
++        tab = "rcaowt"
++        jon = "left outer join rcaowm on rot_cono=rom_cono and "\
++            "rot_acno=rom_acno"
+         self.col = ["rot_acno", "rot_type", "rot_batch", "rot_refno",
+             "rot_trdt", "rot_desc", "rot_tramt", "rot_taxamt",
+             "rot_taxind", "rom_name"]
+-        whr = copyList(self.whr)
+-        whr.extend([("rom_cono=rot_cono",), ("rom_acno=rot_acno",)])
+         odr = "rot_type, rot_batch, rot_refno"
+-        recs = self.sql.getRec(tables=tab, cols=self.col, where=whr, order=odr)
++        recs = self.sql.getRec(tables=tab, join=jon, cols=self.col,
++            where=self.whr, order=odr)
+         if not recs:
+             showError(self.opts["mf"].body, "Transaction Error",
+             "No Transactions Selected")
+
+=== modified file 'rca/rc3020.py'
+--- rca/rc3020.py	2019-01-13 16:38:59 +0000
++++ rca/rc3020.py	2019-07-12 12:33:28 +0000
+@@ -27,7 +27,7 @@
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import doPrinter, getModName, copyList, showError
++from tartanFunctions import doPrinter, getModName, showError
+ from tartanWork import rttrtp, rcmvtp
+ 
+ class rc3020:
+@@ -164,15 +164,14 @@
+ 
+     def doEnd(self):
+         self.df.closeProcess()
++        jon = "left outer join rcatnm on rtu_cono=rtn_cono and "\
++            "rtu_owner=rtn_owner and rtu_code=rtn_code and rtu_acno=rtn_acno"
+         self.col = ["rtu_owner", "rtu_code", "rtu_acno", "rtu_type",
+             "rtu_batch", "rtu_refno", "rtu_trdt", "rtu_desc", "rtu_mtyp",
+             "rtu_tramt", "rtu_taxamt", "rtu_taxind", "rtn_name"]
+-        whr = copyList(self.whr)
+-        whr.extend([("rtn_cono=rtu_cono",), ("rtn_owner=rtu_owner",),
+-            ("rtn_code=rtu_code",), ("rtn_acno=rtu_acno",)])
+         odr = "rtu_type, rtu_batch, rtu_trdt, rtu_refno"
+-        recs = self.sql.getRec(tables=["rcatnm", "rcatnt"], cols=self.col,
+-            where=whr, order=odr)
++        recs = self.sql.getRec(tables="rcatnt", join=jon, cols=self.col,
++            where=self.whr, order=odr)
+         if not recs:
+             showError(self.opts["mf"].body, "Transaction Error",
+             "No Transactions Selected")
+
+=== modified file 'rtl/rt3020.py'
+--- rtl/rt3020.py	2019-01-13 16:38:59 +0000
++++ rtl/rt3020.py	2019-07-12 12:33:48 +0000
+@@ -27,8 +27,7 @@
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import doWriteExport, doPrinter, getModName, copyList
+-from tartanFunctions import showError
++from tartanFunctions import doWriteExport, doPrinter, getModName, showError
+ from tartanWork import rttrtp
+ 
+ class rt3020:
+@@ -177,15 +176,14 @@
+ 
+     def doEnd(self):
+         self.df.closeProcess()
++        jon = "left outer join rtlmst on rtt_cono=rtm_cono and "\
++            "rtt_code=rtm_code and rtt_acno=rtm_acno"
+         col = ["rtt_code", "rtt_acno", "rtt_trdt", "rtt_type", "rtt_refno",
+             "rtt_batch", "rtt_tramt", "rtt_taxamt", "rtt_desc", "rtt_taxind",
+             "rtm_name"]
+-        whr = copyList(self.whr)
+-        whr.extend([("rtt_cono=rtm_cono",), ("rtt_code=rtm_code",),
+-            ("rtt_acno=rtm_acno",)])
+         odr = "rtt_type, rtt_batch, rtt_trdt, rtt_refno"
+-        recs = self.sql.getRec(tables=["rtlmst", "rtltrn"], cols=col,
+-            where=whr, order=odr)
++        recs = self.sql.getRec(tables="rtltrn", join=jon, cols=col,
++            where=self.whr, order=odr)
+         if not recs:
+             showError(self.opts["mf"].body, "Transaction Error",
+             "No Transactions Selected")
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2019-07-03 13:49:08 +0000
++++ std/TartanClasses.py	2019-08-20 08:12:25 +0000
+@@ -4449,11 +4449,12 @@
+             try:
+                 gc = GetCtl(self.mf)
+                 ctlsys = gc.getCtl("ctlsys", error=False)
+-                if ctlsys:
++                if ctlsys and ctlsys["sys_msvr"]:
+                     server = [ctlsys["sys_msvr"], ctlsys["sys_mprt"],
+                         ctlsys["sys_msec"], ctlsys["sys_maut"],
+                         ctlsys["sys_mnam"], ctlsys["sys_mpwd"]]
+-                    if sendMail(server, "", "", "", check=True):
++                    if sendMail(server, "", "", "", check=True,
++                            err=self.mf.body):
+                         self.repeml = ["Y", "", "", "", "Y"]
+             except:
+                 pass
+@@ -7883,7 +7884,7 @@
+         if self.scrn:
+             self.window = self.scrn.winfo_toplevel()
+             self.root = MyFrame(self.scrn, borderwidth=5, relief="ridge")
+-            if getManager(self.scrn) == ("grid", "place"):
++            if getManager(self.scrn) == "grid":
+                 self.root.grid(column=0)
+             else:
+                 self.root.pack(fill="both", expand="yes")
+@@ -7974,10 +7975,11 @@
+         if self.scrn:
+             self.window = self.scrn.winfo_toplevel()
+             self.frame = MyFrame(self.scrn, borderwidth=5, relief="ridge")
+-            if getManager(self.scrn) == ("grid", "place"):
++            if getManager(self.scrn) == "grid":
+                 self.frame.grid(column=0)
+             else:
+                 self.frame.pack()
++            self.frame.grab_set()
+         else:
+             trans, modal, resiz, decor = None, True, True, True
+             win = MkWindow(trans=trans, title=self.title, modal=modal,
+@@ -14406,6 +14408,7 @@
+             self.repprt = ["N", "V", "view"]
+         self.fonts = []
+         self.align = []
++        print self.heads
+         if self.heads:
+             heads = []
+             for h in self.heads:
+
+=== modified file 'std/tarmod.py'
+--- std/tarmod.py	2019-04-07 13:32:42 +0000
++++ std/tarmod.py	2019-08-20 08:00:16 +0000
+@@ -1,2 +1,2 @@
+ # List of Tartan Modules Packaged for a Distribution
+-modlst = ['ar1010', 'ar2010', 'ar2020', 'ar2030', 'ar3010', 'ar3020', 'ar3030', 'ar3040', 'ar3050', 'ar4010', 'ar6010', 'arc110', 'arc210', 'arc310', 'arc320', 'bk1010', 'bk1020', 'bk2010', 'bk3010', 'bk3020', 'bk3030', 'bk3040', 'bk3050', 'bk3060', 'bk3070', 'bk3080', 'bk3090', 'bkc110', 'bkc210', 'bkc310', 'bkc410', 'bkc510', 'bc1010', 'bc1020', 'bc1030', 'bc1040', 'bc2010', 'bc2020', 'bc2030', 'bc2040', 'bc2050', 'bc2060', 'bc2070', 'bc3010', 'bc3020', 'bc3030', 'bc3040', 'bc3050', 'bc3060', 'bc3070', 'bc3080', 'bc3090', 'bc3100', 'bc3110', 'bc6010', 'bc6020', 'bc6030', 'bcc110', 'bcc210', 'cr1010', 'cr2010', 'cr3010', 'cr3020', 'cr3030', 'cr3040', 'cr3050', 'cr3060', 'cr3070', 'cr3080', 'cr3090', 'cr3100', 'cr3110', 'cr4010', 'cr6010', 'cr6020', 'crc110', 'dr1010', 'dr1020', 'dr2010', 'dr2020', 'dr2030', 'dr3010', 'dr3020', 'dr3030', 'dr3040', 'dr3050', 'dr3060', 'dr3080', 'dr3090', 'dr3100', 'dr3110', 'dr3120', 'dr4010', 'dr6010', 'dr6020', 'dr6030', 'drc110', 'drc210', 'drc220', 'drc310', 'drc320', 'drc410', 'drc420', 'drc510', 'drc520', 'drc610', 'drc710', 'gl1010', 'gl1020', 'gl1030', 'gl1040', 'gl1050', 'gl1060', 'gl2010', 'gl2020', 'gl2030', 'gl2040', 'gl2050', 'gl3010', 'gl3020', 'gl3030', 'gl3040', 'gl3050', 'gl3060', 'gl3070', 'gl3080', 'gl3090', 'gl4010', 'gl4020', 'gl6010', 'gl6020', 'gl6030', 'gl6040', 'gl6050', 'gl6060', 'gl6070', 'glc110', 'glc210', 'ln1010', 'ln2010', 'ln2020', 'ln2030', 'ln3010', 'ln3020', 'ln3030', 'ln3040', 'ln3050', 'ln4010', 'ln6010', 'lnc110', 'ml1010', 'ml2010', 'ml2020', 'ml3010', 'ml3020', 'ml3030', 'ml3040', 'ml3050', 'ml3060', 'ml3070', 'ml3080', 'ml3090', 'ml3100', 'ml3110', 'ml3120', 'ml6010', 'ml6020', 'ml6030', 'mlc110', 'mlc210', 'mlc310', 'mlc410', 'mlm010', 'ms0000', 'ms1010', 'ms1020', 'ms1030', 'ms1040', 'ms3010', 'ms3020', 'ms3030', 'msc000', 'msc110', 'msy010', 'msy020', 'ps2010', 'ps2020', 'ps2030', 'psc110', 'rc1010', 'rc1020', 'rc1030', 'rc2010', 'rc3010', 'rc3020', 'rc3030', 'rc3040', 'rc3050', 'rc3060', 'rc3070', 'rc3080', 'rc3090', 'rc4010', 'rc4020', 'rcc110', 'rcc210', 'rcc220', 'rcc310', 'rcm010', 'rt1010', 'rt2010', 'rt3010', 'rt3020', 'rt3030', 'rt3040', 'rt3050', 'rt4010', 'rt6010', 'rtc110', 'rtc210', 'rtm010', 'si2010', 'si3010', 'si3020', 'si3030', 'si3040', 'si3050', 'si3060', 'si3070', 'si3080', 'si6010', 'sic110', 'st1010', 'st1020', 'st2010', 'st2020', 'st2030', 'st2040', 'st3010', 'st3020', 'st3030', 'st3040', 'st3050', 'st3060', 'st3070', 'st3080', 'st3090', 'st3100', 'st3110', 'st3120', 'st4010', 'st5010', 'st5020', 'st5030', 'st5040', 'st6010', 'st6020', 'st6030', 'st6040', 'stc110', 'stc210', 'stc220', 'stc310', 'stc320', 'stc410', 'stc420', 'tb1010', 'tb1020', 'tb1030', 'tb1040', 'tb3010', 'bm1010', 'fc1010', 'rp1010', 'rp1020', 'td1010', 'tdc110', 'tp1010', 'sl1010', 'sl2010', 'sl2020', 'sl2030', 'sl3010', 'sl3020', 'sl3030', 'sl3040', 'sl4010', 'wg1010', 'wg2010', 'wg2020', 'wg2030', 'wg3010', 'wg3020', 'wg3030', 'wg3040', 'wg3050', 'wg3060', 'wg3070', 'wg4010', 'wgc110', 'wgc210', 'wgc220', 'wgc310', 'wgc320', 'wgc410', 'wgc420', 'wgc610']
+\ No newline at end of file
++modlst = ['ar1010', 'ar2010', 'ar2020', 'ar2030', 'ar3010', 'ar3020', 'ar3030', 'ar3040', 'ar3050', 'ar4010', 'ar6010', 'arc110', 'arc210', 'arc310', 'arc320', 'bk1010', 'bk1020', 'bk2010', 'bk3010', 'bk3020', 'bk3030', 'bk3040', 'bk3050', 'bk3060', 'bk3070', 'bk3080', 'bk3090', 'bkc110', 'bkc210', 'bkc310', 'bkc410', 'bkc510', 'bc1010', 'bc1020', 'bc1030', 'bc1040', 'bc2010', 'bc2020', 'bc2030', 'bc2040', 'bc2050', 'bc2060', 'bc2070', 'bc3010', 'bc3020', 'bc3030', 'bc3040', 'bc3050', 'bc3060', 'bc3070', 'bc3080', 'bc3090', 'bc3100', 'bc3110', 'bc6010', 'bc6020', 'bc6030', 'bcc110', 'bcc210', 'cr1010', 'cr2010', 'cr3010', 'cr3020', 'cr3030', 'cr3040', 'cr3050', 'cr3060', 'cr3070', 'cr3080', 'cr3090', 'cr3100', 'cr3110', 'cr4010', 'cr6010', 'cr6020', 'crc110', 'dr1010', 'dr1020', 'dr2010', 'dr2020', 'dr2030', 'dr3010', 'dr3020', 'dr3030', 'dr3040', 'dr3050', 'dr3060', 'dr3080', 'dr3090', 'dr3100', 'dr3110', 'dr3120', 'dr4010', 'dr6010', 'dr6020', 'dr6030', 'drc110', 'drc210', 'drc220', 'drc310', 'drc320', 'drc410', 'drc420', 'drc510', 'drc520', 'drc610', 'drc710', 'gl1010', 'gl1020', 'gl1030', 'gl1040', 'gl1050', 'gl1060', 'gl2010', 'gl2020', 'gl2030', 'gl2040', 'gl2050', 'gl3010', 'gl3020', 'gl3030', 'gl3040', 'gl3050', 'gl3060', 'gl3070', 'gl3080', 'gl3090', 'gl4010', 'gl4020', 'gl6010', 'gl6020', 'gl6030', 'gl6040', 'gl6050', 'gl6060', 'gl6070', 'glc110', 'glc210', 'ln1010', 'ln2010', 'ln2020', 'ln2030', 'ln3010', 'ln3020', 'ln3030', 'ln3040', 'ln3050', 'ln4010', 'ln6010', 'lnc110', 'ml1010', 'ml2010', 'ml2020', 'ml3010', 'ml3020', 'ml3030', 'ml3040', 'ml3050', 'ml3060', 'ml3070', 'ml3080', 'ml3090', 'ml3100', 'ml3110', 'ml3120', 'ml6010', 'ml6020', 'ml6030', 'mlc110', 'mlc210', 'mlc310', 'mlc410', 'mlm010', 'ms0000', 'ms1010', 'ms1020', 'ms1030', 'ms1040', 'ms3010', 'ms3020', 'ms3030', 'msc000', 'msc110', 'msy010', 'msy020', 'ps2010', 'ps2020', 'ps2030', 'psc110', 'rc1010', 'rc1020', 'rc1030', 'rc2010', 'rc3010', 'rc3020', 'rc3030', 'rc3040', 'rc3050', 'rc3060', 'rc3070', 'rc3080', 'rc3090', 'rc4010', 'rc4020', 'rcc110', 'rcc210', 'rcc220', 'rcc310', 'rcm010', 'rt1010', 'rt2010', 'rt3010', 'rt3020', 'rt3030', 'rt3040', 'rt3050', 'rt4010', 'rt6010', 'rtc110', 'rtc210', 'rtm010', 'si2010', 'si3010', 'si3020', 'si3030', 'si3040', 'si3050', 'si3060', 'si3070', 'si3080', 'si3090', 'si6010', 'sic110', 'st1010', 'st1020', 'st2010', 'st2020', 'st2030', 'st2040', 'st3010', 'st3020', 'st3030', 'st3040', 'st3050', 'st3060', 'st3070', 'st3080', 'st3090', 'st3100', 'st3110', 'st3120', 'st4010', 'st5010', 'st5020', 'st5030', 'st5040', 'st6010', 'st6020', 'st6030', 'st6040', 'stc110', 'stc210', 'stc220', 'stc310', 'stc320', 'stc410', 'stc420', 'tb1010', 'tb1020', 'tb1030', 'tb1040', 'tb3010', 'bm1010', 'fc1010', 'rp1010', 'rp1020', 'td1010', 'tdc110', 'tp1010', 'sl1010', 'sl2010', 'sl2020', 'sl2030', 'sl3010', 'sl3020', 'sl3030', 'sl3040', 'sl4010', 'wg1010', 'wg2010', 'wg2020', 'wg2030', 'wg3010', 'wg3020', 'wg3030', 'wg3040', 'wg3050', 'wg3060', 'wg3070', 'wg4010', 'wgc110', 'wgc210', 'wgc220', 'wgc310', 'wgc320', 'wgc410', 'wgc420', 'wgc610']
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2019-07-03 13:49:08 +0000
++++ std/tartanFunctions.py	2019-07-17 10:18:26 +0000
+@@ -391,8 +391,7 @@
+         try:
+             if scrn.winfo_toplevel().state() == "withdrawn":
+                 scrn.winfo_toplevel().deiconify()
+-            ScrollText(scrn=scrn, title=title, mess=mess,
+-                select=False, xits=xits)
++            ScrollText(scrn=scrn, title=title, mess=mess, select=False)
+         except:
+             pass
+ 
+@@ -743,7 +742,7 @@
+                     elif flenam.lower() == name.lower():
+                         return os.path.join(root, flenam)
+ 
+-def sendMail(server, ex, to, subj, mess="", attach=[], embed=[], check=False, timeout=5, local=None):
++def sendMail(server, ex, to, subj, mess="", attach=[], embed=[], check=False, timeout=25, local=None, err=False):
+     """
+     A routine to email a message, embed files and/or attach files.
+ 
+@@ -756,8 +755,9 @@
+         attach  = A list of attachments.
+         embed   = A list of attachments to embed in the body of the message.
+         check   = Check if the mail server is available.
+-        timeout = The number of seconds before timing out defaulting to 5.
++        timeout = The number of seconds before timing out defaulting to 25.
+         local   = The local hostname as fqdn.
++        err     = The widget to display the exception, defaults to False
+     """
+     import mimetypes, os, smtplib, socket, sys
+     if sys.version_info.major == 2 and sys.version_info.minor < 6:
+@@ -805,6 +805,8 @@
+         if auth:
+             smtp.login(unam, upwd)
+     except:
++        if err is not False:
++            showException(err, ".", "Mail Server Error")
+         return
+     if type(to) == str:
+         to = [to]
+
+=== modified file 'std/tartanWork.py'
+--- std/tartanWork.py	2019-07-03 13:49:08 +0000
++++ std/tartanWork.py	2019-08-20 08:32:32 +0000
+@@ -4066,7 +4066,8 @@
+         ["PYNN","si_rp","si3050",1,"Sales By Customer By Product"],
+         ["PYNN","si_rp","si3060",1,"Sales By Salesman"],
+         ["PYNN","si_rp","si3070",1,"Salesman's Sales History"],
+-        ["PYNN","si_rp","si3080",1,"Reprint Documents"],
++        ["PYNN","si_rp","si3080",1,"Reprint Sales Documents"],
++        ["PYYN","si_rp","si3090",1,"Cancelled Sales Documents"],
+         ["PYNN","si_tb","si6010",5,"Change Customer Order Number"]],
+ 
+     # Point of Sale Routines
+@@ -4554,6 +4555,9 @@
+         ["strpom", "pom_acno", "crsmst", "crm_acno"],
+         ["strpom", "pom_cono", "strpot", "pot_cono"],
+         ["strpom", "pom_ordno", "strpot", "pot_ordno"],
++        ["slsiv1", "si1_cono", "drsmst", "drm_cono"],
++        ["slsiv1", "si1_chain", "drsmst", "drm_chain"],
++        ["slsiv1", "si1_acno", "drsmst", "drm_acno"],
+         ["slsiv1", "si1_cono", "drstrn", "drt_cono"],
+         ["slsiv1", "si1_chain", "drstrn", "drt_chain"],
+         ["slsiv1", "si1_acno", "drstrn", "drt_acno"],
+
+=== modified file 'stddia.py'
+--- stddia.py	2019-07-03 13:49:08 +0000
++++ stddia.py	2019-08-20 07:30:04 +0000
+@@ -8,7 +8,7 @@
+     Written by Paul Malherbe, <paul@tartan.co.za>
+ 
+ COPYING
+-    Copyright (C) 2004-2018 Paul Malherbe.
++    Copyright (C) 2004-2019 Paul Malherbe.
+ 
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2019-07-03 13:49:08 +0000
++++ tab/tb1020.py	2019-07-17 11:41:10 +0000
+@@ -43,7 +43,7 @@
+     TBAR = True
+ except:
+     TBAR = False
+-from TartanClasses import ASD, CCD, Dbase, DBCreate, ProgressBar, SplashScreen
++from TartanClasses import CCD, Dbase, DBCreate, ProgressBar, SplashScreen
+ from TartanClasses import Sql
+ from tartanFunctions import copyList, loadRcFile, showError
+ from tartanWork import datdic, stdtpl, tabdic
+@@ -63,14 +63,9 @@
+                 self.old.sort()
+             else:
+                 self.doGetTables()
+-            #if self.oldver[0] and self.oldver[0] < 5:
+-            #    self.doDelLog()
+-            #    self.doCvtVat()
+             if "ctlbat" in self.old:
+                 self.doDelBatch()
+             self.doProcessTables()
+-            #if self.oldver[0] and self.oldver[0] < 5:
+-            #    self.doWagCal()
+             if self.dbm.checkTable("bwlskp"):
+                 self.doBwlSkp()
+             if self.opts["cln"]:
+@@ -182,29 +177,6 @@
+             "wagtf1": ["wt1_capdt", "wt1_seq"]}
+         return True
+ 
+-    def doDelLog(self):
+-        self.dbm.dropTable("ctllog", frecs=True)
+-        if "ctllog" in self.tab:
+-            self.tab.remove("ctllog")
+-        self.dbm.commitDbase()
+-
+-    def doCvtVat(self):
+-        sql = Sql(self.dbm, "ftable", err=False, prog=__name__)
+-        if not sql.getRec(tables="ftable", where=[("ft_tabl", "=", "ctlvmf")]):
+-            return
+-        if sql.getRec(tables="ftable", where=[("ft_tabl", "=", "ctlvrf")]):
+-            return
+-        opts = copyList(self.topts)
+-        opts.append(("-t", "ctlvrf"))
+-        DBCreate(dbm=self.dbm, opts=opts)
+-        sql = Sql(self.dbm, ["ctlvmf", "ctlvrf"], err=False, prog=__name__)
+-        recs = sql.getRec(tables="ctlvmf")
+-        for rec in recs:
+-            if not rec[4]:
+-                rec[4] = 20000101
+-            sql.insRec("ctlvrf", data=[rec[0], rec[1], rec[4], rec[6]])
+-        self.dbm.commitDbase()
+-
+     def doDelBatch(self):
+         sql = Sql(self.dbm, ["ftable", "ctlbat"], err=False, prog=__name__)
+         chk = sql.getRec(tables="ftable", cols=["ft_type"],
+@@ -702,62 +674,6 @@
+                                     (tab[2], "=", d[1])])
+         self.dbm.commitDbase()
+ 
+-    def doWagCal(self):
+-        sql = Sql(self.dbm, ["wagedc", "wagtf1", "wagtf2"], err=False,
+-            prog=__name__)
+-        if sql.error:
+-            return
+-        emps = sql.getRec(tables="wagtf1")
+-        if not emps:
+-            return
+-        txt = "Creating UIF and SDL Details .... Please Wait"
+-        if self.opts["mf"] and self.opts["mf"].window:
+-            spl = SplashScreen(self.opts["mf"].body, txt)
+-        else:
+-            print(txt)
+-        for emp in emps:
+-            cono = emp[sql.wagtf1_col.index("wt1_cono")]
+-            empn = emp[sql.wagtf1_col.index("wt1_empno")]
+-            page = emp[sql.wagtf1_col.index("wt1_page")]
+-            date = emp[sql.wagtf1_col.index("wt1_date")]
+-            uif = 0.0
+-            cod = self.sql.getRec(tables="wagedc", cols=["ced_code",
+-                "ced_uifportion"], where=[("ced_cono", "=", cono),
+-                ("ced_type", "=", "E"), ("ced_uifportion", "<>", 0)])
+-            for c in cod:
+-                pay = self.sql.getRec(tables="wagtf2", cols=["sum(wt2_eamt)"],
+-                    where=[("wt2_cono", "=", cono), ("wt2_empno", "=", empn),
+-                    ("wt2_page", "=", page), ("wt2_date", "=", date),
+-                    ("wt2_type", "=", "E"), ("wt2_code", "=", c[0])],
+-                    group="wt2_empno", limit=1)
+-                if pay:
+-                    amt = round((pay[0] * c[1]) / 100.0, 2)
+-                    uif = float(ASD(uif) + ASD(amt))
+-            if uif:
+-                sql.updRec("wagtf1", cols=["wt1_uifpay"], data=[int(uif)],
+-                    where=[("wt1_cono", "=", cono), ("wt1_empno", "=", empn),
+-                    ("wt1_page", "=", page), ("wt1_date", "=", date)])
+-            sdl = 0.0
+-            cod = self.sql.getRec(tables="wagedc", cols=["ced_code",
+-                "ced_sdlportion"], where=[("ced_cono", "=", cono),
+-                ("ced_type", "=", "E"), ("ced_sdlportion", "<>", 0)])
+-            for c in cod:
+-                pay = self.sql.getRec(tables="wagtf2", cols=["sum(wt2_eamt)"],
+-                    where=[("wt2_cono", "=", cono), ("wt2_empno", "=", empn),
+-                    ("wt2_page", "=", page), ("wt2_date", "=", date),
+-                    ("wt2_type", "=", "E"), ("wt2_code", "=", c[0])],
+-                    group="wt2_empno", limit=1)
+-                if pay:
+-                    amt = round((pay[0] * c[1]) / 100.0, 2)
+-                    sdl = float(ASD(sdl) + ASD(amt))
+-            if sdl:
+-                sql.updRec("wagtf1", cols=["wt1_sdlpay"], data=[int(sdl)],
+-                    where=[("wt1_cono", "=", cono), ("wt1_empno", "=", empn),
+-                    ("wt1_page", "=", page), ("wt1_date", "=", date)])
+-        self.dbm.commitDbase()
+-        if self.opts["mf"] and self.opts["mf"].window:
+-            spl.closeSplash()
+-
+     def doBwlSkp(self):
+         sql = Sql(self.dbm, ["bwlctl", "bwltab", "bwldrt", "bwlskp"],
+             err=False, prog=__name__)
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2019-07-03 13:49:08 +0000
++++ uty/pkgprg.py	2019-07-03 14:10:01 +0000
+@@ -8,7 +8,7 @@
+ import time
+ 
+ bd = os.path.expanduser("~")  # Base directory
+-sv = "root@server"            # ftp login@server
++sv = "root@mail"              # ftp login@server
+ bv = "Tartan-5"               # Version directory
+ vv = 5                        # Version number
+ sys.path.extend(glob.glob(os.path.join(bd, bv, "???")))
+@@ -536,7 +536,7 @@
+         # FTP Server
+         exeCmd("ssh %s rm /srv/ftp/%s*" % (sv, csys))
+         exeCmd("rsync -az %s/TartanExe/current %s:/srv/ftp/ --progress" %
+-            (sv, bd))
++            (bd, sv))
+         exeCmd("rsync -az %s/TartanExe/%s* %s:/srv/ftp/ --progress" %
+             (bd, csys, sv))
+         exeCmd("ssh %s chmod a+r /srv/ftp/*" % sv)
+@@ -553,7 +553,7 @@
+ if email:
+     chgfle = "%s/ver/ver_%s.%s.changes" % (pypath, ver[0], ver[1])
+     if os.path.isfile(chgfle):
+-        serv = ["server", 465, 2, 1, "paul", "pakati10"]
++        serv = ["mail", 465, 2, 1, "paul", "pakati10"]
+         mfrm = "paul@tartan.co.za"
+         subj = "Tartan Update %s.%s is Available" % tuple(ver)
+         info = open(chgfle, "rb")
+

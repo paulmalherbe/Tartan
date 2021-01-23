@@ -1,0 +1,10 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Improved the 'Report Stream' utility, as per a user request, by creating a
+    Group Record to store the selected reports. The various report variables
+    selected will also be stored.
+ 2) Some minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

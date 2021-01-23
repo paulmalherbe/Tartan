@@ -1,0 +1,10 @@
+1) V.A.T. Records - Improved the maintenance module.
+2) Rentals - Fixed a bug in the month-end routine.
+3) Loans - Improved the Rate Change module.
+4) Stores - Changed Stock on Hand report to cater for redundant items.
+5) Bowls - Amended teams and bounce games to allow amendments.
+6) Some other minor bug fixes and improvements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

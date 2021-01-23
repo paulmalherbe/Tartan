@@ -1,0 +1,1579 @@
+=== modified file '.bzrignore'
+--- .bzrignore	2016-11-07 16:11:53 +0000
++++ .bzrignore	2016-12-30 14:06:14 +0000
+@@ -81,3 +81,13 @@
+ img/tcltk.png
+ doc/vpn_files.txt
+ lon/rnelon.py
++csv/ldraws_fld.csv
++csv/ldraws_idx.csv
++csv/lentry_fld.csv
++csv/lentry_idx.csv
++csv/lfixed_fld.csv
++csv/lfixed_idx.csv
++csv/lotsys.py
++csv/ltrans_fld.csv
++csv/ltrans_idx.csv
++tmp
+
+=== modified file 'bkm/bk3020.py'
+--- bkm/bk3020.py	2016-05-21 12:42:32 +0000
++++ bkm/bk3020.py	2016-12-05 08:28:15 +0000
+@@ -151,12 +151,17 @@
+ 
+     def doTots(self, frt, pag, r, c, p, i, w):
+         self.totsonly = w
++        mx = len(self.df.topEntry[0][8])
+         if self.totsonly == "Y":
+-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
+-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
++            if mx > 3:
++                self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
++            if mx > 4:
++                self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+         else:
+-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
+-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
++            if mx > 3:
++                self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
++            if mx > 4:
++                self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+
+=== modified file 'bwl/bc2010.py'
+--- bwl/bc2010.py	2016-11-07 16:11:53 +0000
++++ bwl/bc2010.py	2016-12-22 06:04:07 +0000
+@@ -8,11 +8,12 @@
+ 
+     Draw Parameters
+     ---------------
+-    1) Enter type of draw i.e. random or strength v strength
+-    2) Enter preferred team size i.e. trips or fours
+-    3) Select whether in trips to replace 4/4 with 2 x 2/2 (rep42)
+-    4) If format S (Not Mixed), Group tabs by gender, position else
+-                                Group tabs by position only
++    1) Enter type of draw i.e. random or strength v strength.
++    2) Apply history i.e. use historical data to determine draw.
++    3) Enter preferred team size i.e. trips or fours.
++    4) Select whether in trips to replace 4/4 with 2 x 2/2 (rep42).
++    5) If format S (Not Mixed), Group tabs by gender, ratings else
++                                Group tabs by ratings only.
+ 
+     Trips
+     -----
+
+=== modified file 'csv/genqrc_fld.csv'
+--- csv/genqrc_fld.csv	2016-05-21 12:42:32 +0000
++++ csv/genqrc_fld.csv	2016-11-29 09:59:22 +0000
+@@ -1,2 +1,3 @@
+ 0,"gqc_dcod","UI","3.0","Department Code","Dep"
+ 1,"gqc_name","NA","12.0","Department Name","Depart-Name"
++2,"gqc_gprp","UA","1.0","Gross Profit Report","G"
+
+=== modified file 'csv/genqrp_fld.csv'
+--- csv/genqrp_fld.csv	2016-11-07 16:11:53 +0000
++++ csv/genqrp_fld.csv	2016-11-22 10:43:39 +0000
+@@ -1,4 +1,4 @@
+ 0,"gqp_bcod","UI","3.0","Branch Code","Bch"
+ 1,"gqp_dcod","UI","3.0","Department Code","Dep"
+-2,"gqp_rate","UD","6.2","Tartget Rate","T-Rate"
++2,"gqp_rate","UD","6.2","Target Rate","T-Rate"
+ 3,"gqp_allow","UD","6.2","Allowance Rate","A-Rate"
+
+=== modified file 'doc/BKM.rst'
+--- doc/BKM.rst	2016-07-10 11:57:24 +0000
++++ doc/BKM.rst	2016-11-24 04:52:23 +0000
+@@ -98,11 +98,11 @@
+ +++++++++++++++++++++++
+ Use this report to print name and address labels.
+ 
+-* **Whole File** - Select whole file or individual contacts.
+-* **Sort Order** - Sort by contact code or surname or postal code.
+-* **Avery A4 Code** - The Avery code for the label being used.
+-* **First Label Row** - The row of the first available blank label, 1-24.
+-* **First Label Column** - The column of the first available blank label, 1-24.
+++ **Whole File** - Select whole file or individual contacts.
+++ **Sort Order** - Sort by contact code or surname or postal code.
+++ **Avery A4 Code** - The Avery code for the label being used.
+++ **First Label Row** - The row of the first available blank label, 1-24.
+++ **First Label Column** - The column of the first available blank label, 1-24.
+ 
+ Notes Listing (AR)
+ ++++++++++++++++++
+
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2016-11-07 16:11:53 +0000
++++ doc/BKS.rst	2016-12-30 14:10:40 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.2.6
++:Version:   5.2.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -48,11 +48,11 @@
+ -----------------
+ Whenever a report is being produced you will have the opportunity of deciding on the output method i.e. viewing, printing, exporting and, in some cases, whether or not to email it.  Please note that the option to email the report will only be available if there is a valid `SMTP Server` in the `System Record`_ record.
+ 
+-* **Output** - Select the required output option.
+-* **Printer Name** - If you selected `Print`, enter the printer name.
+-* **E-Mail Report** - If available, select whether or not to email the report.
+-* **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
+-* **E-Mail Message** - If available, enter the email message.
+++ **Output** - Select the required output option.
+++ **Printer Name** - If you selected `Print`, enter the printer name.
+++ **E-Mail Report** - If available, select whether or not to email the report.
+++ **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
+++ **E-Mail Message** - If available, enter the email message.
+ 
+ Error Messages
+ --------------
+
+=== modified file 'doc/BWL.rst'
+--- doc/BWL.rst	2016-11-07 16:11:53 +0000
++++ doc/BWL.rst	2016-12-21 10:43:17 +0000
+@@ -399,6 +399,8 @@
+ + **Competition Code** - The relevant competition code.
+ + **Game Number** - The relevant game number.
+ 
++Results are ranked in the order most points, largest shot difference and then least shots coceded.
++
+ Match Results Report
+ ++++++++++++++++++++
+ Use this routine to print the match results as follows:
+@@ -413,6 +415,8 @@
+ + **Number Prizes** - The number of prizes being awarded.
+ + **EFT Forms** - Whether to print EFT Forms in which case you will be required to enter the total value of each prize.
+ 
++Results are ranked in the order most points, largest shot difference and then least shots coceded.
++
+ Contact Request Forms
+ +++++++++++++++++++++
+ Use this routine to print forms with player's missing contact details.
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2016-11-07 16:11:53 +0000
++++ doc/BWM.rst	2016-12-30 14:10:40 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.2.6
++:Version:   5.2.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -48,10 +48,10 @@
+ -----------------
+ Whenever a report is being produced you will have the opportunity of deciding on the output method i.e. viewing, printing, exporting and, in some cases, whether or not to email it.  Please note that the option to email the report will only be available if there is a valid `SMTP Server` in the `System Record`_ record.
+ 
+-* **Output** - Select the required output option.
+-* **Printer Name** - If you selected `Print`, enter the printer name.
+-* **E-Mail Report** - If available, select whether or not to email the report.
+-* **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
+++ **Output** - Select the required output option.
+++ **Printer Name** - If you selected `Print`, enter the printer name.
+++ **E-Mail Report** - If available, select whether or not to email the report.
+++ **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
+ 
+ Error Messages
+ --------------
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2016-11-07 16:11:53 +0000
++++ doc/Downloads.rst	2016-12-30 14:10:40 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.2.6 and was released on the 7th November, 2016.
++The latest version of Tartan is 5.2.7 and was released on the 30th December, 2016.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.6.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.7.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.6.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.7.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.6.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.6.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.6.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.6.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.7.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.7.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.7.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.7.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/GEN.rst'
+--- doc/GEN.rst	2016-09-03 14:07:52 +0000
++++ doc/GEN.rst	2016-11-24 04:48:50 +0000
+@@ -255,17 +255,17 @@
+ +++++++++++++++++++++
+ Use this routine to capture initial opening balances. You can also import these balances by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain the account number and balance fields.
+ 
+-* **Acc-Num** - The account number.
+-* **Balance** - The opening balance.
+++ **Acc-Num** - The account number.
+++ **Balance** - The opening balance.
+ 
+ Budgets (GL)
+ ++++++++++++
+ Use this routine to capture monthly budgets for a specific financial period. You can also import budgets by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain all the fields as detailed in the prompt when you hover your cursor over the button. There is also an `Auto Populate` button which will create budgets based on the previous year's actual plus or minus a standard rate.
+ 
+-* **Acc-Num** - The account number.
+-* **F** - `M` to enter a monthly budget or `A` to enter an annual budget amount.
+-* **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+-* **Budget** - The budget value.
+++ **Acc-Num** - The account number.
+++ **F** - `M` to enter a monthly budget or `A` to enter an annual budget amount.
+++ **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+++ **Budget** - The budget value.
+ 
+ *Auto Populate*
+ 
+@@ -473,44 +473,44 @@
+ +++++++++++++++++++++++
+ Use this routine to produce statements for individual ledger accounts.
+ 
+-* **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
+-* **From Account** - If range was selected enter the starting account number.
+-* **To Account** - If range was selected enter the ending account number.
+-* **Starting Period** - The starting financial period in the financial year.
+-* **Ending Period** - The ending financial period in the financial year.
+-* **Separate Pages** - Select whether or not to print each account on a new page.
+++ **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
+++ **From Account** - If range was selected enter the starting account number.
+++ **To Account** - If range was selected enter the ending account number.
+++ **Starting Period** - The starting financial period in the financial year.
+++ **Ending Period** - The ending financial period in the financial year.
+++ **Separate Pages** - Select whether or not to print each account on a new page.
+ 
+ Trial Balance (GL)
+ ++++++++++++++++++
+ Use this routine to produce a trial balance.
+ 
+-* **Opening Balances Only** - Select whether or not to only print opening balances.
+-* **Include Opening Balances** - Select whether or not to include opening balances.
+-* **Starting Period** - The starting financial period in the financial year.
+-* **Ending Period** - The ending financial period in the financial year.
+-* **Ignore Zero Balances** - Select whether or not to ignore zero balances.
+++ **Opening Balances Only** - Select whether or not to only print opening balances.
+++ **Include Opening Balances** - Select whether or not to include opening balances.
+++ **Starting Period** - The starting financial period in the financial year.
+++ **Ending Period** - The ending financial period in the financial year.
+++ **Ignore Zero Balances** - Select whether or not to ignore zero balances.
+ 
+ Financial Statements (GL)
+ +++++++++++++++++++++++++
+ Use this routine to produce financial statements using the information as set up with `Report Generator (GL)`_.
+ 
+-* **Ending Period** - The last period, in the financial year, to take into account.
+-* **Stream Number** - To print the reports as enumerated in a stream record as created using `Stream Records (GL)`_.
+-* **Report Type** - Select the relevant report type.
+-* **Consolidate Companies** - Select whether or not to print a consolidated report. This is only applicable in a multi company installation.
+-* **Report Number** - The relevant report number as created using `Report Generator (GL)`_.
+-* **General Report** - Select whether or not the report is a general report.
+-* **Contents** - Select which values to use in the report.
+-* **Detail Code** - If `Detail` was selected above, enter the detail code as created using `Detail Records (GL)`_.
+-* **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
+-* **Print Options** - Select whether or not to include the selected options on the report heading.
+-* **Account Numbers** - Select whether or not to include the account numbers in the report.
+++ **Ending Period** - The last period, in the financial year, to take into account.
+++ **Stream Number** - To print the reports as enumerated in a stream record as created using `Stream Records (GL)`_.
+++ **Report Type** - Select the relevant report type.
+++ **Consolidate Companies** - Select whether or not to print a consolidated report. This is only applicable in a multi company installation.
+++ **Report Number** - The relevant report number as created using `Report Generator (GL)`_.
+++ **General Report** - Select whether or not the report is a general report.
+++ **Contents** - Select which values to use in the report.
+++ **Detail Code** - If `Detail` was selected above, enter the detail code as created using `Detail Records (GL)`_.
+++ **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
+++ **Print Options** - Select whether or not to include the selected options on the report heading.
+++ **Account Numbers** - Select whether or not to include the account numbers in the report.
+ 
+ Chart of Accounts (GL)
+ ++++++++++++++++++++++
+ Use this routine to produce a chart of accounts.
+ 
+-* **Sort Order** - Select the order by which the report must be sorted.
+++ **Sort Order** - Select the order by which the report must be sorted.
+ 
+ Notes Listing (GL)
+ ++++++++++++++++++
+@@ -526,8 +526,8 @@
+ ++++++++++++++++++++++++
+ Use this routine to produce a bank reconciliation statement.
+ 
+-* **Bank Account** - The bank account number.
+-* **Accounting Period** - The relevant period in the financial year.
+++ **Bank Account** - The bank account number.
+++ **Accounting Period** - The relevant period in the financial year.
+ 
+ Imported Bank Statements (GL)
+ +++++++++++++++++++++++++++++
+@@ -544,21 +544,21 @@
+ +++++++++++++++++++++++++++
+ Use this routine to change account numbers within a company.
+ 
+-* **Old Number** - The current account number to change.
+-* **New Number** - The new account number. It must not already exist.
+++ **Old Number** - The current account number to change.
+++ **New Number** - The new account number. It must not already exist.
+ 
+ Copy Masterfile Records (GL)
+ ++++++++++++++++++++++++++++
+ Use this routine to copy accounts from another company.
+ 
+-* **Copy From Company** - The company number from which to copy.
+-* **Include ...** - Select what additional data is to be copied.
+++ **Copy From Company** - The company number from which to copy.
+++ **Include ...** - Select what additional data is to be copied.
+ 
+ Integrated Controls Report (GL)
+ +++++++++++++++++++++++++++++++
+ Use this routine to produce a report showing the balance status of integrated systems and their respective control accounts.
+ 
+-* **Cut Off Period** - The relevant period in the financial year.
+++ **Cut Off Period** - The relevant period in the financial year.
+ 
+ Intercompany Accounts Report (GL)
+ +++++++++++++++++++++++++++++++++
+@@ -568,19 +568,30 @@
+ +++++++++++++++++++++++++++++++++++
+ Use this routine to initialise the bank reconciliation.
+ 
+-* **Bank Account** - The bank account number.
+-* **Last Period** - The last reconciled period.
+-* **Clear History** - Select whether or not to mark all transactions up to the `Last Period` as being cleared through the bank.
+++ **Bank Account** - The bank account number.
+++ **Last Period** - The last reconciled period.
+++ **Clear History** - Select whether or not to mark all transactions up to the `Last Period` as being cleared through the bank.
+ 
+ Now capture all the outstanding transactions as at the `Last Period`.
+ 
+ + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+ + **Ref-Num** - Enter the transaction reference number.
+ 
++Delete Imported Bank Statements (GL)
++++++++++++++++++++++++++++++++++++++
++Use this routine to delete imported bank statements.
++
+++ **Bank Account** - The bank account number.
+++ **From Date** - The first date to take into account. Enter 0 for the beginning.
+++ **To   Date** - The last date to take into account. Enter 0 for the end.
+++ **Unallocated Only** - Only delete unallocated transactions.
++
+ Merge Accounts Into a Control (GL)
+ ++++++++++++++++++++++++++++++++++
+ Use this routine to transfer all transactions of selected accounts into a control account and then delete the accounts e.g. Transfer individual loan accounts into a loan's control account.
+ 
+++ **Control Number** - The control account number.
++
+ Interrogation (GL)
+ ..................
+ This routine is for querying individual general ledger accounts.
+
+=== modified file 'doc/GEN_rne.rst'
+--- doc/GEN_rne.rst	2016-11-07 16:11:53 +0000
++++ doc/GEN_rne.rst	2016-11-24 04:56:54 +0000
+@@ -56,7 +56,7 @@
+ + **Branch Code** - The branch code.
+ 
+ + **Dep** - The department code as created above.
+-+ **Coy** - The company number of this department. Entering a zero wil enable you to delete an existing department.
+++ **Coy** - The company number of this department. Entering a zero will enable you to delete an existing department.
+ 
+ Standard Journals (GL)
+ ++++++++++++++++++++++
+@@ -279,17 +279,17 @@
+ +++++++++++++++++++++
+ Use this routine to capture initial opening balances. You can also import these balances by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain the account number and balance fields.
+ 
+-* **Acc-Num** - The account number.
+-* **Balance** - The opening balance.
+++ **Acc-Num** - The account number.
+++ **Balance** - The opening balance.
+ 
+ Budgets (GL)
+ ++++++++++++
+ Use this routine to capture monthly budgets for a specific financial period. You can also import budgets by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain all the fields as detailed in the prompt when you hover your cursor over the button. There is also an `Auto Populate` button which will create budgets based on the previous year's actual plus or minus a standard rate.
+ 
+-* **Acc-Num** - The account number.
+-* **F** - `M` to enter a monthly budget or `A` to enter an annual budget amount.
+-* **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+-* **Budget** - The budget value.
+++ **Acc-Num** - The account number.
+++ **F** - `M` to enter a monthly budget or `A` to enter an annual budget amount.
+++ **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+++ **Budget** - The budget value.
+ 
+ *Auto Populate*
+ 
+@@ -382,7 +382,10 @@
+ + **VAT-Amt** - The V.A.T. amount, which can be overridden.
+ + **Details** - The description of the journal.
+ 
+-The *List All* button will show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
++*Import File* button is used to import manual journal entries from a csv or excel file.
++*View Entries* button will show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
++*End Batch* button will end the batch if debits equal the credits.
++*Abort Batch* button will abort the current entries for the batch.
+ 
+ Please note that you will not be able to exit this routine until the debits equal the credits. Credits are entered as minus amounts.
+ 
+@@ -455,44 +458,44 @@
+ +++++++++++++++++++++++
+ Use this routine to produce statements for individual ledger accounts.
+ 
+-* **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
+-* **From Account** - If range was selected enter the starting account number.
+-* **To Account** - If range was selected enter the ending account number.
+-* **Starting Period** - The starting financial period in the financial year.
+-* **Ending Period** - The ending financial period in the financial year.
+-* **Separate Pages** - Select whether or not to print each account on a new page.
+++ **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
+++ **From Account** - If range was selected enter the starting account number.
+++ **To Account** - If range was selected enter the ending account number.
+++ **Starting Period** - The starting financial period in the financial year.
+++ **Ending Period** - The ending financial period in the financial year.
+++ **Separate Pages** - Select whether or not to print each account on a new page.
+ 
+ Trial Balance (GL)
+ ++++++++++++++++++
+ Use this routine to produce a trial balance.
+ 
+-* **Opening Balances Only** - Select whether or not to only print opening balances.
+-* **Include Opening Balances** - Select whether or not to include opening balances.
+-* **Starting Period** - The starting financial period in the financial year.
+-* **Ending Period** - The ending financial period in the financial year.
+-* **Ignore Zero Balances** - Select whether or not to ignore zero balances.
+++ **Opening Balances Only** - Select whether or not to only print opening balances.
+++ **Include Opening Balances** - Select whether or not to include opening balances.
+++ **Starting Period** - The starting financial period in the financial year.
+++ **Ending Period** - The ending financial period in the financial year.
+++ **Ignore Zero Balances** - Select whether or not to ignore zero balances.
+ 
+ Financial Statements (GL)
+ +++++++++++++++++++++++++
+ Use this routine to produce financial statements using the information as set up with `Report Generator (GL)`_.
+ 
+-* **Ending Period** - The last period, in the financial year, to take into account.
+-* **Stream Number** - To print the reports as enumerated in a stream record as created using `Stream Records (GL)`_.
+-* **Report Type** - Select the relevant report type.
+-* **Consolidate Companies** - Select whether or not to print a consolidated report. This is only applicable in a multi company installation.
+-* **Report Number** - The relevant report number as created using `Report Generator (GL)`_.
+-* **General Report** - Select whether or not the report is a general report.
+-* **Contents** - Select which values to use in the report.
+-* **Detail Code** - If `Detail` was selected above, enter the detail code as created using `Detail Records (GL)`_.
+-* **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
+-* **Print Options** - Select whether or not to include the selected options on the report heading.
+-* **Account Numbers** - Select whether or not to include the account numbers in the report.
+++ **Ending Period** - The last period, in the financial year, to take into account.
+++ **Stream Number** - To print the reports as enumerated in a stream record as created using `Stream Records (GL)`_.
+++ **Report Type** - Select the relevant report type.
+++ **Consolidate Companies** - Select whether or not to print a consolidated report. This is only applicable in a multi company installation.
+++ **Report Number** - The relevant report number as created using `Report Generator (GL)`_.
+++ **General Report** - Select whether or not the report is a general report.
+++ **Contents** - Select which values to use in the report.
+++ **Detail Code** - If `Detail` was selected above, enter the detail code as created using `Detail Records (GL)`_.
+++ **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
+++ **Print Options** - Select whether or not to include the selected options on the report heading.
+++ **Account Numbers** - Select whether or not to include the account numbers in the report.
+ 
+ Chart of Accounts (GL)
+ ++++++++++++++++++++++
+ Use this routine to produce a chart of accounts.
+ 
+-* **Sort Order** - Select the order by which the report must be sorted.
+++ **Sort Order** - Select the order by which the report must be sorted.
+ 
+ Notes Listing (GL)
+ ++++++++++++++++++
+@@ -508,8 +511,8 @@
+ ++++++++++++++++++++++++
+ Use this routine to produce a bank reconciliation statement.
+ 
+-* **Bank Account** - The bank account number.
+-* **Accounting Period** - The relevant period in the financial year.
+++ **Bank Account** - The bank account number.
+++ **Accounting Period** - The relevant period in the financial year.
+ 
+ Imported Bank Statements (GL)
+ +++++++++++++++++++++++++++++
+@@ -608,21 +611,21 @@
+ +++++++++++++++++++++++++++
+ Use this routine to change account numbers within a company.
+ 
+-* **Old Number** - The current account number to change.
+-* **New Number** - The new account number. It must not already exist.
+++ **Old Number** - The current account number to change.
+++ **New Number** - The new account number. It must not already exist.
+ 
+ Copy Masterfile Records (GL)
+ ++++++++++++++++++++++++++++
+ Use this routine to copy accounts from another company.
+ 
+-* **Copy From Company** - The company number from which to copy.
+-* **Include ...** - Select what additional data is to be copied.
+++ **Copy From Company** - The company number from which to copy.
+++ **Include ...** - Select what additional data is to be copied.
+ 
+ Integrated Controls Report (GL)
+ +++++++++++++++++++++++++++++++
+ Use this routine to produce a report showing the balance status of integrated systems and their respective control accounts.
+ 
+-* **Cut Off Period** - The relevant period in the financial year.
+++ **Cut Off Period** - The relevant period in the financial year.
+ 
+ Intercompany Accounts Report (GL)
+ +++++++++++++++++++++++++++++++++
+@@ -632,9 +635,9 @@
+ +++++++++++++++++++++++++++++++++++
+ Use this routine to initialise the bank reconciliation.
+ 
+-* **Bank Account** - The bank account number.
+-* **Last Period** - The last reconciled period.
+-* **Clear History** - Select whether or not to mark all transactions up to the `Last Period` as being cleared through the bank.
+++ **Bank Account** - The bank account number.
+++ **Last Period** - The last reconciled period.
+++ **Clear History** - Select whether or not to mark all transactions up to the `Last Period` as being cleared through the bank.
+ 
+ Now capture all the outstanding transactions as at the `Last Period`.
+ 
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2016-11-07 16:11:53 +0000
++++ doc/MST.rst	2016-12-30 14:10:40 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.2.6
++:Version:   5.2.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -187,18 +187,18 @@
+     + Continue these steps until the full amount has been allocated. In the event of a balance remaining which cannot be allocated, hitting the `Esc` key or clicking on the `Exit` button will exit the routine leaving the balance as unallocated.
+ 
+ + **History** - This is identical to `Normal` above but the available transactions will include previously fully allocated ones thus enabling you to reallocate transactions.
+-+ **Oldest** - This will automatically allocate the amount against outstanding transactions, starting from the oldest transaction, until either the amount has been fully allocated or there are no more outstanding transactions in which case the balance will remain as unallocated.
+++ **Automatic** - This will automatically allocate the amount against outstanding transactions, starting from the oldest transaction, until either the amount has been fully allocated or there are no more outstanding transactions in which case the balance will remain as unallocated.
+ + **Current** - This will leave the full transaction as unallocated.
+ 
+ Printer Selection
+ -----------------
+ Whenever a report is being produced you will have the opportunity of deciding on the output method i.e. viewing, printing, exporting and, in some cases, whether or not to email it.  Please note that the option to email the report will only be available if there is a valid `SMTP Server` in the `System Record Maintenance`_ record.
+ 
+-* **Output** - Select the required output option.
+-* **Printer Name** - If you selected `Print`, enter the printer name.
+-* **E-Mail Report** - If available, select whether or not to email the report.
+-* **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
+-* **E-Mail Message** - If available, enter the email message.
+++ **Output** - Select the required output option.
+++ **Printer Name** - If you selected `Print`, enter the printer name.
+++ **E-Mail Report** - If available, select whether or not to email the report.
+++ **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
+++ **E-Mail Message** - If available, enter the email message as well as any additional attachments, if any.
+ 
+ Error Messages
+ --------------
+@@ -265,7 +265,7 @@
+ ..............
+ Select this routine to check if there are upgrades to Tartan and if so to install them.
+ 
+-* **Update Type** - Select whether to check the Tartan ftp site or a local LAN location. If Local is selected you will be able to browse for a location which will default to whatever is set in the *Upgrade Path* directory as set during the `Preferences`_ routine.
+++ **Update Type** - Select whether to check the Tartan ftp site or a local LAN location. If Local is selected you will be able to browse for a location which will default to whatever is set in the *Upgrade Path* directory as set during the `Preferences`_ routine.
+ 
+ * If there is an update and you want to upgrade, click on the `Update` button.
+ 
+@@ -277,8 +277,8 @@
+ ...........
+ Use this routine to copy tables from one profile/database to another one.
+ 
+-* **RC File From** - Enter the full path of the rcfile of the database to copy from.
+-* **Whole Database** - Yes or No, If No is selected a list of tables will be displayed after confirmation. Tick all tables to be copied and then the Accept button.
+++ **RC File From** - Enter the full path of the rcfile of the database to copy from.
+++ **Whole Database** - Yes or No, If No is selected a list of tables will be displayed after confirmation. Tick all tables to be copied and then the Accept button.
+ 
+ Backup Database
+ ...............
+@@ -329,7 +329,7 @@
+     + **Screen Placement** - Where the Tartan Window must be placed on the monitor i.e. Left, Centre or Right.
+     + **Show Tartan Image** - Whether to display the Tartan image on the Main Menu screen.
+     + **Enforce Confirm** - Whether confirmation is required on the completion of data entry.
+-    + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear in a box below the entry field for selection.
++    + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear either `In-Line` or in a `List` below the entry field, for selection.
+     + **Tool-tips** - Whether tool-tips will display as you hover your cursor over certain entry fields.
+     + **Error Alarm** - Whether or not to sound an audible alarm with errors. This can be No, Yes or Multimedia. Use Multimedia if you do not have an internal speaker.
+ 
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2016-11-07 16:11:53 +0000
++++ doc/SEC.rst	2016-12-30 14:10:40 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.2.6
++:Version:   5.2.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -48,10 +48,10 @@
+ -----------------
+ Whenever a report is being produced you will have the opportunity of deciding on the output method i.e. viewing, printing, exporting and, in some cases, whether or not to email it.  Please note that the option to email the report will only be available if there is a valid `SMTP Server` in the `System Record`_ record.
+ 
+-* **Output** - Select the required output option.
+-* **Printer Name** - If you selected `Print`, enter the printer name.
+-* **E-Mail Report** - If available, select whether or not to email the report.
+-* **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
+++ **Output** - Select the required output option.
+++ **Printer Name** - If you selected `Print`, enter the printer name.
+++ **E-Mail Report** - If available, select whether or not to email the report.
+++ **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
+ 
+ Error Messages
+ --------------
+
+=== modified file 'gen/gl3050.py'
+--- gen/gl3050.py	2016-07-10 11:57:24 +0000
++++ gen/gl3050.py	2016-11-23 08:49:57 +0000
+@@ -1417,6 +1417,8 @@
+ 
+     def pageHeading(self, line):
+         if self.repprt[2] == "export":
++            expheads = copy.deepcopy(self.expheads)
++            expcolsh = copy.deepcopy(self.expcolsh)
+             if self.typ == "C":
+                 if self.rptyp in ("B", "P"):
+                     if line[11] == "Balance Sheet":
+@@ -1425,8 +1427,6 @@
+                         head = self.heds[2].replace("%ymd", self.yed)
+                 else:
+                     head = self.heds[3].replace("%ymd", self.yed)
+-                expheads = copy.deepcopy(self.expheads)
+-                expcolsh = copy.deepcopy(self.expcolsh)
+             else:
+                 edate = CCD(self.end, "D2", 7).disp
+                 head = "%s for period %s to %s" % (line[11],
+@@ -1436,11 +1436,8 @@
+                         self.fin.ddet[0].strip(), self.fin.ddet[1].strip())
+                 elif self.typ == "M":
+                     head = "%s (%s)" % (head, self.des1)
+-                expheads = copy.deepcopy(self.expheads)
+-                expheads[1] = head
+                 if self.opt == "Y" and len(self.expheads) < 3:
+-                    self.printOptions()
+-                expcolsh = copy.deepcopy(self.expcolsh)
++                    expheads.append(self.printOptions())
+                 if self.typ == "L":
+                     if self.num == "Y":
+                         start = 2
+@@ -1589,8 +1586,7 @@
+             con = str(tuple(self.con)).replace("'", "").replace(" ", "")
+             txt += " Companies: %s " % con
+         if self.repprt[2] == "export":
+-            self.expheads.append(txt)
+-            return
++            return txt
+         self.fpdf.drawText()
+         self.pglin += 1
+         if self.typ == "C":
+
+=== modified file 'gen/gl3130_rne.py'
+--- gen/gl3130_rne.py	2016-11-07 16:11:53 +0000
++++ gen/gl3130_rne.py	2016-12-22 08:54:19 +0000
+@@ -321,7 +321,7 @@
+             (("C",0,0,1),"INA",12,"Name","Department Name",
+                 "","N",self.doTDes,None,None,("notblank",)),
+             (("C",0,0,2),"IUD",6.2,"T-Rate","Target Rate",
+-                0,"N",self.doTRte,None,None,("notzero",)),
++                0,"N",self.doTRte,None,None,("efld",)),
+             (("C",0,0,3),"IUD",6.2,"A-Rate","Allowance Rate",
+                 1.5,"N",self.doARte,None,None,("notzero",)))
+         tnd = ((self.doTarEnd,"n"),)
+@@ -648,7 +648,7 @@
+         exc = [("gqb_bcod", "<>", 999)]
+         bchs = self.sql.getRec(tables="genqrb", where=exc, order="gqb_bcod")
+         # Fpdf
+-        size = 12 + (21 * 7)
++        size = 12 + (22 * 7)
+         self.fpdf.def_orientation = "L"
+         self.fpdf.setValues("gl3130", size, font="courier")
+         # Form
+@@ -691,7 +691,7 @@
+                     else:
+                         l = 0
+                     if dep == "":
+-                        self.fpdf.drawText("", w=21*self.fpdf.cwth, h=4, ln=l)
++                        self.fpdf.drawText("", w=22*self.fpdf.cwth, h=4, ln=l)
+                     else:
+                         if not dep in tots:
+                             tots[dep] = [0, 0]
+@@ -704,7 +704,7 @@
+                             tots[dep][1] += dat
+                             if dat and lyr:
+                                 per = round(((dat - lyr) * 100.0) / lyr, 2)
+-                                per = CCD(per, "SD", 6.2)
++                                per = CCD(per, "SD", 7.2)
+                                 if per.err:
+                                     per = ""
+                                 else:
+@@ -719,7 +719,7 @@
+                             align="C", border="TLRB", fill=True, ln=0)
+                         self.fpdf.drawText(sls, w=10*self.fpdf.cwth, h=4,
+                             align="C", border="TLRB", ln=0)
+-                        self.fpdf.drawText(per, w=8*self.fpdf.cwth, h=4,
++                        self.fpdf.drawText(per, w=9*self.fpdf.cwth, h=4,
+                             align="C", border="TLRB", ln=l)
+             self.fpdf.drawText("")
+             self.fpdf.drawText("Totals", w=12*self.fpdf.cwth,
+@@ -731,13 +731,13 @@
+                 else:
+                     ln = 0
+                 if dep == "":
+-                    self.fpdf.drawText("", w=21*self.fpdf.cwth, h=4, ln=ln)
++                    self.fpdf.drawText("", w=22*self.fpdf.cwth, h=4, ln=ln)
+                 else:
+                     sls = CCD(round(tots[dep][1] / 1000.0, 0), "CI", 9).disp
+                     if tots[dep][0] and tots[dep][1]:
+                         per = round(((tots[dep][1] - tots[dep][0]) * 100.0)
+                             / tots[dep][0], 2)
+-                        per = CCD(per, "SD", 6.2)
++                        per = CCD(per, "SD", 7.2)
+                         if per.err:
+                             per = ""
+                         else:
+@@ -748,7 +748,7 @@
+                         align="C", ln=0)
+                     self.fpdf.drawText(sls, w=10*self.fpdf.cwth, h=4,
+                         align="C", border="TLRB", ln=0)
+-                    self.fpdf.drawText(per, w=8*self.fpdf.cwth, h=4,
++                    self.fpdf.drawText(per, w=9*self.fpdf.cwth, h=4,
+                         align="C", border="TLRB", ln=ln)
+ 
+     def doStockVal(self):
+@@ -761,6 +761,10 @@
+         edt = mthendDate((self.rper * 100) + 1)
+         mths = dateDiff(sdt, edt, "months") + 1
+         bchs = self.sql.getRec(tables="genqrb", where=exc, order="gqb_bcod")
++        recs = self.sql.getRec(tables="genqrc", where=[("gqc_gprp", "=", "Y")])
++        deps = []
++        for rec in recs:
++            deps.append(rec[0])
+         pb = ProgressBar(self.opts["mf"].body, mxs=len(bchs), typ=txt)
+         for num, bch in enumerate(bchs):
+             pb.displayProgress(num)
+@@ -796,7 +800,7 @@
+                     per = round((wag * 100.0) / sls, 2)
+                 self.dat1.append([bcd, bnm, coy, nam, ost, pur, sls, slc, inc,
+                     adv, stk, cst, stt, alw, dif, wag, per])
+-                if sls and cst and dep in (1, 2, 4, 5, 6, 7, 8, 9, 12):
++                if sls and cst and dep in deps:
+                     prf = sls + cst + inc + adv - ost - pur
+                     if prf <= sls:
+                         if not dep in self.dat2[bcd][1]:
+@@ -933,6 +937,8 @@
+             for dep in self.dat2[bch][1].keys():
+                 if not dep in dpss:
+                     dpss.append(dep)
++        if not dpss:
++            return
+         dpss.sort()
+         tab = ["genqrp", "genqrc"]
+         col = ["gqp_dcod", "gqc_name", "gqp_rate"]
+@@ -943,12 +949,15 @@
+             ("gqc_dcod=gqp_dcod",)]
+         odr = "gqp_dcod"
+         deps = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
+-        self.col4 = [["NA", 12, "Branch\nTarget%"]]
++        self.col4 = {"D": [], "E": []}
++        self.col4["D"] = [["NA", 12, "Branch"]]
++        self.col4["E"] = [["NA", 12, "Branch\nTarget%"]]
+         self.dat4 = {}
+         size = 12
+         for dep in deps:
++            self.col4["D"].append(["SD",12.2,"%s" % dep[1]])
+             dsc = CCD(dep[2], "SD", 6.2).disp
+-            self.col4.append(["SD",12.2,"%s\n%s%s" % (dep[1], dsc, "%")])
++            self.col4["E"].append(["SD",12.2,"%s\n%s%s" % (dep[1], dsc, "%")])
+             self.dat4[dep[0]] = [dep[1], dep[2], {}]
+             size += 12
+         for self.rtyp in ("D", "E"):
+@@ -1147,7 +1156,7 @@
+                 else:
+                     b = None
+                     f = False
+-                self.fpdf.drawText(dep, w=21*self.fpdf.cwth, h=5, align="C",
++                self.fpdf.drawText(dep, w=22*self.fpdf.cwth, h=5, align="C",
+                     border=b, fill=f, ln=l)
+         elif self.rtyp == "C":
+             head = "Stock Estimates as at %s (Thousands)" % self.rperd
+@@ -1168,8 +1177,8 @@
+                     border="TLRB", fill=True)
+         elif self.rtyp in ("D", "E"):
+             if self.rtyp == "D":
+-                head = "Departmental Gross Profit Report as at %s" % \
+-                    self.rperd
++                head = "Departmental Gross Profit Report as at %s %s" % \
++                    (self.rperd, "(Thousands)")
+             else:
+                 head = "Departmental Gross Profit %s Report as at %s" % \
+                     ("Percentages", self.rperd)
+@@ -1178,9 +1187,9 @@
+             x = self.fpdf.get_x()
+             y = self.fpdf.get_y()
+             self.fpdf.setFont(font[0], "B", font[1])
+-            for num, col in enumerate(self.col4):
++            for num, col in enumerate(self.col4[self.rtyp]):
+                 w = int(col[1]) * self.fpdf.cwth
+-                if col == self.col4[-1]:
++                if col == self.col4[self.rtyp][-1]:
+                     l = 1
+                 else:
+                     l = 0
+@@ -1194,7 +1203,8 @@
+             self.fpdf.drawText()
+         elif self.rtyp in ("G", "H"):
+             if self.rtyp == "G":
+-                head = "Departmental Net Profit Report as at %s" % self.rperd
++                head = "Departmental Net Profit Report as at %s %s" % \
++                    (self.rperd, "(Thousands)")
+             else:
+                 head = "Departmental Net Profit %s Report as at %s" % \
+                     ("Percentages", self.rperd)
+@@ -1247,9 +1257,9 @@
+             f = True
+             self.fpdf.setFont(font[0], "B", font[1])
+             if self.rtyp == "D":
+-                txt = "Average Gross Profit "
++                txt = "Average GP "
+             else:
+-                txt = "Average Gross Profit Percentages"
++                txt = "Average GP%"
+             self.fpdf.drawText(txt, w=w, h=5, border=b, fill=f, ln=0)
+             for dep in data:
+                 w = 12 * self.fpdf.cwth
+@@ -1267,9 +1277,9 @@
+             f = True
+             self.fpdf.setFont(font[0], "B", font[1])
+             if self.rtyp == "G":
+-                txt = "Average Net Profit"
++                txt = "Average NP"
+             else:
+-                txt = "Average Net Profit %tage"
++                txt = "Average NP%"
+             self.fpdf.drawText(txt, w=w, h=5, border=b, fill=f, ln=0)
+             for dep in data:
+                 w = 12 * self.fpdf.cwth
+
+=== added file 'gen/gl6060.py'
+--- gen/gl6060.py	1970-01-01 00:00:00 +0000
++++ gen/gl6060.py	2016-12-02 08:59:23 +0000
+@@ -0,0 +1,109 @@
++#! /usr/bin/python
++
++"""
++SYNOPSIS
++    General Ledger - Delete Imported Bank Statements.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2016 Paul Malherbe.
++"""
++
++from TartanClasses import RepPrt, Sql, TartanDialog
++
++class gl6060:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlctl", "genmst", "genrct"],
++            prog=__name__)
++        if self.sql.error:
++            return
++        return True
++
++    def mainProcess(self):
++        self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
++            "Delete Imported Bank Statements (%s)" % __name__)
++        glm = {
++            "stype": "R",
++            "tables": ("ctlctl", "genmst"),
++            "cols": (
++                ("ctl_conacc", "", 0, "Acc-Num"),
++                ("glm_desc", "", 0, "Description", "Y")),
++            "where": [
++                ("ctl_cono", "=", self.opts["conum"]),
++                ("ctl_code", "like", "bank_%"),
++                ("glm_cono=ctl_cono",),
++                ("glm_acno=ctl_conacc",)]}
++        r1s = (("Yes","Y"), ("No","N"))
++        fld = (
++            (("T",0,0,0),"IUI",7,"Bank Account","",
++                "","Y",self.doBankAcc,glm,None,("efld",)),
++            (("T",0,1,0),"Id1",10,"From Date","From Date (0 for Beginning)",
++                0,"Y",self.doFrom,None,None,("efld",)),
++            (("T",0,2,0),"Id1",10,"To   Date","To Date (0 for End)",
++                0,"Y",self.doTo,None,None,("efld",)),
++            (("T",0,3,0),("IRB",r1s),0,"Unallocated Only","",
++                "Y","Y",self.doUnall,None,None,None))
++        tnd = ((self.doEnd,"y"), )
++        txt = (self.doExit, )
++        self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
++            tend=tnd, txit=txt)
++
++    def doBankAcc(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec(tables=["ctlctl", "genmst"], cols=["glm_desc"],
++            where=[("glm_cono", "=", self.opts["conum"]), ("glm_acno", "=", w),
++            ("ctl_cono=glm_cono",), ("ctl_conacc=glm_acno",), ("ctl_code",
++            "like", "bank_%")], limit=1)
++        if not acc:
++            return "Invalid Bank Account Number"
++        self.acnow = w
++        self.acnod = self.df.t_disp[pag][r][p]
++        self.name = acc[0]
++
++    def doFrom(self, frt, pag, r, c, p, i, w):
++        self.start = w
++
++    def doTo(self, frt, pag, r, c, p, i, w):
++        if w and self.start and w < self.start:
++            return "Invalid Date, Earlier than From Date"
++        self.to = w
++
++    def doUnall(self, frt, pag, r, c, p, i, w):
++        self.unall = w
++
++    def doEnd(self):
++        self.df.closeProcess()
++        whr = [
++            ("grt_cono", "=", self.opts["conum"]),
++            ("grt_acno", "=", self.acnow)]
++        if self.start:
++            whr.append(("grt_date", ">=", self.start))
++        if self.to:
++            whr.append(("grt_date", "<=", self.to))
++        if self.unall == "Y":
++            whr.append(("grt_flag", "=", "N"))
++        cnt = self.sql.getRec(tables="genrct", cols=["count(*)"], where=whr,
++            limit=1)
++        self.sql.delRec("genrct", where=whr)
++        self.opts["mf"].dbm.commitDbase(ask=True,
++            mess="A Total of %s Records were Deleted" % cnt[0],
++            default="no")
++        self.closeProcess()
++
++    def doExit(self):
++        self.df.closeProcess()
++        self.closeProcess()
++
++    def closeProcess(self):
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== renamed file 'gen/gl6060.py' => 'gen/gl6070.py'
+--- gen/gl6060.py	2016-02-27 13:18:41 +0000
++++ gen/gl6070.py	2016-11-24 04:32:46 +0000
+@@ -16,7 +16,7 @@
+ from TartanClasses import ASD, Sql, TartanDialog
+ from tartanFunctions import copyList, getSingleRecords, showError
+ 
+-class gl6060:
++class gl6070:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== modified file 'gen/glc410_rne.py'
+--- gen/glc410_rne.py	2016-11-07 16:11:53 +0000
++++ gen/glc410_rne.py	2016-11-29 10:18:32 +0000
+@@ -36,13 +36,17 @@
+             "tables": ("genqrc",),
+             "cols": [
+                 ("gqc_dcod", "", 0, "Code"),
+-                ("gqc_name", "", 0, "Name")],
++                ("gqc_name", "", 0, "Name"),
++                ("gqc_gprp", "", 0, "P")],
+             "order": "gqc_dcod"}
++        r1s = (("Yes","Y"), ("No","N"))
+         self.fld = (
+             (("T",0,0,0),"I@gqc_dcod",0,"","",
+                 "","N",self.doCode,dep,None,("efld",)),
+             (("T",0,1,0),"I@gqc_name",0,"","",
+-                "","N",None,None,self.doDelete,("notblank",)))
++                "","N",None,None,self.doDelete,("notblank",)),
++            (("T",0,2,0),("IRB",r1s),0,"Gross Profit Report","",
++                "Y","N",None,None,None,None))
+         but = (("Quit",None,self.doExit,1,None,None),)
+         tnd = ((self.doEnd,"Y"),)
+         txt = (self.doExit,)
+
+=== added file 'img/entries.png'
+Binary files img/entries.png	1970-01-01 00:00:00 +0000 and img/entries.png	2016-11-23 11:54:23 +0000 differ
+=== added file 'img/results.png'
+Binary files img/results.png	1970-01-01 00:00:00 +0000 and img/results.png	2016-11-23 11:56:43 +0000 differ
+=== modified file 'lon/ln2030.py'
+--- lon/ln2030.py	2016-11-07 16:11:53 +0000
++++ lon/ln2030.py	2016-11-21 09:22:30 +0000
+@@ -14,8 +14,8 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, GetCtl, Sql, TartanDialog
+-from tartanFunctions import dateDiff, askQuestion
++from TartanClasses import GetCtl, Sql, TartanDialog
++from tartanFunctions import askQuestion
+ 
+ class ln2030:
+     def __init__(self, **opts):
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2016-09-03 14:07:52 +0000
++++ men/stdmen.py	2016-11-24 04:32:09 +0000
+@@ -135,7 +135,8 @@
+     ["PYYN","gl_tb","gl6030",1,"Integrated Controls Report"],
+     ["PYYN","gl_tb","gl6040",1,"Intercompany Accounts Report"],
+     ["PYNN","gl_tb","gl6050",2,"Initialise Bank Reconciliation"],
+-    ["PYNN","gl_tb","gl6060",6,"Merge Accounts Into a Control"],
++    ["PYNN","gl_tb","gl6060",2,"Delete Imported Bank Statements"],
++    ["PYNN","gl_tb","gl6070",6,"Merge Accounts Into a Control"],
+     ["PYYY","gl_qy","gl4010",0,"Interrogation (Normal)"],
+     ["PYYN","gl_qy","gl4020",1,"Interrogation (Financials)"]]
+ 
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2016-11-07 16:11:53 +0000
++++ mst/ms0000.py	2016-12-30 14:10:40 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 2, 6)
++    VERSION = (5, 2, 7)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2016-09-03 14:07:52 +0000
++++ mst/msc000.py	2016-11-16 15:36:08 +0000
+@@ -539,7 +539,7 @@
+                     for x in xrange(0, len(m[0]), 2):
+                         if m[0][x:x+2].lower() in nos:
+                             nos.remove(m[0][x:x+2].lower())
+-                # All systems excluded for the user
++                # All systems excluded for the user - nos
+                 tmp = sql.getRec(tables="ctlpwm", cols=["mpw_sys"],
+                     where=[("mpw_usr", "=", self.user["name"]),
+                     ("mpw_prg", "=", "")])
+@@ -547,9 +547,11 @@
+                     for s in tmp:
+                         if not s in nos:
+                             nos.append(s[0])
++                # All modules excluded for the user - nop
+                 nop = sql.getRec(tables="ctlpwm", cols=["mpw_sys", "mpw_prg"],
+                     where=[("mpw_usr", "=", self.user["name"]), ("mpw_prg",
+                     "<>", ""), ("mpw_pwd", "=", "")])
++                # All modules enabled for the user - self.vop
+                 self.vop = sql.getRec(tables="ctlpwm", cols=["mpw_sys",
+                     "mpw_prg", "mpw_coy", "mpw_pwd"], where=[("mpw_usr",
+                     "=", self.user["name"]), ("mpw_prg", "<>", ""),
+@@ -557,12 +559,16 @@
+                 if self.vop:
+                     for sss, mod, coy, pwd in self.vop:
+                         if sss in nos:
++                            # System in nos, remove system from nos
+                             nos.remove(sss)
+                             for prg in self.mod:
++                                # Add all modules in sss to nop
+                                 if prg[2][:2] == sss:
+-                                    if prg[2][2:] == mod:
+-                                        continue
+                                     nop.append([prg[2][:2], prg[2][2:]])
++                    for sss, mod, coy, pwd in self.vop:
++                        # Remove all enabled modules from nop
++                        if [sss, mod] in nop:
++                            nop.remove([sss, mod])
+                 self.usrmen = []
+                 self.usrmod = []
+                 for men in self.men:
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2016-11-07 16:11:53 +0000
++++ std/TartanClasses.py	2016-12-28 08:04:26 +0000
+@@ -102,6 +102,7 @@
+     aliases = {
+         "abort": os.path.join(imgdir, "no.png"),
+         "accept": os.path.join(imgdir, "yes.png"),
++        "account": os.path.join(imgdir, "greencash.png"),
+         "all": os.path.join(imgdir, "show.png"),
+         "alter": os.path.join(imgdir, "convert.png"),
+         "amend": os.path.join(imgdir, "edit.png"),
+@@ -130,6 +131,7 @@
+         "edi": os.path.join(imgdir, "import.png"),
+         "enquire": os.path.join(imgdir, "question.png"),
+         "exit": os.path.join(imgdir, "quit.png"),
++        "fixed": os.path.join(imgdir, "entries.png"),
+         "forward": os.path.join(imgdir, "right.png"),
+         "interrogate": os.path.join(imgdir, "question.png"),
+         "logout": os.path.join(imgdir, "quit.png"),
+@@ -1958,6 +1960,7 @@
+             self.tkimg = ImageTk.PhotoImage(image=pilimg)
+             self.image = tk.Canvas(self.mf.body, width=iwth, height=ihgt)
+             self.image.create_image(0, 0, image=self.tkimg, anchor="nw")
++            self.image.ilist = [self.tkimg]
+         else:
+             self.image.config(bg=self.mf.rcdic["nbg"])
+             self.image.create_text(iwth/2, (ihgt/2)-60, text="Tartan Systems",
+@@ -2123,6 +2126,8 @@
+                 check.remove(key)
+         self.screen = screen
+         try:
++            self.dbmod = None
++            self.mrecs = True
+             if check:
+                 raise Exception("Invalid rcdic")
+             if self.dbase in ("FBird", "SQLite"):
+@@ -2130,7 +2135,6 @@
+                     self.dbdsn = os.path.join(self.dbdir, self.dbname)
+                 else:
+                     self.dbdsn = self.dbname
+-            self.mrecs = True
+             if self.dbase == "FBird":
+                 self.dbmod = "fdb"
+                 import fdb as engine
+@@ -7116,8 +7120,11 @@
+     font   - Font to use.
+     addh   - Additional height.
+     escape - Allow Escape.
++    colr   - List or tuple denoting the fg and bg colours of the row
++             depending on the value of the column e.g.
++                 (9, {"X": ("red", "white"), "Y": ("blue", "white")})
+     """
+-    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, loop=True, cmnd=None, butt=[], neww=True, deco=True, live=True, posn=0, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", addh=0, escape=True):
++    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, loop=True, cmnd=None, butt=[], neww=True, deco=True, live=True, posn=0, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", addh=0, escape=True, colr=[]):
+         self.scrn = scrn
+         self.ocol = cols
+         if titl:
+@@ -7179,6 +7186,7 @@
+         else:
+             self.font = tkfont.nametofont(font[0])
+             self.font.configure(size=font[1])
++        self.colr = colr
+         self.addh = addh
+         self.escape = escape
+         self.selection = None
+@@ -7251,18 +7259,18 @@
+             self.tree.configure(xscroll=hsb.set, yscroll=vsb.set)
+         if not self.loop:
+             return
+-        xits = False
++        exits = False
+         if self.chek:
+             accept = False
+         butt = copyList(self.butt)
+-        for but in self.butt:
++        for but in butt:
+             if but[0].lower() in ("exit", "quit"):
+-                xits = True
++                exits = True
+             elif self.chek and but[0].lower() == "accept":
+                 accept = True
+         if self.chek and not accept:
+             butt.append(("Accept", self.doSelect))
+-        if not xits:
++        if not exits:
+             butt.append(("Exit", self.doExit))
+         if self.fltr:
+             butt.insert(0, ("Filter", self.doFilter))
+@@ -7276,14 +7284,16 @@
+ 
+     def doButton(self, button):
+         self.button = None
++        if button in self.butt:
++            self.closeProcess()
+         if len(button) == 3 and button[2] is True:
+             self.selection = [self.iids[self.tree.focus()]]
+             self.selection.extend(self.data[self.selection[0]])
+             self.button = button[1]
++        elif type(button[1]) in (list, tuple):
++            button[1][0](button[1][1])
+         else:
+             button[1]()
+-        if button in self.butt:
+-            self.closeProcess()
+ 
+     def buildTree(self):
+         if self.chek:
+@@ -7292,14 +7302,14 @@
+                     "img", "uncheck.gif"))
+                 self.dochek = tk.PhotoImage(file=os.path.join(getPrgPath(),
+                     "img", "check.gif"))
+-                self.tree.heading("#0",image=self.unchek, anchor="e",
++                self.tree.heading("#0", image=self.unchek, anchor="e",
+                     command=functools.partial(self.doToggle, "all"))
+                 self.tree.column("#0", anchor="e", width=43, minwidth=43,
+                     stretch=False)
+             except:
+                 if self.neww:
+                     placeWindow(self.window, parent=self.scrn, expose=True)
+-                showError(self.window, "Image", "Missing uncheck or check gif")
++                showError(self.window, "Image", "Missing check or uncheck gif")
+                 return
+         for num, col in enumerate(self.cols):
+             if not col:
+@@ -7337,6 +7347,10 @@
+                 start = iid
+             last = iid
+         self.tree.tag_configure("font", font=self.font)
++        if self.colr:
++            for c in self.colr[1]:
++                self.tree.tag_configure("%s" % c, foreground=self.colr[1][c][0],
++                    background=self.colr[1][c][1])
+         if self.scrl:
+             if self.escape:
+                 self.tree.bind("<Escape>", self.doExit)
+@@ -7405,6 +7419,9 @@
+                 functools.partial(self.doToggle, iid))
+             self.tree.tag_bind("T%s" % num, "<Return>",
+                 functools.partial(self.doToggle, iid))
++        elif self.colr and item[self.colr[0]] in self.colr[1]:
++            iid = self.tree.insert("", "end", values=item, tags=["font",
++                item[self.colr[0]]])
+         else:
+             iid = self.tree.insert("", "end", values=item, tags=["font"])
+         self.iids[iid] = num
+@@ -7916,6 +7933,7 @@
+             self.cnv.yview_moveto(0)
+             self.cnv.create_image(0, 0, image=image, anchor="nw", tags="img")
+             self.cnv.pack(side="left", fill="both", expand="yes")
++            self.cnv.ilist = [image]
+             if self.crop:
+                 self.but.pack(fill="x", expand="yes")
+                 self.item = None
+@@ -14745,8 +14763,13 @@
+         self.sys = w
+         data = []
+         for mod in self.mod[self.sys]:
+-            if mod[0] <= self.lvl:
+-                data.append(mod)
++            new = copyList(list(mod))
++            if new[0] <= self.lvl:
++                if new[1][3] != "0":
++                    new[1] = "%s0" % new[1][:3]
++                    new[2] = "Data Capture"
++                if not new in data:
++                    data.append(new)
+         self.df.colf[pag][2][8]["data"] = data
+ 
+     def doMod(self, frt, pag, r, c, p, i, w):
+@@ -14906,9 +14929,9 @@
+                 if itg[0]:
+                     self.incoac = True
+             # Check for Sales Invoicing
+-            sql = Sql(self.mf.dbm, "bkmiv1", prog=__name__)
++            sql = Sql(self.mf.dbm, "slsiv1", prog=__name__)
+             if not sql.error:
+-                inv = sql.getRec(tables="bkmiv1", cols=["count(*)"], limit=1)
++                inv = sql.getRec(tables="slsiv1", cols=["count(*)"], limit=1)
+                 if inv[0]:
+                     self.slsinv = True
+         # Load System Names and Check for Integration
+@@ -14919,6 +14942,7 @@
+             "CRS": ["Creditor's Ledger", "crsctl", "ctc_glint"],
+             "DRS": ["Debtor's Ledger", "drsctl", "ctd_glint"],
+             "GEN": ["General Ledger"],
++            "LON": ["Loans Ledger", "lonctl", "cln_glint"],
+             "MEM": ["Member's Ledger", "memctl", "mcm_glint"],
+             "RCA": ["Rental's Ledger (Extended)", "rcactl", "cte_glint"],
+             "RTL": ["Rental's Ledger (Basic)", "rtlctl", "ctr_glint"],
+@@ -15147,7 +15171,7 @@
+             self.con.sort()
+         if self.isys == "Y":
+             # All systems
+-            self.syn = ["chg", "eml", "fre", "reg", "rpt", "tel", "ver"]
++            self.syn = ["chg", "eml", "fre", "reg", "rpt", "tel", "tpl", "ver"]
+             for sss in self.syss:
+                 self.syn.append(sss[0].lower())
+         elif self.isys == "I":
+@@ -17144,10 +17168,11 @@
+     conf    - Whether or not to ask for confirmation
+     """
+     def __init__(self, parent=None, cols=None, butt=None, titl=None, conf=False):
+-        if not parent:
++        self.parent = parent
++        if not self.parent:
+             self.window = MkWindow(tk=True, remov=False).newwin
+         else:
+-            self.window = parent
++            self.window = self.parent
+         self.cols = cols
+         self.conf = conf
+         self.data = []
+@@ -17307,6 +17332,9 @@
+                 dat = CCD(self.ents[col[0]].get(), typ, siz)
+             self.data.append(dat.work)
+         self.sframe.destroy()
++        if not self.parent:
++            self.window.destroy()
++        self.window.update()
+         self.window.quit()
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2016-11-07 16:11:53 +0000
++++ std/tartanFunctions.py	2016-12-14 15:20:53 +0000
+@@ -1643,15 +1643,22 @@
+         for colx, valx in enumerate(colsh):
+             nc = 0
+             for cx, vx in enumerate(valx):
++                #hxf = fmt + ", bold on; pattern: pattern solid"
++                #hxf = hxf + "; pattern: fore_colour gray25"
++                #hxf = hxf + "; borders: top thin"
++                #hxf = hxf + "; borders: left thin"
++                #hxf = hxf + "; borders: right thin"
++                #hxf = hxf + "; borders: bottom thin"
++                hxf = fmt + ", bold on"
+                 if type(vx) in (list, tuple) and len(vx) > 1:
+                     if len(vx) == 2:
+-                        hxf = getStyle(fmt+", bold on; align: horz %s" % vx[1])
++                        hxf = getStyle(hxf + "; align: horz %s" % vx[1])
+                     else:
+-                        hxf = getStyle(fmt+", bold on; align: horz centre")
++                        hxf = getStyle(hxf + "; align: horz centre")
+                 elif args["forms"][cx][0] in alpha:
+-                    hxf = getStyle(fmt + ", bold on; align: horz left")
++                    hxf = getStyle(hxf + "; align: horz left")
+                 else:
+-                    hxf = getStyle(fmt + ", bold on; align: horz right")
++                    hxf = getStyle(hxf + "; align: horz right")
+                 if type(vx) in (list, tuple):
+                     if len(vx) == 3:
+                         sheet.write_merge(rowx, rowx, vx[1], vx[2],
+@@ -1766,6 +1773,7 @@
+                     # D2 Date conversion
+                     valx = datetime.datetime(valx / 100, valx % 100, 1)
+                 elif args["forms"][colx][0] not in alpha and unl:
++                    # Underlines
+                     if unl == "s":
+                         hxf = hxf + "; borders: bottom thin"
+                     else:
+@@ -2260,14 +2268,40 @@
+         return base64.decodestring(txt)
+ 
+ def copyList(orig):
+-    import copy
++    def myCopy(orig, newo):
++        for x in orig:
++            if type(x) in (list, tuple):
++                newx = []
++                myCopy(x, newx)
++                if type(x) == tuple:
++                    newo.append(tuple(newx))
++                else:
++                    newo.append(newx)
++            else:
++                newo.append(x)
++        if type(orig) == tuple:
++            return tuple(newo)
++        else:
++            return newo
++    import copy, types
++    meth = False
+     deep = False
+     for obj in orig:
+         if type(obj) in (list, tuple):
+             deep = True
+-            break
++            for x in obj:
++                if type(x) in (list, tuple):
++                    for y in x:
++                        if isinstance(y, types.MethodType):
++                            meth = True
++                elif isinstance(x, types.MethodType):
++                    meth = True
++        elif isinstance(obj, types.MethodType):
++            meth = True
+     try:
+-        if deep:
++        if meth:
++            return myCopy(orig)
++        elif deep:
+             return copy.deepcopy(orig)
+         else:
+             return copy.copy(orig)
+@@ -2419,6 +2453,7 @@
+     cl = ["#ff0000", "#0000ff", "#000000"]  # Line colours (red/blue/black)
+     # Horizontal Lines
+     ny = sy
++    zy = sy
+     for z in range(vb + 1):
+         num = maxs - (z * vi)
+         if num:
+
+=== modified file 'str/st2010.py'
+--- str/st2010.py	2016-11-07 16:11:53 +0000
++++ str/st2010.py	2016-12-22 10:39:26 +0000
+@@ -235,7 +235,7 @@
+         cxt = (None, )
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
+             rows=self.row, butt=self.but, tend=tnd, txit=txt, cend=cnd,
+-            cxit=cxt)
++            cxit=cxt, vport=True)
+ 
+     def doActTyp(self, frt, pag, r, c, p, i, w):
+         # Initialise Action Variables
+@@ -411,12 +411,15 @@
+             self.df.loadEntry("C", 0, pos + 5, data=self.vatcod)
+             self.df.loadEntry("C", 0, pos + 6, data=self.price)
+             self.df.loadEntry("C", 0, pos + 7, data=self.disrat)
++            self.df.loadEntry("C", 0, pos + 8, data=self.excamt)
+             self.vattot = float(ASD(self.vattot) + ASD(self.vatamt))
+             self.ordtot = float(ASD(self.ordtot) + ASD(self.excamt))
++            self.inctot = float(ASD(self.inctot) + ASD(self.incamt))
+         if seq >= (self.row[0] - 1):
+             self.df.scrollScreen(0)
+         else:
+             self.df.focusField("C", 0, pos + 10)
++        self.df.setViewPort("O", self.inctot)
+ 
+     def doTopExit(self, widget=None):
+         self.df.closeProcess()
+@@ -425,8 +428,10 @@
+     def doClearTots(self):
+         self.vattot = 0
+         self.ordtot = 0
++        self.inctot = 0
+         self.df.clearFrame("C", 0)
+         self.df.focusField("C", 0, 1)
++        self.df.setViewPort(None, 0)
+ 
+     def doGrp(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables="strgrp", where=[("gpm_cono", "=",
+@@ -509,7 +514,7 @@
+ 
+     def doPri(self, frt, pag, r, c, p, i, w):
+         self.price = w
+-        self.inc = round((self.price * self.vatrte / 100.0), 4)
++        self.inc = round((self.price * (self.vatrte + 100.0) / 100.0), 4)
+         self.exc = round((self.price * 1), 2)
+         dis = self.crsmst[self.sql.crsmst_col.index("crm_trdis")]
+         self.df.loadEntry(frt, pag, p+1, data=dis)
+@@ -523,6 +528,8 @@
+         self.df.loadEntry(frt, pag, p+1, data=self.excamt)
+         self.vattot = float(ASD(self.vattot) + ASD(self.vatamt))
+         self.ordtot = float(ASD(self.ordtot) + ASD(self.excamt))
++        self.inctot = float(ASD(self.inctot) + ASD(self.incamt))
++        self.df.setViewPort("O", self.inctot)
+ 
+     def doColEnd(self):
+         # Create Purchase Order Transaction (Body)
+
+=== modified file 'str/st2020.py'
+--- str/st2020.py	2016-05-21 12:42:32 +0000
++++ str/st2020.py	2016-12-07 08:04:19 +0000
+@@ -393,13 +393,13 @@
+         if self.glint == "N":
+             return
+         # General Ledger Control Transaction (Stock On Hand)
+-        data = [self.opts["conum"], self.stk_soh, self.curdt, self.dte, 4,
++        data = [self.opts["conum"], self.stk_soh, self.curdt, self.dte, 5,
+             self.grv, self.batno, self.tcost, 0, self.code, "N", "", 0,
+             self.opts["capnm"], self.sysdtw, 0]
+         self.sql.insRec("gentrn", data=data)
+         # General Ledger Control Transaction (Stock Suspense)
+         val = float(ASD(0) - ASD(self.tcost))
+-        data = [self.opts["conum"], self.stk_susp, self.curdt, self.dte, 4,
++        data = [self.opts["conum"], self.stk_susp, self.curdt, self.dte, 5,
+             self.grv, self.batno, val, 0, self.code, "N", "", 0,
+             self.opts["capnm"], self.sysdtw, 0]
+         self.sql.insRec("gentrn", data=data)
+
+=== modified file 'uty/pm1010.py'
+--- uty/pm1010.py	2016-02-27 13:18:41 +0000
++++ uty/pm1010.py	2016-11-13 06:54:10 +0000
+@@ -17,8 +17,8 @@
+ 
+ import os, shutil, sys
+ from Crypto.Cipher import AES
+-from TartanClasses import TartanDialog
+-from tartanFunctions import askQuestion
++from TartanClasses import MyFpdf, TartanDialog
++from tartanFunctions import askQuestion, doPrinter
+ 
+ class pm1010:
+     def __init__(self, **opts):
+@@ -120,6 +120,7 @@
+         but = (
+             ("Export",None,self.doExport,0,("T",0,1),("T",0,2)),
+             ("Toggle",None,self.doShow,1,None,None),
++            ("Print",None,self.doPrint,1,None,None),
+             ("Quit",None,self.doQuit,1,None,None))
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+@@ -188,6 +189,39 @@
+         self.df.topEntry[0][2].configure(show=self.show)
+         self.df.focusField("T", 0, self.df.col)
+ 
++    def doPrint(self, widget=None):
++        self.fpdf = MyFpdf(name="pm1010", head=133, auto=True, foot=True)
++        self.fpdf.header = self.doHead
++        self.fpdf.add_page()
++        codes = self.data[self.opts["capnm"]].keys()
++        codes.sort()
++        for count, code in enumerate(codes):
++            self.fpdf.drawText(code, w=31*self.fpdf.cwth, align="L",
++                border="TLRB", ln=0)
++            data = self.data[self.opts["capnm"]][code]
++            for num, text in enumerate(data):
++                if len(text) > 50:
++                    ctyp = "M"
++                else:
++                    ctyp = "S"
++                self.fpdf.drawText(text, w=51*self.fpdf.cwth, align="L",
++                    border="TLRB", ctyp=ctyp, ln=num)
++        self.fpdf.output("secrets.pdf", "F")
++        doPrinter(mf=self.opts["mf"], pdfnam="secrets.pdf", splash=False,
++            repprt=["Y", "V", "view"])
++        os.remove("secrets.pdf")
++
++    def doHead(self):
++        self.fpdf.setFont("Arial", "B", 15)
++        self.fpdf.drawText("Information and Passwords for %s" %
++            self.opts["capnm"], align="C")
++        self.fpdf.drawText()
++        self.fpdf.setFont("")
++        for text in (("Description",31), ("Text",51), ("Secrets",51)):
++            self.fpdf.drawText(text[0], w=text[1]*self.fpdf.cwth, align="L",
++                border="TLRB", fill=True, ln=0)
++        self.fpdf.drawText()
++
+     def doDelete(self, widget=None):
+         del self.data[self.opts["capnm"]][self.code]
+         self.df.topf[0][0][8]["data"] = self.doLoadCodes()
+

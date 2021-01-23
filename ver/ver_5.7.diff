@@ -1,0 +1,353 @@
+=== modified file 'doc/BKSMST.rst'
+--- doc/BKSMST.rst	2019-08-20 08:41:08 +0000
++++ doc/BKSMST.rst	2019-08-23 09:04:48 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.6
++:Version:   5.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWLMST.rst'
+--- doc/BWLMST.rst	2019-08-20 08:41:08 +0000
++++ doc/BWLMST.rst	2019-08-23 09:04:48 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.6
++:Version:   5.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/CSHMST.rst'
+--- doc/CSHMST.rst	2019-08-20 08:41:08 +0000
++++ doc/CSHMST.rst	2019-08-23 09:04:48 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.6
++:Version:   5.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2019-08-20 08:41:08 +0000
++++ doc/Downloads.rst	2019-08-23 09:04:48 +0000
+@@ -11,27 +11,27 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.6 and was released on the 20th August, 2019.
++The latest version of Tartan is 5.7 and was released on the 23rd August, 2019.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Manual: http://www.tartan.co.za/cgi-bin/simple_web.py/Manual
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.6.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.7.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.6.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.7.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.6.tgz
+-.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.6.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.6.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.6.exe
+-.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.6.tgz
+-.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.6.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.6.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.6.exe
++.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.7.tgz
++.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.7.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.7.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.7.exe
++.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.7.tgz
++.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.7.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.7.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.7.exe
+ 
+ |linux| Linux
+ =============
+@@ -43,7 +43,7 @@
+ -----------------------------
+ If your current version is less than 4.1.10 you must upgrade as follows:
+ 
+-    * If your current version is less than 2.5.6
++    * If your current version is less than 2.5.7
+         - Make a backup.
+         - Download the last release of version 2, Tartan-2-lnx_
+         - Extract the downloaded version into your Tartan/prg directory.
+@@ -97,7 +97,7 @@
+ -----------------------------
+ If your current version is less than 5.0.0 you must upgrade as follows:
+ 
+-    * If your current version is less than 2.5.6
++    * If your current version is less than 2.5.7
+         - Make a backup.
+         - Download the last release of version 2, Tartan-2-win_
+         - Execute the downloaded version by double clicking on it.
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2019-08-20 08:41:08 +0000
++++ doc/MST.rst	2019-08-23 09:04:48 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.6
++:Version:   5.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SECMST.rst'
+--- doc/SECMST.rst	2019-08-20 08:41:08 +0000
++++ doc/SECMST.rst	2019-08-23 09:04:48 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.6
++:Version:   5.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2019-08-20 08:41:08 +0000
++++ gen/gl2030.py	2019-08-23 09:01:22 +0000
+@@ -276,22 +276,25 @@
+             "cols": (
+                 ("ctm_cono", "", 0, "Coy"),
+                 ("ctm_name", "", 0, "Name", "Y"))}
+-        glt = {
+-            "stype": "R",
+-            "title": "Transactions",
+-            "tables": ("gentrn",),
+-            "cols": (
+-                ("glt_refno", "", 0, ""),
+-                ("glt_trdt", "", 0, ""),
+-                ("glt_tramt", "", 0, ""),
+-                ("glt_desc", "", 0, "")),
+-            "where": [
+-                ("glt_cono", "=", self.opts["conum"]),
+-                ("glt_acno", "=", self.conacc),
+-                ("glt_type", "=", self.opts["rtn"]),
+-                ("glt_batch", "=", self.bh.batno)],
+-            "order": "glt_seq",
+-            "comnd": self.doView}
++        if self.opts["rtn"] == 7:
++            glt = None
++        else:
++            glt = {
++                "stype": "R",
++                "title": "Transactions",
++                "tables": ("gentrn",),
++                "cols": (
++                    ("glt_refno", "", 0, ""),
++                    ("glt_trdt", "", 0, ""),
++                    ("glt_tramt", "", 0, ""),
++                    ("glt_desc", "", 0, "")),
++                "where": [
++                    ("glt_cono", "=", self.opts["conum"]),
++                    ("glt_acno", "=", self.conacc),
++                    ("glt_type", "=", self.opts["rtn"]),
++                    ("glt_batch", "=", self.bh.batno)],
++                "order": "glt_seq",
++                "comnd": self.doView}
+         glm = {
+             "stype": "R",
+             "tables": ("genmst",),
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2019-08-20 08:41:08 +0000
++++ mst/ms0000.py	2019-08-23 09:04:48 +0000
+@@ -43,7 +43,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (5, 6)
++    VERSION = (5, 7)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ if __name__ == "__main__":
+     # Run Tartan
+
+=== added file 'sls/si3090.py'
+--- sls/si3090.py	1970-01-01 00:00:00 +0000
++++ sls/si3090.py	2019-08-20 08:35:10 +0000
+@@ -0,0 +1,95 @@
++"""
++SYNOPSIS
++    Print Cancelled Sales Documnents
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2019 Paul Malherbe.
++
++    This program is free software: you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation, either version 3 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program. If not, see <https://www.gnu.org/licenses/>.
++"""
++
++from TartanClasses import RepPrt, Sql, TartanDialog
++
++class si3090:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["slsiv1"], prog=__name__)
++        if self.sql.error:
++            return
++        self.s_dte = int(self.opts["period"][1][0])
++        self.e_dte = int(self.opts["period"][2][0])
++        return True
++
++    def mainProcess(self):
++        tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
++            "Cancelled Sales Documents")
++        r1s = (("Both", "B"), ("Invoices", "I"), ("Credit Notes", "C"))
++        fld = (
++            (("T",0,0,0),("IRB",r1s),0,"Document Type","",
++                "B","Y",self.doType,None,None,None),
++            (("T",0,1,0),"ID1",10,"From Date","",
++                self.s_dte,"N",self.doDate,None,None,("notzero",)),
++            (("T",0,2,0),"ID1",10,"To   Date","",
++                self.e_dte,"N",self.doDate,None,None,("notzero",)))
++        tnd = ((self.doEnd,"y"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
++            eflds=fld, tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
++
++    def doType(self, frt, pag, r, c, p, i, w):
++        self.type = w
++        if self.type == "C":
++            self.dtyp = "Credit Notes"
++        elif self.type == "I":
++            self.dtyp = "Invoices"
++        else:
++            self.dtyp = "Documents"
++
++    def doDate(self, frt, pag, r, c, p, i, w):
++        if p == 1:
++            self.sdte = w
++        else:
++            self.edte = w
++
++    def doEnd(self):
++        self.df.closeProcess()
++        hed = ["Cancelled Sales %s" % self.dtyp]
++        col = ["si1_rtn", "si1_docno", "si1_date", "si1_acno", "drm_name"]
++        whr = [
++            ("si1_cono", "=", self.opts["conum"]),
++            ("si1_date", "between", self.sdte, self.edte),
++            ("si1_invno", "=", "cancel")]
++        if self.type == "B":
++            whr.append(("si1_rtn", "in", ("C", "I")))
++        else:
++            whr.append(("si1_rtn", "=", self.type))
++        RepPrt(self.opts["mf"], name=__name__, tables=["slsiv1", "drsmst"],
++            heads=hed, cols=col, where=whr, order="si1_rtn, si1_docno")
++        self.opts["mf"].closeLoop()
++
++    def doExit(self):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2019-08-20 08:41:08 +0000
++++ std/TartanClasses.py	2019-08-20 09:48:43 +0000
+@@ -14408,7 +14408,6 @@
+             self.repprt = ["N", "V", "view"]
+         self.fonts = []
+         self.align = []
+-        print self.heads
+         if self.heads:
+             heads = []
+             for h in self.heads:
+
+=== modified file 'std/rneimp.py'
+--- std/rneimp.py	2019-07-03 13:49:08 +0000
++++ std/rneimp.py	2019-08-20 09:53:42 +0000
+@@ -157,6 +157,7 @@
+ import si3050
+ import si3060
+ import si3080
++import si3090
+ import si6010
+ import st1010
+ import stc110
+
+=== modified file 'std/rnemod.py'
+--- std/rnemod.py	2019-07-03 13:49:08 +0000
++++ std/rnemod.py	2019-08-20 09:53:42 +0000
+@@ -1,2 +1,2 @@
+ # List of Tartan Modules Packaged for a Distribution
+-modlst = ['ar1010', 'ar2010', 'ar2020', 'ar2030', 'ar3010', 'ar3020', 'ar3030', 'ar3040', 'ar3050', 'ar4010', 'ar6010', 'ar6020', 'ar6030', 'arc110', 'arc210', 'arc310', 'arc320', 'cr1010', 'cr2010', 'cr2020', 'cr2030', 'cr3010', 'cr3020', 'cr3030', 'cr3040', 'cr3050', 'cr3060', 'cr3070', 'cr3080', 'cr3090', 'cr3100', 'cr3110', 'cr3120', 'cr3130', 'cr3140', 'cr3150', 'cr3160', 'cr3170', 'cr3180', 'cr3190', 'cr3200', 'cr4010', 'cr6010', 'cr6020', 'crc110', 'dr1010', 'dr2010', 'dr2020', 'dr3010', 'dr3020', 'dr3030', 'dr3040', 'dr3050', 'dr3060', 'dr3080', 'dr3090', 'dr3100', 'dr3110', 'dr3120', 'dr4010', 'dr6010', 'dr6020', 'drc110', 'drc310', 'drc320', 'drc410', 'drc420', 'gl1010', 'gl1020', 'gl1030', 'gl1040', 'gl1050', 'gl1060', 'gl2010', 'gl2020', 'gl2030', 'gl2040', 'gl2050', 'gl3010', 'gl3020', 'gl3030', 'gl3040', 'gl3050', 'gl3060', 'gl3070', 'gl3080', 'gl3090', 'gl3100', 'gl3110', 'gl3120', 'gl3130', 'gl3140', 'gl3150', 'gl4010', 'gl4020', 'gl6010', 'gl6020', 'gl6030', 'gl6040', 'gl6050', 'gl6060', 'gl6070', 'glc110', 'glc210', 'glc310', 'glc410', 'glc510', 'ib2010', 'ib2020', 'ib3010', 'ib3020', 'ib3030', 'ib3040', 'ibc110', 'ln1010', 'ln2010', 'ln2020', 'ln2030', 'ln3010', 'ln3020', 'ln3030', 'ln3040', 'ln3050', 'ln4010', 'ln6010', 'lnc110', 'ms0000', 'ms1010', 'ms1020', 'ms1030', 'ms1040', 'ms3010', 'ms3020', 'ms3030', 'msc000', 'msc110', 'msy010', 'msy030', 'rt1010', 'rt2010', 'rt3010', 'rt3020', 'rt3030', 'rt3040', 'rt3050', 'rt4010', 'rt6010', 'rtc110', 'rtc210', 'rtm010', 'si2010', 'si3020', 'si3030', 'si3040', 'si3050', 'si3060', 'si3080', 'si6010', 'st1010', 'stc110', 'stc210', 'stc310', 'tb1020', 'tb1030', 'fc1010', 'rp1010', 'ss1010', 'td1010', 'tdc110', 'tp1010']
+\ No newline at end of file
++modlst = ['ar1010', 'ar2010', 'ar2020', 'ar2030', 'ar3010', 'ar3020', 'ar3030', 'ar3040', 'ar3050', 'ar4010', 'ar6010', 'ar6020', 'ar6030', 'arc110', 'arc210', 'arc310', 'arc320', 'cr1010', 'cr2010', 'cr2020', 'cr2030', 'cr3010', 'cr3020', 'cr3030', 'cr3040', 'cr3050', 'cr3060', 'cr3070', 'cr3080', 'cr3090', 'cr3100', 'cr3110', 'cr3120', 'cr3130', 'cr3140', 'cr3150', 'cr3160', 'cr3170', 'cr3180', 'cr3190', 'cr3200', 'cr4010', 'cr6010', 'cr6020', 'crc110', 'dr1010', 'dr2010', 'dr2020', 'dr3010', 'dr3020', 'dr3030', 'dr3040', 'dr3050', 'dr3060', 'dr3080', 'dr3090', 'dr3100', 'dr3110', 'dr3120', 'dr4010', 'dr6010', 'dr6020', 'drc110', 'drc310', 'drc320', 'drc410', 'drc420', 'gl1010', 'gl1020', 'gl1030', 'gl1040', 'gl1050', 'gl1060', 'gl2010', 'gl2020', 'gl2030', 'gl2040', 'gl2050', 'gl3010', 'gl3020', 'gl3030', 'gl3040', 'gl3050', 'gl3060', 'gl3070', 'gl3080', 'gl3090', 'gl3100', 'gl3110', 'gl3120', 'gl3130', 'gl3140', 'gl3150', 'gl4010', 'gl4020', 'gl6010', 'gl6020', 'gl6030', 'gl6040', 'gl6050', 'gl6060', 'gl6070', 'glc110', 'glc210', 'glc310', 'glc410', 'glc510', 'ib2010', 'ib2020', 'ib3010', 'ib3020', 'ib3030', 'ib3040', 'ibc110', 'ln1010', 'ln2010', 'ln2020', 'ln2030', 'ln3010', 'ln3020', 'ln3030', 'ln3040', 'ln3050', 'ln4010', 'ln6010', 'lnc110', 'ms0000', 'ms1010', 'ms1020', 'ms1030', 'ms1040', 'ms3010', 'ms3020', 'ms3030', 'msc000', 'msc110', 'msy010', 'msy030', 'rt1010', 'rt2010', 'rt3010', 'rt3020', 'rt3030', 'rt3040', 'rt3050', 'rt4010', 'rt6010', 'rtc110', 'rtc210', 'rtm010', 'si2010', 'si3020', 'si3030', 'si3040', 'si3050', 'si3060', 'si3080', 'si3090', 'si6010', 'st1010', 'stc110', 'stc210', 'stc310', 'tb1020', 'tb1030', 'fc1010', 'rp1010', 'ss1010', 'td1010', 'tdc110', 'tp1010']
+\ No newline at end of file
+
+=== modified file 'std/tarimp.py'
+--- std/tarimp.py	2019-04-07 13:32:42 +0000
++++ std/tarimp.py	2019-08-23 09:03:01 +0000
+@@ -230,6 +230,7 @@
+ import si3060
+ import si3070
+ import si3080
++import si3090
+ import si6010
+ import sic110
+ import st1010
+
+=== modified file 'std/tarmod.py'
+--- std/tarmod.py	2019-08-20 08:41:08 +0000
++++ std/tarmod.py	2019-08-23 09:03:01 +0000
+@@ -1,2 +1,2 @@
+ # List of Tartan Modules Packaged for a Distribution
+-modlst = ['ar1010', 'ar2010', 'ar2020', 'ar2030', 'ar3010', 'ar3020', 'ar3030', 'ar3040', 'ar3050', 'ar4010', 'ar6010', 'arc110', 'arc210', 'arc310', 'arc320', 'bk1010', 'bk1020', 'bk2010', 'bk3010', 'bk3020', 'bk3030', 'bk3040', 'bk3050', 'bk3060', 'bk3070', 'bk3080', 'bk3090', 'bkc110', 'bkc210', 'bkc310', 'bkc410', 'bkc510', 'bc1010', 'bc1020', 'bc1030', 'bc1040', 'bc2010', 'bc2020', 'bc2030', 'bc2040', 'bc2050', 'bc2060', 'bc2070', 'bc3010', 'bc3020', 'bc3030', 'bc3040', 'bc3050', 'bc3060', 'bc3070', 'bc3080', 'bc3090', 'bc3100', 'bc3110', 'bc6010', 'bc6020', 'bc6030', 'bcc110', 'bcc210', 'cr1010', 'cr2010', 'cr3010', 'cr3020', 'cr3030', 'cr3040', 'cr3050', 'cr3060', 'cr3070', 'cr3080', 'cr3090', 'cr3100', 'cr3110', 'cr4010', 'cr6010', 'cr6020', 'crc110', 'dr1010', 'dr1020', 'dr2010', 'dr2020', 'dr2030', 'dr3010', 'dr3020', 'dr3030', 'dr3040', 'dr3050', 'dr3060', 'dr3080', 'dr3090', 'dr3100', 'dr3110', 'dr3120', 'dr4010', 'dr6010', 'dr6020', 'dr6030', 'drc110', 'drc210', 'drc220', 'drc310', 'drc320', 'drc410', 'drc420', 'drc510', 'drc520', 'drc610', 'drc710', 'gl1010', 'gl1020', 'gl1030', 'gl1040', 'gl1050', 'gl1060', 'gl2010', 'gl2020', 'gl2030', 'gl2040', 'gl2050', 'gl3010', 'gl3020', 'gl3030', 'gl3040', 'gl3050', 'gl3060', 'gl3070', 'gl3080', 'gl3090', 'gl4010', 'gl4020', 'gl6010', 'gl6020', 'gl6030', 'gl6040', 'gl6050', 'gl6060', 'gl6070', 'glc110', 'glc210', 'ln1010', 'ln2010', 'ln2020', 'ln2030', 'ln3010', 'ln3020', 'ln3030', 'ln3040', 'ln3050', 'ln4010', 'ln6010', 'lnc110', 'ml1010', 'ml2010', 'ml2020', 'ml3010', 'ml3020', 'ml3030', 'ml3040', 'ml3050', 'ml3060', 'ml3070', 'ml3080', 'ml3090', 'ml3100', 'ml3110', 'ml3120', 'ml6010', 'ml6020', 'ml6030', 'mlc110', 'mlc210', 'mlc310', 'mlc410', 'mlm010', 'ms0000', 'ms1010', 'ms1020', 'ms1030', 'ms1040', 'ms3010', 'ms3020', 'ms3030', 'msc000', 'msc110', 'msy010', 'msy020', 'ps2010', 'ps2020', 'ps2030', 'psc110', 'rc1010', 'rc1020', 'rc1030', 'rc2010', 'rc3010', 'rc3020', 'rc3030', 'rc3040', 'rc3050', 'rc3060', 'rc3070', 'rc3080', 'rc3090', 'rc4010', 'rc4020', 'rcc110', 'rcc210', 'rcc220', 'rcc310', 'rcm010', 'rt1010', 'rt2010', 'rt3010', 'rt3020', 'rt3030', 'rt3040', 'rt3050', 'rt4010', 'rt6010', 'rtc110', 'rtc210', 'rtm010', 'si2010', 'si3010', 'si3020', 'si3030', 'si3040', 'si3050', 'si3060', 'si3070', 'si3080', 'si3090', 'si6010', 'sic110', 'st1010', 'st1020', 'st2010', 'st2020', 'st2030', 'st2040', 'st3010', 'st3020', 'st3030', 'st3040', 'st3050', 'st3060', 'st3070', 'st3080', 'st3090', 'st3100', 'st3110', 'st3120', 'st4010', 'st5010', 'st5020', 'st5030', 'st5040', 'st6010', 'st6020', 'st6030', 'st6040', 'stc110', 'stc210', 'stc220', 'stc310', 'stc320', 'stc410', 'stc420', 'tb1010', 'tb1020', 'tb1030', 'tb1040', 'tb3010', 'bm1010', 'fc1010', 'rp1010', 'rp1020', 'td1010', 'tdc110', 'tp1010', 'sl1010', 'sl2010', 'sl2020', 'sl2030', 'sl3010', 'sl3020', 'sl3030', 'sl3040', 'sl4010', 'wg1010', 'wg2010', 'wg2020', 'wg2030', 'wg3010', 'wg3020', 'wg3030', 'wg3040', 'wg3050', 'wg3060', 'wg3070', 'wg4010', 'wgc110', 'wgc210', 'wgc220', 'wgc310', 'wgc320', 'wgc410', 'wgc420', 'wgc610']
++modlst = ['ar1010', 'ar2010', 'ar2020', 'ar2030', 'ar3010', 'ar3020', 'ar3030', 'ar3040', 'ar3050', 'ar4010', 'ar6010', 'arc110', 'arc210', 'arc310', 'arc320', 'bk1010', 'bk1020', 'bk2010', 'bk3010', 'bk3020', 'bk3030', 'bk3040', 'bk3050', 'bk3060', 'bk3070', 'bk3080', 'bk3090', 'bkc110', 'bkc210', 'bkc310', 'bkc410', 'bkc510', 'bc1010', 'bc1020', 'bc1030', 'bc1040', 'bc2010', 'bc2020', 'bc2030', 'bc2040', 'bc2050', 'bc2060', 'bc2070', 'bc3010', 'bc3020', 'bc3030', 'bc3040', 'bc3050', 'bc3060', 'bc3070', 'bc3080', 'bc3090', 'bc3100', 'bc3110', 'bc6010', 'bc6020', 'bc6030', 'bcc110', 'bcc210', 'cr1010', 'cr2010', 'cr3010', 'cr3020', 'cr3030', 'cr3040', 'cr3050', 'cr3060', 'cr3070', 'cr3080', 'cr3090', 'cr3100', 'cr3110', 'cr4010', 'cr6010', 'cr6020', 'crc110', 'dr1010', 'dr1020', 'dr2010', 'dr2020', 'dr2030', 'dr3010', 'dr3020', 'dr3030', 'dr3040', 'dr3050', 'dr3060', 'dr3080', 'dr3090', 'dr3100', 'dr3110', 'dr3120', 'dr4010', 'dr6010', 'dr6020', 'dr6030', 'drc110', 'drc210', 'drc220', 'drc310', 'drc320', 'drc410', 'drc420', 'drc510', 'drc520', 'drc610', 'drc710', 'gl1010', 'gl1020', 'gl1030', 'gl1040', 'gl1050', 'gl1060', 'gl2010', 'gl2020', 'gl2030', 'gl2040', 'gl2050', 'gl3010', 'gl3020', 'gl3030', 'gl3040', 'gl3050', 'gl3060', 'gl3070', 'gl3080', 'gl3090', 'gl4010', 'gl4020', 'gl6010', 'gl6020', 'gl6030', 'gl6040', 'gl6050', 'gl6060', 'gl6070', 'glc110', 'glc210', 'ln1010', 'ln2010', 'ln2020', 'ln2030', 'ln3010', 'ln3020', 'ln3030', 'ln3040', 'ln3050', 'ln4010', 'ln6010', 'lnc110', 'ml1010', 'ml2010', 'ml2020', 'ml3010', 'ml3020', 'ml3030', 'ml3040', 'ml3050', 'ml3060', 'ml3070', 'ml3080', 'ml3090', 'ml3100', 'ml3110', 'ml3120', 'ml6010', 'ml6020', 'ml6030', 'mlc110', 'mlc210', 'mlc310', 'mlc410', 'mlm010', 'ms0000', 'ms1010', 'ms1020', 'ms1030', 'ms1040', 'ms3010', 'ms3020', 'ms3030', 'msc000', 'msc110', 'msy010', 'msy020', 'ps2010', 'ps2020', 'ps2030', 'psc110', 'rc1010', 'rc1020', 'rc1030', 'rc2010', 'rc3010', 'rc3020', 'rc3030', 'rc3040', 'rc3050', 'rc3060', 'rc3070', 'rc3080', 'rc3090', 'rc4010', 'rc4020', 'rcc110', 'rcc210', 'rcc220', 'rcc310', 'rcm010', 'rt1010', 'rt2010', 'rt3010', 'rt3020', 'rt3030', 'rt3040', 'rt3050', 'rt4010', 'rt6010', 'rtc110', 'rtc210', 'rtm010', 'si2010', 'si3010', 'si3020', 'si3030', 'si3040', 'si3050', 'si3060', 'si3070', 'si3080', 'si3090', 'si6010', 'sic110', 'st1010', 'st1020', 'st2010', 'st2020', 'st2030', 'st2040', 'st3010', 'st3020', 'st3030', 'st3040', 'st3050', 'st3060', 'st3070', 'st3080', 'st3090', 'st3100', 'st3110', 'st3120', 'st4010', 'st5010', 'st5020', 'st5030', 'st5040', 'st6010', 'st6020', 'st6030', 'st6040', 'stc110', 'stc210', 'stc220', 'stc310', 'stc320', 'stc410', 'stc420', 'tb1010', 'tb1020', 'tb1030', 'tb1040', 'tb3010', 'bm1010', 'fc1010', 'rp1010', 'rp1020', 'td1010', 'tdc110', 'tp1010', 'sl1010', 'sl2010', 'sl2020', 'sl2030', 'sl3010', 'sl3020', 'sl3030', 'sl3040', 'sl4010', 'wg1010', 'wg2010', 'wg2020', 'wg2030', 'wg3010', 'wg3020', 'wg3030', 'wg3040', 'wg3050', 'wg3060', 'wg3070', 'wg4010', 'wgc110', 'wgc210', 'wgc220', 'wgc310', 'wgc320', 'wgc410', 'wgc420', 'wgc610']
+\ No newline at end of file
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2019-08-20 08:41:08 +0000
++++ uty/pkgprg.py	2019-08-20 10:33:42 +0000
+@@ -630,7 +630,7 @@
+     # Make CD iso
+     exeCmd("mkisofs -r -J -l -D -V 'Tartan Systems %s.%s' -p 'Paul Malherbe paul@tartan.co.za' -copyright 'Paul Malherbe' -o %s/TartanCD/Tartan.iso -graft-points /\=%s/tempcd" % (ver[0], ver[1], bd, bd))
+     shutil.rmtree("%s/tempcd" % bd)
+-if system == "tartan" and windows and publish:
++if system == "tartan" and verinc and windows and publish:
+     # Sourceforge
+     os.chdir("%s/TartanExe" % bd)
+     shutil.copy("%s/doc/Tartan.rst" % pypath, "readme.rst")
+

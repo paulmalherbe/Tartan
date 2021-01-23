@@ -1,0 +1,6 @@
+1) Fixed an error in general ledger data capture where the last row in the page
+    was freezing.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

@@ -1,0 +1,3821 @@
+=== modified file 'doc/Changes.rst'
+--- doc/Changes.rst	2015-02-27 11:57:15 +0000
++++ doc/Changes.rst	2015-03-09 10:59:13 +0000
+@@ -1,3 +1,13 @@
++ver_5.0.8
++=========
++1) Fixed some minor problems arising from the booking's manager.
++2) Included the 2016 P.A.Y.E. rates.
++3) Updated the reference manual.
++
++Note:
++-----
++You can only upgrade to this version if your current version is 4.1.10 or later
++
+ ver_5.0.7
+ =========
+ This version has been in production since April 2013 and is a Major Version
+@@ -39,44 +49,3 @@
+ -----
+ You can only upgrade to this version if your current version is 4.1.10 or later
+ 
+-ver_5.0.6
+-=========
+-This version, 5.0.5 has been in production since April 2013 and is a Major
+-Version Change implementing, amongst many others, the following:
+-
+-1)  Replaced Gtk widgets with Tkinter. The reason for this change is that
+-    Tkinter is the de facto standard for the python language and is packaged
+-    with it. In addition it is Python version 3 ready. This change naturally
+-    required each and every module in the suite to be altered and tested
+-    resulting in numerous changes and hopefully many enhancements.
+-2)  Changed all modules to automatically alter the font size to fit the
+-    window geometry selected in the System --> Preferences --> Dialog routine.
+-3)  Modified the tooltip feature which can be turned on or off in the
+-    System --> Preferences --> General routine.
+-4)  Added colour schemes in the System --> Preferences --> Dialog routine.
+-5)  Added an additional option to set the label and button colours in the
+-    System --> Preferences --> Dialog routine.
+-6)  Allowed the facility to click on entry fields in some modules e.g. File
+-    Maintenance routines.
+-7)  Changed the VAT system to allow for VAT rate changes by date. This will
+-    facilitate any future VAT rate changes.
+-8)  Added a username to all transactions so that they can be interrogated to
+-    see which user generated them.
+-9)  Added the facility to report by department in the general ledger financial
+-    statements routine.
+-10) Added a 'Sale of Assets' control account to general ledger integration.
+-11) Changed some of the enquiry, F1, functions to support search filters.
+-12) Introduced bulk record inserts resulting in quicker restores and updates.
+-13) Added support for SMTP security and authentication in the
+-    Control --> System Records routine.
+-14) Improved the bulk mail utility to include additional systems and telephone
+-    directory contacts.
+-15) Implemented netbios file name resolution and access under linux.
+-16) Added a new system i.e. 'Booking's Manager' which is a system for managing
+-    short term bookings and letting of facilities like accomodation, functions
+-    and conferences.
+-
+-Note:
+------
+-You can only upgrade to this version if your current version is 4.1.10 or later
+-
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-03-06 19:01:14 +0000
++++ doc/Downloads.rst	2015-03-09 16:02:15 +0000
+@@ -11,16 +11,16 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.8 and was released on the 6th March, 2015.
++The latest version of Tartan is 5.0.9 and was released on the 9th March, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.8.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.9.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.8.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.9.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-03-06 19:01:14 +0000
++++ doc/MD.rst	2015-03-09 16:02:15 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.8
++:Version:   5.0.9
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Manual.rst'
+--- doc/Manual.rst	2015-02-11 16:45:23 +0000
++++ doc/Manual.rst	2015-03-06 19:46:00 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.4
++:Version:   5.0.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Tartan.rst'
+--- doc/Tartan.rst	2015-03-04 16:05:59 +0000
++++ doc/Tartan.rst	2015-03-09 13:37:02 +0000
+@@ -1,59 +1,3573 @@
+-.. |tartan| image:: /images/tartan.bmp
+-   :width: 30px
+-   :height: 30px
+-
+-|tartan| Overview
+-=================
+-
+-Tartan Systems is a suite of open source financial accounting programs comprising, inter alia, the following modules:
+-
+-+ General Ledger (Nominal Ledger)
+-+ Asset's Register
+-+ Booking's Manager
+-+ Bowls Clubs (Lawn Bowls)
+-+ Creditor's Ledger (Accounts Payable)
+-+ Debtor's Ledger (Accounts Receivable)
+-+ Member's Ledger (Clubs)
+-+ Rental's Ledger (Standard & Extended)
+-+ Store's Ledger (Inventory)
+-+ Sales Invoicing (Quotes, Orders and Invoices)
+-+ Salaries and Wages (ZA)
+-+ Staff Loans
+-
+-The modules are written in the Python programming language, licensed under the GPL and copyrighted by Paul Malherbe. Because Python is platform independent, Tartan is equally at home with both the Linux and Windows operating systems.
+-
+-.. |paulm| raw:: html
+-
+-   <a class="thumbnail" href="#thumb"><img src="/images/paulm.jpg" width="20px" height="30px" border="0" /><span><img src="/images/paulm.jpg" /><br />Caricature of the Author.</span></a>
+-
+-|paulm| The Author
+-==================
+-
+-My name is Paul Malherbe. I have been involved in designing, writing and implementing computerised financial systems since the mid 70's. I currently consult to a number of clients in the financial services arena and develop and maintain Tartan in my spare time.
+-
+-Some Links
+-==========
+-.. |python| image:: /images/python.jpg
+-   :target: http://www.python.org
+-.. |pgsql| image:: /images/postgresql.png
+-   :target: http://www.postgresql.org
+-.. |gtk| image:: /images/gtk.png
+-   :target: http://www.gtk.org
+-.. |pygtk| image:: /images/pygtk.jpg
+-   :target: http://www.pygtk.org
+-.. |gnu-head| image:: /images/gnu-head.png
+-   :target: /images/gnugpl.html
+-.. |launchpad| image:: /images/launchpad.png
+-   :width: 80px
+-   :height: 40px
+-   :target: https://launchpad.net/tartan/
+-.. |sourceforge| image:: /images/sourceforge.jpg
+-   :width: 80px
+-   :height: 40px
+-   :target: http://sourceforge.net/projects/tartansystems/
+-.. |silogo| image:: /images/silogo.png
+-   :width: 80px
+-   :height: 40px
+-   :target: http://tartan.software.informer.com
+-
+-|python| |pygtk| |gtk| |gnu-head| |pgsql| |launchpad| |sourceforge| |silogo|
++==============================
++ Tartan Systems - User Manual
++==============================
++
++:Version:   5.0.8
++:Author:    Paul Malherbe
++:Contact:   paul@tartan.co.za
++:Home:      http://www.tartan.co.za
++:Copyright: Paul Malherbe (C) 2004-2015.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the License.
++
++:Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
++
++.. contents:: **Table of Contents**
++
++.. raw:: pdf
++
++   PageBreak
++
++About
++-----
++Tartan Systems started out in 1981 as a suite of programs I wrote in COBOL and until 1994 ran on various platforms including CPM, RSX11M, MSDOS, AT&T UNIX and SCO.
++
++In 1994 I discovered LINUX and when iBCS2 became available I modified the systems to run under LINUX and continue doing so until today.
++
++In 2003 I started looking around for another programming language in which I could rewrite the systems to   run under LINUX as well as Windows without having to recompile etc. Also I was getting irritated with having to compile using SCO.
++
++Eventually I decided on the following:
++
+++ Python_ as the programming language
+++ Tkinter_ for the graphical user interface
+++ Reportlab_ to generate reports
+++ Pychart_ to generate charts and graphs
+++ PostgreSQL_, MySQL_, Firebird_ and Pysqlite_ as supported relational databases
++
++In 2005, version 3, I changed the graphical user interface to PyGtk, a python wrapper for the Gtk library.
++
++In 2011, version 4, I dropped support for windows 9x and also replaced reportlab with pyfpdf.
++
++In 2015, version 5, I replaced PyGtk with Tkinter and ttk.
++
++.. _Python: http://www.python.org
++.. _Tkinter: http://www.python.org/topics/tkinter
++.. _Reportlab: http://www.reportlab.org
++.. _Pychart: http://www.hpl.hp.com/personal/Yasushi_Saito/pychart
++.. _PostgreSQL: http://www.postgresql.org
++.. _MySQL: http://dev.mysql.com
++.. _Firebird: http://www.firebirdsql.org
++.. _Pysqlite: http://code.google.com/p/pysqlite
++
++Installation Procedure
++----------------------
++Linux and Source
++~~~~~~~~~~~~~~~~
++Ensure that the following dependencies are installed on your system:
++
+++ python >= 2.7.5 and < 3.0.0
+++ python-tk >= 2.7.5 and < 3.0.0
+++ python-imaging >= 2.3.0
+++ python-pil >= 2.3.0
+++ python-pil.imagetk >= 2.3.0
++
++Additionally, the following dependencies should also be installed using pip:
++
+++ odfpy >= 0.9.6
+++ markdown >= 2.0
+++ Python-Chart >= 1.39
+++ xlrd >= 0.7.1
+++ xlwt >= 0.7.1
++
++And, depending on your database needs, one of:
++
+++ Pysqlite >= 2.6.3
++
++or one of:
++
+++ Postgresql >= 8.4.0
+++ Psycopg2 >= 2.0.4
++
++or one of:
++
+++ Mysql >= 5.0.1
+++ Mysql-python >= 1.2.0
++
++Download the following file from ftp://ftp.tartan.co.za
++
+++ Tartan_5.x.x.tar.gz
++
++Extract Tartan_5.x.x.tar.gz into a directory of your choice as follows:
++
+++ cd your.directory && tar -xvzf Tartan_5.x.x.tar.gz
++
++Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
++
++Windows Binary
++~~~~~~~~~~~~~~
++Download the following files from ftp://ftp.tartan.co.za or if you are in possession of a CD this is not necessary.
++
+++ Tartan_full_5.x.x.exe
++
++Install Tartan_full_5.x.x.exe by browsing to it and double clicking and then accept the defaults, except, also agree to creating an icon on your desktop.
++
++Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
++
++Startup Procedure
++-----------------
++Linux and Source
++~~~~~~~~~~~~~~~~
++Start Tartan by entering the following command:
++
++    `python -OO program_path/ms0000.py [options]`
++
++To find out what the available command line options are, use the -h option.
++
++Windows Binary
++~~~~~~~~~~~~~~
++.. NOTE::
++
++  Users must first perform the following steps:
++
++    1) Right click on the Tartan shortcut icon.
++    2) Select `Properties` on the menu. A dialogue box will appear on the screen.
++    3) Click the `Advanced` button under the Shortcut tab in the dialogue box.
++    4) Check the `Run as administrator` box.
++    5) Click the `OK` button (or press Enter on your keyboard if the button is highlighted by default).
++    6) Finish by clicking `Apply` and then `OK`. Your preferences have been saved. Next time you open the shortcut to the application you performed the task for your computer will no longer require administrative permission.
++
++Start Tartan by clicking on the shortcut icon on the desktop or by navigating to the `c:\Tartan\prg` directory and double clicking on the `ms0000[.exe]` file.
++
++Both
++~~~~
++The first time you run Tartan you will automatically be taken to `Preferences`_ where you will have to enter various parameters relating to your installation. After saving the preferences and restarting Tartan you will be prompted to create the database. Once the database has been created you will have to create the System record as per `System Record Maintenance`_ as well as a Company record as per `Company Records Maintenance`_.
++
++Status Line
++-----------
++Please note that when using Tartan your available options will be highlighted on the status line at the bottom left hand side of the screen. Please read this carefully before asking for assistance.
++
++Common Keyboard Functions
++-------------------------
++Throughout the various modules comprising **Tartan Systems** the following keys are used to perform certain functions. These options will always be highlighted in the `Status Line`_ at the bottom of the screen. The most common ones are:
++
+++ **Enter**  - Accept keyboard input.
+++ **Esc**    - Exit a module or go to a previous entry field.
+++ **F1**     - Record Selection used with most data input routines.
+++ **F5**     - Record Deletion used with record maintenance routines.
+++ **F9**     - Input Termination used with multi-line text input.
++
++In addition to the above keys all underlined characters on notebook tags and buttons can be used, in conjunction with the <Alt> key, as shortcuts e.g <Alt-s> to open the System menu.
++
++Common Routines
++---------------
++There are various common routines. Rather than continually describing them they will be described once here only.
++
++User Validation
++~~~~~~~~~~~~~~~
++If no users have been created using the `User's Maintenance`_ routine on the `System`_ menu and no password has been allocated to the **admin** user, the system will automatically log in using **admin** as the user name. In all other cases a user must log in by entering a valid name and password. If no password exists for the **admin** user a password should be created as soon as possible using the `Change Password`_ routine on the System_ menu.
++
++Company Selection
++~~~~~~~~~~~~~~~~~
++For every routine which is company specific and where you have more than 1 company, you will be required to select the relevant company. In some cases you will also have to enter a financial period. Please note that you will not always be prompted for the financial period as this only applies to routines which require it. Also note that for both selections there is a `F1 Record Selection` option as per `Common Keyboard Functions`_.
++
++Batch Details
++~~~~~~~~~~~~~
++Most data capture routines require you to enter batch details. The reason for a batch is ease of balancing and the resolution of errors made during data capture. After you exit a data capture routine a totals summary will be displayed. If there is a discrepancy between the expected and entered values all the various systems have a routine to print the batch details thus enabling you to determine where the error is and therefore to correct it.
++
+++ **Batch Number** - Any 7 character unique alphanumeric code.
+++ **Capture Date (CCYYMMDD)** - The date that this batch was first created.
+++ **Current Period (CCYYMM)** - The financial period of this batch.
+++ **Number of Entries** - The total number of entries comprising this batch, if known, else 0.
+++ **Value of Entries** - The total value of entries comprising this batch, if known, else 0.
+++ **Batched By** - The initials of the person who pre-listed the batch.
+++ **Captured By** - The initials of the person who created the batch.
+++ **Multiple Date Allocations** - Whether or not the postings are to be allocated according to the transaction date and not the current period.
+++ **Bank Control** - For all batches in general ledger and other systems integrated with the general ledger, that affect the bank accounts, enter the bank control code.
++
++Ageing Transactions
++~~~~~~~~~~~~~~~~~~~
++While capturing transactions for various systems you will be required to allocate the amount to existing outstanding transactions for ageing purposes.
++
++There are four different methods of ageing a transaction:
++
+++ **Normal** - This will display a list of all outstanding transactions on the account and you will be able to allocate at random until the full amount has been allocated.
++
++    + Select a transaction to allocate against by either clicking on the required line or moving the cursor to the required line and hitting the `Enter` key.
++    + Enter the allocation amount.
++    + Accept the allocation amount by either clicking on the `Apply` button or by hitting the `Enter` key.
++    + The amount will be allocated and the `Balance` will show the unallocated portion.
++    + Continue these steps until the full amount has been allocated. In the event of a balance remaining which cannot be allocated, hitting the `Esc` key or clicking on the `Exit` button will exit the routine leaving the balance as unallocated.
++
+++ **History** - This is identical to `Normal` above but the available transactions will include previously fully allocated ones thus enabling you to reallocate transactions.
+++ **Oldest** - This will automatically allocate the amount against outstanding transactions, starting from the oldest transaction, until either the amount has been fully allocated or there are no more outstanding transactions in which case the balance will remain as unallocated.
+++ **Current** - This will leave the full transaction as unallocated.
++
++Printer Selection
++~~~~~~~~~~~~~~~~~
++Whenever a report is being produced you will have the opportunity of deciding on the output method i.e. viewing, printing, exporting and, in some cases, whether or not to email it.  Please note that the option to email the report will only be available if there is a valid `SMTP Server` in the `System Record Maintenance`_ record.
++
++* **Output** - Select the required output option.
++* **Printer Name** - If you selected `Print`, enter the printer name.
++* **E-Mail Report** - If available, select whether or not to email the report.
++* **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
++
++Error Messages
++--------------
++Should an error message occur and there is a file named *errors.txt* in the `Work Path` as created in `Preferences`_. Please email the file to errors@tartan.co.za after which you may delete it.
++
++Menus and Sub Menus
++-------------------
++Please note that depending on the system modules selected when creating the company records, as detailed in `Company Records Maintenance`_, and the security level of the user, some of the menus detailed below might not appear.
++
++System
++~~~~~~
++Please note that depending on the security level of the user some of these routines might not be available.
++
++Change User
++...........
++Use this routine to change the current user. Selecting it will log the current user out and the new user can then log in as per `User Validation`_.
++
++Change Password
++...............
++Select this routine to change the logged in user's password. The user can change the password by first entering the old password followed by the new password twice, for confirmation.
++
++User's Maintenance
++..................
++Use this routine to create or amend user's records, permissions etc.
++
+++ **User Name** - You must enter the user's login name. In the case of existing users the screen will be populated with existing data.
+++ **Full Name** - The full name of the user.
+++ **User Password** - It is not necessary to enter passwords as users must change their own using `Change Password`_, after logging in.
+++ **Copy Existing User** - Use this to copy all permissions of an existing user.
+++ **Valid Companies** - The valid company's field is for limiting a user's access to specific companies and is a comma separated list of company numbers e.g. 1,2,3,4.
+++ **Security Level** - The Security levels are as follows:
++
++    + **0** - Enquiries Only
++    + **1** - 0 plus Reporting
++    + **2** - 1 plus Data Capture
++    + **3** - 2 plus File Maintenance
++    + **4** - 3 plus Month End Routines
++    + **5** - 4 plus Control Routines
++    + **6** - 5 plus Financial Year End Routine
++    + **9** - Supervisor level, Everything
++
+++ The following fields are used to control which companies, systems and modules are available, only by password, to this user:
++
++    + **Coy** - A company number or zero for all companies
++    + **SS** - The system code
++    + **Prog** - A program module or blank for all modules of a system
++    + **Password** - The password. If the password is left blank it is the same as denying the selection i.e. The user will not be able to select the module(s).
++    + **Check Password** - If the password is not blank then enter the password again for verification
++
++**Examples**
++
++.. csv-table::
++  :header: "Coy", "SS", "Prog", "Password", "Meaning"
++  :widths: 5, 5, 6, 10, 50
++
++  "0", "gl", "    ", "    ", "All general ledger modules for all companies would be denied."
++  "0", "gl", "2032", "    ", "General ledger payments data capture for all companies would be denied."
++  "0", "gl", "    ", "abcd", "All general ledger modules for all companies would require the password `abcd`."
++  "0", "gl", "2032", "abcd", "General ledger payments data capture for all companies would require the password `abcd`."
++
++Upgrade System
++..............
++Select this routine to check if there are upgrades to Tartan and if so to install them.
++
++* **Update Type** - Select whether to check the Tartan ftp site or a local LAN location. If Local is selected you will be able to browse for a location which will default to whatever is set in the *Upgrade Path* directory as set during the `Preferences`_ routine.
++
++* If there is an update and you want to upgrade, click on the `Update` button.
++
++Update File Formats
++...................
++If you have performed an upgrade of Tartan you will have to perform this routine as well. This routine will automatically update all table formats in the database. If you have more than one database (rcfile), you must perform this routine for each database.
++
++Copy Tables
++...........
++Use this routine to copy tables from one profile/database to another one.
++
++* **RC File From** - Enter the full path of the rcfile of the database to copy from.
++* **Whole Database** - Yes or No, If No is selected a list of tables will be displayed after confirmation. Tick all tables to be copied and then the Accept button.
++
++Backup Database
++...............
++Select this routine to create a backup of the current database. These backups will reside in the *Backup Path* directory as created using the `Preferences`_ routine. Each backup will further reside in a sub directory named after the name of the database and a further sub directory named `arch`.
++
++Restore Database
++................
++Select this routine to restore a previous backup.
++
+++ **Type** - Select a Full or Partial restore.
+++ **Archive** - Select the relevant archive to restore from.
+++ **All Companies** - `Yes` or `Include/Exclude` some companies.
+++ **Companies** - Comma separated list of companies to include or exclude.
+++ **All Systems** - `Yes` or `Include/Exclude` some systems.
+++ **Systems** - Comma separated list of systems to include or exclude.
++
++Please note that unless you really know what you are doing it is very dangerous to restore individual systems as your data could become unbalanced because of integration and table relationships.
++
++If you are doing a full restore and the database already exists you will be asked whether to drop it first. Unless you are sure of what you are doing select No.
++
++Preferences
++...........
++Use this routine to configure Tartan, however, depending on your security level, some of the options might not be available to you.
++
+++ **Configuration File** - This is the full path of your configuration file. Every user can have his or her own file. This file, by default, is placed in the user's home directory or, in Windows, the root directory of the Tartan installation e.g. `C:\\Tartan`. If you want to change this default, you must set an environment variable as **TARTANRC=path-to-rcfile** or use the command line option **-r path-to-rcfile**.
++
+++ **Database**
++
++    + **Database Engine** - This is the database being used and must be one of PostgreSQL, SQLite, MySQL or Firebird. The recommended one for single user installations is SQLite and PostgreSQL for multi-user installations.
++    + **Database Name** - This can be any single word name defaulting to **tartan**.
++    + **Host Name** - This is the host name of the Server. This is not used with SQLite.
++    + **Files Directory** - This is only used for SQLite and Firebird database engines and is the directory where the database will be created.
++    + **Port Number** - This is the port number the database uses. Leaving this blank will enable the database default port.
++    + **Administrator** - This is the name used to connect to the database. This is not used with SQLite.
++    + **Password** - This is the password of the user. This is not necessary with SQLite.
++
+++ **General**
++
++    + **Program Path** - This is the path where the programs reside.
++    + **Backup Path** - This is the path where backups of the database will be stored.
++    + **Work Path** - This is the path of the work directory. All temporary files will be created in this directory.
++    + **Upgrade Path** - This is the path where any upgrades will be stored.
++    + **PDF Viewer** - This is the full path of the program used to display pdf files.  The default for LINUX is **xpdf** and Windows is **SumatraPDF**. Other recommended programs for windows are **Foxit Reader** and **AcroRd32** version 4.05.
++    + **Print Command** - This is the full path of the print program used to print postscript files. The LINUX default is **lpr** and Windows is **SumatraPDF**. Other recommended programs for windows are **Foxit Reader** and **AcroRd32** version 4.05.
++    + **PS Converter** - This is the full path of the program needed to convert pdf files to postscript. The LINUX default is **pdftops** and the Windows one is **blank**.  If this field is left blank, no conversion will take place and the print routine will have to be able to print pdf files directly e.g. where one of `SumatraPDF`, `Foxit Reader` or `Acrobat Reader` has been selected as the printer.
++    + **CSV Reader** - This is the full path of the program used to read csv and xls file formats.
++    + **Screen Geometry** - This defaults to the suggested geometry for your screen. Entering a zero will achieve the same result.
++    + **Screen Placement** - Where the Tartan Window must be placed on the monitor i.e. Left, Centre or Right.
++    + **Show Tartan Image** - Whether to display the Tartan image on the Main Menu screen.
++    + **Enforce Confirm** - Whether confirmation is required on the completion of data entry.
++    + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear in a box below the entry field for selection.
++    + **Tool-tips** - Whether tool-tips will display as you hover your cursor over certain entry fields.
++    + **Error Alarm** - Whether or not to sound an audible alarm with errors. This can be No, Yes or Multimedia. Use Multimedia if you do not have an internal speaker.
++
+++ **Dialog**
++
++    + **Menu Font**
++        + **Name** - This is the font family to be used for all menu items.
++        + **Size** - This is font size to be used for all menu items.
++    + **Default Font**
++        + **Name** - This is the font family to be used in all other cases.
++        + **Size** - This is font size to be used in all other cases.
++    + **Theme** - The theme to be used. The default theme is `clam`.
++    + **Colour Scheme** - The colour scheme to be used. The default scheme is `Red`.
++    + **Normal**
++        + **FG** - The normal label and button foreground colour.
++        + **BG** - The normal label and button background colour.
++    + **Focus**
++        + **FG** - The focused button foreground colour.
++        + **BG** - The focused button background colour.
++    + **Disable**
++        + **FG** - The disabled button foreground colour.
++        + **BG** - The disabled button background colour.
++    + **Booking Query**
++        + **FG** - The booking manager calendar query foreground colour.
++        + **BG** - The booking manager calendar query background colour.
++    + **Booking Confirmed**
++        + **FG** - The booking manager calendar confirm foreground colour.
++        + **BG** - The booking manager calendar confirm background colour.
++    + **Booking Settled**
++        + **FG** - The booking manager calendar settle foreground colour.
++        + **BG** - The booking manager calendar settle background colour.
++
++If this is a new installation you will be prompted to Create the Database after which you will need to create a `System Record` and at least one `Company Record`.
++
++Quit
++....
++Select this to exit Tartan.
++
++Control
++~~~~~~~
++System Record Maintenance
++.........................
++This routine is used to create or amend a system control record by entering the following:
++
++    + **Years to Keep History** - Enter the number of years that historical data must be retained. Enter a 0 for infinity.
++    + **Enforce Passwords** - Select Yes or No.
++    + **Minimum Characters** - If you elected to enforce passwords enter the minimum number of characters that the passwords must consist of.
++    + **Maximum Life (Days)** - If you elected to enforce passwords enter the maximum number of days that the passwords will be valid for.
++    + **Backup History (Days)** - Enter the maximum number of days that backups will be retained. Enter 0 for infinity.
++    + **SMTP Server** - If you have email then enter your SMTP server's address e.g. smtp.mweb.co.za or smtp.saix.net or smtp.vodacom.co.za
++    + **SMTP Security** - Select the appropriate security method.
++    + **SMTP Authentication** - Select the appropriate authentication method.
++    + **SMTP Port Number** - Select the appropriate smtp port number.
++    + **SMTP Username** - If your smtp server requires a username enter it here.
++    + **SMTP Password** - If your smtp server requires a password enter it here.
++    + **SMS Service** - Select Yes or No. In order to use the SMS facility. You will first have to register with www.smsportal.co.za in order to get a username and password.
++    + **SMS Username** - Enter the user name for the service.
++    + **SMS Password** - Enter the password for the service.
++    + **G/L Departments** - Whether to allow departmental financial reporting.
++    + **Number of Digits** - The number of digits the department code uses in the account numbers i.e. if you enter 3 then the first 3 digits of the 7 digit account number will be reserved for the department code.
++
++Company Records Maintenance
++...........................
++This routine is used to create or amend company records, at least one company, number 1, must be created.
++
++While most of the fields are self explanatory the following are of note:
++
+++ **E-Mail Address** - Your default email address.
+++ **V.A.T. Default** - Any alphanumeric character. If the code, except **N** which is used for no V.A.T., has not previously been created you will be prompted to create one as in `V.A.T. Records Maintenance`_.
+++ **Systems** - You must tick all the systems that you would like to enable otherwise they will not appear on your menu.
+++ **Logo** - You can select an image file to be used as the letterhead for invoices, statements and remittance advices. this file should be a jpg file.
++
++After creating a **new** company record you will be prompted for the initial financial period's starting and ending dates e.g. 20060301 and 20070228.
++
++Department Records Maintenance
++..............................
++Use this routine to create department records if departments were enabled in the Systems Record.
++
+++ **Department** - The department code.
+++ **Name** - The name of the department.
++
++Module Passwords Maintenance
++............................
++Use this routine to set passwords to override certain security limitations e.g. locked general ledger account, inhibit the sale of items at prices under cost or inhibit sales to a debtor exceeding their credit limit.
++
+++ **Company** - Enter the company number or 0 for all companies.
+++ **System** - The relevant system code. F1 will show all system codes.
+++ **Code** - The relevant restrictions code. F1 will show existing overrides and the `All Codes` button will show all available restrictions.
+++ **Password** - The password required to override this restriction.
++
++Module Passwords Listing
++........................
++Use this routine to produce a report of the modules and passwords created using `Module Passwords Maintenance`_.
++
++V.A.T. Records Maintenance
++..........................
++Use this routine to create, amend or delete value added tax records.
++
+++ **V,A.T. Code** - A single character V.A.T. code.
+++ **Description** - A description of the code.
+++ **Category** - The category of the code as follows:
++
++    + **C** for Capital Items
++    + **N** for Non Vattable Items
++    + **S** for Standard V.A.T. Codes
++    + **X** for X Rated Items
++    + **Z** for Zero Rated Items
++
+++ **Date** - The starting date of the current rate.
+++ **Rate** - The current rate.
++
++V.A.T. Statement
++................
++Use this routine to produce a value added tax statement for a specific period.
++
++Enter all relevant details according to the prompts. The following fields need more explanation:
++
+++ **Starting Period** - Enter the starting period or 0 to take all unflagged transactions into account.
+++ **Flag Items as Paid** - This option is only available if the `Starting Period` is 0. If you select `Yes` then all transactions will be flagged as paid with the date in the next field. To reprint a previous report select `Reprint` with the date to be reprinted in the `Payment Date` field.
++
++Email Log Report
++................
++Use this routine to print a report of emails sent by the system.
++
++Financial Year End Routine
++..........................
++Use this routine to end a financial period. This will create opening balances in the next financial period and if you elect to Finalise the period it will disable any further postings to the applicable period and any previous periods.
++
++Change Year End Date
++....................
++Use this routine to change the financial year end date from a specific period.
++
++.. raw:: pdf
++
++    PageBreak
++
++General Ledger
++~~~~~~~~~~~~~~
++File Maintenance (GL)
++.....................
++Control Record (GL)
+++++++++++++++++++++
++This routine is used to create or amend a company's control record.
++
+++ **Departments** - Yes or No (Not used at present)
+++ **Number of Digits** - Number of leading digits used for department codes.
++
++Masterfile Records (GL)
+++++++++++++++++++++++++
++This routine is used to create or amend general ledger account records. For a new company you can **automatically populate** the company with standard accounts and reports by selecting the `Populate` button. You can also import a chart of accounts by selecting the `Import` button in which case the file must be in `csv` or `xls` format and must contain all the fields as listed below.
++
+++ **Acc-Num** - The account number of the record. This is a numeric field and can have up to 7 digits. There is nothing special about this number it is only used to access the record.
+++ **Account Type** - Select the applicable account type for the record.
+++ **Description** - The account's description up to 30 characters in length.
+++ **Allow Postings** - Whether or not direct postings are allowed to this account. Normally direct postings are not allowed to control accounts of subsidiary ledgers, e.g. Debtor's as they should be generated in the subsidiary ledger.
+++ **Tax Default** - The V.A.T. code normally associated with postings to this account.
++
++Once all accounts have been created, you should print a list of them by selecting `Chart of Accounts (GL)`_ from the reporting menu, and check that all accounts have been created correctly.
++
++Control Accounts
++++++++++++++++++
++This routine is used to create control accounts for the company. Control accounts are accounts that the system needs to know about in order to create double sided entries. You must create at least one bank as well as the retained income control records but preferably most of the others as well.
++
++If you elected to **automatically populate** while creating masterfile records this would already have been done for you.
++
+++ **Code** - Enter a valid control code e.g. **bank_1**. If you press F1 you  will be given a list of available codes which you can select from.
+++ **G/L Acc-Num** - Enter the applicable general ledger account number for this code.
+++ **Bank Account** - If the code is a bank account then you can enter the bank's account number here. This is required for importing bank statements.
+++ **Import Format** - If you are going to import bank statements you must select the format you will be downloading or else `None` for no imports. The preferred format for internet banking is the OFX, or Open Financial eXchange, format.
+++ **Date Format** - If you entered an import format, select the applicable date format. The date format for OFX is CCYYMMDD.
++
++Inter Company Records
+++++++++++++++++++++++
++This routine only applies to systems which have multiple companies. This allows one to capture transactions in one company directly into another company's accounts e.g. capture a payment made by company one for a telephone account for company two. For the purposes of simplicity lets assume that we are presently in company 1's ledger and want to integrate company 2.
++
+++ **Coy-Num** - The other company's number i.e. 2
+++ **Acc-Num-1** - Company 2's inter company loan account number in company 1.
+++ **Acc-Num-2** - Company 1's inter company loan account number in company 2.
++
++Standard Journals
+++++++++++++++++++
++Use this routine to create, amend and delete standard journals.
++
++The following fields need more explanation:
++
+++ **Freq** - This is the frequency with which this journal is raised:
++
++    + **M** - Monthly
++    + **3** - Quarterly
++    + **6** - Biannually
++    + **Y** - Annually
++
+++ **Start** - The first period this journal is to be raised, (CCYYMM)
+++ **End** - The last period this journal is to be raised, (CCYYMM)
++
++Please note that you will not be able to end this routine until the debits equal the credits. Credits are entered as minus amounts.
++
++Report Generator (GL)
+++++++++++++++++++++++
++Use this routine to create, amend and delete `Financial Statements (GL)`_ report formats.
++
+++ **Company** - The company number or a 0 to create a general report for all companies.
+++ **Report** - The report number. After this point certain options are available.
++    + **Re-Sequence** - This re-sequences the whole report starting from 1
++    + **Copy** - This allows you to copy an existing report
++        + **Company Number** - The company number of the existing report
++        + **Report Number** - The number of the existing report
++    + **Print** - This allows you to print the report layout
+++ **Type** - The type of report to create:
++    + **B** - Balance Sheet
++    + **P** - Profit and Loss
++    + **O** - Any Other type of report
+++ **Heading** - The report heading.
+++ **Sequence**
++    + **Seq-Num** - The report sequence number. To insert lines use decimals.
++    + **Sequence Type** - The sequence type as follows.
+++ **Heading (H)**
++    + **Description** - The heading detail.
++    + **Highlight** - Whether to print the heading in bold characters.
++    + **New Page** - Whether to print the heading on a new page.
++    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
+++ **Ledger (L)**
++    + **From Account** - The first account in a range of accounts.
++    + **To Account** - The last account in a range or 0 for only the first account.
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Include Opening Balance** - Whether to include the opening balance.
++    + **Accumulate Month Values** - Whether to accumulate the month values. This only applies to (M)onthly report types.
++    + **Print Values**
++        + **Yes** - Print
++        + **No** - Do not print
++        + **Debit** - Only print if the value is positive
++        + **Credit** - Only print of the value is negative
++    + **Normal Sign**
++        + **Positive** - The value for this account is normally positive
++        + **Negative** - The value for this account is normally negative
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
++    + **Store Amount** - Whether you want to store the value for later
++    + **Storage Number** - The number to use when storing the value
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the storage
++        + **Subtract** - Subtract the value from the storage
++        + **Ignore** - Do not add nor subtract the value
+++ **Group (G)** - This is used to group a number of accounts together
++    + **Group Number** - The group number
++    + **Description** - The group description
++    + **From Account** - The first account in a range of accounts.
++    + **To Account** - The last account in a range or 0 for only the first account.
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Include Opening Balance** - Whether to include the opening balance.
++    + **Accumulate Month Values** - Whether to accumulate the month values. This only applies to (M)onthly report types.
++    + **Print Values**
++        + **Yes** - Print
++        + **No** - Do not print
++        + **Debit** - Only print if the value is positive
++        + **Credit** - Only print of the value is negative
++    + **Normal Sign**
++        + **Positive** - The value for this account is normally positive
++        + **Negative** - The value for this account is normally negative
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
++    + **Store Amount** - Whether you want to store the value for later
++    + **Storage Number** - The number to use when storing the value
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Chart Label**
+++ **Stored (S)**
++    + **Description** - The description of the stored value
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Print Values**
++        + **Yes** - Print
++        + **No** - Do not print
++        + **Debit** - Only print if the value is positive
++        + **Credit** - Only print of the value is negative
++    + **Normal Sign**
++        + **Positive** - The value for this account is normally positive
++        + **Negative** - The value for this account is normally negative
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Clear Stored Value** - Whether to zero the stored amount
++    + **Storage Number** - The stored value's number
++    + **Percentage of Stored Value** - The percentage of the stored value to print
+++ **Total (T)** - All values are automatically added into or subtracted from totals numbered from 1 to 9.
++    + **Description** - To description of the total or blank
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Total Level** - The total number to print
++    + **Print Values**
++        + **Yes** - Print
++        + **No** - Do not print
++        + **Debit** - Only print if the value is positive
++        + **Credit** - Only print of the value is negative
++    + **Normal Sign**
++        + **Positive** - The value for this account is normally positive
++        + **Negative** - The value for this account is normally negative
++    + **Clear Total** - Whether to zero the total
++    + **Store Amount** - Whether you want to store the value for later
++    + **Storage Number** - The number to use when storing the value
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Chart Label**
+++ **Uline (U)**
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Underline Type**
++        + **Single** - Single line
++        + **Double** - Double line
++        + **Blank** - Blank line
+++ **Calc (C)** - Not Yet Implemented:
+++ **Percent (P)** - This is a percentage of one stored amount against another stored amount.
++    + **Description** - The description of the percentage
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Storage Number** - The first stored amount
++    + **Storage Number** - The second stored amount
++
++Detail Records (GL)
+++++++++++++++++++++
++Use this routine to create, amend and delete detail records used by `Financial Statements (GL)`_ report formats.
++
+++ **Code** - A sequential number for the detail record.
+++ **Description** - A description of the detail.
++
++For each month in the financial year enter the following:
++
+++ **Period** - A financial period i.e. CCYYMM
+++ **Value** - A value for the period.
++
++Stream Records (GL)
+++++++++++++++++++++
++Use this routine to create, amend and delete stream records used by `Financial Statements (GL)`_ report formats.
++
+++ **Stream Number** - A sequential number for the stream record.
+++ **Description** - A description of the stream.
++
++For each report in the stream enter the following:
++
+++ **Seq** - A sequence number starting at 0.
+++ **T** - The report type, S(mall), L(arge), M(onthly) or C(ustom).
+++ **CN** - If the report type is a C then this is the custom report number.
+++ **C** - Consolidation code, Y or N.
+++ **Rep** - Report number.
+++ **G** - General report, Y or N.
+++ **V** - Report contents, V(alues), B(udgets), C(ombined) or D(etail).
+++ **Cod** - For contents type D, enter the applicable detail code.
+++ **Z** - Ignore zeros, Y or N.
+++ **O** - Print the options line on report, Y or N.
+++ **N** - Print account numbers on the report, Y or N.
+++ **Printer Name** - The printer name to print on or None.
+++ **E-Mail Address** - An email address to send the report to or leave blank.
++
++Bank Import Control
+++++++++++++++++++++
++Use this routine to create, amend and delete bank import control records. These records are used when importing bank statements to automatically create transactions for recurring entries e.g. charges, fees, interest, stop orders etc.
++
+++ **Bank Account** - The G/L account number for the bank.
+++ **Memo Code** - This is a 5 digit sequential number of the record. Entering a zero will automatically allocated the next number.
+++ **Memo Desc Contains** - This together with the next two fields are used to correctly identify the transaction using the description appearing on the bank statement.
+++ **Transaction Type** - Payment or deposit.
+++ **Allocation Company** - The company number to be debited or credited.
+++ **Allocation Account** - The account number to be debited or credited.
+++ **Chn** - The chain store code if the account number is the debtor's control account.
+++ **Acc-Num** - If the account number is the creditor's or debtor's account enter the relevant creditor's or debtor's account number.
+++ **Ageing Code** - If the account number is the creditor's or debtor's account select how to age the amount.
+++ **Vat Code** - Enter the applicable V.A.T. code.
++
++Data Capture (GL)
++.................
++Opening Balances (GL)
+++++++++++++++++++++++
++Use this routine to capture initial opening balances. You can also import these balances by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain the account number and balance fields.
++
++* **Acc-Num** - The account number.
++* **Balance** - The opening balance.
++
++Budgets (GL)
++++++++++++++
++Use this routine to capture monthly budgets for a specific financial period. You can also import budgets by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain all the fields as detailed in the prompt when you hover your cursor over the button. There is also an `Auto Populate` button which will create budgets based on the previous year's actual plus or minus a standard rate.
++
++* **Acc-Num** - The account number.
++* **F** - `M` to enter a monthly budget or `A` to enter an annual budget amount.
++* **Period** - If `M` was selected then enter the period i.e. YYYYMM.
++* **Budget** - The budget value.
++
++Sales, Payments, Petty Cash, Purchases and Receipts (GL)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++These data capture routines are similar in operation and therefore I will handle them together. Please note that if subsidiary books are integrated i.e. creditors and debtors, purchases and sales will not be available and an error message will be displayed if you attempt to access them.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
++
+++ **Transaction**
++    + **Reference** - The document's reference number.
++    + **Date** - The date of the document.
++    + **Amount** - The total inclusive value of the document.
++    + **Details** - The description of the document.
+++ **Allocation**
++    + **Coy** - The company number in multi company installations.
++    + **Acc-Num** - The general ledger account number to debit or credit.
++    + **Alloc-Amt** - The inclusive amount to be allocated to this account.
++    + **V** - The applicable V.A.T. code to apply to this allocation.
++    + **VAT-Amount** - The V.A.T. amount, which can be overridden.
++    + **Details** - The description of the allocation.
+++ **Creditors** - This only applies if the `Acc-Num` is the creditor's control account and the transaction type is payments or receipts.
++    + **Acc-Num** - The creditor's account number.
++    + **Ref-No2** - A further reference number if applicable.
++    + **Discount** - A discount amount.
++    + **Amount** - The amount to be allocated to this account.
+++ **Debtors** - This only applies if the `Acc-Num` is the debtor's control account and the transaction type is payments or receipts.
++    + **Chn** - The chain store code, if chain stores apply.
++    + **Acc-Num** - The debtor's account number.
++    + **Ref-No2** - A further reference number if applicable.
++    + **Discount** - A discount amount.
++    + **Amount** - The amount to be allocated to this account.
+++ **Assets** - This only applies if the `Acc-Num` is one of the asset's control accounts.
++    + **Grp** - The asset's group code.
++    + **Cod-Num** - The asset's code.
++    + **M** - The transaction type i.e. New purchase, improvement, write off, depreciation or sale of asset.
++    + **Amount** - The amount of the allocation.
++    + **Details** - The description of the allocation.
+++ **Books** - This only applies if the `Acc-Num` is the booking control account.
++    + **Bkm-Num** - The booking number.
++    + **Amount** - The amount of the allocation.
++
++If you have allocated the transaction to a creditor's or debtor's account you might be required to age the amount as described in `Ageing Transactions`_ above.
++
++Manual Journal Entries (GL)
+++++++++++++++++++++++++++++
++Use this routine to capture manual journal entries. You can also import journals by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain all the fields as detailed in the prompt when you hover your cursor over the button.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following fields apply:
++
+++ **Ref-Num** - The journal number.
+++ **Date** - The date of the journal.
+++ **Coy** - The company number in multi company installations.
+++ **Acc-Num** - The general ledger account number to debit or credit.
+++ **Amount** - The inclusive amount of the journal.
+++ **V** - The applicable V.A.T. code to apply to this journal.
+++ **VAT-Amt** - The V.A.T. amount, which can be overridden.
+++ **Details** - The description of the journal.
++
++The *List All* button will show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
++
++Please note that you will not be able to exit this routine until the debits equal the credits. Credits are entered as minus amounts.
++
++Standard Journal Entries (GL)
+++++++++++++++++++++++++++++++
++Use this routine to raise standard journal entries as created using `Standard Journals`_.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following fields apply:
++
+++ **Frequency** - Select the frequency of the journals to be raised.
+++ **All Journals** - Select whether to raise all journals for the selected frequency.
+++ **All Periods** - Select whether to raise journals for all periods from the start of the current financial period up to and including the batch header period.
++
++Bank Statements (GL)
++++++++++++++++++++++
++Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed during this routine.
++
++As with most data capture routines you will first have to enter the `Batch Details`_.  The following buttons will then be available:
++
+++ **Exit** - This exits out of the capture routine as per using the <Escape> key.
+++ **Import Bank File** - This routine is used to import a bank statement file as described under `Control Accounts`_.
++
++    Once you have selected the file to import the system will automatically flag all transactions which already exist on your database.
++
++    If there are more than one transaction satisfying the comparison criteria these transactions will be displayed and you will have to select the transaction to be flagged. Should none of the transactions be the correct one, click the `Quit` button to skip allocating it.
++
++    While importing, if a duplicate record is detected, i.e. a possible duplication of the import file, a message will be displayed giving you the choice of importing it or not.
++
++    At the end of the import process a screen will be displayed showing all unallocated transactions. You must now capture these transactions as per the next option i.e. `Process Bank Data`.
++
+++ **Process Bank Data** - This routine is to continue an import which was suspended for whatever reason. This is also the procedure for capturing unallocated transactions from the previous option i.e. `Import Bank File`. A screen showing all the unallocated transactions will display.
++
++  Select a transaction to process by clicking on it or moving the cursor to it and hitting the `Enter` key.  Continue from the `Details` field in the following section.
++
+++ **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocated these using the `Process Bank Data` routine, before continuing.
++
++    + **T** - Enter the transaction type i.e. (P)ayment, (D)eposit or (J)ournal.
++    + **Ref-Num** - Enter the reference number. If the transaction already exists on your database it will be flagged as either paid or received i.e. will not appear on the bank reconciliation statement. If the transaction does not already exist you can capture it by entering the following fields:
++
++    + **Date** - Enter the transaction date.
++    + **Amount** - Enter the transaction amount.
++    + **Details** - The details for this transaction.
++
++    You will then be asked to confirm your entry and if you do so you will be able to allocate the transaction as in `Sales, Payments, Petty Cash, Purchases and Receipts (GL)`_ above.
++
++Reporting (GL)
++..............
++Batch Error Listing (GL)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (GL)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
+++ **Include Other Companies** - Whether or not to include other companies. If yes, you will be prompted at a later stage to select which other companies to include.
++
++Account Statements (GL)
+++++++++++++++++++++++++
++Use this routine to produce statements for individual ledger accounts.
++
++* **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
++* **From Account** - If range was selected enter the starting account number.
++* **To Account** - If range was selected enter the ending account number.
++* **Starting Period** - The starting financial period in the financial year.
++* **Ending Period** - The ending financial period in the financial year.
++* **Separate Pages** - Select whether or not to print each account on a new page.
++
++Trial Balance (GL)
++++++++++++++++++++
++Use this routine to produce a trial balance.
++
++* **Opening Balances Only** - Select whether or not to only print opening balances.
++* **Include Opening Balances** - Select whether or not to include opening balances.
++* **Starting Period** - The starting financial period in the financial year.
++* **Ending Period** - The ending financial period in the financial year.
++* **Ignore Zero Balances** - Select whether or not to ignore zero balances.
++
++Financial Statements (GL)
+++++++++++++++++++++++++++
++Use this routine to produce financial statements using the information as set up with `Report Generator (GL)`_.
++
++* **Ending Period** - The last period, in the financial year, to take into account.
++* **Stream Number** - To print the reports as enumerated in a stream record as created using `Stream Records (GL)`_.
++* **Report Type** - Select the relevant report type.
++* **Consolidate Companies** - Select whether or not to print a consolidated report. This is only applicable in a multi company installation.
++* **Report Number** - The relevant report number as created using `Report Generator (GL)`_.
++* **General Report** - Select whether or not the report is a general report.
++* **Contents** - Select which values to use in the report.
++* **Detail Code** - If `Detail` was selected above, enter the detail code as created using `Detail Records (GL)`_.
++* **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
++* **Print Options** - Select whether or not to include the selected options on the report heading.
++* **Account Numbers** - Select whether or not to include the account numbers in the report.
++
++Chart of Accounts (GL)
++++++++++++++++++++++++
++Use this routine to produce a chart of accounts.
++
++* **Sort Order** - Select the order by which the report must be sorted.
++
++Notes Listing (GL)
++++++++++++++++++++
++Use this routine to print any notes on the general ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Bank Reconciliation (GL)
++++++++++++++++++++++++++
++Use this routine to produce a bank reconciliation statement.
++
++* **Bank Account** - The bank account number.
++* **Accounting Period** - The relevant period in the financial year.
++
++Imported Bank Statements
++++++++++++++++++++++++++
++Use this routine to produce a report of imported bank statements.
++
+++ **Bank Account** - Bank account number.
+++ **From Date** - The starting date.
+++ **To Date** - The ending date.
+++ **Unallocated Only** - Whether to only print entries which have not yet been allocated.
++
++Toolbox (GL)
++............
++Change Account Numbers (GL)
+++++++++++++++++++++++++++++
++Use this routine to change account numbers within a company.
++
++* **Old Number** - The current account number to change.
++* **New Number** - The new account number. It must not already exist.
++
++Copy Masterfile Records (GL)
++++++++++++++++++++++++++++++
++Use this routine to copy accounts from another company.
++
++* **Copy From Company** - The company number from which to copy.
++* **Include ...** - Select what additional data is to be copied.
++
++Integrated Controls Report (GL)
+++++++++++++++++++++++++++++++++
++Use this routine to produce a report showing the balance status of integrated systems and their respective control accounts.
++
++* **Cut Off Period** - The relevant period in the financial year.
++
++Intercompany Accounts Report (GL)
+++++++++++++++++++++++++++++++++++
++Use this routine to produce a report showing the balance status of intercompany accounts in a multi company installation.
++
++Initialise Bank Reconciliation (GL)
+++++++++++++++++++++++++++++++++++++
++Use this routine to initialise the bank reconciliation.
++
++* **Bank Account** - The bank account number.
++* **Last Period** - The last reconciled period.
++* **Clear History** - Select whether or not to mark all transactions up to the `Last Period` as being cleared through the bank.
++
++Now capture all the outstanding transactions as at the `Last Period`.
++
++* **T** - The transaction type.
++* **Ref-Num** - The transaction reference number.
++
++Interrogation (GL)
++..................
++This routine is for querying individual general ledger accounts.
++
++.. raw:: pdf
++
++    PageBreak
++
++Asset's Register
++~~~~~~~~~~~~~~~~
++File Maintenance (AR)
++.....................
++Control Record (AR)
+++++++++++++++++++++
++Use this routine to create an asset's register control record.
++
+++ **G/L Integration** - Yes to integrate else No.
+++ **Receiver Dep** - Yes to have separate depreciation rates for the receiver.
++
++Depreciation Codes (AR)
+++++++++++++++++++++++++
++Use this routine to create asset's register depreciation codes.
++
+++  **Code** - Enter a code which can be up to 3 alphanumeric characters.
+++  **Description** - Enter a description for the depreciation type.
+++  **Type** - Select the type of depreciation, straight line or diminishing balance, for company and receiver, if applicable.
+++  **Rates** - Enter the depreciation rates for company and receiver, if applicable, as follows:
++    + **Year 1** - The first year's rate
++    + **Years 2-7** - The following year's rates if applicable
++
++Group Records (AR)
++++++++++++++++++++
++Use this routine to create group records as follows:
++
+++ **Asset Group** - Enter a code which can be up to 3 alphanumeric characters.
+++ **Description** - Enter a description for the group.
+++ **Depreciation Code** - Enter a depreciation code, as created in `Depreciation Codes (AR)`_ above, for the group.
+++ If integrated with general ledger you must enter the following account numbers:
++
++    + **Asset Account** - This is the B/S Asset Account.
++    + **Accum Account** - This is the B/S Accumulated Depreciation Account.
++    + **Expense Account** - This is the P&L Depreciation Expense Account.
++
++Masterfile Records
++++++++++++++++++++
++Use this routine to edit an asset's description or depreciation code.
++
+++ **Group** - Enter the asset group.
+++ **Code** - Enter the asset code.
+++ **Description** - Enter the asset description.
+++ **Depreciation Code** - Enter the asset depreciation code.
++
++Data Capture
++............
++Opening Balances (AR)
+++++++++++++++++++++++
++Use this routine to capture all existing assets.
++
+++ **Take-on Date** - This would normally be the end of the previous financial period but must always be the last day of the month otherwise there will be problems when the next depreciation run is made.
+++ You can now either import a csv or xls file, in the correct format, by clicking on the `Import File` button or capture the assets manually.
++
++    + **GRP** - Enter the asset group as created in `Group Records (AR)`_.
++    + **Cod-Num** - Enter the asset code or number which can be up to 7 alphanumeric characters.
++    + **Description** - Enter the description of the asset.
++    + **Dep** - Enter the depreciation code to be applied to this asset. It will default to the group depreciation code but can also be a different one.
++    + **Purch-Date** - Enter the original date of purchase of the asset.
++    + **Cost** - Enter the total cost of the asset including any improvements and write-offs.
++    + **Coy-Dep** - Enter the total company depreciation up to the take-on date,
++    + **Rec-Dep** - Enter the total receiver depreciation, if applicable, up to the take-on date.
++
++Payments, Receipts and Journal Entries
++++++++++++++++++++++++++++++++++++++++
++Use these routines to capture all asset movements as and when required. In addition, if integrated with the G/L, assets can also be captured while capturing Payments and Receipts by allocating to the asset account as entered in `Group Records (AR)`_.
++
++Depreciation
++++++++++++++
++Use this routine to raise depreciation, as and when required.
++
+++ **Cut-off Period** - Enter the last month period to take into account. Once you have confirmed the cut-off period the system will automatically determine the last period for which depreciation has been raised and then raise depreciation for each following month up to the cut-off period.
++
++Reporting
++.........
++Groups Listing
++++++++++++++++
++Use this routine to produce a report of all asset groups.
++
++Batch Error Listing (AR)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (AR)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Asset Statements
++++++++++++++++++
++Use this routine to produce asset statements.
++
+++ **Start Period** - The starting period.
+++ **End Period** - The ending period.
+++ **Product Group** - The asset group or blank for all.
+++ **Asset per Page** - Whether or not to start each asset on a new page.
++
++Asset Register
++++++++++++++++
++Use this routine to print an asset register.
++
+++ **Cut-Off Period** - The last month period to take into account.
+++ **Report Type** - If applicable select either Company or Receiver.
+++ **Asset Group** - Select an asset group or leave blank for all groups.
+++ **Ignore Zero Items** - Select Yes to ignore all items sold or written off.
++
++Notes Listing (AR)
++++++++++++++++++++
++Use this routine to print any notes on the asset records.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Interrogation (AR)
++..................
++This routine is for querying individual assets.
++
++.. raw:: pdf
++
++    PageBreak
++
++Bookings Manager
++~~~~~~~~~~~~~~~~
++File Maintenance (BK)
++.....................
++Control Record (BK)
+++++++++++++++++++++
++Use this routine to maintain a bookings control record.
++
+++ **G/L Integration** - Yes to integrate else No.
+++ **Booking Template** - The template to use for the booking forms.
+++ **Booking Template** - The template to use for the booking invoice.
+++ **Booking Template** - The template to use for the booking statement.
+++ **Terms and Conditions** - The terms and conditions file to attach to the booking query.
++
++Unit Records (BK)
+++++++++++++++++++
++Use this routine to maintain unit records.
++
+++  **Booking Type** - Select the type of unit.
+++  **Unit Code** - Enter a code which can be up to 6 alphanumeric characters.
+++  **Description** - Enter a description for the unit.
+++  **Number of Rooms** - Enter the number of bookable rooms in the unit.
+++  **Total Capacity** - Enter the total booking capacity for the unit. Enter 999 for infinite capacity.
+++  **Default Rate** - The default rate code for the unit.
+++  **Vat Code** - Enter the vat code applicable to the unit.
+++  **Sales Account** - Enter the G/L sales account, if integrated.
++
++Rate Records (BK)
+++++++++++++++++++
++Use this routine to maintain rate records as follows:
++
+++ **Unit Type** - Enter a type of unit this rate applies to.
+++ **Code** - Enter a code which can be up to 3 numeric digits.
+++ **Description** - Enter the description of the rate record.
+++ **Rate Base** - Select the applicable base for the rate.
+++ **Starting Date** - Enter the date this rate becomes applicable.
+++ **Rate Amount** - Enter the rate amount.
++
++Booking Letters (BK)
++++++++++++++++++++++
++Use this routine to maintain booking letters.
++
+++ **Letter Type** - Select the type of letter.
+++ **Body** - Enter body of the letter.
++
++Contacts (BK)
+++++++++++++++
++Use this routine to maintain booking contacts. The fields are self explanatory with the exception of the following:
++
+++ **Code** - Enter the code for the contact or blank for a new contact.
++
++Reporting (BK)
++..............
++Deposits Listing (BK)
+++++++++++++++++++++++
++Use this routine to produce a listing of outstanding deposits.
++
+++ **Expired Only** - Select whether to print all deposits or only expired ones.
+++ **Order** - Select the required order of the listing.
++
++Transaction Audit Trail (BK)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Arrivals Listing (BK)
+++++++++++++++++++++++
++Use this routine to print all arrivals for a particular period. This routine also has the choice to print a housekeeping report and raise the invoices.
++
+++ **Period** - The relevant period type.
+++ **Starting Date** - The starting period date.
+++ **Ending Date** - The ending period date. This only applies if range was selected as the period type.
+++ **Housekeeping Report** - Select whether to also print a housekeeping report.
+++ **Generate Invoices** - Select whether to raise invoices for the arrivals.
+++ **Print Invoices** - Select whether to print invoices for the arrivals.
+++ **Template Name** - The template to be used for the invoice.
++
++Balances Listing (BK)
+++++++++++++++++++++++
++Use this routine to print an outstanding balance report.
++
+++ **Cut-Off Period** - The last month period to take into account.
+++ **Status** - All statuses or only an individual status.
++
++Name and Address Labels
+++++++++++++++++++++++++
++Use this report to print name and address labels.
++
++* **Whole File** - Select whole file or individual contacts.
++* **Sort Order** - Sort by contact code or surname or postal code.
++* **Avery A4 Code** - The Avery code for the label being used.
++* **First Label Row** - The row of the first available blank label, 1-24.
++* **First Label Column** - The column of the first available blank label, 1-24.
++
++Notes Listing (AR)
++++++++++++++++++++
++Use this routine to print any notes on the asset records.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Account Statements (BK)
+++++++++++++++++++++++++
++Use this routine to print statements of bookings.
++
+++ **Template Name** - The template to use for the statements.
+++ **Whole File** - Select whether to print all or a range of statements.
+++ **From Booking** - The first booking to include.
+++ **To Booking** - The last booking to include.
++
++Reprint Invoices (BK)
+++++++++++++++++++++++
++Use this routine to reprint raised invoices.
++
+++ **Template Name** - The template to use for the invoices.
+++ **Document Mode** - Select whether to print the invoices as copies or as originals.
+++ **Documents** - Select whether to print a range or individual invoices.
+++ **From Number** - The first invoice to include.
+++ **To Number** - The last invoice to include.
++
++Summary Report (BK)
+++++++++++++++++++++
++Use this routine to produce a graph of bookings for a period not exceeding 12 months.
++
+++ **Starting Period** - The starting period.
+++ **Ending Period** - The ending period.
++
+++ **Action** - Select the parameters of the graph.
++    + **Automatic** - Produce the graph for all booking statuses.
++    + **Manual** - Select your own statuses.
++    + **Exit** - Exit from the routine.
+++ **Select Chart** - The type of graph to print. Please note that a pie chart can only be produced if a single status has been selected.
+++ **Use Colour** - Select whether to use colours if pie chart or multiple statuses are selected.
++
++Calendar (BK)
++.............
++Use this routine to display a booking's calendar showing all bookings currently entered. Clicking on an existing booking will display the booking and allow modifications and all the normal booking features as per the `Bookings (BK)`_ below. While in the calendar the following buttons are available:
++
+++ **New Booking** - Selecting this button will allow the creation of a new booking as per `Bookings (BK)`_ below.
+++ **Deposits List** - Selecting this button will enter the `Deposits Listing (BK)`_ routine as detailed above.
+++ **Arrivals List** - Selecting this button will enter the `Arrivals Listing (BK)`_ routine as detailed above.
+++ **Exit** - Select this button to exit out of the calendar.
++
++Bookings (BK)
++.............
++Use this routine to manage bookings.
++
++Booking Tab (BK)
++++++++++++++++++
++This page contains all the relevant details of the booking.
++
+++ **Booking Number** - The booking number or 0 for a new booking.
+++ **Type** - Select the type of booking.
+++ **Group Name** - The name of the group if applicable.
+++ **Number of Persons** - The number of people.
+++ **Arrival (YYYYMMDD)** - The date of arrival.
+++ **Departure (YYYYMMDD)** - The date of departure.
+++ **Units** - Select whether to Continue with the existing booking or Edit the units booked.
++    + **Unit-Cod** - The unit's code made up of the unit type and the unit's code.
++    + **Description** - The description of the unit.
++    + **Rme** - The room code to allocate or zero for all rooms in the unit.
++    + **Rte** - The rate code to apply to this unit.
++    + **Ppl** - The number of guests.
++    + **Per** - The periods, if applicable.
++    + **Disc-%** - The discount percentage, if applicable.
++    + **Applied-Rt** - The final applicable rate or zero for no charge.
+++ **Value** - The total value of the booking.
+++ **Initial Deposit** - The initial deposit if applicable. If no deposit is entered the status of the booking will immediately be upgraded to confirmed.
+++ **Initial Dep Due** - The last date that the initial deposit must be received by.
+++ **Additional Deposit** - The additional deposit if applicable.
+++ **Additional Dep Due** - The last date that the additional deposit must be received by.
+++ **Account Balance** - The balance of the account. This could be a minus amount if a deposit has been received and the invoice not yet raised.
+++ **Remarks** - Any additional details.
++
++Contact (BK)
++++++++++++++
++This page contains all the relevant contact details. All the fields are self explanatory with the exception of the following:
++
+++ **Contact Code** - The contact's code or blank for a new contact.
++
++Booking Buttons (BK)
++++++++++++++++++++++
+++ **Edit** - Select this button to alter an existing booking.
+++ **Transact** - Select this button to capture a transaction. Valid transaction types are Receipt, Refund, Journal, Cancellation and Reinstatement. Some of the fields, depending on the type of transaction, will not be required.
++    + **Type** - The type of transaction.
++        + **Receipt** - Continue and enter the method, date, amount and details.
++        + **Refund** - Continue and enter the method, date, amount and details
++        + **Journal** - Continue and enter the date, amount and details. If integrated you must then enter the g/l-acc number, vat code and vat amount.
++        + **Cancel** - In the case of cancellations for confirmed and settled bookings you will be prompted to confirm the cancellation and if in the affirmative you will then be asked if a charge must levied on the cancellation. For charges continue with the amount and details of the charge.
++        + **Reinstate** - You can only re-instate a cancelled booking.
++    + **Method** - The method of the transaction. This only applies to Receipts and Refunds.
++    + **Date** - The date of the transaction.
++    + **Reference** - The transaction's reference number. This is automatic.
++    + **Amount** - The amount of the transaction.
++    + **Details** - The details of the transaction.
++    + **Acc-Num** - The general ledger account number, if integrated.
++    + **VAT Code** - The applicable VAT code.
++    + **VAT Amount** - The applicable VAT amount.
+++ **Movements** - Select this button to display all movements on the account.
+++ **Notes** - Select this button to maintain notes relating to this booking.
+++ **Accept** - Select this button to accept the booking and to print a booking letter.
+++ **Quit** - Select this button to terminate the current displayed booking.
++
++Unit and Rate Buttons (BK)
++++++++++++++++++++++++++++
+++ **Clear** - Select this button to clear all un-invoiced units.
+++ **Edit** - Select this button to edit an existing unit.
+++ **Exit** - Select this button to exit the screen.
+++ **Quit** - Select this button the quit the screen.
++
++.. raw:: pdf
++
++    PageBreak
++
++Bowls Clubs
++~~~~~~~~~~~
++File Maintenance
++................
++Control Record (BC)
+++++++++++++++++++++
++Use this routine to create the bowls control record.
++
+++ **M/L Integration** - Select whether or not the bowls system is integrated with the Member's system.
+++ **Same Numbers** - If integrated with the member's system is the tab number the same as the member number.
+++ **Male Start Seq** - The number range for male bowler's tab numbers.
+++ **Female Start Seq** - The number range for female bowler's tab numbers.
+++ **Non-member Start Seq** - The number range for non-member's player codes. This number must be greater than the male and female numbers.
+++ **Draw Base** - By pre-allocated Position, Rating or a Combination of both.
+++ **Rating Order** - Whether the rating system is ascending or descending, like golf handicaps.
+++ **Replace Fours** - When doing a trips tabs-in draw use pairs instead of fours for eight players.
+++ **Weeks Between Draws** - The minimum number of weeks that team members should not be in the same team again. The could however be drawn to play against them.
+++ **Rate - Member** - The member's rate.
+++ **Rate - Visitor** - The visitor's rate.
+++ **Greens** - The available green codes e.g. AB
++
++Club's Records
++++++++++++++++
++Use this routine to add, amend and delete clubs.
++
+++ **Club Code** - The applicable club's code. A zero code will automatically select the next available code.
+++ **Club Name** - The name of the club.
++
++Tabs Maintenance
++++++++++++++++++
++Use this routine to create, delete or amend tab records.
++
+++ **Tab Number** - The number of the tab or zero for the next available number depending on the gender of the member.
+++ **Membership Number** - If the Member system is integrated enter the member's membership number and the details will be obtained from there.
+++ **Surname** - The person's surname.
+++ **Names** - The person's names.
+++ **Gender** - The person's gender.
+++ **Address Line 1** - The person's address line 1.
+++ **Address Line 2** - The person's address line 2.
+++ **Address Line 3** - The person's address line 3.
+++ **Postal Code** - The person's postal code.
+++ **Home Number** - The person's home phone number.
+++ **Work Number** - The person's work phone number.
+++ **Cell Number** - The person's mobile phone number.
+++ **Email Address** - The person's email address.
+++ **Position - Primary** - The position the person should normally play.
+++ **Rating - Primary** - The person's rating as graded by the selectors.
+++ **Position - Mixed** - The position the person should play in mixed bowls.
+++ **Rating - Mixed** - The person's rating in mixed bowls.
+++ **Association Number** - The person's number with the bowling association.
++
++In addition there is the following button.
++
+++ **Import** - Use this button to import, only tab ratings for existing tabs or all tab details for existing and new members, from an excel (xls) or comma separated (csv) file.
++
++League Formats
++++++++++++++++
++Use this routine to create league format records e.g. Flag or Muter.
++
+++ **Format Code** - The applicable format code. A zero code will automatically select the next available code.
+++ **Description** - The description of the format.
+++ **Assessment Forms** - Allow printing of assessment forms.
+++ **Number of Forms** - Print assessment form per team or individual.
+++ **Assess Self** - Whether the player must assess himself.
+++ **Rating Out Of** - What the maximum assessment rating could be.
+++ **Sets Format** - Whether sets are to be played.
+++ **Logo** - The logo image file of the sponsor, if applicable.
++
++Side's Maintenance
++++++++++++++++++++
++Use this routine to create or amend side records. These are sides as entered in the league e.g. `WPCC A` or `WPCC B`.
++
+++ **Format Code** - The applicable league format code as created using `League Formats`_.
+++ **Side Code** - The applicable side code. A zero code will automatically select the next available code.
+++ **Description** - The description of the side e.g. `WPCC A`
+++ **League** - Select whether this side is playing in the `Main` or `Friendly` league.
+++ **Division** - The division that the side is playing in e.g. `PR`, `1A` etc.
+++ **Number of Teams** - The number of teams in the side.
+++ **Active Flag** - Whether or not this side is still active. If a team gets relegated or promoted it must be made inactive and a new side must be created. An inactive side can be made active again in the future if it once again becomes applicable.
++
++Player's Maintenance
++++++++++++++++++++++
++Use this routine to create, delete or amend competition player's records. Most of the fields are self explanatory with the exception of:
++
+++ **Code** - The player's number or zero for the next available number.
+++ **Tab Number** - The tab number if the player is a member of the club.
+++ **Club Code** - The player's club code or zero for the next available number in which case you must enter the name of the club.
++
++Competition Types
+++++++++++++++++++
++Use this routine to create competition type records as follows:
++
+++ **Type Code** - zero for the next number else an existing number. To see existing types press the F1 key.
+++ **Description** - The competition description.
+++ **Competition Format** - The type of competition i.e. Tournament, Knockout or Round Robin.
+++ **Team Size** - The number of players in a team.
+++ **Number of Games** - The total number of games comprising the competition.
+++ **Number of Ends per Game** - The number of ends to be completed in a game.
+++ **Groups by Position** - Whether or not the teams must be split into different groups. If grouping is not going to occur continue with `Skins` below.
+++ **Group After Game** - Select the game after which the grouping is to take place.
+++ **Adjust Scores** - Whether or not the scores are to be adjusted.
+++ **Expunge Games** - Which games, if any, must be expunged i.e. cleared. The games must be comma separated e.g. 1,2
+++ **Retain Percentage** - What percentage of the shots of the games, not expunged, must be retained when split into groups.
+++ **Number of Drawn Games** - The number of games which are randomly drawn. Enter 99 for a Round Robin.
+++ **Strict S v S** - Whether the competition is strictly strength versus strength i.e. teams could play each other again before the last game.
+++ **Skins** - Whether or not to have skins.
+++ **Number of Ends per Skin** - If skins were selected then enter the number of games per skin.
+++ **Points Only** - Only points are to be captured i.e. no shots.
+++ **Points per End** - Number of points per end won.
+++ **Points per Skin** - If skins were selected then enter the number of points allocated per skin.
+++ **Points per Game** - Number of points for the game.
+++ **Bonus Points** - Whether to allocated a bonus point.
+++ **Win by More Than** - If bonus points are allocated enter the number of points which the winning margin must be more than.
+++ **Lose by Less Than** - If bonus points are allocated enter the number of points which the losing margin must be less than.
++
++Tabs Draw
++.........
++New Draw
++++++++++
++Use this routine to make a New Draw.
++
+++ **Date** - The date of the draw.
+++ **Time** - The time of the draw.
+++ **Mixed Gender** - Whether or not the draw is mixed.
+++ **Mixed Rating** - Whether or not to use the alternative ratings.
+++ **Draw By** - If available select whether to base the draw on Positions, Ratings or a Combination of both.
+++ **Rates - Member** - The price charges per member.
+++ **Rates - Visitor** - The price charges per visitor.
++
++Once the above fields have been entered capture all tabs as follows:
++
+++ **Tab Number** - The player's tab number. Enter zero for a visitor. A number will be allocated to the visitor which can then be written on his tab e.g. 901.
+++ **Surname** - The player's surname. Only for visitors.
+++ **Names** - The player's names. Only for visitors.
+++ **Gender** - The player's gender. Only for visitors.
+++ **Position** - The player's position. Only for visitors.
+++ **Rating** - The player's rating. Only for visitors.
+++ **Paid** - Whether or not the player has paid.
++
++The following *Buttons* are available:
++
+++ **Arranged** - Use this button to enter arranged matches.
+++ **Entered** - Use this button to display all entered players.
+++ **Modify** - Use this button to change the player's position/ratings.
+++ **Draw** - Use this button to make the draw once all tabs have been entered. You will have to enter the following:
++
++    + **Team Size** - The preferred number of players per team.
++    + **Replace Fours** - Whether or not to replace fours with pairs. This only applies when the team size is three.
++    + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If there are more rinks available than needed, end rinks will be removed.
+++ **Print** - Use this button to print a draw.
++
++    + **Cash Takings Sheet** - Print a cash takings sheet.
++    + **Tabs Draw Listing** - Print a tabs draw list in tab number.
++    + **Tabs Draw Board** - Print an emulation of a tabs draw board.
++    + **Include Empty Rinks** - Whether to include or exclude empty rinks when printing a tabs draw board.
+++ **Edit Draw** - Use this button to manually change a draw.
+++ **Exit** - Use this button to exit the program. If the draw has not yet been done you will be prompted to confirm exiting.
++
++Reprint Draw
++++++++++++++
++Use this routine to reprint a previous draw.
++
+++ **Date** - The date of the draw.
+++ **Time** - The time of the draw.
++
++League Selections
++.................
++Capture Selections
++++++++++++++++++++
++Use this routine to capture team selections as follows:
++
+++ **Format Code** - The applicable league format code as created using `League Formats`_.
+++ **Type** - Select the type of match, Fixture or Practice.
+++ **Match Date** - YYYYMMDD.
+++ **Side Code** - The applicable side code. If no sides have as yet been entered enter a zero and create a side code as follows:
++    + **Side Description** - The description on the side.
++    + **League (M/F)** - Main or Friendly league.
++    + **Side Division** - The division of the side. PR for the premier side and 1A, 1B, 2A etc
++    + **Number of Teams** - The number of teams in the side.
+++ **Opposition Code** - The applicable opposition side code. If the opponent's record has not yet been captured enter a zero and create the opposition's side code as follows:
++    + **Club Code** - Enter an existing club code or zero for a new club.
++    + **Club Name** - Enter the club's name if it is a new club.
++    + **Side Name** - Enter the opposition side's name e.g. WPCC A or WPCC B
+++ **Venue (H/A/Name)** - Enter where the match is being played, at (H)ome, (A)way or another location.
+++ **Meeting Time** - Enter the time the side must meet on the day of the match.
+++ **At (H/A/Name)** - Enter where the side must meet, at (H)ome, (A)way or another location.
+++ **Captain Code** - The tab code of the captain.
+++ **Enter the teams as follows**:
++    + **Skp** - The tab code of the skip.
++    + **Plr** - The tab code of the next team member.
+++ When all sides have been entered press the `Esc` key twice to exit. You will then be asked whether or not you would like to View or Print the Selections. If Yes continue as follows:
++    + **Output** - Select the type of output.
++    + **E-Mail Report** - Select whether to email the forms.
++    + **E-Mail Address** - The email address(es), comma separated, to email the forms to.
++
++Assessment Forms
++++++++++++++++++
++Use this routine to print assessment forms as follows:
++
+++ **Format Code** - The applicable league format code.
+++ **Type** - Select the type of match, Fixture or Practice.
+++ **Match Date** - Enter the match date to print.
++
++Declaration Forms
+++++++++++++++++++
++Use this routine to print declaration forms as follows:
++
+++ **Format Code** - The applicable league format code.
+++ **Match Date** - Enter the match date to print.
++
++Capture Assessments
+++++++++++++++++++++
++Use this routine to capture completed assessment forms as follows:
++
+++ **Format Code** - The applicable league format code.
+++ **Type** - Select the type of match, Fixture or Practice.
+++ **Match Date** -  Enter the match date to capture.
+++ **Number of Forms** - The number of forms per team.
+++ For each completed form enter the following.
++    * **Skp** - The skip's tab code.
++    * **Plr** - If capturing 4 forms per team enter the player's tab code.
++    * **SF** - The number of shots the team scored.
++    * **SA** - The number of shots the opposition scored.
++    * **4** - The skip's rating.
++    * **3** - The third's rating.
++    * **2** - The second's rating.
++    * **1** - The lead's rating.
++    * **Remarks** - Any remarks.
++
++Match Assessment Report
+++++++++++++++++++++++++
++Use this routine to print a match assessment reports as follows:
++
+++ **Format Code** - The applicable league format code.
+++ **Type** - Select the type of match, Fixture or Practice.
+++ **Match Date** - Enter the match date to print.
++
++Assessment Summary
++++++++++++++++++++
++Use this routine to print an assessment summary as follows:
++
+++ **Format Code** - The applicable league format code.
+++ **Type** - Select the type of match, Fixture or Practice.
+++ **First Round Date** - Enter the date that the first round of the season was played.
++
++Club Competitions
++.................
++Capture Entries
+++++++++++++++++
++Use this routine to capture entries in a competition as follows:
++
+++ **Competition Code** - The relevant competition number or zero for the next available number.
+++ **Competition Name** - The name of the competition.
+++ **Date** - The starting date of the competition.
+++ **Type** - The competition type as created in `Competition Types`_.
++
++Enter the Skip's Codes
++
+++ **Skp** - The skip's code as created in `Player's Maintenance`_ or you can enter a zero to enter a new player as per `Player's Maintenance`_.
+++ **Ptr** - The partner's code, in the case of pairs, as created in `Player's Maintenance`_ or you can enter a zero to enter a new player as per `Player's Maintenance`_.
+++ **P** - Whether or not the skip has paid, Y or N.
++
++Print Match Cards
+++++++++++++++++++
++Use this routine to create a draw and to print match cards as follows:
++
+++ **Competition Code** - The relevant competition code.
+++ **Game Number** - The relevant game number.
+++ **Game Date** - The date of the game.
+++ **Number of Groups** - The number of groups, if applicable, to split the players into.
+++ **Greens** - The greens to be used, comma separated e.g. A,B,C
+++ **Group per Green** - Whether to allocate greens to groups. This only applies to the final game.
+++ **Print Cards** - Whether or not to print score cards.
+++ **All Cards** - If cards were selected to be printed, whether to print all cards or only a select few.
+++ **Template Name** - The template to use for the cards.
+++ **Output** - Whether to view the reports or simply print them.
+++ **Printer Name** - The printer to use for printing.
++
++Print Cards Summary
+++++++++++++++++++++
++Use this routine to print a summary of all draws to date.
++
++Change Match Cards
++++++++++++++++++++
++Use this routine to change individual match cards. After changing the cards you must reprint them as per `Print Match Cards`_. Please note that to only reprint certain cards you must select `All Cards No`.
++
+++ **Competition Code** - The relevant competition code.
+++ **Game Number** - The relevant game number.
+++ **Greens** - The available greens comma separated e.g. A,B,C
++    + **SKC** - The skip's code.
++    + **OPP** - The opposition's code.
++    + **GR** - The rink number e.g. A1
++
++Capture Results
+++++++++++++++++
++Use this routine to capture completed matches as follows:
++
+++ **Competition Code** - The relevant competition code.
+++ **Game Number** - The relevant game number.
+++ **Ends Completed** - The number of ends completed. Enter a zero to abandon a game.
++    + **SKC** - The skip's code.
++    + **SF** - Shots scored by the skip's side.
++    + **Pnts** - Points scored by the skip's side.
++    + **OPP** - The opposition's code.
++    + **SA** - Shots scored by the opposing side.
++    + **Pnts** - Points scored by the opposing side.
++
++Print Game Results
++++++++++++++++++++
++Use this routine to print game results as follows:
++
+++ **Competition Code** - The relevant competition code.
+++ **Game Number** - The relevant game number.
++
++Print Match Results
+++++++++++++++++++++
++Use this routine to print the match results as follows:
++
+++ **Competition Code** - The relevant competition code.
+++ **Last Game** - The last game to take into account.
+++ **Session Prizes by Group** - Whether session prizes are to be awarded by group or overall.
++
++Prizes by Group or the Match if not Grouped
++
+++ **Number Prizes** - The number of prizes being awarded.
+++ **EFT Forms** - Whether to print EFT Forms in which case you will be required to enter the total value of each prize.
++
++Contact Request Forms
+++++++++++++++++++++++
++Use this routine to print forms with player's missing contact details.
++
++Toolbox
++.......
++Change Tab Numbers
++++++++++++++++++++
++Use this routine to change Tab numbers.
++
+++ **Old Tab** - The old tab number
+++ **New Tab** - The new tab number
++
++The **Generate** button is used to automatically renumber tabs in surname and names sequence.
++
++Change Player's Codes
+++++++++++++++++++++++
++Use this routine to change player's codes.
++
+++ **Old Code** - The old code
+++ **New Code** - The new code
++
++The **Generate** button is used to automatically generate new codes in surname and names order.
++
++Clear League History
++++++++++++++++++++++
++Use this routine to erase all previous selection data as well as selectively erasing player and opponent details. Please ensure that you have a **backup** before selecting this routine as there is no going back.
++
+++ **Clear Players** - Select whether or not to also erase all player's details.
+++ **Clear Opponents** - Select whether or not to also erase all opponent's details.
++
++.. raw:: pdf
++
++    PageBreak
++
++Creditor's Ledger
++~~~~~~~~~~~~~~~~~
++File Maintenance (CR)
++.....................
++Control Record (CR)
+++++++++++++++++++++
++Use this routine to create and amend the creditor's control record.
++
+++ **G/L Integration** - Whether or not to integrate with the general ledger.
+++ **G/L Input Method** - Whether allocations to general ledger accounts are entered inclusive or exclusive of V.A.T.
+++ **Best Account Code** - The Standard Bank account code.
+++ **Best Account Type** - The Standard Bank account type.
+++ **Bank Account Code** - The Standard bank account code.
+++ **Remittance Template** - The remittance advice template.
++
++Masterfile Records (CR)
+++++++++++++++++++++++++
++Use this routine to create or amend creditor's ledger account records. You can import records by selecting the `Import` button in which case the file to be imported must be in `csv` or `xls` format and must contain all the fields as listed below. If the `Account Number` field is left blank an account number will be generated using the `Name` field.
++
+++ **Acc-Num** - The account number.
+++ **Name** - The account name.
+++ **Address Line 1** - The first line of the postal address.
+++ **Address Line 2** - The second line of the postal address.
+++ **Address Line 3** - The second line of the postal address.
+++ **Postal Code** - The postal code.
+++ **Telephone Number** - The telephone number.
+++ **Fax Number** - The facsimile number.
+++ **Manager's Name** - The manager's name.
+++ **Manager's Email** - The manager's email address.
+++ **Account's Contact** - The account's contact name.
+++ **Account's E-mail** - The account's contact email address.
+++ **Order's Contact** - The order's contact name.
+++ **Order's E-mail** - The order's contact email address.
+++ **Date Account Opened** - The date the account was opened.
+++ **V.A.T. Number** - The creditor's V.A.T. number.
+++ **Terms Base** - The terms base, Monthly or Daily.
+++ **Statement Day** - The day the creditor closes their month.
+++ **Terms** - The number of days the creditor allows us.
+++ **Credit Limit** - Our credit limit with the creditor.
+++ **Trade Discount** - Out normal trade discount.
+++ **Settlement Discount** - Out normal settlement discount.
+++ **Payment Indicator** - Whether or not the creditors must be paid.
+++ **Bank Name** - The creditor's bank.
+++ **Bank Branch** - The creditor's bank branch code.
+++ **Bank Account** - The creditor's bank account number.
+++ **G/L Account Number** - The default general ledger account for purchases.
++
++Data Capture (CR)
++.................
++Purchases, Journals and Credit Notes (CR)
+++++++++++++++++++++++++++++++++++++++++++
++These data capture routines are similar in operation and therefore I will handle them together.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
++
+++ **Transaction**
++    + **Acc-Num** - The creditor's account number.
++    + **Reference** - The transaction reference number.
++    + **Date** - The date of the transaction.
++    + **Amount** - The total amount of the transaction.
++    + **Details** - The details of the transaction.
++    + You might now be required to age the transaction using `Ageing Transactions`_.
+++ **Allocation** - This screen only applies if integrated with the G/L.
++    + **Coy** - The company number.
++    + **Acc-Num** - The G/L account number.
++    + **V** - The V.A.T. code.
++    + **Exc-Amount** - The exclusive amount of the allocation.
++    + **V.A.T.** - The V.A.T. amount of the allocation.
++    + **Details** - The details of the allocation.
++    + Continue allocating the transaction until fully allocated.
++
++Receipts and Payments (CR)
++++++++++++++++++++++++++++
++These data capture routines are similar in operation and therefore I will handle them together.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screen and fields apply:
++
+++ **Transaction**
++    + **Acc-Num** - The creditor's account number.
++    + **Reference** - The transaction reference number.
++    + **Date** - The date of the transaction.
++    + **Amount** - The total amount of the transaction.
++    + **Discount** - Any settlement discount.
++    + **Details** - The details of the transaction.
++    + You might now be required to age the transaction using `Ageing Transactions`_.
++
++Reporting (CR)
++..............
++Batch Error Listing (CR)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (CR)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Due For Payment Listing (CR)
++++++++++++++++++++++++++++++
++Use this routine to produce a listing of creditor's due to be paid at a specific cut off date,
++
++Outstanding Transactions (CR)
+++++++++++++++++++++++++++++++
++Use this routine to produce a report of outstanding transactions by creditor.
++
++Age Analysis (CR)
+++++++++++++++++++
++Use this routine to produce a creditor's age analysis.
++
++Master Listing (CR)
+++++++++++++++++++++
++Use this routine to produce a creditor's master listing.
++
++Reconciliation Statements (CR)
++++++++++++++++++++++++++++++++
++Use this routine to produce creditor's reconciliation statements. These statements are useful in reconciling with creditor's statements.
++
++Remittance Advices (CR)
+++++++++++++++++++++++++
++Use this routine to produce creditor's remittance advices.
++
+++ **Template Name** - The name of the template to use.
+++ **Whole File** - Select the accounts to print.
+++ **From Account** - If Range was selected enter the starting account code.
+++ **To   Account** - If Range was selected enter the ending account code.
+++ **Sort Order** - Select the sorting order.
+++ **Terms Base** - Select either monthly or daily terms base.
+++ **Exceptions** - Select Yes to enter exceptions i.e. add, edit or exclude various transactions.
+++ **Due Date** - The due date to be used for the cut-off.
+++ **Payment Date** - The date the payment is to be made.
++
++In the case of Exceptions:
++
+++ **Account Number** - The relevant creditor's account number.
+++ **TT** - The transaction type.
+++ **Reference** - The transaction's reference number.
+++ **P** - Y to pay the transaction else N.
+++ **Pay-Date** - The date the transaction becomes payable.
+++ **Pay-Amount** - The amount to be paid.
+++
++
++Name and Address Labels (CR)
++++++++++++++++++++++++++++++
++Use this routine to produce creditor's name and address labels.
++
++Notes Listing (CR)
++++++++++++++++++++
++Use this routine to print any notes on the creditor's ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Purchase History (CR)
+++++++++++++++++++++++
++Use this routine to produce a purchase history report by creditor.
++
++Toolbox (CR)
++............
++Change Account Numbers (CR)
+++++++++++++++++++++++++++++
++Use this routine to change account numbers.
++
++Transaction Reallocations (CR)
++++++++++++++++++++++++++++++++
++Use this routine to reallocate and age transactions.
++
++Interrogation (CR)
++..................
++This routine is for querying individual creditor's ledger accounts.
++
++.. raw:: pdf
++
++    PageBreak
++
++Debtor's Ledger
++~~~~~~~~~~~~~~~
++File Maintenance (DR)
++.....................
++Control Record (DR)
+++++++++++++++++++++
++Use this routine to create and amend the debtor's control record.
++
++Chain Stores (DR)
+++++++++++++++++++
++Use this routine to create, amend or delete chain store records.
++
++Business Activities (DR)
++++++++++++++++++++++++++
++Use this routine to create, amend or delete business activity records.
++
++Business Types (DR)
+++++++++++++++++++++
++Use this routine to create, amend or delete business type records.
++
++Areas (DR)
++++++++++++
++Use this routine to create, amend or delete area records.
++
++Salesmen (DR)
+++++++++++++++
++Use this routine to create, amend or delete salesman's records.
++
++Delivery Addresses (DR)
+++++++++++++++++++++++++
++Use this routine to create, amend or delete delivery address records.
++
++Messages (DR)
+++++++++++++++
++Use this routine to create, amend or delete message records. These records are used by `Statements (DR)`_ or `Sales Document`_.
++
++Masterfile Records (DR)
+++++++++++++++++++++++++
++Use this routine to create or amend debtor's ledger account records. You can import records by selecting the `Import` button in which case the file to be imported must be in `csv` or `xls` format and must contain all the fields as listed below. If the `Account Number` field is left blank an account number will be generated using the `Name` field.
++
+++ **Chn-Num** - The chain store number.
+++ **Acc-Num** - The account number.
+++ **Name** - The account name.
+++ **Address Line 1** - The first line of the postal address.
+++ **Address Line 2** - The second line of the postal address.
+++ **Address Line 3** - The second line of the postal address.
+++ **Postal Code** - The postal code.
+++ **Telephone Number** - The telephone number.
+++ **Fax Number** - The facsimile number.
+++ **Manager** - The manager's name.
+++ **Manager Email** - The manager's email address.
+++ **Accounts** - The account's contact name.
+++ **Accounts E-mail** - The account's contact email address.
+++ **Sales Contact** - The buyer's contact name.
+++ **Sales E-mail** - The buyer's contact email address.
+++ **Date Opened** - The date the account was opened.
+++ **Date Registered** - The date the account was registered.
+++ **V.A.T. Number** - The creditor's V.A.T. number.
+++ **Delivery Code** - The delivery address code.
+++ **Area** - The area code.
+++ **Business Activity** - The business activity code.
+++ **Business Type** - The business type code.
+++ **Price Level** - The price level for this account.
+++ **Discount Percentage** - The sale's discount enjoyed by this account.
+++ **Interest Percentage** - The interest charged on overdue balances.
+++ **Referral Terms** - The maximum terms, in days, before referral.
+++ **Rejected Terms** - The maximum terms, in days, before rejection.
+++ **Credit Limit** - The credit limit.
+++ **Stop Indicator** - A flag to stop all access to this account.
+++ **Invoice Message** - The code of the message to print on invoices.
+++ **Statement Message** - The code of the message to print on statements.
+++ **Credit Rating** - The accounts rating (N/G/F/B).
++
++Recurring Charges Records (DR)
++++++++++++++++++++++++++++++++
++Use this routine to create recurring charges records. These are charges which occur periodically e.g. rent, levies etc.
++
+++ **Header**
++    + **Number** - A sequential number of the charge record.
++    + **Description** - The description of the charge.
++    + **Frequency** - How often the charge is to be raised.
++    + **Day of the Month** - When the charge must be raised.
++    + **Charge Account** - The G/L account to be credited if integrated.
++    + **VAT Code** - The V.A.T. code.
+++ **Body**
++    + **Seq** - A sequential number of the entry.
++    + **Chn** - The debtor's chain store code, if applicable.
++    + **Acc-Num** - The debtor's account number.
++    + **Charge Details** - A further description of the charge for the debtor.
++    + **Excl-Value** - The exclusive value of the charge for the debtor.
++    + **Start** - The starting period of the charge for the debtor.
++    + **End** - The ending period of the charge for the debtor.
++    + Continue entering until all applicable charges have been entered.
++
++Data Capture (DR)
++.................
++Sales, Journals and Credit Notes (CR)
+++++++++++++++++++++++++++++++++++++++
++These data capture routines are similar in operation and therefore I will handle them together.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
++
+++ **Transaction**
++    + **Chn** - The debtor's chain store code, if applicable.
++    + **Acc-Num** - The debtor's account number.
++    + **Reference** - The transaction reference number.
++    + **Date** - The date of the transaction.
++    + **Amount** - The total amount of the transaction.
++    + **Details** - The details of the transaction.
++    + You might now be required to age the transaction using `Ageing Transactions`_.
++
+++ **Allocation** - This screen only applies if integrated with the G/L.
++    + **Coy** - The company number.
++    + **Acc-Num** - The G/L account number.
++    + **V** - The V.A.T. code.
++    + **Exc-Amount** - The exclusive amount of the allocation.
++    + **V.A.T.** - The V.A.T. amount of the allocation.
++    + **Details** - The details of the allocation.
++    + Continue allocating the transaction until fully allocated.
++
++Receipts (DR)
+++++++++++++++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
++
+++ **Deposit**
++    + **Reference** - The deposit reference number.
++    + **Date** - The date of the deposit.
++    + **Amount** - The total amount of the deposit.
++    + **Details** - The details of the deposit.
+++ **Allocation**
++    + **Coy** - The company number.
++    + **Chn** - The debtor's chain store code, if applicable.
++    + **Acc-Num** - The debtor's account number.
++    + **Receipt** - The amount for this debtor.
++    + **Discount** - Any discount allowed.
++    + You might now be required to age the transaction using `Ageing Transactions`_.
++    + Continue allocating the deposit until fully allocated.
++
++Payments (DR)
+++++++++++++++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screen and fields apply:
++
+++ **Transaction**
++    + **Chn** - The debtor's chain store code, if applicable.
++    + **Acc-Num** - The debtor's account number.
++    + **Reference** - The transaction reference number.
++    + **Date** - The date of the transaction.
++    + **Amount** - The total amount of the transaction.
++    + **Discount** - Any settlement discount.
++    + **Details** - The details of the transaction.
++    + You might now be required to age the transaction using `Ageing Transactions`_.
++
++Recurring Charges (DR)
++++++++++++++++++++++++
++Use this routine to raise recurring charges as created using `Recurring Charges Records (DR)`_.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screen and fields apply:
++
+++ **Frequency** - The frequency of the charges to be raised.
+++ **All Charges** - Whether or not all charges for the selected frequency must be raised.
+++ **2nd Reference** - A second reference number for the charges.
++
++If you selected `No` to `All Charges` a list of available charges will be displayed and you will able to mark the ones to raise.
++
++Reporting (DR)
++..............
++Chain Stores Listing (DR)
+++++++++++++++++++++++++++
++Use this routine to produce a listing of chain stores.
++
++Areas Listing (DR)
++++++++++++++++++++
++Use this routine to produce a listing of areas.
++
++Salesmen Listing (DR)
+++++++++++++++++++++++
++Use this routine to produce a listing of salesmen.
++
++Delivery Address Listing (DR)
+++++++++++++++++++++++++++++++
++Use this routine to produce a listing of delivery addresses.
++
++Messages Listing (DR)
+++++++++++++++++++++++
++Use this routine to produce a listing of invoice and statement messages.
++
++Batch Error Listing (DR)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (DR)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Due for Payment Listing (DR)
++++++++++++++++++++++++++++++
++Use this routine to produce a listing of debtor's due to pay at a specific cut off date,
++
++Outstanding Transactions (DR)
+++++++++++++++++++++++++++++++
++Use this routine to produce a report of outstanding transactions by debtor.
++
++Age Analysis (DR)
+++++++++++++++++++
++Use this routine to produce a debtor's age analysis.
++
++Master Listing (DR)
+++++++++++++++++++++
++Use this routine to produce a debtor's master listing.
++
++Statements (DR)
+++++++++++++++++
++Use this routine to produce debtor's statements.
++
++Name and Address Labels (DR)
++++++++++++++++++++++++++++++
++Use this routine to produce debtor's name and address labels.
++
++Notes Listing (DR)
++++++++++++++++++++
++Use this routine to print any notes on the debtor's ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Sales History (DR)
++++++++++++++++++++
++Use this routine to produce a sales history report by debtor.
++
++Toolbox (DR)
++............
++Change Account Numbers (DR)
+++++++++++++++++++++++++++++
++Use this routine to change account numbers.
++
++Transaction Reallocations (DR)
++++++++++++++++++++++++++++++++
++Use this routine to reallocate and age transactions.
++
++Interrogation (DR)
++..................
++This routine is for querying individual debtor's accounts.
++
++.. raw:: pdf
++
++    PageBreak
++
++Member's Ledger
++~~~~~~~~~~~~~~~
++File Maintenance (ML)
++.....................
++Control Record (ML)
+++++++++++++++++++++
++This routine is used to create or amend a member's ledger control record.
++
+++ **G/L Integration** - Whether or not to integrate with the general ledger.
+++ **Bonus Days** - The number of days leeway for for raising charges.
+++ **Last Month End** - The date the last month end was performed.
+++ **Photo's Path** - Where the members photographs are stored.
+++ **Access Control** - Whether or not to integrate with an access control system.
+++ **Access Host** - The name of the server running the system.
+++ **Access Database** - The database name of the system.
+++ **Access Username** - The user's name to access the system.
+++ **Access Password** - The user's password to access the system.
++
++Category Records
++++++++++++++++++
++This routine is used to create or amend membership category records.
++
+++ **Category Type** - Select the type of category record.
++
++    + **Fees** - Used for once off charges e.g. Entrance Fee.
++    + **Category** - Used for main membership category e.g. Full member.
++    + **Sports** - - Used for sub categories e.g. Bowls, Tennis etc.
++    + **Debentures** - Used for debenture holders.
++
+++ **Code** - A numeric code for the category.
+++ **Description** - The category's description.
+++ **Report Group** - This is used for sports categories only and is a method to group various categories together for reporting purposes.
+++ **Frequency** - How often the charge must be repeated.
+++ **Limits** - The following three conditions determine when a member's category might change.
++
++    + **Age Limit** - The maximum age limit for the category or 0 for none.
++    + **And Mship** - The number of years membership the age limit also depends on or 0 for none.
++    + **Or Mship** - Or the number of years membership which qualifies or 0 for none.
++
+++ **Next Code** - The category code the member will progress to when the limit conditions have been met.
+++ **G/L Account Number** - If integrated with the general ledger, the account to be credited with the charges raised.
+++ **Effective Date** - The date the following rates become effective. Every time a new date is entered a new record is created.
+++ **Penalty Rate** - The rate that penalties will be charged on overdue fees.
+++ **Pro-Rata** - Whether or not the fees are to be pro-rata'd based on months till anniversary. This can be either No, the number of months to skip or Manual.
+++ **Month 1-12** - The V.A.T. inclusive fee to be raised. In the case of manual pro-rata, you must calculate the various splits manually.
++
++Message Records
+++++++++++++++++
++Use this routine to create, amend or delete message records. These records are used by `Statements (ML)`_.
++
++Contact Records
+++++++++++++++++
++Use this routine to create, amend or delete message records. These records are used to parameterise the contact details of members.
++
+++ **Code** - Numeric code.
+++ **Contact Type (E,F,M,T)** - The type of contact code i.e. E-mail, Fax, Mobile or Telephone.
+++ **Contact Description** - The description on the contact code.
++
++Data Capture
++............
++For all data capture routines first enter the batch details using `Batch Details`_.
++
++Invoices
++++++++++
++For each invoice enter the following fields:
++
+++ **Mem-No** - The membership number.
+++ **Reference** - The invoice number.
+++ **Date** - The date of the invoice.
+++ **Amount** - The inclusive total of the invoice.
++
++If not integrated with the general ledger enter these two additional fields:
++
+++ **V** - The applicable V.A.T. code.
+++ **V.A.T.** - The applicable V.A.T. amount.
++
++Then enter:
++
+++ **Details** - The detail summary of the invoice.
++
++If integrated with the general ledger enter these additional fields, on the next frame, for all allocations of the total amount.
++
+++ **Acc-Num** - The general ledger account number to allocate an amount to.
+++ **V** - The applicable V.A.T. code.
+++ **All-Amt** - The exclusive amount to be allocated to this account.
+++ **Details** - The details of this allocation.
++
++Payments
++++++++++
++For each payment enter the following fields:
++
+++ **Mem-No** - The membership number.
+++ **Reference** - The payment number.
+++ **Date** - The date of the payment.
+++ **Amount** - The amount of the payment.
+++ **Discount** - The discount amount.
+++ **Details** - The details of the payment.
+++ Age the payment using `Ageing Transactions`_.
++
++Journals
++++++++++
++For each journal enter enter all fields as per `Invoices`_ above except that you will have to age the journal using `Ageing Transactions`_ after the first *Details* field.
++
++Credit Note's
+++++++++++++++
++For each credit note enter all fields as per `Invoices`_ above except that you will have to age the credit note using `Ageing Transactions`_ after the first *Details* field.
++
++Receipts
++++++++++
++For each receipt or deposit slip enter the following:
++
+++ **Reference** - The receipt or deposit slip number.
+++ **Date** - The date of the receipt or deposit.
+++ **Amount** - The total amount of the receipt or deposit.
+++ **Details** - The details of the receipt or deposit.
++
++For each receipt enter the following until the total of the receipt or deposit has been captured.
++
+++ **Mem-No** - The membership number.
+++ **Receipt** - The receipt amount for this member.
+++ **Discount** - The discount amount for this member.
+++ Age the receipt using `Ageing Transactions`_.
++
++Reporting
++.........
++Batch Error Listing (ML)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (ML)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Age Analysis
++++++++++++++
++Use this routine to print an aged analysis of all member's accounts.
++
+++ **Cut Off Period** - The last period to include in the report.
+++ **Status** - The member's status to filter the report.
+++ **Category** - The membership category to further filter the report.
+++ **Code** - The category code, 0 for all, to further filter the report.
+++ **Totals Only** - Yes or No.
+++ **Sort Order** - Sort by membership number or surname.
+++ **First Member Number** - To only print a selected range of members.
+++ **Last Member Number** - To only print a selected range of members.
+++ **Lower Balance Limit** - To exclude all members whose outstanding balance is less than this amount.
+++ **Include Credit Balances** - Whether to include members with credit balances.
+++ **Ignore Zero Balances** - Whether to include members with zero balances.
++
++Statements (ML)
+++++++++++++++++
++Use this routine to print or email member's statements.
++
+++ **Status** - The membership status to filter the report.
+++ **Whole File** - Select to print all statements, a range of statements, individual statements, statements without email addresses or statements with email addresses only.
+++ **Member Start** - If printing a range enter the starting membership number.
+++ **End** - If printing a range enter the ending membership number.
+++ **Zero Balances** - Whether to print statements for paid up accounts.
+++ **Minus Balances** - Whether to print statements for accounts in credit.
+++ **Message Number** - The number of a message to print on the statement.
+++ **Statement Date** - The date of the statement, normally the end of a month.
+++ **Sort Order** - Sort by membership number or surname.
++
++Notes Listing (ML)
++++++++++++++++++++
++Use this routine to print any notes on the member's ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Category Changes
++++++++++++++++++
++Use this report to print any membership category changes.
++
+++ **Report Type** - Actual or pending changes.
+++ **Starting Date** - The starting date of the changes.
+++ **Ending Date** - The ending date of the changes.
+++ **Change Type** - The type of change to print or all.
+++ **Category** - The membership category to print or all.
+++ **Code** - The code of the selected category or all.
++
++Master Report
+++++++++++++++
++Use this report to print a selective master list of members.
++
+++ **Report Date** - The date of the report.
+++ **Status** - The member's status to filter the report.
+++ **Category** - The membership category to further filter the report.
+++ **Report Group** - The report group for sports categories.
+++ **Code** - The category code, 0 for all if no report group specified, to further filter the report.
+++ **Gender** - All, male or female.
+++ **Sort Order** - Sort by membership number or surname.
+++ **From Entry** - Include members who joined on or after this date.
+++ **To Entry** - Include members who joined on or before this date.
+++ **From Status** - If a status was selected include members who's status was effective on or after this date.
+++ **To Status** - If a status was selected include members who's status was effective on or before this date.
+++ Once you have selected the output options you will be able to select what data you would like on your report.
++
++Suspension Report
+++++++++++++++++++
++Use this report to print a list of potential suspensions due to non payment.
++
+++ **Sort Order** - Sort by membership number or surname.
+++ **Include Pay Plan** - Include members who have arranged terms.
++
++Update Details Request
++++++++++++++++++++++++
++Use this report to email requests to all members to update their details.
++
+++ **Category** - The membership category to further filter the report.
+++ **Code** - The category code, 0 for all.
+++ **First Member Number** - To only print a selected range of members.
+++ **Last Member Number** - To only print a selected range of members.
++
++Birthday Report
+++++++++++++++++
++Use this report to print a list of members whose birthday falls between two dates.
++
+++ **Category** - The membership category to further filter the report.
+++ **Code** - The category code, 0 for all.
+++ **Sort Order** - Sort by membership number or surname.
+++ **From Date** - Include members who's birthday is on or after this date.
+++ **To Date** - Include members who's birthday is on or before this date.
++
++Name and Address Labels
+++++++++++++++++++++++++
++Use this report to print name and address labels.
++
++* **Status** - The member's status to filter the report.
++* **Category** - The membership category to further filter the report.
++* **Code** - The category code, 0 for all.
++* **Sort Order** - Sort by membership number or surname or postal code.
++* **Avery A4 Code** - The Avery code for the label being used. At this stage only L7159, (3x8), is supported.
++* **First Label Position** - The first available blank label, 1-24.
++
++Toolbox
++.......
++Transaction Reallocations
+++++++++++++++++++++++++++
++Synchronise Access Control
++++++++++++++++++++++++++++
++
++Member Records
++..............
++Use this routine to create, edit and interrogate member's records.
++
++New Records
+++++++++++++
++Click on the **New** button to create a new member's record and then enter all relevant fields on all the available pages:
++
+++ **Personal**
+++ **Addresses**
+++ **Contacts**
+++ **Categories**
+++ **Links**
++
++Once all available data has been entered click on the **Update** button to create the new record or the **Reset** button to exit without creating the record.
++
++Edit Records
++++++++++++++
++Enter a valid membership number followed by the Enter key. All details of the member will be displayed. Click on the **Edit** button to edit the member's record. Once all details have been altered click on the **Update** button to update the record or the **Reset** button to exit without updating the record.
++
++Month End Routine
++.................
++This routine must be run at the end of each and every month as it is the routine which raises charges and controls membership categories.
++
+++ **This Month End Date** - The last day of the relevant month. If it is the financial year end you will be asked for confirmation.
+++ **Raise Penalties** - Whether or not to raise penalties on overdue amounts.
+++ **Cut-off Date** - The cut-off date for raising penalties.
++
++You will be asked whether you want to print certain reports and finally whether you want to save all entries. Please read the relevant questions and answer appropriately. Please note that if you do not save the entries it will be as if the month end was never run.
++
++.. raw:: pdf
++
++    PageBreak
++
++Rental's Ledger (Standard)
++~~~~~~~~~~~~~~~~~~~~~~~~~~
++File Maintenance (RT)
++.....................
++Control Record (RT)
+++++++++++++++++++++
++This routine is used to create or amend a member's ledger control record.
++
+++ **G/L Integration** - Whether or not to integrate with the general ledger.
+++ **Last Month End** - The date of the last month end.
+++ **Statement Template** - The template to use for statements.
++
++Premises Records (RT)
+++++++++++++++++++++++
++This routine is used to create or amend premises records.
++
+++ **Premises Code** - A 7 character alphanumeric code.
+++ **Description** - The description of the premises.
+++ **Address Line 1-3** - The address of the premises.
+++ **Postal Code** - The postal code.
+++ **Rental Account** - If integrated with the general ledger this would be the control account.
+++ **Income Account** - If integrated with the general ledger this would be the account to be credited with rentals raised.
++
++Masterfile Records (RT)
+++++++++++++++++++++++++
++This routine is used to create or amend tenants records.
++
+++ **Premises Code** - The premises code being rented.
+++ **Account Code** - A 7 character alphanumeric code for the tenant.
+++ **Tenant Name** - The name of the tenant.
+++ **Address Line 1-3** - The postal address of the tenant.
+++ **Postal Code** - The postal code.
+++ **Telephone Number** - The tenant's telephone number.
+++ **E-Mail Number** - The tenant's email address.
+++ **VAT Indicator** - The V.A.T. code.
+++ **VAT Number** - The tenant's V.A.T. number, if applicable.
+++ **Payment Frequency** - The frequency of rental payments.
+++ **Start Date** - The starting date of the lease.
+++ **Number of Periods** - The number of payment periods to run.
+++ **Rental Amount** - The period rental amount, V.A.T. exclusive.
+++ **Status** - The status of the lease.
++
++Data Capture (RT)
++.................
++Receipts
++++++++++
++This routine is used to capture receipts.
++
++Payments
++++++++++
++This routine is used to capture payments.
++
++Reporting (RT)
++..............
++Batch Error Listing (RT)
++++++++++++++++++++++++++
++This routine is used to produce a batch error listing.
++
++Transaction Audit Trail (RT)
++++++++++++++++++++++++++++++
++This routine is used to produce a transaction audit trail.
++
++Master Listing (RT)
+++++++++++++++++++++
++This routine is used to produce a master listing.
++
++Statements (RT)
+++++++++++++++++
++This routine is used to produce statements.
++
++Notes Listing (RT)
++++++++++++++++++++
++This routine is used to produce a tenant's note listing.
++
++Toolbox (RT)
++............
++Change Account Numbers
++++++++++++++++++++++++
++This routine is used to change account numbers.
++
++Interrogation (RT)
++..................
++This routine is used to interrogate records.
++
++Month End Routine (RT)
++......................
++This routine is used to close off a month and raise rentals for the following month.
++
++.. raw:: pdf
++
++    PageBreak
++
++Rental's Ledger (Extended)
++~~~~~~~~~~~~~~~~~~~~~~~~~~
++File Maintenance (RC)
++.....................
++Control Record (RC)
+++++++++++++++++++++
++This routine is used to create or amend a member's ledger control record.
++
+++ **G/L Integration** - Whether or not to integrate with the general ledger.
+++ **G/L Bank Account** - If integrated this is the primary bank ledger account number.
+++ **Last Month End** - The date of the last month end.
+++ **Owner Template** - The template to be used to print owner's statements.
+++ **Tenant Template** - The template to be used to print tenant's statements.
++
++Owners Records (RC)
+++++++++++++++++++++
++This routine is used to create or amend owner's records.
++
+++ **Account Number** - A 7 character alphanumeric code.
+++ **Name** - The name of the owner.
+++ **Address Line 1-3** - The postal address of the owner.
+++ **Postal Code** - The postal code.
+++ **Home Number** - The owner's home telephone number.
+++ **Office Number** - The owner's office telephone number.
+++ **Mobile Number** - The owner's mobile number.
+++ **Fax Number** - The owner's facsimile number.
+++ **E-Mail Address** - The owner's email address.
+++ **VAT Number** - The owner's v.a.t. registration number, if applicable.
+++ **VAT Default** - The default v.a.t. code applicable to the owner.
+++ **Bank Name** - The owner's bank name.
+++ **Bank Branch** - The owner's bank branch code.
+++ **Bank Account** - The owner's bank account number.
++
++Premises Records (RC)
+++++++++++++++++++++++
++This routine is used to create or amend premises records.
++
+++ **Owner Code** - The owner's account number.
+++ **Premises Code** - A 7 character alphanumeric code.
+++ **Description** - The description of the premises.
+++ **Address Line 1-3** - The address of the premises.
+++ **Postal Code** - The postal code.
+++ **Commission Rate** - The rate charged for managing these premises.
++
++Tenants Records (RC)
++++++++++++++++++++++
++This routine is used to create or amend tenant's records.
++
+++ **Owner Code** - The owner's account number.
+++ **Premises Code** - The premises code being rented.
+++ **Account Code** - A 7 character alphanumeric code for the tenant.
+++ **Tenant Name** - The name of the tenant.
+++ **Address Line 1-3** - The postal address of the tenant.
+++ **Postal Code** - The postal code.
+++ **Telephone Number** - The tenant's telephone number.
+++ **E-Mail Number** - The tenant's email address.
+++ **VAT Number** - The tenant's V.A.T. number, if applicable.
+++ **Payment Frequency** - The frequency of rental payments.
+++ **Start Date** - The starting date of the lease.
+++ **Number of Periods** - The number of payment periods to run.
+++ **Rental Amount** - The period rental amount, V.A.T. exclusive.
+++ **Deposit Amount** - The deposit amount.
+++ **Status** - The status of the lease.
++
++Statement Messages (RC)
+++++++++++++++++++++++++
++This routine is used to create or amend statement message records.
++
++Interest Rates (RC)
+++++++++++++++++++++
++This routine is used to create or amend interest rates used for calculating the value of deposits.
++
+++ **Date of Change** - The date the rate became effective.
+++ **Prime Rate** - The prime rate.
+++ **Bank Rate** - The bank's rate.
+++ **Comm Rate** - The rate of commission charged.
++
++Data Capture (RC)
++.................
++This routine is used to capture all transactions.
++
+++ **Prm-Cod** - The premises code foe which we are capturing transactions.
++
++Owner
+++++++
++
+++ **Acc-Num** - The owner's account number. This is automatically obtained from the premises record.
+++ **Reference** - The transaction reference number.
+++ **Date** - The transaction date.
+++ **T** - The transaction type i.e. receipt, payment or journal.
+++ **Amount** - The transaction amount.
+++ **V** - The v.a.t. code, if applicable.
+++ **V.A.T.** - The v.a.t. amount, if applicable.
+++ **Details** - The details of the transaction.
++
++Tenant
++++++++
++
+++ **Acc-Num** - The tenant's account number.
+++ **Seq** - The lease sequence number being dealt with.
+++ **Reference** - The transaction reference number.
+++ **Date** - The transaction date.
+++ **T** - The transaction type i.e. rental, receipt, payment or journal.
+++ **Amount** - The transaction amount.
+++ **Details** - The details of the transaction.
++
++Allocation
++++++++++++
++For all tenant transactions, excluding rentals raised, movement types must be allocated.
++
+++ **M** - The movement type i.e. rental, deposit, contract fee, services or repairs.
+++ **Amount** - The amount to be allocated to this allocation.
+++ **V** - The v.a.t. code, if applicable.
+++ **V.A.T.** - The v.a.t. amount, if applicable.
+++ **Details** - The details of the allocation.
++
++Reporting (RC)
++..............
++Owners Audit Trail (RC)
+++++++++++++++++++++++++
++This routine is used to produce an owner's transaction audit trail.
++
++Owners Master Listing (RC)
++++++++++++++++++++++++++++
++This routine is used to produce an owner's master listing.
++
++Owners Statements (RC)
++++++++++++++++++++++++
++This routine is used to produce owner's statements.
++
++Owners Notes Listing (RC)
+++++++++++++++++++++++++++
++This routine is used to produce an owner's note listing.
++
++Tenants Audit Trail (RC)
++++++++++++++++++++++++++
++This routine is used to produce a tenant's transaction audit trail.
++
++Tenants Master Listing (RC)
+++++++++++++++++++++++++++++
++This routine is used to produce a tenant's master listing.
++
++Tenants Statements (RC)
+++++++++++++++++++++++++
++This routine is used to produce tenant's statements.
++
++Tenants Notes Listing (RC)
++++++++++++++++++++++++++++
++This routine is used to produce a tenant's note listing.
++
++Tenants Deposit Listing (RC)
++++++++++++++++++++++++++++++
++This routine is used to produce a listing of deposits.
++
++Statement Messages
++++++++++++++++++++
++This routine is used to produce a listing of statement messages.
++
++Interrogation (RC)
++..................
++Owners Interrogation (RC)
+++++++++++++++++++++++++++
++This routine is used to interrogate owner's records.
++
++Tenants Interrogation (RC)
++++++++++++++++++++++++++++
++This routine is used to interrogate tenant's records.
++
++Toolbox (RC)
++............
++CSV Masterfile Importing
++++++++++++++++++++++++++
++This routine is used to import masterfile records from a comma separated file.
++
++CSV Transaction Importing
+++++++++++++++++++++++++++
++This routine is used to import transactions from a comma separated file.
++
++Check for Missing Records
+++++++++++++++++++++++++++
++This routine is used to check for missing records.
++
++Month End Routine (RC)
++......................
++This routine is used to close off a month and raise rentals for the following month.
++
++.. raw:: pdf
++
++    PageBreak
++
++Sales Invoicing
++~~~~~~~~~~~~~~~
++File Maintenance (SI)
++.....................
++Control Record (SI)
+++++++++++++++++++++
++Use this routine to create or amend the sales invoicing control record.
++
+++ **Address** - Which address to put on the sales documents.
+++ **Delivery Notes** - Whether to print delivery notes.
+++ **Print Values** - Whether to include values on delivery notes.
++
++Reporting (SI)
++..............
++Sales By Product (SI)
+++++++++++++++++++++++
++Use this routine to produce a sales by product report.
++
++Period Sales By Product (SI)
++++++++++++++++++++++++++++++
++Use this routine to sales by product by period report.
++
++Product Sales History (SI)
++++++++++++++++++++++++++++
++Use this routine to produce a product sales history report.
++
++Sales By Customer By Product (SI)
+++++++++++++++++++++++++++++++++++
++Use this routine to produce a product sales by customer report.
++
++Sales By Salesman (SI)
++++++++++++++++++++++++
++Use this routine to produce a product sales by salesman report.
++
++Salesman's Sales History (SI)
+++++++++++++++++++++++++++++++
++Use this routine to produce a salesman's sales history report.
++
++Data Capture (SI)
++.................
++Use this routine to produce sales documents.
++
++Date and Printer Selection
++++++++++++++++++++++++++++
++
+++ **Document Date** - This is the actual date of the invoices.
+++ **Delivery Notes** - Whether or not to print delivery notes.
+++ **Print Choice** - Select whether to print, view or simply store the invoices without printing.
+++ **Printer Name** - If printing was selected, this is the printer to use.
+++ **E-Mail** - Whether to email the invoices. This will be dependent on a valid email address on the debtor's record as well as a valid `SMTP Server` in the `System Record Maintenance`_.
++
++Sales Document
++++++++++++++++
++
+++ **Type** - The document type.
+++ **Mode** - The mode of payment. Cash invoices will automatically be debited to a debtor's account `CASHSLS`.
+++ **Acc-Num** - The account code for account mode.
+++ **Rep** - The salesman's code.
+++ **Level** - The price level for this customer. It will default to whatever is on the debtor's masterfile.
+++ **Grp** - The product group.
+++ **Product-Code** - The product code.
+++ **Description** - The product description and or details.
+++ **L** - The location from which this item is being sold from.
+++ **Quantity** - The quantity being sold.
+++ **V** - The value added tax code.
+++ **Price** - The inclusive or exclusive selling price depending on the method.
+++ **Dis-%** - The trade discount percentage.
+++ **Value** - The value of the sale. This is a display field only.
+++ **Available Buttons**
++    + **Cancel** - This button is for cancelling the current invoice.
++    + **DelAdd** - This button is for entering a delivery address.
++    + **Ribbon** - This button is for entering the ribbon line.
++    + **Messag** - This button is for including an invoice message.
++    + **Edit** - This button is for editing document lines.
++    + **Reprint** - This button is for reprinting documents.
++    + **DrsMaint** - This button is for creating new debtor's accounts.
++    + **DrsQuery** - This button is for interrogating a debtor.
++    + **StrMaint** - This button is for creating new store's accounts.
++    + **StrQuery** - This button is for interrogating a stores item.
++    + **Exit** - To exit the sales routine.
++    + **Accept** - This button is to accept and complete the document.
++
++.. raw:: pdf
++
++    PageBreak
++
++Store's Ledger
++~~~~~~~~~~~~~~
++File Maintenance (ST)
++.....................
++Control Record (ST)
+++++++++++++++++++++
++Use this routine to create and amend the store's control record.
++
++Units of Issue (ST)
+++++++++++++++++++++
++Use this routine to create, amend and delete units of issue records.
++
++Product Groups (ST)
+++++++++++++++++++++
++Use this routine to create, amend and delete product group records.
++
++Locations (ST)
++++++++++++++++
++Use this routine to create, amend and delete location records.
++
++Masterfile Records (ST)
+++++++++++++++++++++++++
++Use this routine to create, amend and delete store's ledger records.
++
++Selling Prices (ST)
+++++++++++++++++++++
++Use this routine to create and amend product selling prices.
++
++Data Capture (ST)
++.................
++Purchase Orders - Place (ST)
++++++++++++++++++++++++++++++
++Use this routine to place purchase orders against suppliers.
++
++Purchase Orders - Receive (ST)
++++++++++++++++++++++++++++++++
++Use this routine to receive purchase orders from suppliers.
++
++Goods Received Notes (ST)
+++++++++++++++++++++++++++
++Use this routine to receive goods into stock without purchase orders.
++
++Issues to General Ledger (ST)
+++++++++++++++++++++++++++++++
++Use this routine to issue stock directly to general ledger accounts.
++
++Location Transfers (ST)
+++++++++++++++++++++++++
++Use this routine to transfer stock from one location to another.
++
++Stock Take (ST)
++...............
++Stock Take Report (ST)
++++++++++++++++++++++++
++Use this routine to produce a stock take report. This report is used to facilitate counting physical stock.
++
++Stock Take Returns (ST)
+++++++++++++++++++++++++
++Use this routine to enter physical stock count quantities.
++
++Stock Take Variance Report (ST)
+++++++++++++++++++++++++++++++++
++Use this routine to produce a report of variances between the stock in the ledger as opposed to the stock counted.
++
++Stock Take Merge (ST)
+++++++++++++++++++++++
++Use this routine to create adjustments to the stock records to bring them in line with the actual stock counted.
++
++Reporting (ST)
++..............
++Units Of Issue Listing (ST)
+++++++++++++++++++++++++++++
++Use this routine to produce a list of all units of issue.
++
++Product Groups Listing (ST)
+++++++++++++++++++++++++++++
++Use this routine to produce a list of all product groups.
++
++Locations Listing (ST)
++++++++++++++++++++++++
++Use this routine to produce a list of all locations.
++
++Batch Error Listing (ST)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (ST)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Selling And Cost Price Listing (ST)
+++++++++++++++++++++++++++++++++++++
++Use this routine to produce a list of selected products' cost and selling prices.
++
++Master Code List (ST)
+++++++++++++++++++++++
++Use this routine to to produce a master list of products.
++
++Stock Movements (ST)
++++++++++++++++++++++
++Use this routine to produce a report of selected products' movements.
++
++Purchase Orders (ST)
++++++++++++++++++++++
++Use this routine to produce a report of purchase orders.
++
++Stock On Hand (ST)
++++++++++++++++++++
++Use this routine to produce a stock on hand report.
++
++Stock Accounts (ST)
+++++++++++++++++++++
++Use this routine to produce product statements showing opening balances and movements.
++
++Notes Listing (ST)
++++++++++++++++++++
++Use this routine to print any notes on the store's ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Price Tags (ST)
+++++++++++++++++
++Use this routine to produce price tags for products.
++
+++ **Reporting Date** - The report date.
+++ **Location** - The location code if applicable.
+++ **Product Group** - The product group or blank for all.
+++ **Product Code** - The product code or blank for all.
+++ **Item Types** - Either Normal, Recipe or All.
+++ **Value Indicator** - Either Yes, No or All.
+++ **Include Out of Stock** - Whether to include items with zero balances.
+++ **Cost Price Code** - The code to use for cost prices e.g. ABCDEFGHIJ representing 0123456789.
+++ **Avery A4 Code** - The code of the Avery label to use.
+++ **First Label Row** - The first available blank label row.
+++ **First Label Column** - The first available blank label column.
++
++Toolbox (ST)
++............
++Change Product Codes (ST)
+++++++++++++++++++++++++++
++Use this routine to change product codes.
++
++Revalue Stock Records (ST)
++++++++++++++++++++++++++++
++Use this routine to revalue stock records by average or last cost. It also provides for the zeroing of items with negative balances.
++
++Interrogation (ST)
++..................
++This routine is for querying individual Store's Ledger Accounts.
++
++.. raw:: pdf
++
++    PageBreak
++
++Salaries and Wages
++~~~~~~~~~~~~~~~~~~
++File Maintenance (WG)
++.....................
++Control Record (WG)
+++++++++++++++++++++
++Use this routine to create and amend the control record.
++
++Receiver Codes (WG)
+++++++++++++++++++++
++Use this routine to create and amend the receiver of revenue irp5 codes.
++
++Earning and Deduction Codes (WG)
++++++++++++++++++++++++++++++++++
++Use this routine to create and amend the earnings and deduction records.
++
++The following fields need more explanation:
++
+++ **Type** - E for Earning and D for Deduction.
+++ **Code** - The code's number. Certain earning codes are fixed i.e.
++    + 1 for Normal Pay
++    + 2-5 for Overtime Pay
+++ **Description** - The code's description.
+++ **Type** - The type of code.
++    + **Variable** - If the code is a fixed rate for all employees
++    + **Fixed** - If the code is different for each employee
+++ **Employee Portion** - Amount if the portion is a monetary value or Rate if the portion is a rate.
++    + **Base** - If you have indicated that the portion is a rate, you must now indicate the code of the base of the calculation, as follows:
++
++        + **1** - X \* Normal Rate of Pay * Factor
++        + **2** - Normal Pay * Factor
++        + **3** - Normal Pay * Factor / 100
++        + **4** - X \* Daily Rate of Pay * Factor
++        + **5** - X \* Hourly Rate of Pay * Factor
++        + **6** - U.I.F. Pay * Factor
++        + **Where:**
++            + **X** refers to a data captured period e.g. hours or days.
++            + **\*** indicates multiplication.
++            + **\/** indicates division
++            + **Factor** refers to the 'Amount' field below.
++
++        + **Amount** - The actual amount or rate to be used in the calculations.
++        + **Limit** - The maximum amount allowed e.g. U.I.F. - 116.62.
++        + **GL/Cono** - The General Ledger company number to be updated. This will take preference to the general ledger company number in the department record.
++        + **GL/Acno** - The general ledger account number to be updated. This will take preference to the general ledger account number in the department record.
++
+++ **Earnings Type** - Salary if the earning is a salary amount or Commission if the earning is a commission amount.
+++ **Employer Portion** - These are the same as for employee portion above.
+++ **Tax Code** - Indicates whether the earning is taxable or not and if so what type of to apply as follows:
++    + **Yes** - If the earning is taxable.
++    + **No** - If the earning is not taxable
++    + **Notional** - If the earning is only used in calculating the tax amount and is NOT in fact paid out as a salary
++    + **One Time** - If the earning is a One time payment and must be annualised, e.g. an annual bonus
++    + **Retrench** - If the earning is in respect of a retrenchment package.
+++ **Tax Portion** - If taxable or tax deductible, the portion to be taxed.
++
++    The following fields need more explanation:
++
+++ **Rec Of Rev Code** - This is the code assigned by the receiver of revenue for this type of earning or deduction.
+++ **Union Report** - Indicates whether the deduction must be included in a union report.
+++ **Must Pay** - Indicates whether the deduction must be made irrespective of what the period earnings are.
+++ **Balance Number** - This is used for a finite deduction e.g. If you want to deduct a total garnishee order of R1000 at a rate of R100 per month you would create a 'Garnishee' deduction record and enter a 1, 2 or 3 in this field. You would then edit the employee's record and under 'Balances' you would enter R1000 in the corresponding balance field. This deduction of R100 would then continue automatically until the full R1000 rand was deducted.
+++ **Hourly Limit** - Indicates that a deduction is only applicable if the number of normal hours worked in a period, is less than or equal to the amount in this field.
+++ **Monthly Deduction** - Indicates whether the deduction is to be deducted only once a month in the case of weekly or fortnightly paid employees.
++
++Union Records (WG)
++++++++++++++++++++
++Use this routine to create and amend the salary's and wage's union records.
++
++Payslip Messages (WG)
+++++++++++++++++++++++
++Use this routine to create and amend the payslip message records.
++
++PAYE Tables (WG)
++++++++++++++++++
++Use this routine to maintain PAYE tax rates.
++
+++ **Tax Year** - The applicable tax year.
+++ **Rebate - Primary** - The primary rebate amount.
+++ **Rebate - 65 and Older** - The 65-74 rebate amount.
+++ **Rebate - 75 and Older** - The 75 and older rebate amount.
+++ **Gratuity - Exemption** - The gratuity exemption amount.
+++ **SITE Limit** - The SITE limit, if applicable.
+++ **UIF Rates - Employee** - The employee's UIF rate.
+++ **UIF Rates - Employer** - The employer's UIF rate.
+++ **SDL Rates - Employee** - The employee's SDL rate.
+++ **SDL Rates - Employer** - The employer's SDL rate.
++
++The following columns refer to the basic tax rates:
++
+++ **Inc-Fr** - The starting income bracket e.g. 0.
+++ **Inc-To** - The ending income bracket e.g. 174550.
+++ **Tax-Amt** - The initial tax amount for the Inc-Fr column e.g. 0.
+++ **Rate** - The rate for the income up to the Inc-To column e.g. 18.00.
++
++Employee Masterfile (WG)
++++++++++++++++++++++++++
++Use this routine to create, amend or delete employee masterfile records.
++
+++ **Emp-Num** - The employee number.
+++ **Department** - The department number.
+++ **Class** - The class of employee.
+++ **General**
++    + **Surname**
++    + **Names**
++    + **Date of Birth**
++    + **ID Number**
++    + **Spouse Name**
++    + **Spouse ID Number**
++    + **Address Line 1**
++    + **Address Line 2**
++    + **Address Line 3**
++    + **Postal Code**
++    + **Telephone Number**
++    + **E-Mail Address**
++    + **Start Date**
++    + **Salary/Rate**
++    + **Pay Freq**
++    + **Pay Type**
+++ **Tax**
++    + **P.A.Y.E.**
++    + **Tax Office**
++    + **Tax Number**
++    + **Nature of Employee**
++    + **Reg Number**
++    + **Voluntary Excess**
++    + **Fixed Rate**
++    + **Directive**
+++ **Bank**
++    + **Account Type**
++    + **Bank Name**
++    + **Branch Code**
++    + **Account Number**
++    + **Account Holder's Name**
++    + **Holder's Relationship**
+++ **Earnings**
++    + **Cod** - The code of the earning to be automatically raised.
++    + **Amnt/Rate** - The value or rate of the earning to be raised.
+++ **Deductions**
++    + **Cod** - The code of the deduction to be automatically raised.
++    + **Amnt/Rate** - The value or rate of the employee's portion of the deduction to be raised.
++    + **Amnt/Rate** - The value or rate of the employer's portion of the deduction to be raised.
+++ **Balances**
++    + **Balance-1** - A balance to be deducted linked to the balance field in the deduction records.
++    + **Balance-2** - A 2nd balance to be deducted linked to the balance field in the deduction records.
++    + **Balance-3** - A 3rd balance to be deducted linked to the balance field in the deduction records.
++
++Data Capture (WG)
++.................
++Clock Cards (WG)
++++++++++++++++++
++Use this routine to capture daily, weekly or monthly clock cards.
++
+++ **EmpNo** - The employee's number.
+++ **JobNo** - A job number if applicable.
+++ **T** - The type of entry, either `E` for earning or `D` for deduction.
+++ **Cde** - The earning or deduction code.
+++ **P** - Whether or not to apply this earning or deduction.
+++ **Amount** - The quantity or value of the earning or deduction.
++
++Payslips (WG)
+++++++++++++++
++Use this routine to create weekly, fortnightly or monthly payslips.
++
+++ **Template Name** - The template to be used for payslips.
+++ **Pay-Run Date** - The actual pay-run date.
+++ **Payment Date** - The date on which payment will be made.
+++ **Message Code** - The message code to print on the payslips.
+++ **Frequency** - The frequency, weekly, fortnightly or monthly, to process.
+++ **Whole File** - The records to be processed. Either all records or individuals.
+++ **Department** - The department, if applicable, to process.
+++ **Ignore Standards** - Whether or not to ignore standard deductions.
+++ **Include Monthly** - Whether or not to include once-off monthly deductions in the case of weekly paid employees.
+++ **Exclude Minus Balances** - Whether or not to exclude payslips going into minus i.e. where the deductions exceed the earnings.
+++ **Preview Only** - Whether or not to only preview the payslips i.e. the payslips will not be saved and the accounts will not be updated.
++
++Terminations (WG)
+++++++++++++++++++
++Use this routine to capture employee terminations.
++
+++ **Employee Number** - The employee's number.
+++ **Termination Date** - The actual date of the termination.
++
++Reporting (WG)
++..............
++Receiver Codes Listing (WG)
+++++++++++++++++++++++++++++
++Use this routine to print the receiver of revenue irp5 codes.
++
+++ **Sort Order** - Select the print order of the codes.
++
++Earning and Deduction Codes (WG)
++++++++++++++++++++++++++++++++++
++Use this routine to print earnings and deduction details.
++
+++ **Report Type** - Select which codes to print.
+++ **Sort Order** - Select the print order of the codes.
++
++Union Records Listing (WG)
++++++++++++++++++++++++++++
++Use this routine to print a union report.
++
+++ **Sort Order** - Select the print order of the records.
++
++Payslip Messages Listing (WG)
+++++++++++++++++++++++++++++++
++Use this routine to print existing payslip messages.
++
++Employee Master Listing (WG)
++++++++++++++++++++++++++++++
++Use this routine to print an employee master listing.
++
+++ **Report Type** - Select the report format, either List or Card.
+++ **Department Code** - The department, if applicable, to print.
++
++Data Capture Listing (WG)
+++++++++++++++++++++++++++
++Use this routine to print clock cards captured.
++
+++ **Reporting Date** - The date of the report.
++
++SARS EMP201 Report (WG)
+++++++++++++++++++++++++
++Use this routine to print SARS EMP201 report.
++
+++ **Start Date** - The starting pay-run date to use for the report.
+++ **End Date** - The ending pay-run date to use for the report.
++
++Earning and Deduction Values (WG)
+++++++++++++++++++++++++++++++++++
++Use this routine to list all earnings and deductions for pay-runs.
++
+++ **Start Date** - The starting pay-run date to use for the report.
+++ **End Date** - The ending pay-run date to use for the report.
+++ **Type** - The type to print.
+++ **Code per Page** - Select whether to print each code on a separate page.
++
++IRP5 Statements (WG)
++++++++++++++++++++++
++Use this routine to print IRP5's and produce SARS import file.
++
+++ **Submission Type** - Select the type of submission.
+++ **Tax Year** - Enter the applicable tax year.
+++ **Cut Off Date** - The last pay-run date to take into affect.
+++ **Reprint** - Whether or not this is a reprint of a previous report.
+++ **Preview** - Whether or not this is only a preview.
+++ **Whole File** - Select the employees to process.
+++ **Include Other Companies** - Whether or not to include other companies in the report.
+++ **From Employee** - If range was selected above enter the first number of the range.
+++ **To Employee** - If range was selected above enter the last number of the range.
++
++Notes Listing (WG)
++++++++++++++++++++
++Use this routine to print notes.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Payslips Reprint (WG)
+++++++++++++++++++++++
++Use this routine to reprint payslips.
++
+++ **Template Name** - The template to be used for payslips.
+++ **Pay-Run Date** - The date of the pay-run to be reprinted.
+++ **Frequency** - The frequency of the pay-run to be reprinted.
+++ **Whole File** - The payslips to be printed. Either all payslips or individuals.
+++ **Department** - The department, if applicable, to print.
++
++Interrogation (WG)
++..................
++Use this routine to interrogate employee's details.
++
++.. raw:: pdf
++
++    PageBreak
++
++Staff Loans
++~~~~~~~~~~~
++File Maintenance (SL)
++.....................
++Loans Masterfile
++++++++++++++++++
++Use this routine to amend loan records.
++
++Data Capture (SL)
++.................
++New Loans
+++++++++++
++Use this routine to capture new or existing loans.
++
+++ **EmpNo** - The employee number.
+++ **Ln** -  This is automatically generated.
+++ **Description** - The description of the loan e.g. Study Loan
+++ **Date** - The date of the loan.
+++ **Ref-No** - The reference number of the loan.
+++ **Cde** - The salaries deduction code to use for repayments.
+++ **Intr-%** - The rate of interest to be charged on the loan.
+++ **Loan-Amt** - The capital amount of the loan.
+++ **Ded-Amt** - The amount to be deducted from earnings to repay the loan.
++
++Movements
+++++++++++
++Use this routine to capture movements to existing loans.
++
+++ **EmpNo** - The employee number.
+++ **Lon** - The loan number which was generated when creating a new loan.
+++ **Trans-Date** - The movement date.
+++ **T** - The type of movement as follows:
++    + *1 Interest Adjustment*
++    + *3 Further Advance*
++    + *4 Loan Repayment*
++    + *5 Loan Adjustment*
+++ **Reference** - The reference number of the movement.
+++ **Intr-%** - The new rate of interest to be charged on the loan.
+++ **Interest** - The interest adjustment, if type 1.
+++ **Amount** - The loan amount for types 3, 4 and 5.
+++ **Deduct** - The new amount to be deducted from earnings to repay the loan.
++
++Raise Interest
++++++++++++++++
++Use this routine to raise interest on loans.
++
+++ **Transaction Date** - The date on which the interest must be raised.
++
++Reporting (SL)
++..............
++Batch Error Listing (SL)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (SL)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Master Listing
++++++++++++++++
++Use this routine to list all existing loans.
++
+++ **Sort Order** - Select whether to sort by Number or Name.
+++ **Ignore Zero Balances** - Select whether to exclude repaid loans.
++
++Statements
++++++++++++
++Use this routine to print loan statements as follows:
++
+++ **Start Date** - Only include loans issued on or after this date.
+++ **Last Date** - Only include loans issued on or before this date.
+++ **Whole File** - Include all loans in the selected period or individuals.
+++ **Ignore Paid Ups** - Select whether to exclude repaid loans.
++
++Interrogation (SL)
++..................
++This routine is for querying individual loans.
++
++.. raw:: pdf
++
++    PageBreak
++
++Utilities
++~~~~~~~~~
++Bulk Mail Utility
++.................
++Use this routine to send bulk MAIL or bulk SMSes. In order to use the MAIL facility you must enter a valid SMTP server in the `System Control Record`. In order to use the SMS facility you must register with www.smsportal.co.za and then enter your username and password in the `System Control Record` using `System Record Maintenance`_.
++
+++ **Delivery Type** - The available delivery types will depend on what is entered in the `System Control Record` and can be either E-Mail, SMS or both.
+++ **List to Use** - The available lists will depend on the systems being used and can contain Bookings, Bowls, Creditors, Debtors, Members and Directory (Telephone). In addition to the lists, CSV or XLS files can also be used, as long as they contain a name and an email address and or a cell number. Please note that Creditors and Debtors do not have SMS capabilities.
++    + **Bookings** - This list accesses the tartan booking's contacts.
++        + **Individuals** - Allow selection of individual recipients.
++    + **Bowls** - This list accesses the tartan bowl's tabs.
++        + **Category** - Allow selection by category.
++        + **Gender** - Allow selection by gender.
++        + **Individuals** - Allow selection of individual recipients.
++    + **Creditors** - This list accesses the tartan creditor's masterfile.
++        + **Email To** - Select the recipient.
++        + **Individuals** - Allow selection of individual recipients.
++    + **Debtors** - This list accesses the tartan debtor's masterfile.
++        + **Email To** - Select the recipient.
++        + **Activity** - Allow selection by business activity.
++        + **Type** - Allow selection by business type.
++        + **Individuals** - Allow selection of individual recipients.
++    + **Members** - This list accesses the tartan member's masterfile.
++        + **Category** - Allow selection by membership category.
++        + **Gender** - Allow selection by gender.
++        + **Personalise** - Allow penalisation of the recipient.
++        + **Name Detail** - Select whether to use the names or initials.
++        + **Individuals** - Allow selection of individual recipients.
++    + **Directory** - This list accesses the tartan telephone directory.
++        + **Group Selection** - Allow selection by group.
++        + **Include Contacts** - Include the recipient's contacts.
++        + **Individuals** - Allow selection of individual recipients.
++    + **CSV and XLS File** - This is a csv or xls file containing a name, email address and/or a mobile number.
++        + **File Name** - The full path of the file to use.
++        + **Ignore Invalid Lines** - Select whether to ignore invalid lines.
++        + **Mobile/Email Column** - Enter the column of the mobile number or email address.
++        + **Personalise** - Allow penalisation of the recipient.
++        + **Title** - Select whether or not to use titles.
++        + **Title Column** - Enter the column of the title.
++        + **Surname Column** - Enter the column of the surname.
++        + **Names Column** - Enter the column of the names.
++        + **Name Detail** - Select whether to use the names or initials.
+++ **Skip Delivery Errors** - Select whether or not to skip invalid email addresses.
+++ **Subject** - The subject of the email.
+++ **In-line Attachment** - Any in-line image to be included in the email.
+++ **Separate Attachment** - Any attachment to be attached to the email.
+++ **Message** - Any text message. In order to get the recipients name in the message use one of the following methods:
++    + **{{name}}** - Use this method if the recipient has separate surname and names fields.
++    + **{{surname}}** - Use this method if the recipient has a single name field where the surname and names are comma separated e.g. Malherbe, Paul.
++
++.. raw:: pdf
++
++    PageBreak
++
++Report Generator
++................
++Use this routine to generate ad hoc SQL reports. It is not necessary to know the SQL language but it is beneficial.
++
+++ **Name** - A name for the report.
+++ **Description** - A description of the report.
+++ **Heading-1** - The first heading of the report.
+++ **Heading-2** - A second heading, if applicable.
++
+++ The following screens are now available:
++
+++ **Tables** - These are the tables to be used to generate the report. At least one table must be selected.
++    + **Table Sequence** - A sequential number of the line to enter or edit.
++        + **Tables** - The table name. F1 will give a list of available tables.
+++ **Joins** - These are further tables to be joined to the ones selected in `Tables`.
++    + **T** - The type of join. F1 gives a list of available types.
++    + **Tables** - The table which must be joined.
++    + **Join Columns** - The columns to be used for the join.
+++ **Columns** - These are the table columns to show in the report. If no columns are selected, all columns will be used.
++    + **Column Sequence** - A sequential number of the line to enter or edit.
++        + **T** - The type of column.
++            + **C** - An actual column in the table.
++                + **Label** - The column name. You will be shown a list of columns to select from.
++            + **E** - An expression e.g. Sum, Avg, Count etc.
++                + **Label** - You will have to type a name for the expression. You will then be offered a selection of expression types and depending on your choice a further selection of options.
++                + **Expression** - The generated expression will now be displayed and you can either accept or edit it.
++        + **Heading** - The column heading.
++        + **TP** - The type of column. F1 will show all available types.
++        + **Size** - The width of the column in characters.
++        + **G** - Whether or not to group the report on this column.
++        + **S** - Whether or not to print sub totals for this column.
++        + **Narration** - If sub totals was selected, enter the narration of the sub total.
++        + **P** - If sub totals was selected, select whether or not to start a new page after each sub total.
++        + **G** - If the column type is numeric, select whether or not to print a grand total for the column.
++        + **D** - Whether or not to actually display the column in the report or simply to use it for totals etc.
+++ **Variables**
+++ **Exceptions**
+++ **Order**
++
++.. raw:: pdf
++
++    PageBreak
++
++Template Manager
++................
++Use this routine to create, edit or delete templates.
++
+++ **Name** - The name of the template.
+++ **Title** - The title of the template.
+++ **TT** - The template type as follows:
++    + **I** - Sales Document
++    + **O** - Purchase Order
++    + **P** - Payslip
++    + **R** - Remittance Advice
++    + **S** - Statement
+++ **Sys** - The relevant system code relating to the type.
+++ **ST** - This only applies to statements and is the type of statement as follows:
++    + **N** - Normal
++    + **O** - Other
+++ **Size** - The page size i.e. A4, A5 or A6
+++ **Orient** - The page orientation i.e. Portrait or Landscape.
+++ **Sequence**
++    + **Line Number** - The line number to edit or 0 for the next available number.
++    + **Line Type** - The line type as follows:
++        + **C Merge Code** - Use this code for lines that will be populated with data.
++        + **I Image** - Use this code to display an image.
++        + **L Line** - Use this code to draw a line.
++        + **R Rectangle** - Use this code to draw a rectangle.
++        + **T Text** - Use this code to print some fixed text.
++    + **Placement** - Where to place this line.
+++ **Rectangle**
++    + **X1 Co-Ordinate** - The left hand position of the rectangle in mm.
++    + **X2 Co-Ordinate** - The right hand position of the rectangle in mm.
++    + **Y1 Co-Ordinate** - The top position of the rectangle in mm.
++    + **Y2 Co-Ordinate** - The bottom position of the rectangle in mm.
++    + **Line Thickness** - The thickness of the line.
+++ **Image**
++    + **X1 Co-Ordinate** - The left hand position of the image in mm.
++    + **X2 Co-Ordinate** - The right hand position of the image in mm.
++    + **Y1 Co-Ordinate** - The top position of the image in mm.
++    + **Y2 Co-Ordinate** - The bottom position of the image in mm.
++    + **File name** - The full path of the file name of the image.
++    + **Merge Code** - The merge code containing the path to the image e.g. ctlmst ctm_logo.
+++ **Line**
++    + **Font Name** - The name of the font to use.
++    + **Size** - The font size to use.
++    + **Colour** - The line colour.
++    + **Bold** - Whether to display the line in bold format.
++    + **X1 Co-Ordinate** - The left hand position of the line in mm.
++    + **Chrs** - The number of characters the line should extend.
++    + **X2** - The right hand position of the line in mm.
++    + **Y1 Co-Ordinate** - The top position of the line in mm.
++    + **Y2 Co-Ordinate** - The bottom position of the line in mm.
++    + **Line Thickness** - The thickness of the line.
+++ **Text**
++    + **Font Name** - The name of the font to use.
++    + **Size** - The font size to use.
++    + **Colour** - The text colour.
++    + **Bold** - Whether to display the text in bold format.
++    + **Italic** - Whether to display the text in italic format.
++    + **Underline** - Whether to underline the text.
++    + **Alignment** - How to align the text.
++    + **Border** - Whether to draw borders around the text, TLRB.
++    + **Fill Background** - Whether to fill the background of the text.
++    + **X1 Co-Ordinate** - The left hand position of the text in mm.
++    + **Chrs** - The number of characters the text should extend.
++    + **X2** - The right hand position of the text in mm.
++    + **Y1 Co-Ordinate** - The top position of the text in mm.
++    + **Y2 Co-Ordinate** - The bottom position of the text in mm.
++    + **Text Detail** - The text.
+++ **Code**
++    + **Text Type** - The text type. Heading, Label of a Column or No text.
++    + **Text Detail** - The text.
++    + **Font Name** - The name of the font to use.
++    + **Size** - The font size to use.
++    + **Colour** - The text colour.
++    + **Bold** - Whether to display the text in bold format.
++    + **Italic** - Whether to display the text in italic format.
++    + **Underline** - Whether to underline the text.
++    + **Alignment** - How to align the text.
++    + **Border** - Whether to draw borders around the text, TLRB.
++    + **Fill Background** - Whether to fill the background of the text.
++    + **X1 Co-Ordinate** - The left hand position of the text in mm.
++    + **Chrs** - The number of characters the text should extend.
++    + **X2** - The right hand position of the text in mm.
++    + **Y1 Co-Ordinate** - The top position of the text in mm.
++    + **Y2** - The bottom position of the text in mm.
++    + **Merge Code** - The code to use to import data.
++    + **Font Name** - The name of the font to use for the imported data.
++    + **Size** - The font size to use for the imported data.
++    + **Colour** - The text colour.
++    + **Bold** - Whether to display the imported data in bold format.
++    + **Italic** - Whether to display the imported data in italic format.
++    + **Underline** - Whether to underline the imported data.
++    + **Alignment** - How to align the imported data.
++    + **Border** - Whether to draw borders around the imported data, TLRB.
++    + **Fill Background** - Whether to fill the background of the imported data.
++    + **X1 Co-Ordinate** - The left hand position of the imported data in mm.
++    + **Chrs** - The number of characters the imported data should extend.
++    + **X2** - The right hand position of the imported data in mm.
++    + **Y1 Co-Ordinate** - The top position of the imported data in mm.
++    + **Y2 Co-Ordinate** - The bottom position of the imported data in mm.
++    + **Number of Lines** - The number of lines the imported data can contain e.g. a name and address could be 5 lines.
++    + **Repeats** - The number of time to repeat the imported data e.g. the number of lines in the body of a statement could be 30.
++
++.. raw:: pdf
++
++    PageBreak
++
++Telephone Directory
++...................
++Use this routine to manage a telephone directory.
++
++All the fields are self explanatory with the exception of the following:
++
+++ **Contact Group** - This is a 3 letter group code. If the code does not exist you will have to also enter the group description. This code is used in the bulk mailing module.
++
+++ **Buttons**
++    + **Back** - Select this button to display the previous directory entry.
++    + **Forward** - Select this button to display the next directory entry.
++    + **Import** - Select this button to import all contacts from other sources e.g. Creditors, Debtors, Members, Bookings etc.
++    + **Notes** - Select this button to maintain notes relating to this entry.
++    + **Print** - Select this button to print all entries or the current entry.
++    + **Apply** - Select this button to apply current addition or change.
++    + **Contacts** - Select this button to maintain contacts of the current entry.
++    + **Cancel** - Select this button to cancel any current additions or changes.
++    + **Quit** - Select this button to quit the application.
++
++.. raw:: pdf
++
++    PageBreak
++
++Help
++~~~~
++About Tartan
++............
++This routine will display the copyright details, version and contact information for Tartan Systems.
++
+++ **Licence** - The Tartan licence details.
+++ **Changes** - The Tartan changes since version 4 to date.
++
++Reference Manual
++................
++This routine will display this manual, if available, or the on-line one using your default browser.
++
++Quick Start Manual
++..................
++This routine will display the quick start manual, if available, or the on-line one using your default browser.
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-03-06 19:01:14 +0000
++++ mst/ms0000.py	2015-03-09 16:02:15 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 8)
++    VERSION = (5, 0, 9)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-03-06 19:01:14 +0000
++++ std/TartanClasses.py	2015-03-09 15:07:30 +0000
+@@ -2018,7 +2018,7 @@
+                     from pysqlite2 import dbapi2 as engine
+                 except:
+                     from sqlite3 import dbapi2 as engine
+-                if engine.version < "2.6.0":
++                if sys.platform == "win32":
+                     # Does not support multiple row inserts
+                     self.nomulti = True
+                 self.dbf = "?"
+@@ -2292,7 +2292,10 @@
+             self.cu.close()
+         except:
+             pass
+-        self.db.close()
++        try:
++            self.db.close()
++        except:
++            pass
+         self.dbopen = False
+ 
+     def dropDbase(self):
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2015-03-04 16:05:59 +0000
++++ std/tartanFunctions.py	2015-03-09 09:25:03 +0000
+@@ -231,6 +231,11 @@
+     rcdic["dfs"] = f
+     if rcdic["theme"] not in ("alt", "clam", "classic", "default"):
+         rcdic["theme"] = "clam"
++    if prgdir.count("_MEI"):
++        # Change for pyinstaller
++        rcdic["prn"] = rcdic["prn"].replace(rcdic["prgdir"], prgdir)
++        rcdic["vwr"] = rcdic["vwr"].replace(rcdic["prgdir"], prgdir)
++        rcdic["prgdir"] = prgdir
+     if os.path.exists(rcfile):
+         # Create missing directories
+         check = []
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2015-03-04 16:05:59 +0000
++++ tab/tb1020.py	2015-03-09 09:23:00 +0000
+@@ -59,8 +59,10 @@
+                 self.doCleanDatabase()
+             if not self.part and self.opts["ver"]:
+                 sql = Sql(self.dbm, "verupd", prog=__name__)
+-                sql.updRec("verupd", cols=["ver_version", "ver_upddate"],
+-                    data=[self.opts["ver"], self.sysdtw])
++                if not sql.getRec(tables="verupd"):
++                    sql.insRec("verupd", data=[self.opts["ver"], self.sysdtw])
++                else:
++                    sql.updRec("verupd", data=[self.opts["ver"], self.sysdtw])
+                 self.dbm.commitDbase()
+ 
+     def setVariables(self):
+

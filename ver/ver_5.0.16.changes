@@ -1,0 +1,6 @@
+1) Fixed an error with XLS exports.
+2) Some minor bug fixes and changes required for upgrade to python 3.
+
+Note:
+-----
+You can only upgrade to this version if your current version is 4.1.10 or later.

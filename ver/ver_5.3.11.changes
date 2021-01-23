@@ -1,0 +1,8 @@
+1) Added the facility to print crs/drs age analysis strictly according to
+   the financial period of the transactions (Curdt).
+2) Fixed an error in the V.A.T. report, exporting to excel.
+3) Some other minor bug fixes and improvements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

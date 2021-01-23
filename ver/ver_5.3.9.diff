@@ -1,0 +1,2469 @@
+=== modified file 'bwl/bc2010.py'
+--- bwl/bc2010.py	2018-04-08 06:05:45 +0000
++++ bwl/bc2010.py	2018-05-31 15:37:23 +0000
+@@ -92,7 +92,7 @@
+ 
+ import random, time
+ from operator import itemgetter
+-from TartanClasses import CCD, GetCtl, PrintDraw, SplashScreen
++from TartanClasses import CCD, GetCtl, PrintCards, PrintDraw, SplashScreen
+ from TartanClasses import SelectChoice, Sql, TartanDialog
+ from tartanFunctions import askChoice, askQuestion, callModule, getGreens
+ from tartanFunctions import getNextCode, copyList, projectDate, showError
+@@ -195,7 +195,7 @@
+             (("T",0,5,0),("IRB",r3s),0,"Draw By","",
+                 self.dbase,"N",self.doBase,None,None,None),
+             (("T",0,6,0),"IUD",5.2,"Fees - Member R","",
+-                self.ratem.work,"Y",self.doRate,None,None,("efld",)),
++                self.ratem.work,"N",self.doRate,None,None,("efld",)),
+             (("T",0,6,0),"IUD",5.2," Visitor R","",
+                 self.ratev.work,"N",self.doRate,None,None,("efld",)),
+             (("T",0,7,0),"OUI",3,"Entered: Total"),
+@@ -2030,19 +2030,26 @@
+             self.df.focusField("T", 1, 1)
+             return
+         self.df.setWidget(self.df.mstFrame, state="hide")
+-        r1s = (("Yes", "Y"), ("No", "N"))
+         if not self.ratem.work and not self.ratev.work:
+             rated = "N"
+         else:
+             rated = "Y"
++        r1s = (("No", "N"), ("Yes", "Y"), ("Only", "O"))
++        r2s = (("Yes", "Y"), ("No", "N"))
+         fld = (
+-            (("T",0,0,0),("IRB",r1s),0,"Cash Takings Sheet","",
++            (("T",0,0,0),("IRB",r1s),0,"Print Cards","",
++                "N","Y",self.doCards,None,None,None),
++            (("T",0,1,0),"INA",30,"Heading","",
++                "","Y",self.doHead,None,None,("notblank",)),
++            (("T",0,2,0),"IUI",2,"Number of Ends","",
++                0,"Y",self.doEnds,None,None,("notzero",)),
++            (("T",0,3,0),("IRB",r2s),0,"Cash Takings Sheet","",
+                 rated,"Y",self.doTakings,None,None,None),
+-            (("T",0,1,0),("IRB",r1s),0,"Tabs Draw Listing","",
++            (("T",0,4,0),("IRB",r2s),0,"Tabs Draw Listing","",
+                 "N","Y",self.doListing,None,None,None),
+-            (("T",0,2,0),("IRB",r1s),0,"Tabs Draw Board","",
++            (("T",0,5,0),("IRB",r2s),0,"Tabs Draw Board","",
+                 "Y","Y",self.doBoard,None,None,None),
+-            (("T",0,3,0),("IRB",r1s),0,"Include Empty Rinks","",
++            (("T",0,6,0),("IRB",r2s),0,"Include Empty Rinks","",
+                 "N","Y",self.doEmpty,None,None,None))
+         self.pd = TartanDialog(self.opts["mf"], tops=True,
+             title="Print Dialog", eflds=fld, tend=((self.doPEnd, "n"),),
+@@ -2052,6 +2059,19 @@
+         if not self.reprint:
+             self.df.focusField("T", 1, 1)
+ 
++    def doCards(self, frt, pag, r, c, p, i, w):
++        self.cards = w
++        if self.cards == "N":
++            return "sk2"
++
++    def doHead(self, frt, pag, r, c, p, i, w):
++        self.cdes = w
++
++    def doEnds(self, frt, pag, r, c, p, i, w):
++        self.ends = w
++        if self.cards == "O":
++            return "nd"
++
+     def doTakings(self, frt, pag, r, c, p, i, w):
+         self.takings = w
+ 
+@@ -2072,11 +2092,30 @@
+ 
+     def doPEnd(self):
+         self.pd.closeProcess()
+-        if not self.reprint:
+-            self.df.setWidget(self.df.mstFrame, state="show")
+-        PrintDraw(self.opts["mf"], self.opts["conum"], self.date, self.time,
+-            takings=self.takings, listing=self.listing, board=self.board,
+-            empty=self.empty, repprt=self.pd.repprt)
++        if self.cards != "O":
++            PrintDraw(self.opts["mf"], self.opts["conum"], self.date, self.time,
++                takings=self.takings, listing=self.listing, board=self.board,
++                empty=self.empty, repprt=self.pd.repprt)
++        if self.cards != "N":
++            recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
++                cols=["bdt_rink", "bdt_tab"], where=[("bdt_cono", "=",
++                self.opts["conum"]), ("bdt_date", "=", self.date),
++                ("bdt_time", "=", self.time), ("bdt_pos", "=", 4)],
++                group="bdt_rink, bdt_tab", order="bdt_rink")
++            skips = []
++            for x in range(0, len(recs), 2):
++                grn = recs[x][0]
++                skp = self.sql.getRec(tables="bwltab", cols=["btb_tab",
++                    "btb_surname", "btb_names"], where=[("btb_cono", "=",
++                    self.opts["conum"]), ("btb_tab", "=", recs[x][1])],
++                    limit=1)
++                opp = self.sql.getRec(tables="bwltab", cols=["btb_tab",
++                    "btb_surname", "btb_names"], where=[("btb_cono", "=",
++                    self.opts["conum"]), ("btb_tab", "=", recs[x+1][1])],
++                    limit=1)
++                skips.append((grn, skp, opp))
++            PrintCards(self.opts["mf"], self.opts["conum"], self.cdes,
++                1, self.dated, skips, self.ends, "N", 0)
+         self.opts["mf"].closeLoop()
+ 
+     def doPExit(self):
+
+=== modified file 'bwl/bc2050.py'
+--- bwl/bc2050.py	2018-04-08 06:05:45 +0000
++++ bwl/bc2050.py	2018-05-31 06:20:43 +0000
+@@ -30,8 +30,8 @@
+ 
+ import copy, random, time
+ from operator import itemgetter
+-from TartanClasses import CCD, DrawForm, GetCtl, MyFpdf, ProgressBar, RepPrt
+-from TartanClasses import SplashScreen, Sql, TartanDialog
++from TartanClasses import CCD, GetCtl, MyFpdf, PrintCards, ProgressBar
++from TartanClasses import RepPrt, SplashScreen, Sql, TartanDialog
+ from tartanFunctions import askQuestion, callModule, doPrinter, doWriteExport
+ from tartanFunctions import getModName, getGreens, getSingleRecords, copyList
+ from tartanFunctions import showError, showWarning
+@@ -45,7 +45,7 @@
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwlgme", "bwltms",
+-            "bwltab", "bwltyp", "bwlpts", "bwlrnd", "bwlent", "tplmst"],
++            "bwltab", "bwltyp", "bwlpts", "bwlrnd", "bwlent"],
+             prog=__name__)
+         if self.sql.error:
+             return
+@@ -85,14 +85,6 @@
+             "whera": [("T", "bcg_ccod", 0, 0)],
+             "group": "bcg_game, bcg_type, bcg_date",
+             "order": "bcg_game"}
+-        tpm = {
+-            "stype": "R",
+-            "tables": ("tplmst",),
+-            "cols": (
+-                ("tpm_tname", "", 0, "Template"),
+-                ("tpm_title", "", 0, "Title", "Y")),
+-            "where": [("tpm_type", "=", "C")],
+-            "order": "tpm_tname"}
+         r1s = (("No","N"),("Yes", "Y"))
+         r2s = (("First", "F"), ("Last", "L"))
+         r3s = (("No", "N"),("Yes","Y"),("Only", "O"))
+@@ -124,16 +116,14 @@
+             (("T",0,8,0),("IRB",r3s),0,"Print Cards","",
+                 "N","N",self.doPrtCards,None,None,None),
+             (("T",0,9,0),("IRB",r1s),0,"All Cards","",
+-                "Y","N",self.doAllCards,None,None,None),
+-            (("T",0,10,0),"INA",20,"Template Name","",
+-                "comp_cards","N",self.doTplNam,tpm,None,None))
++                "Y","N",self.doAllCards,None,None,None))
+         tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+         self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
+             eflds=fld, tend=tnd, txit=txt, view=("X","V"), mail=("Y","Y"))
+-        self.df.setWidget(self.df.topEntry[0][12][2][0], state="hide")
+-        if len(self.df.topEntry[0][12]) == 4:
+-            self.df.setWidget(self.df.topEntry[0][12][3][0], state="hide")
++        self.df.setWidget(self.df.topEntry[0][11][2][0], state="hide")
++        if len(self.df.topEntry[0][11]) == 4:
++            self.df.setWidget(self.df.topEntry[0][11][3][0], state="hide")
+ 
+     def doCmpCod(self, frt, pag, r, c, p, i, w):
+         bwlcmp = self.sql.getRec(tables="bwlcmp", where=[("bcm_cono",
+@@ -166,8 +156,8 @@
+                 "There is an Uneven Number of Teams (%s)" % self.totskp)
+             return "rf"
+         if self.cfmat in ("D", "K"):
+-            if len(self.df.topEntry[0][12]) == 4:
+-                self.df.setWidget(self.df.topEntry[0][12][3][0], state="show")
++            if len(self.df.topEntry[0][11]) == 4:
++                self.df.setWidget(self.df.topEntry[0][11][3][0], state="show")
+             if self.totskp > 64:
+                 showError(self.opts["mf"].body, "Maximum Exceeded",
+                     "There are Too Many Entries (%s)" % self.totskp)
+@@ -179,13 +169,13 @@
+             else:
+                 self.games = 1
+         elif self.cfmat == "R":
+-            if len(self.df.topEntry[0][12]) == 4:
+-                self.df.setWidget(self.df.topEntry[0][12][3][0], state="hide")
++            if len(self.df.topEntry[0][11]) == 4:
++                self.df.setWidget(self.df.topEntry[0][11][3][0], state="hide")
+             self.games = self.totskp - 1
+             self.drawn = self.games
+         else:
+-            if len(self.df.topEntry[0][12]) == 4:
+-                self.df.setWidget(self.df.topEntry[0][12][3][0], state="hide")
++            if len(self.df.topEntry[0][11]) == 4:
++                self.df.setWidget(self.df.topEntry[0][11][3][0], state="hide")
+             self.games = bwltyp[self.sql.bwltyp_col.index("bct_games")]
+         self.ends = bwltyp[self.sql.bwltyp_col.index("bct_ends")]
+         self.groups = bwltyp[self.sql.bwltyp_col.index("bct_groups")]
+@@ -446,17 +436,12 @@
+         else:
+             self.df.loadEntry(frt, pag, p+1, data="")
+             self.df.loadEntry(frt, pag, p+2, data="")
+-            return "sk2"
++            return "sk1"
+ 
+     def doAllCards(self, frt, pag, r, c, p, i, w):
+         self.allcards = w
+-
+-    def doTplNam(self, frt, pag, r, c, p, i, w):
+-        acc = self.sql.getRec(tables="tplmst", where=[("tpm_tname", "=", w),
+-            ("tpm_type", "=", "C")], limit=1)
+-        if not acc:
+-            return "Invalid Template Name"
+-        self.tname = w
++        if self.prtcards == "O":
++            return "nd"
+ 
+     def doEnd(self):
+         if not self.drawall:
+@@ -520,9 +505,6 @@
+             if not self.drawall:
+                 self.opts["mf"].dbm.commitDbase(ask=True, rback=False)
+         if self.prtcards in ("Y", "O"):
+-            showWarning(self.opts["mf"].body, "Change Paper",
+-                "In Order to Print Cards You Need to Change the Paper to "\
+-                "A6 Cards. Please Do So Now Before Continuing")
+             self.printCards()
+         if self.drawall:
+             self.sql.updRec("bwlgme", cols=["bcg_aflag"], data=["D"],
+@@ -1975,47 +1957,6 @@
+                 continue
+             if self.cfmat == "R" and (rec[0] > 900000 or rec[1] > 900000):
+                 continue
+-            skips.append(rec)
+-            chk.extend([rec[0], rec[1]])
+-        pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+-            self.tname, ext="pdf")
+-        self.form = DrawForm(self.opts["mf"].dbm, self.tname,
+-            wrkdir=self.opts["mf"].rcdic["wrkdir"])
+-        self.doLoadStatic()
+-        self.form.doNewDetail()
+-        tdc = self.form.sql.tpldet_col
+-        txt = tdc.index("tpd_text")
+-        fil = tdc.index("tpd_mrg_fill")
+-        bdr = tdc.index("tpd_mrg_border")
+-        y1 = tdc.index("tpd_mrg_y1")
+-        y2 = tdc.index("tpd_mrg_y2")
+-        mm = round(115.0 / (self.ends + 1), 2)
+-        for x in xrange(self.ends + 1):
+-            y3 = (x * mm) + 28
+-            if x == self.ends:
+-                y4 = 145
+-                fill = True
+-                dat = "Total"
+-            else:
+-                y4 = y3 + mm
+-                end = x + 1
+-                if (skins == "Y" and not end % sends):
+-                    fill = True
+-                else:
+-                    fill = False
+-                dat = end
+-            for nam in self.form.body:
+-                fld = "%s_C%02i" % (nam, x)
+-                if fld in self.form.newdic:
+-                    self.form.newdic[fld][y1] = y3
+-                    self.form.newdic[fld][y2] = y4
+-                    if fld.startswith("ends"):
+-                        self.form.newdic[fld][txt] = dat
+-                    if fill:
+-                        self.form.newdic[fld][fil] = 1
+-                        self.form.newdic[fld][bdr] = "TLRB"
+-        for rec in skips:
+-            self.form.add_page()
+             skp = self.sql.getRec(tables="bwltab", cols=["btb_tab",
+                 "btb_surname", "btb_names"], where=[("btb_cono", "=",
+                 self.opts["conum"]), ("btb_tab", "=", rec[0])], limit=1)
+@@ -2023,40 +1964,10 @@
+                 "btb_surname", "btb_names"], where=[("btb_cono", "=",
+                 self.opts["conum"]), ("btb_tab", "=", rec[1])], limit=1)
+             grn = rec[2]
+-            if "skip_C00" in self.form.newdic:
+-                self.form.newdic["skip_C00"][txt] = self.getName(skp)
+-            if "opponent_C00" in self.form.newdic:
+-                self.form.newdic["opponent_C00"][txt] = self.getName(opp)
+-            if "bcg_rink_C00" in self.form.newdic:
+-                self.form.newdic["bcg_rink_C00"][txt] = grn
+-            for key in self.form.newkey:
+-                self.form.doDrawDetail(self.form.newdic[key])
+-        self.form.output(pdfnam, "F")
+-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+-            pdfnam=pdfnam, repprt=self.df.repprt)
+-
+-    def doLoadStatic(self):
+-        tdc = self.form.sql.tpldet_col
+-        if self.ends < 21:
+-            for line in self.form.tpldet:
+-                if line[tdc.index("tpd_repeat")] == 22:
+-                    line[tdc.index("tpd_repeat")] = self.ends + 1
+-        if "bcm_name" in self.form.tptp:
+-            self.form.tptp["bcm_name"][1] = self.cdes
+-        if "bcg_game" in self.form.tptp:
+-            self.form.tptp["bcg_game"][1] = self.game
+-        if "bcg_date" in self.form.tptp:
+-            self.form.tptp["bcg_date"][1] = self.datd
+-
+-    def getName(self, data):
+-        if data:
+-            if data[2]:
+-                name = "%s. " % data[2].split()[0][0]
+-            else:
+-                name = ""
+-            return "%s%s (%s)" % (name, data[1], data[0])
+-        else:
+-            return "* Bye *"
++            skips.append((grn, skp, opp))
++            chk.extend([rec[0], rec[1]])
++        PrintCards(self.opts["mf"], self.opts["conum"], self.cdes, self.game,
++            self.datd, skips, self.ends, skins, sends)
+ 
+     def doExit(self):
+         self.df.closeProcess()
+
+=== modified file 'crs/cr3320_rne.py'
+--- crs/cr3320_rne.py	2017-08-24 07:49:34 +0000
++++ crs/cr3320_rne.py	2018-05-31 08:33:25 +0000
+@@ -342,13 +342,28 @@
+         self.fpdf.drawText("%24s%29s%13s%8s%26s%33s" % ("Purchase Journal "\
+             "Listing", typ, "TAX INVOICE", self.pjno, "", dat))
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%49s%28s" % ("", "R N E HOLDINGS (PTY) LIMITED"))
+-        self.fpdf.drawText("%51s%24s" % ("", "Major Square, Beacon Bay"))
+-        self.fpdf.drawText("%50s%27s" % ("", "VAT Registration 4460156583"))
+-        self.fpdf.drawText()
+-        self.fpdf.drawText("Supplied To: %-30s (%3s)" % (self.bname,
+-            self.depno))
+-        self.fpdf.drawText("V.A.T. Numb: %-13s" % self.vatno)
++        txt = "R N E HOLDINGS (PTY) LIMITED"
++        if self.bname:
++            txt = "%-30s       Supplied To: %-30s" % (txt, self.bname)
++        self.fpdf.drawText(txt)
++        txt = "Major Square"
++        if self.badd1:
++            txt = "%-50s%-30s" % (txt, self.badd1)
++        txt = "Beacon Bay"
++        if self.badd2:
++            txt = "%-50s%-30s" % (txt, self.badd2)
++        self.fpdf.drawText(txt)
++        txt = "5200"
++        if self.badd3:
++            txt = "%-50s%-30s" % (txt, self.badd3)
++        self.fpdf.drawText(txt)
++        if self.bcode:
++            txt = "%-50s%-30s" % ("", self.bcode)
++        self.fpdf.drawText(txt)
++        txt = "VAT Registration: 4460156583"
++        if self.vatno:
++            txt = "%-50sVAT Registration: %-12s" % (txt, self.vatno)
++        self.fpdf.drawText(txt)
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-7s %-30s %-9s %-3s %-10s %13s %13s %13s %13s "\
+             "%6s %6s" % ("Acc-Num", "Supplier-Name", "Reference", "Typ",
+@@ -384,9 +399,14 @@
+ 
+     def getVariables(self, fullpg=False):
+         branch = self.sql.getRec(tables="ctlmst", cols=["ctm_name",
++            "ctm_sadd1", "ctm_sadd2", "ctm_sadd3", "ctm_spcode",
+             "ctm_taxno"], where=[("ctm_cono", "=", self.depno)], limit=1)
+         self.bname = branch[0]
+-        self.vatno = branch[1]
++        self.badd1 = branch[1]
++        self.badd2 = branch[2]
++        self.badd3 = branch[3]
++        self.bcode = branch[4]
++        self.vatno = branch[5]
+         if self.reprint == "Y":
+             self.pjno = self.pjnum.work
+         elif fullpg:
+
+=== modified file 'crs/cr3330_rne.py'
+--- crs/cr3330_rne.py	2017-08-24 07:49:34 +0000
++++ crs/cr3330_rne.py	2018-05-17 12:41:53 +0000
+@@ -12,9 +12,10 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, SplashScreen
+-from TartanClasses import Sql, TartanDialog
+-from tartanFunctions import doWriteExport, getModName, doPrinter, showError
++from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
++from TartanClasses import TartanDialog
++from tartanFunctions import doWriteExport, getModName, getVatRate, doPrinter
++from tartanFunctions import showError
+ 
+ class cr3330:
+     def __init__(self, **opts):
+@@ -87,13 +88,11 @@
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+-        sp = SplashScreen(self.opts["mf"].body,
+-            "Generating Report\n\nPlease Wait...")
+         # New Purchases
+         dic = {}
+         tab = ["crsrtf", "crstrn", "ctlmst"]
+-        col = ["rtf_depno", "ctm_name",
+-            "round(sum(crt_tramt), 2)", "round(sum(crt_taxamt), 2)"]
++        col = ["rtf_depno", "ctm_name", "crt_tramt", "crt_taxamt",
++            "crt_taxind", "crt_trdt"]
+         whr = [
+             ("rtf_cono", "=", self.opts["conum"]),
+             ("crt_type", "in", (1, 2, 3, 4))]
+@@ -108,16 +107,19 @@
+             ("rtf_type=crt_type",),
+             ("rtf_ref1=crt_ref1",),
+             ("ctm_cono=rtf_depno",)])
+-        grp = "rtf_depno, ctm_name"
+-        odr = "rtf_depno"
+-        pur = self.sql.getRec(tables=tab, cols=col, where=whr, group=grp,
+-            order=odr)
++        pur = self.sql.getRec(tables=tab, cols=col, where=whr)
+         if pur:
+-            for rec in pur:
++            txt = "Generating Purchases"
++            p = ProgressBar(self.opts["mf"].body, typ=txt,
++                mxs=len(pur), esc=True)
++            for num, rec in enumerate(pur):
++                p.displayProgress(num)
+                 if rec[0] not in dic:
+                     dic[rec[0]] = [rec[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                 if rec[3]:
+-                    tbl = round((rec[3] * 100.0 / 14.0), 2)
++                    rte = getVatRate(self.sql, self.opts["conum"],
++                        rec[4], rec[5])
++                    tbl = round((rec[3] * 100.0 / rte), 2)
+                     dic[rec[0]][1] = float(ASD(dic[rec[0]][1]) + ASD(tbl))
+                     dic[rec[0]][2] = float(ASD(dic[rec[0]][2]) + ASD(rec[3]))
+                     non = float(ASD(rec[2]) - ASD(tbl) - ASD(rec[3]))
+@@ -125,6 +127,7 @@
+                 else:
+                     dic[rec[0]][3] = float(ASD(dic[rec[0]][3]) + ASD(rec[2]))
+                 dic[rec[0]][4] = float(ASD(dic[rec[0]][4]) + ASD(rec[2]))
++            p.closeProgress()
+         if self.start.work < 200703:
+             # Old Department Records
+             tab = ["crsrdm", "ctlmst"]
+@@ -181,7 +184,11 @@
+             else:
+                 pay = []
+         if pay:
+-            for rec in pay:
++            txt = "Generating Payments"
++            p = ProgressBar(self.opts["mf"].body, typ=txt,
++                mxs=len(pay), esc=True)
++            for num, rec in enumerate(pay):
++                p.displayProgress(num)
+                 if rec[0] not in dic:
+                     dic[rec[0]] = [rec[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                 dic[rec[0]][5] = float(ASD(dic[rec[0]][5]) + ASD(rec[2]))
+@@ -190,13 +197,13 @@
+                 dic[rec[0]][8] = float(ASD(dic[rec[0]][8]) + ASD(rec[5]))
+                 dic[rec[0]][9] = float(ASD(dic[rec[0]][9]) + ASD(rec[6]))
+                 dic[rec[0]][10] = float(ASD(dic[rec[0]][10]) + ASD(rec[7]))
++            p.closeProgress()
+         data = []
+         if dic:
+             key = list(dic.keys())
+             key.sort()
+             for k in key:
+                 data.append([k] + dic[k])
+-        sp.closeSplash()
+         if not data:
+             showError(self.opts["mf"].body, "Selection Error",
+                 "No Transactions Selected")
+
+=== modified file 'crs/cr6020.py'
+--- crs/cr6020.py	2017-08-24 07:49:34 +0000
++++ crs/cr6020.py	2018-05-24 08:55:49 +0000
+@@ -19,8 +19,14 @@
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+-            self.dataHeader()
+-            self.opts["mf"].startLoop()
++            if "args" in opts:
++                self.curdt = opts["args"][0]
++                for self.acno in opts["args"][1]:
++                    self.doReAgeAuto()
++                self.opts["mf"].dbm.commitDbase()
++            else:
++                self.dataHeader()
++                self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["crsmst", "crstrn", "crsage"],
+@@ -146,11 +152,12 @@
+         self.opts["mf"].closeLoop()
+ 
+     def doReAgeAuto(self, widget=None):
+-        self.opts["mf"].updateStatus("Re-Ageing .... Please Wait!")
+         self.key = "normal"
+-        for b in xrange(3):
+-            wid = getattr(self.df, "B%s" % b)
+-            self.df.setWidget(wid, "disabled")
++        if "args" not in self.opts:
++            for b in xrange(3):
++                wid = getattr(self.df, "B%s" % b)
++                self.df.setWidget(wid, "disabled")
++            self.opts["mf"].updateStatus("Re-Ageing .... Please Wait!")
+         self.sql.delRec("crsage", where=[("cra_cono", "=", self.opts["conum"]),
+             ("cra_acno", "=", self.acno)])
+         crc, cr = getTrn(self.opts["mf"].dbm, "crs", whr=[("crt_cono", "=",
+@@ -161,15 +168,20 @@
+                 "=", self.opts["conum"]), ("crt_acno", "=", self.acno),
+                 ("crt_tramt", ">", 0)], neg=False, zer="N")
+             if dr:
+-                self.df.setWidget(self.df.mstFrame, state="hide")
+-                txt = "Re-Allocating ... Please Wait"
+-                pb = ProgressBar(self.opts["mf"].body, typ=txt, mxs=len(cr))
++                if "args" not in self.opts:
++                    self.df.setWidget(self.df.mstFrame, state="hide")
++                    txt = "Re-Allocating ... Please Wait"
++                    pb = ProgressBar(self.opts["mf"].body, typ=txt, mxs=len(cr))
+                 for cno, ctr in enumerate(cr):
+-                    pb.displayProgress(cno)
++                    if "args" not in self.opts:
++                        pb.displayProgress(cno)
+                     ccdt = ctr[crc.index("crt_curdt")]
+                     cbal = ctr[crc.index("balance")]
+                     camt = cbal
+                     for dno, dtr in enumerate(dr):
++                        dcdt = dtr[drc.index("crt_curdt")]
++                        if dcdt > ccdt:
++                            continue
+                         dbal = dtr[drc.index("balance")]
+                         if not dbal:
+                             continue
+@@ -197,9 +209,11 @@
+                             ctr[drc.index("crt_ref1")], ccdt,
+                             ctr[drc.index("crt_type")],
+                             ctr[drc.index("crt_ref1")], diff, 0])
+-                pb.closeProgress()
+-                self.df.setWidget(self.df.mstFrame, state="show")
+-        self.opts["mf"].closeLoop()
++                if "args" not in self.opts:
++                    pb.closeProgress()
++                    self.df.setWidget(self.df.mstFrame, state="show")
++        if "args" not in self.opts:
++            self.opts["mf"].closeLoop()
+ 
+     def endTop(self):
+         self.df.clearEntry("T", 0, 2)
+
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2018-05-01 16:28:35 +0000
++++ doc/BKS.rst	2018-05-31 15:56:58 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.8
++:Version:   5.3.9
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWL.rst'
+--- doc/BWL.rst	2018-02-17 07:36:43 +0000
++++ doc/BWL.rst	2018-05-31 15:39:37 +0000
+@@ -97,6 +97,9 @@
+ + **Edit Draw** - Use this button to manually change a draw i.e. move players between teams.
+ + **Print** - Use this button to print a draw.
+ 
++    + **Print Cards** - Select whether to print score cards.
++        + **Heading** - Enter the heading to be printed on the score cards.
++        + **Number of Ends** - Enter the number of ends being played.
+     + **Cash Takings Sheet** - Print a cash takings sheet.
+     + **Tabs Draw Listing** - Print a tabs draw list in tab number.
+     + **Tabs Draw Board** - Print an emulation of a tabs draw board.
+@@ -348,7 +351,6 @@
+     + **Group per Green** - Whether to allocate greens to groups. This only applies to the final game.
+     + **Print Cards** - Whether or not to print score cards.
+     + **All Cards** - If cards were selected to be printed, whether to print all cards or only selected ones.
+-    + **Template Name** - The template to use for the cards.
+ 
+ + **Knockout**
+     + **Competition Code** - The relevant competition code.
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2018-05-01 16:28:35 +0000
++++ doc/BWM.rst	2018-05-31 15:56:58 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.8
++:Version:   5.3.9
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2018-05-01 16:28:35 +0000
++++ doc/Downloads.rst	2018-05-31 15:56:58 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.8 and was released on the 1st May, 2018.
++The latest version of Tartan is 5.3.9 and was released on the 31st May, 2018.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.8.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.9.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.8.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.9.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.8.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.8.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.8.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.8.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.9.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.9.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.9.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.9.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2018-05-01 16:28:35 +0000
++++ doc/MST.rst	2018-05-31 15:56:58 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.8
++:Version:   5.3.9
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2018-05-01 16:28:35 +0000
++++ doc/SEC.rst	2018-05-31 15:56:58 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.8
++:Version:   5.3.9
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'drs/dr6020.py'
+--- drs/dr6020.py	2017-08-24 07:49:34 +0000
++++ drs/dr6020.py	2018-05-24 09:09:38 +0000
+@@ -20,8 +20,14 @@
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+-            self.dataHeader()
+-            self.opts["mf"].startLoop()
++            if "args" in opts:
++                self.curdt = opts["args"][0]
++                for self.chain, self.acno in opts["args"][1]:
++                    self.doReAgeAuto()
++                self.opts["mf"].dbm.commitDbase()
++            else:
++                self.dataHeader()
++                self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["drsmst", "drschn", "drstrn",
+@@ -182,11 +188,12 @@
+         self.opts["mf"].closeLoop()
+ 
+     def doReAgeAuto(self, widget=None):
+-        self.opts["mf"].updateStatus("Re-Ageing .... Please Wait!")
+         self.key = "normal"
+-        for b in xrange(3):
+-            wid = getattr(self.df, "B%s" % b)
+-            self.df.setWidget(wid, "disabled")
++        if "args" not in self.opts:
++            for b in xrange(3):
++                wid = getattr(self.df, "B%s" % b)
++                self.df.setWidget(wid, "disabled")
++            self.opts["mf"].updateStatus("Re-Ageing .... Please Wait!")
+         self.sql.delRec("drsage", where=[("dra_cono", "=", self.opts["conum"]),
+             ("dra_chain", "=", self.chain), ("dra_acno", "=", self.acno)])
+         crc, cr = getTrn(self.opts["mf"].dbm, "drs", whr=[("drt_cono", "=",
+@@ -198,15 +205,20 @@
+                 ("drt_acno", "=", self.acno), ("drt_tramt", ">", 0)],
+                 neg=False, zer="N")
+             if dr:
+-                self.df.setWidget(self.df.mstFrame, state="hide")
+-                txt = "Re-Allocating ... Please Wait"
+-                pb = ProgressBar(self.opts["mf"].body, typ=txt, mxs=len(cr))
++                if "args" not in self.opts:
++                    self.df.setWidget(self.df.mstFrame, state="hide")
++                    txt = "Re-Allocating ... Please Wait"
++                    pb = ProgressBar(self.opts["mf"].body, typ=txt, mxs=len(cr))
+                 for cno, ctr in enumerate(cr):
+-                    pb.displayProgress(cno)
++                    if "args" not in self.opts:
++                        pb.displayProgress(cno)
+                     ccdt = ctr[crc.index("drt_curdt")]
+                     cbal = CCD(ctr[crc.index("balance")], "SD", 13.2).work
+                     camt = cbal
+                     for dno, dtr in enumerate(dr):
++                        dcdt = dtr[drc.index("drt_curdt")]
++                        if dcdt > ccdt:
++                            continue
+                         dbal = dtr[drc.index("balance")]
+                         if not dbal:
+                             continue
+@@ -235,9 +247,11 @@
+                             ctr[drc.index("drt_ref1")], ccdt,
+                             ctr[drc.index("drt_type")],
+                             ctr[drc.index("drt_ref1")], diff, 0])
+-                pb.closeProgress()
+-                self.df.setWidget(self.df.mstFrame, state="show")
+-        self.opts["mf"].closeLoop()
++                if "args" not in self.opts:
++                    pb.closeProgress()
++                    self.df.setWidget(self.df.mstFrame, state="show")
++        if "args" not in self.opts:
++            self.opts["mf"].closeLoop()
+ 
+     def endTop(self):
+         self.df.clearEntry("T", 0, 2)
+
+=== modified file 'gen/gl3140_rne.py'
+--- gen/gl3140_rne.py	2018-05-01 16:28:35 +0000
++++ gen/gl3140_rne.py	2018-05-03 11:34:10 +0000
+@@ -1,6 +1,6 @@
+ """
+ SYNOPSIS
+-    General Ledger Consolidated Financial Statements.
++    General Ledger Consolidated Financial Statements by Branch.
+ 
+     This file is part of Tartan Systems (TARTAN).
+ 
+@@ -77,9 +77,7 @@
+             (("T",0,2,0),"IUI",3,"Report Number","",
+                 2,"N",self.doRepNum,rpt,None,("notzero",)),
+             (("T",0,3,0),("IRB",r1s),0,"All Branches","",
+-                "Y","N",self.doAllBch,None,None,None),
+-            (("T",0,4,0),("IRB",r1s),0,"All Departments","",
+-                "Y","N",self.doAllDep,None,None,None))
++                "Y","N",self.doAllBch,None,None,None))
+         tnd = ((self.doMainEnd,"y"), )
+         txt = (self.doMainExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+@@ -111,44 +109,18 @@
+             return err
+ 
+     def doAllBch(self, frt, pag, r, c, p, i, w):
+-        self.bchs = []
+         if w == "Y":
+-            self.bchs = self.sql.getRec(tables="genqrb",
+-                where=[("gqb_bcod", "<", 999)],
+-                order="gqb_bcod")
++            self.bchs = self.sql.getRec(tables="genqrb", where=[("gqb_bcod",
++                "<", 999)], order="gqb_bcod")
+             if not self.bchs:
+                 return "No Branches Available"
+         else:
+-            self.bchs = getSingleRecords(self.opts["mf"],
+-                "genqrb", ("gqb_bcod", "gqb_name"),
+-                where=[("gqb_bcod", "<", 999)],
++            self.bchs = getSingleRecords(self.opts["mf"], "genqrb",
++                ("gqb_bcod", "gqb_name"), where=[("gqb_bcod", "<", 999)],
+                 order="gqb_bcod")
+             if not self.bchs:
+                 return "No Branches Selected"
+ 
+-    def doAllDep(self, frt, pag, r, c, p, i, w):
+-        self.depp = []
+-        if w == "Y":
+-            deps = self.sql.getRec(tables=["genqrc", "genqrd"],
+-                cols=["gqc_dcod", "gqc_name"], where=[("gqd_bcod",
+-                "=", self.bch[0]), ("gqc_dcod=gqd_dcod",)],
+-                group="gqc_dcod, gqc_name", order="gqc_dcod")
+-            if not deps:
+-                return "No Departments Available"
+-        else:
+-            bchs = []
+-            for bch in self.bchs:
+-                bchs.append(bch[0])
+-            deps = getSingleRecords(self.opts["mf"],
+-                ("genqrc", "genqrd"), ("gqc_dcod", "gqc_name"),
+-                where=[("gqd_bcod", "in", bchs), ("gqc_dcod=gqd_dcod",)],
+-                group=True, order="gqc_dcod")
+-            if not deps:
+-                return "No Branches Selected"
+-        self.depp = []
+-        for dep in deps:
+-            self.depp.append(dep[0])
+-
+     def doMainEnd(self):
+         self.df.closeProcess()
+         if self.df.repprt[2] == "export":
+@@ -168,12 +140,6 @@
+             return "Invalid Report Number or Type"
+         self.rptyp, self.rpdes = chk
+ 
+-    def doHeader(self, frt, pag, r, c, p, i, w):
+-        if self.rptyp in ("B", "P"):
+-            self.heds[p-1] = w
+-        else:
+-            self.heds[3] = w
+-
+     def doCreateReport(self):
+         if self.df.repprt[2] == "export":
+             self.expdatas = []
+@@ -184,17 +150,15 @@
+             p.displayProgress(num)
+             self.allfields = []
+             self.deps = self.sql.getRec(tables=["genqrd", "genqrc"],
+-                cols=["gqc_dcod", "gqc_name"], where=[("gqc_dcod",
+-                "in", self.depp), ("gqd_bcod", "=", self.bch[0]),
+-                ("gqc_dcod=gqd_dcod",)], group="gqc_dcod, gqc_name",
+-                order="gqc_dcod")
++                cols=["gqc_dcod", "gqc_name"], where=[("gqd_bcod",
++                "=", self.bch[0]), ("gqc_dcod=gqd_dcod",)],
++                group="gqc_dcod, gqc_name", order="gqc_dcod")
+             deps = copyList(self.deps)
+             for num, dep in enumerate(deps):
+                 coys = []
+                 chk = self.sql.getRec(tables="genqrd", cols=["gqd_cono"],
+                     where=[("gqd_bcod", "=", self.bch[0]),
+-                    ("gqd_dcod", "=", dep[0])],
+-                    order="gqd_cono")
++                    ("gqd_dcod", "=", dep[0])], order="gqd_cono")
+                 for c in chk:
+                     coys.append(c[0])
+                 self.deps[num].append(coys)
+@@ -431,8 +395,8 @@
+         Description i.e. Description or Single/Double/Blank for underlines
+         Line count
+         Number of lines to skip
+-        List of Amounts (N/A,Lyr,Cyr,Bud,Ytd,Btd) for type "N"
+-        Page Heading i.e. Balance Sheet, Profit and Loss or Other
++        List of Amounts
++        Page Heading
+         Normal sign (+/-)
+ 
+     Using the report file as follows:
+@@ -543,19 +507,13 @@
+         self.rpt_lst = self.sql.getRec(tables="genrpt", where=[("glr_cono",
+             "=", 0), ("glr_repno", "=", self.repno)], order="glr_seq")
+         self.rep_num = 0
+-        if self.rpt_lst and self.rpt_lst[self.rep_num][3] in ("P","B","O"):
+-            self.s_type = self.rpt_lst[0][3]
+-            self.atype = self.s_type
+-            if self.s_type == "P":
+-                self.stanam = "Profit and Loss"
+-            elif self.s_type == "B":
+-                self.stanam = "Balance Sheet"
+-            elif self.s_type == "O":
+-                self.stanam = self.rpt_lst[self.rep_num][4]
+-            if self.dname:
+-                self.stanam = "%s - %s" % (self.dname, self.stanam)
+-            while not self.xits:
+-                self.processRecords()
++        self.s_type = self.rpt_lst[0][3]
++        self.atype = self.s_type
++        self.stanam = "Profit and Loss"
++        if self.dname:
++            self.stanam = "%s - %s" % (self.dname, self.stanam)
++        while not self.xits:
++            self.processRecords()
+ 
+     def processRecords(self):
+         if self.grpind:
+@@ -584,11 +542,6 @@
+                 self.doCalc()
+ 
+     def doHead(self):
+-        if self.rpt_dic["glr_ignore"] == "Y":
+-            if self.atype == "P":
+-                self.checkAccountType("B")
+-            else:
+-                self.checkAccountType("P")
+         self.printLine()
+         self.clearData()
+ 
+@@ -741,9 +694,8 @@
+                 accs = [recs]
+         else:
+             chks = []
+-            recs = self.sql.getRec(tables="genmst",
+-                where=[("glm_acno", ">=", glfrom),
+-                ("glm_acno", "<=", glto)], order="glm_acno")
++            recs = self.sql.getRec(tables="genmst", where=[("glm_acno",
++                ">=", glfrom), ("glm_acno", "<=", glto)], order="glm_acno")
+             for rec in recs:
+                 if not rec[1] in chks:
+                     accs.append(rec)
+@@ -757,8 +709,6 @@
+         self.gen_dic = {}
+         for num, fld in enumerate(self.sql.genmst_col):
+             self.gen_dic[fld] = acc[num]
+-        if self.rpt_dic["glr_ignore"] == "N":
+-            self.checkAccountType(self.gen_dic["glm_type"])
+ 
+     def clearData(self):
+         self.val = [0] * (len(self.deps) + 2)
+@@ -866,22 +816,4 @@
+             k = key.split("_")
+             setattr(self, "s_%s" % k[1], self.rpt_dic[key])
+ 
+-    def checkAccountType(self, glm_type):
+-        if glm_type == self.atype or self.atype == "O":
+-            pass
+-        else:
+-            if glm_type == "P" and self.atype == "P":
+-                pass
+-            elif glm_type == "B" and self.atype == "B":
+-                pass
+-            else:
+-                self.count = 66
+-            self.atype = glm_type
+-            if self.atype == "P":
+-                self.stanam = "Profit and Loss"
+-            else:
+-                self.stanam = "Balance Sheet"
+-            if self.dname:
+-                self.stanam = "%s - %s" % (self.dname, self.stanam)
+-
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== added file 'gen/gl3150_rne.py'
+--- gen/gl3150_rne.py	1970-01-01 00:00:00 +0000
++++ gen/gl3150_rne.py	2018-05-08 16:50:36 +0000
+@@ -0,0 +1,819 @@
++"""
++SYNOPSIS
++    General Ledger Consolidated Financial Statements by Department.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2017 Paul Malherbe.
++"""
++
++import copy, time
++from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
++from TartanClasses import TartanDialog
++from tartanFunctions import copyList, doPrinter, doWriteExport, getModName
++from tartanFunctions import getPeriods, getSingleRecords, makeArray
++from tartanFunctions import mthendDate
++from tartanWork import mthnam
++
++class gl3150:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        gc = GetCtl(self.opts["mf"])
++        ctlsys = gc.getCtl("ctlsys")
++        if not ctlsys:
++            return
++        self.gldep = ctlsys["sys_gl_dep"]
++        self.gldig = ctlsys["sys_gl_dig"]
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "genbud", "genrpt",
++            "genqrb", "genqrc", "genqrd"], prog=__name__)
++        if self.sql.error:
++            return
++        t = time.localtime()
++        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %s" % \
++            (t[0], t[1], t[2], t[3], t[4], __name__)
++        p = self.sql.getRec(tables="ctlynd", cols=["max(cye_period)"],
++            where=[("cye_cono", "=", 1)])
++        self.cfin = int(p[0][0])
++        self.ulc = "X"                          # Temporary Underline Character
++        return True
++
++    def mainProcess(self):
++        self.tit = "General Ledger Financial Statements (%s)" % __name__
++        fin = {
++            "stype": "R",
++            "tables": ("ctlynd",),
++            "cols": (
++                ("cye_period", "", 0, "Prd"),
++                ("cye_start", "", 0, "Start"),
++                ("cye_end", "", 0, "End")),
++            "where": [("cye_cono=1",)]}
++        rpt = {
++            "stype": "R",
++            "tables": ("genrpt",),
++            "cols": (
++                ("glr_repno", "", 0, "Num"),
++                ("glr_type", "", 0, "T"),
++                ("glr_desc", "", 0, "Description", "Y")),
++            "where": [
++                ("glr_cono", "=", 0),
++                ("glr_seq", "=", 0),
++                ("glr_type", "in", ("P", "B", "O"))],
++            "group": "glr_repno, glr_type, glr_desc"}
++        r1s = (("Yes", "Y"), ("No", "N"))
++        fld = (
++            (("T",0,0,0),"IUI",3,"Financial Period","",
++                self.cfin,"Y",self.doFPer,fin,None,("efld",)),
++            (("T",0,1,0),"ID2",7,"Ending Period","Ending Period (YYYY/MM)",
++                0,"N",self.doRepPer,None,None,None),
++            (("T",0,2,0),"IUI",3,"Report Number","",
++                2,"N",self.doRepNum,rpt,None,("notzero",)),
++            (("T",0,3,0),("IRB",r1s),0,"All Departments","",
++                "N","N",self.doAllDep,None,None,None))
++        tnd = ((self.doMainEnd,"y"), )
++        txt = (self.doMainExit, )
++        self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
++            tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
++
++    def doFPer(self, frt, pag, r, c, p, i, w):
++        f = getPeriods(self.opts["mf"], 1, w, check=True)
++        if f == (None, None, None):
++            return "Invalid Financial Period"
++        self.period = (w, (f[0].work, f[0].disp), (f[1].work, f[1].disp))
++        self.s_per = self.period[1][0] / 100
++        self.e_per = self.period[2][0] / 100
++        self.df.loadEntry(frt, pag, p+1, data=self.e_per)
++
++    def doRepPer(self, frt, pag, r, c, p, i, w):
++        if w < self.s_per or w > self.e_per:
++            return "Invalid Period"
++        self.end = w
++        yed = CCD(mthendDate((self.end * 100) + 1), "D1", 10)
++        self.yed = "%s %s %s" % ((yed.work % 100),
++            mthnam[int((yed.work % 10000) / 100)][1], int(yed.work / 10000))
++        self.cyr = "  %4s" % int(self.end / 100)
++        self.pyr = "  %4s" % (int(self.end / 100) - 1)
++
++    def doRepNum(self, frt, pag, r, c, p, i, w):
++        self.rep = w
++        err = self.getRepDetails()
++        if err:
++            return err
++
++    def doAllDep(self, frt, pag, r, c, p, i, w):
++        if w == "Y":
++            self.deps = self.sql.getRec(tables="genqrc", where=[("gqc_dcod",
++                ">", 0)], order="gqc_dcod")
++            if not self.deps:
++                return "No Departments Available"
++        else:
++            self.deps = getSingleRecords(self.opts["mf"], "genqrc",
++                ("gqc_dcod", "gqc_name"),  where=[("gqc_dcod", ">", 0)],
++                order="gqc_dcod")
++            if not self.deps:
++                return "No Departments Selected"
++
++    def doMainEnd(self):
++        self.df.closeProcess()
++        if self.df.repprt[2] == "export":
++            self.pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
++                __name__, "all")
++        else:
++            self.pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
++                __name__, "all", ext="pdf")
++        self.doCreateReport()
++        self.opts["mf"].closeLoop()
++
++    def getRepDetails(self):
++        chk = self.sql.getRec(tables="genrpt", cols=["glr_type", "glr_desc"],
++            where=[("glr_cono", "=", 0), ("glr_repno", "=", self.rep),
++            ("glr_seq", "=", 0)], limit=1)
++        if not chk:
++            return "Invalid Report Number or Type"
++        self.rptyp, self.rpdes = chk
++
++    def doCreateReport(self):
++        if self.df.repprt[2] == "export":
++            self.expdatas = []
++        else:
++            self.fpdf = MyFpdf(name=__name__)
++        p = ProgressBar(self.opts["mf"].body, mxs=len(self.deps), esc=True)
++        for num, self.dep in enumerate(self.deps):
++            p.displayProgress(num)
++            self.allfields = []
++            self.bchs = self.sql.getRec(tables=["genqrb", "genqrd"],
++                cols=["gqb_bcod", "gqb_name"], where=[("gqd_dcod",
++                "=", self.dep[0]), ("gqd_bcod=gqb_bcod",)],
++                group="gqb_bcod, gqb_name", order="gqb_bcod")
++            bchs = copyList(self.bchs)
++            for num, bch in enumerate(bchs):
++                coys = []
++                chk = self.sql.getRec(tables="genqrd", cols=["gqd_cono"],
++                    where=[("gqd_bcod", "=", bch[0]), ("gqd_dcod", "=",
++                    self.dep[0])], order="gqd_cono")
++                for c in chk:
++                    coys.append(c[0])
++                self.bchs[num].append(coys)
++            fin = FinReport(self.opts["mf"], self.period, self.bchs,
++                self.rep, self.end)
++            if not fin.allFields:
++                return
++            for fld in fin.allFields:
++                if fld[0] in ("C", "P"):
++                    continue
++                self.allfields.append(fld)
++            if self.df.repprt[2] == "export":
++                self.doExportReport()
++            else:
++                self.doPrintReport()
++        p.closeProgress()
++        if self.df.repprt[2] == "export":
++            doWriteExport(xtype=self.df.repprt[1], name=self.pdfnam,
++                heads=self.expheads, colsh=self.expcolsh, forms=self.expforms,
++                datas=self.expdatas, rcdic=self.opts["mf"].rcdic, view=True)
++        else:
++            self.fpdf.output(self.pdfnam, "F")
++            doPrinter(mf=self.opts["mf"], pdfnam=self.pdfnam,
++                header=self.emlhead, repprt=self.df.repprt,
++                repeml=self.df.repeml)
++
++    def doExportReport(self):
++        self.titls = {1: ["Description", "NA", 30]}
++        self.colss = [1]
++        for num, bch in enumerate(self.bchs):
++            self.titls[num + 2] = [bch[1], "SI", 14]
++            self.colss.append(num + 2)
++        self.titls[num + 3] = ["Total", "SI", 14]
++        self.titls[num + 4] = ["LYear", "SI", 14]
++        self.titls[num + 5] = ["Var-%", "SD", 7.2]
++        self.colss.extend([num + 3, num + 4, num + 5])
++        self.expheads = [self.dep[1]]
++        self.expheads.append("TYPE")
++        self.expcolsh = [[]]
++        self.expforms = []
++        for h in self.colss:
++            self.expcolsh[0].append(self.titls[h][0])
++            self.expforms.append(self.titls[h][1:])
++        self.counter = 0
++        for num, dat in enumerate(self.allfields):
++            if dat[6] < self.counter:
++                dat[3] = "Y"
++            if not num:
++                self.pageHeading(dat)
++            if dat[0] == "H":
++                self.doHeading(dat)
++            elif dat[0] in ("C","G","L","P","S","T"):
++                self.doValues(dat)
++            elif dat[0] == "U":
++                self.doUnderline(dat)
++            self.counter = dat[6]
++
++    def doPrintReport(self):
++        self.head = []
++        self.linu = ""
++        self.last = False
++        self.head.append("%s" % self.dep[1])
++        self.head.append("")
++        self.width = 30
++        txt = "%-30s" % "Description"
++        self.linu = "%30s" % ""
++        for bch in self.bchs:
++            self.width += 15
++            txt = "%s %13s " % (txt, bch[1])
++            self.linu = "%s %13s " % (self.linu, self.ulc * 13)
++        self.width += 38
++        txt = "%s %13s  %13s  %6s" % (txt, "Total", "LYear", "Var-%")
++        self.linu = "%s %13s  %13s  %6s" % (
++            self.linu, self.ulc * 13, self.ulc * 13, self.ulc * 6)
++        self.head.append(txt)
++        self.fpdf.setValues("gl3130", self.width, font="courier")
++        self.pgnum = 0
++        self.pglin = 999
++        self.counter = 0
++        for num, dat in enumerate(self.allfields):
++            if dat[6] < self.counter:
++                dat[3] = "Y"
++            if self.pglin > self.fpdf.lpp:
++                dat[3] = "N"
++                self.pageHeading(dat)
++            if dat[0] == "H":
++                self.doHeading(dat)
++            elif dat[0] in ("C","G","L","P","S","T"):
++                self.doValues(dat)
++            elif dat[0] == "U":
++                self.doUnderline(dat)
++            self.counter = dat[6]
++
++    def doHeading(self, line):
++        if line[3] == "Y":
++            if self.df.repprt[2] == "export":
++                if self.oldtyp != self.dep[0]:
++                    self.pageHeading(line)
++            else:
++                self.pageHeading(line)
++        if self.df.repprt[2] == "export":
++            data = []
++            for num, dat in enumerate(self.expforms):
++                if int(self.expforms[num][1]) < 30:
++                    data.append("")
++                    continue
++                data.append(line[5])
++                break
++            if self.expdatas[-1][0] not in ("PAGE", "BLANK"):
++                self.expdatas.append(["BLANK"])
++            self.expdatas.append(["HEAD", data])
++            self.expdatas.append(["BLANK"])
++        else:
++            if line[2] == "Y":
++                self.fpdf.setFont(style="B")
++            self.fpdf.drawText(line[5])
++            self.fpdf.setFont()
++            self.fpdf.drawText()
++            self.pglin += 2
++
++    def doValues(self, line):
++        typ = line[0]
++        acc = CCD(line[4], "UI", 7)
++        if acc.work == 0:
++            acc.disp = "       "
++        des = CCD(line[5], "NA", 30)
++        exp = [des.disp]
++        prt = []
++        for val in line[8]:
++            exp.append(CCD(val, "SI", 14).work)
++            prt.append(CCD(val, "SI", 14).disp)
++        if val:
++            var = round(((line[8][-2] - val) * 100.0) / val, 2)
++            if var > 0 and var > 999.99:
++                var = 999.99
++            elif var < 0 and var < -999.99:
++                var = -999.99
++        else:
++            var = 0
++        exp.append(CCD(var, "SD", 7.2).work)
++        prt.append(CCD(var, "SD", 7.2).disp)
++        if self.df.repprt[2] != "export" and line[2] == "Y":
++            self.fpdf.setFont(style="B")
++        if not exp[-1] and not exp[-2]:
++            pass
++        elif self.df.repprt[2] == "export":
++            if typ == "T":
++                txt = "TOTAL"
++            else:
++                txt = "BODY"
++            self.expdatas.append([txt, exp])
++        else:
++            txt = des.disp
++            for fld in prt:
++                txt = "%s %s" % (txt, fld)
++            self.fpdf.drawText(txt)
++            self.pglin += 1
++            self.last = True
++        if self.df.repprt[2] != "export":
++            self.fpdf.setFont()
++
++    def doUnderline(self, line):
++        if self.df.repprt[2] == "export":
++            if line[5] == "Blank":
++                self.expdatas.append(["BLANK"])
++            elif line[5] == "Double":
++                self.expdatas.append(["ULINED"])
++            else:
++                self.expdatas.append(["ULINES"])
++            return
++        if not self.last:
++            return
++        if line[5] == "Blank":
++            self.fpdf.drawText()
++        else:
++            if line[5] == "Double":
++                st = "D"
++            else:
++                st = "S"
++            txt = self.linu.replace(self.ulc, self.fpdf.suc)
++            self.fpdf.underLine(t=st, txt=txt)
++        self.pglin += 1
++        self.last = False
++
++    def pageHeading(self, line):
++        if self.df.repprt[2] == "export":
++            expheads = copy.deepcopy(self.expheads)
++            expcolsh = copy.deepcopy(self.expcolsh)
++            expforms = copy.deepcopy(self.expforms)
++            edate = CCD(self.end, "D2", 7).disp
++            head = "%s for period %s to %s" % (line[11],
++                self.period[1][1][:-3], edate)
++            expheads[1] = head
++            self.expdatas.append(["PAGE",
++                [expheads, expcolsh, expforms, self.dep[1]]])
++            self.oldtyp = self.dep[0]
++            return
++        self.fpdf.add_page()
++        self.pgnum += 1
++        self.pglin = 0
++        self.fpdf.setFont(style="B")
++        for num, data in enumerate(self.head):
++            if num == 2:
++                edate = CCD(self.end, "D2", 7).disp
++                pad = self.width - 11
++                txt = "%s for period %s to %s" % (line[11],
++                    self.period[1][1][:-3], edate)
++                head = "%s%s%s" % ("%-", pad, "s")
++                self.fpdf.drawText("%s %4s %5s" % (head % txt,
++                    "Page", self.pgnum))
++                self.pglin += 1
++                self.emlhead = head
++                self.fpdf.drawText()
++                self.pglin += 1
++            self.fpdf.drawText(data)
++            self.pglin += 1
++        self.fpdf.drawText("%s" % (self.fpdf.suc * self.width))
++        self.pglin += 1
++        self.fpdf.setFont()
++
++    def doMainExit(self):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++class FinReport:
++    """
++    This class generates a list comprising:
++
++        Type of line i.e. H, L, G, T, S, U, C, P etc.
++        Account Type (B,P,O)
++        Print Highlighted (y or n)
++        Formfeed (y/n)
++        Account Number in the case of 'L'
++        Description i.e. Description or Single/Double/Blank for underlines
++        Line count
++        Number of lines to skip
++        List of Amounts
++        Page Heading
++        Normal sign (+/-)
++
++    Using the report file as follows:
++
++    Num  Field       FF  Size  Description                     Heading
++    ---  ----------  --  ----  ------------------------------  -----------
++      0  glr_cono    UI   3.0  Company Number                  Coy
++      1  glr_repno   UI   3.0  Report Number                   No
++      2  glr_seq     UI   5.0  Sequence                        Seq
++      3  glr_type    UA   1.0  Type                            T
++      4  glr_desc    NA  30.0  Description                     Description
++      5  glr_high    UA   1.0  Highlight (y/n)                 H
++      6  glr_ffeed   UA   1.0  Form Feed (y/n)                 F
++      7  glr_ignore  UA   1.0  Ignore Account Type (y/n)       I
++      8  glr_from    UI   7.0  From Account                    From-Ac
++      9  glr_to      UI   7.0  To Account                      To-Ac
++     10  glr_obal    UA   1.0  Include Opening Balance (y/n)   B
++     11  glr_accum   UA   1.0  Accumulate Month Values (y/n)   A
++     12  glr_print   UA   1.0  Print Values (y/n/+/-)          P
++     13  glr_norm    UA   1.0  Normal Sign (+/-)               S
++     14  glr_acbal   UA   1.0  Add/Sub/Ignore Balance (a/s/i)  A
++     15  glr_store   UA   1.0  Store Balances (y/n)            S
++     16  glr_snum1   UI   2.0  Storage Number 1                N1
++     17  glr_snum2   UI   2.0  Storage Number 2                N2
++     18  glr_snum3   UI   2.0  Storage Number 3                N3
++     19  glr_acstr   UA   1.0  Add/Sub/Ignore Storage (a/s/i)  A
++     20  glr_group   UI   3.0  Group Number                    Grp
++     21  glr_total   UI   1.0  Total Level                     T
++     22  glr_clear   UA   1.0  Clear Total/Storage Level(s)    C
++     23  glr_strper  UD   6.2  Percentage of Stored Amount     %-tage
++     24  glr_uline   UA   1.0  Underline (b/d/s)               U
++     25  glr_cbase   UA   1.0  Calculation Base (p/a/s)        B
++     26  glr_ctype   UA   1.0  Calculation Type (+ - * /)      C
++     27  glr_camnt   SD  13.2  Percent or Amount               Amount
++     28  glr_label   NA  10.0  Chart Label, Space = None       Label
++
++    as well as the following parameters:
++
++    period   = The Financial Period to be used
++    bchs     = A list of branches [[Num, Name, Flag, [Companies]], ...]
++    curdt    = The current financial period of the report e.g. 200302
++    """
++    def __init__(self, mf, period, bchs, repno, curdt):
++        self.mf = mf
++        self.period = period
++        self.bchs = bchs
++        self.repno = repno
++        self.curdt = curdt
++        if self.setVariables():
++            self.mainProcess()
++
++    def setVariables(self):
++        self.sql = Sql(self.mf.dbm, ["ctlmst", "genmst", "genrpt", "genbal",
++            "gentrn"], prog=__name__)
++        if self.sql.error:
++            return
++        self.i_per = int(self.period[1][0] / 100)
++        self.e_per = int(self.period[2][0] / 100)
++        df = self.e_per - self.i_per - 87
++        if df > 12:
++            self.d_per = df - 12
++            yr = int(self.i_per / 100)
++            mt = self.i_per % 100
++            for _ in xrange(self.d_per):
++                mt += 1
++                if mt > 12:
++                    mt -= 12
++                    yr += 1
++            self.s_per = (yr * 100) + mt
++        else:
++            self.d_per = 0
++            self.s_per = self.i_per
++        if self.period[0]:
++            self.s_lyr, e_lyr, fin = getPeriods(self.mf, 1,
++                (self.period[0] - 1))
++            self.i_pyr = int(self.s_lyr.work / 100)
++            self.e_pyr = int(e_lyr.work / 100)
++            df = self.e_pyr - self.i_pyr - 87
++            if df > 12:
++                self.d_pyr = df - 12
++                yr = int(self.i_pyr / 100)
++                mt = self.i_pyr % 100
++                for _ in xrange(self.d_pyr):
++                    mt += 1
++                    if mt > 12:
++                        mt -= 12
++                        yr += 1
++                self.s_pyr = (yr * 100) + mt
++            else:
++                self.d_pyr = 0
++                self.s_pyr = self.i_pyr
++        else:
++            self.d_pyr = 0
++            self.s_pyr = 0
++        self.cmth = self.curdt % 100
++        self.lines = 1
++        self.count = 0
++        self.grpind = False
++        self.xits = False
++        self.clearData()
++        self.allFields = []
++        self.val_tot = makeArray(len(self.bchs) + 2, 10, 1)
++        self.val_str = makeArray(len(self.bchs) + 2, 100, 1)
++        self.dname = None
++        return True
++
++    def mainProcess(self):
++        self.rpt_lst = self.sql.getRec(tables="genrpt", where=[("glr_cono",
++            "=", 0), ("glr_repno", "=", self.repno)], order="glr_seq")
++        self.rep_num = 0
++        self.s_type = self.rpt_lst[0][3]
++        self.atype = self.s_type
++        self.stanam = "Profit and Loss"
++        if self.dname:
++            self.stanam = "%s - %s" % (self.dname, self.stanam)
++        while not self.xits:
++            self.processRecords()
++
++    def processRecords(self):
++        if self.grpind:
++            self.grpind = False
++        else:
++            self.nextRepRecord()
++            self.storeRepRecord()
++            if self.rpt_dic == {}:
++                self.xits = True
++        if not self.xits:
++            if self.s_type == "H":
++                self.doHead()
++            elif self.s_type == "L":
++                self.doLedger()
++            elif self.s_type == "G":
++                self.doGroup()
++            elif self.s_type == "T":
++                self.doTotal()
++            elif self.s_type == "S":
++                self.doStore()
++            elif self.s_type == "U":
++                self.doUnderline()
++            elif self.s_type == "P":
++                self.doPercent()
++            elif self.s_type == "C":
++                self.doCalc()
++
++    def doHead(self):
++        self.printLine()
++        self.clearData()
++
++    def doLedger(self):
++        accs = self.readGenmst()
++        for acc in accs:
++            for num, bch in enumerate(self.bchs):
++                self.lstdicGenmst(acc)
++                self.s_cono = bch[2]
++                self.s_acno = self.gen_dic["glm_acno"]
++                self.s_desc = self.gen_dic["glm_desc"]
++                self.accumData(num)
++            if self.s_print == "+" and self.val[-2] < 0:
++                self.clearData()
++                continue
++            elif self.s_print == "-" and self.val[-2] >= 0:
++                self.clearData()
++                continue
++            elif self.s_print == "N":
++                pass
++            else:
++                self.printLine()
++            self.accumTotals(self.s_acbal)
++            if self.s_store == "Y":
++                self.storeBalances()
++            self.clearData()
++
++    def doGroup(self):
++        self.grpind = True
++        while self.rpt_dic and self.rpt_dic["glr_type"] == "G" and \
++                        self.rpt_dic["glr_group"] == self.s_group:
++            accs = self.readGenmst()
++            for acc in accs:
++                for num, bch in enumerate(self.bchs):
++                    self.lstdicGenmst(acc)
++                    self.s_cono = bch[2]
++                    self.s_acno = self.gen_dic["glm_acno"]
++                    self.accumData(num)
++            self.nextRepRecord()
++        if self.s_print == "+" and self.val[-2] < 0:
++            pass
++        elif self.s_print == "-" and self.val[-2] >= 0:
++            pass
++        else:
++            if self.s_print == "Y":
++                self.printLine()
++            self.accumTotals(self.s_acbal)
++            if self.s_store == "Y":
++                self.storeBalances()
++        self.clearData()
++        self.storeRepRecord()
++
++    def doTotal(self):
++        for x in xrange(0, len(self.bchs) + 2):
++            self.val[x] = self.val_tot[self.s_total][x]
++        amt = self.val[-2]
++        if self.s_print == "+" and amt < 0:
++            self.clearData()
++            return
++        elif self.s_print == "-" and amt >= 0:
++            self.clearData()
++            return
++        elif self.s_print == "N":
++            pass
++        else:
++            self.printLine()
++        if self.s_store == "Y":
++            self.storeBalances()
++        self.clearData()
++        if self.s_clear == "Y":
++            for x in xrange(0, self.s_total+1):
++                for y in xrange(0, len(self.bchs) + 2):
++                    self.val_tot[x][y] = 0
++
++    def doStore(self):
++        for x in xrange(0, len(self.bchs) + 2):
++            if self.val_str[self.s_snum1][x] == 0:
++                self.val[x] = 0
++            else:
++                self.val[x] = round((self.val_str[self.s_snum1][x] *
++                    self.s_strper / 100.0), 2)
++        amt = self.val[-2]
++        if self.s_print == "+" and amt < 0:
++            self.clearData()
++            return
++        elif self.s_print == "-" and amt >= 0:
++            self.clearData()
++            return
++        elif self.s_print == "N":
++            pass
++        else:
++            self.printLine()
++        self.accumTotals(self.s_acbal)
++        self.clearData()
++        if self.s_clear == "Y":
++            for x in xrange(0, len(self.bchs) + 2):
++                self.val_str[self.s_snum1][x] = 0
++
++    def doUnderline(self):
++        if self.rpt_dic["glr_uline"] == "B":
++            self.s_desc = "Blank"
++        elif self.rpt_dic["glr_uline"] == "S":
++            self.s_desc = "Single"
++        else:
++            self.s_desc = "Double"
++        self.printLine()
++        self.clearData()
++
++    def doPercent(self):
++        for x in xrange(0, len(self.bchs) + 2):
++            if self.val_str[self.s_snum1][x] == 0 or \
++                    self.val_str[self.s_snum2][x] == 0:
++                self.val[x] = 0
++            else:
++                self.val[x] = round((self.val_str[self.s_snum1][x] /
++                    self.val_str[self.s_snum2][x]) * 100.0, 2)
++        self.printLine()
++        self.clearData()
++
++    def doCalc(self):
++        for x in xrange(0, len(self.bchs) + 2):
++            amt1 = self.val_str[self.s_snum2][x]
++            if self.s_cbase == "S":
++                amt2 = self.val_str[self.s_snum3][x]
++            else:
++                amt2 = self.s_camnt
++            if self.s_ctype == "+":
++                self.val[x] = float(ASD(amt1) + ASD(amt2))
++            elif self.s_ctype == "-":
++                self.val[x] = float(ASD(amt1) - ASD(amt2))
++            elif self.s_ctype == "*":
++                if self.s_cbase == "P":
++                    self.val[x] = round(amt1 * amt2 / 100.0, 2)
++                else:
++                    self.val[x] = round(amt1 * amt2, 2)
++            elif self.s_ctype == "/":
++                self.val[x] = round(amt1 / amt2, 2)
++        self.printLine()
++        self.clearData()
++
++    def readGenmst(self):
++        accs = []
++        glfrom = self.rpt_dic["glr_from"]
++        glto = self.rpt_dic["glr_to"]
++        if not glto:
++            recs = self.sql.getRec(tables="genmst",
++                where=[("glm_acno", "=", glfrom)],
++                limit=1)
++            if recs:
++                accs = [recs]
++        else:
++            chks = []
++            recs = self.sql.getRec(tables="genmst", where=[("glm_acno",
++                ">=", glfrom), ("glm_acno", "<=", glto)], order="glm_acno")
++            for rec in recs:
++                if not rec[1] in chks:
++                    accs.append(rec)
++                    chks.append(rec[1])
++        if not accs:
++            accs = []
++        return accs
++
++    def lstdicGenmst(self, acc):
++        self.gen_lst = acc
++        self.gen_dic = {}
++        for num, fld in enumerate(self.sql.genmst_col):
++            self.gen_dic[fld] = acc[num]
++
++    def clearData(self):
++        self.val = [0] * (len(self.bchs) + 2)
++
++    def accumData(self, dp):
++        t1 = len(self.bchs)
++        t2 = t1 + 1
++        if self.rpt_dic["glr_obal"] == "Y":
++            o_lyr, o_cyr = self.getObal()
++            self.val[dp] = float(ASD(self.val[dp]) + ASD(o_cyr))
++            self.val[t1] = float(ASD(self.val[t1]) + ASD(o_cyr))
++            self.val[t2] = float(ASD(self.val[t2]) + ASD(o_lyr))
++        lyr, cyr = self.getCbal()
++        self.val[dp] = float(ASD(self.val[dp]) + ASD(cyr))
++        self.val[t1] = float(ASD(self.val[t1]) + ASD(cyr))
++        self.val[t2] = float(ASD(self.val[t2]) + ASD(lyr))
++
++    def getObal(self):
++        if not self.period[0]:
++            lyr = None
++        else:
++            lyr = self.sql.getRec(tables="genbal",
++                cols=["round(sum(glo_cyr), 0)"], where=[("glo_cono",
++                "in", self.s_cono), ("glo_acno", "=", self.s_acno),
++                ("glo_trdt", "=", self.s_lyr.work)], limit=1)[0]
++        cyr = self.sql.getRec(tables="genbal",
++            cols=["round(sum(glo_cyr), 0)"], where=[("glo_cono", "in",
++            self.s_cono), ("glo_acno", "=", self.s_acno), ("glo_trdt",
++            "=", self.period[1][0])], limit=1)[0]
++        if not lyr:
++            lyr = 0
++        if not cyr:
++            cyr = 0
++        return (lyr, cyr)
++
++    def getCbal(self):
++        lyr = self.sql.getRec(tables="gentrn",
++            cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
++            "in", self.s_cono), ("glt_acno", "=", self.s_acno),
++            ("glt_curdt", "between", self.i_pyr, self.curdt - 100)],
++            limit=1)[0]
++        cyr = self.sql.getRec(tables="gentrn",
++            cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
++            "in", self.s_cono), ("glt_acno", "=", self.s_acno),
++            ("glt_curdt", "between", self.i_per, self.curdt)],
++            limit=1)[0]
++        if not lyr:
++            lyr = 0
++        if not cyr:
++            cyr = 0
++        return (lyr, cyr)
++
++    def printLine(self):
++        self.signChkChg()
++        val = copyList(self.val)
++        if self.s_type != "L":
++            self.s_acno = 0
++        self.allFields.append([self.s_type, self.atype, self.s_high,
++            self.s_ffeed, self.s_acno, self.s_desc, self.count, self.lines,
++            val, [], self.s_label, self.stanam, self.s_norm])
++        self.signChkChg()
++        self.count += 1
++        self.lines = 1
++
++    def signChkChg(self):
++        if self.s_type in ("C","G","L","S","T") and self.s_norm == "N":
++            for x in xrange(0, len(self.bchs) + 2):
++                self.val[x] = float(ASD(0) - ASD(self.val[x]))
++
++    def accumTotals(self, acbal):
++        for x in xrange(1, 10):
++            if acbal == "A":
++                for y in xrange(0, len(self.bchs) + 2):
++                    self.val_tot[x][y] = \
++                        float(ASD(self.val_tot[x][y]) + ASD(self.val[y]))
++            elif acbal == "S":
++                for y in xrange(0, len(self.bchs) + 2):
++                    self.val_tot[x][y] = \
++                        float(ASD(self.val_tot[x][y]) - ASD(self.val[y]))
++
++    def storeBalances(self):
++        if self.s_acstr == "A":
++            for x in xrange(0, len(self.bchs) + 2):
++                self.val_str[self.s_snum1][x] = \
++                    float(ASD(self.val_str[self.s_snum1][x]) + ASD(self.val[x]))
++        elif self.s_acstr == "S":
++            for x in xrange(0, len(self.bchs) + 2):
++                self.val_str[self.s_snum1][x] = \
++                    float(ASD(self.val_str[self.s_snum1][x]) - ASD(self.val[x]))
++
++    def nextRepRecord(self):
++        self.rpt_dic = {}
++        if self.rep_num == len(self.rpt_lst) - 1:
++            self.xits = True
++        else:
++            self.rep_num += 1
++            num = 0
++            for fld in self.sql.genrpt_col:
++                self.rpt_dic[fld] = self.rpt_lst[self.rep_num][num]
++                num += 1
++
++    def storeRepRecord(self):
++        self.s_acno = 0
++        for key in self.rpt_dic:
++            k = key.split("_")
++            setattr(self, "s_%s" % k[1], self.rpt_dic[key])
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2018-04-08 06:05:45 +0000
++++ men/rnemen.py	2018-05-03 09:43:19 +0000
+@@ -125,7 +125,8 @@
+     ["PNNN","gl_rp","gl3110",1,"Multi-Company Reports"],
+     ["PNNN","gl_rp","gl3120",1,"Quick Trading Results"],
+     ["PNNN","gl_rp","gl3130",1,"Preliminary Results"],
+-    ["PNNN","gl_rp","gl3140",1,"Consolidated Financials"],
++    ["PNNN","gl_rp","gl3140",1,"Financials by Branch"],
++    ["PNNN","gl_rp","gl3150",1,"Financials by Department"],
+     ["PYNN","gl_tb","gl6010",5,"Change Account Numbers"],
+     ["PYNY","gl_tb","gl6020",5,"Copy Masterfile Records"],
+     ["PYYN","gl_tb","gl6030",1,"Integrated Controls Report"],
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2018-02-17 07:36:43 +0000
++++ men/stdmen.py	2018-05-23 13:17:09 +0000
+@@ -261,7 +261,7 @@
+ simod = [
+     ["PYNY","si_fm","sic110",5,"Control Record"],
+     ["PYYY","mm_si","si2010",2,"Data Capture",0],
+-    ["PYNN","si_rp","si3010",1,"Oustanding Orders"],
++    ["PYNN","si_rp","si3010",1,"Oustanding Documents"],
+     ["PYYN","si_rp","si3020",1,"Sales By Product"],
+     ["PYYN","si_rp","si3030",1,"Period Sales By Product"],
+     ["PYNN","si_rp","si3040",1,"Product Sales History"],
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2018-05-01 16:28:35 +0000
++++ mst/ms0000.py	2018-05-31 15:56:58 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 8)
++    VERSION = (5, 3, 9)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms3010.py'
+--- mst/ms3010.py	2018-05-01 16:28:35 +0000
++++ mst/ms3010.py	2018-05-22 07:59:25 +0000
+@@ -79,10 +79,6 @@
+     def mainProcess(self):
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "V.A.T. Statement (%s)" % __name__)
+-        data = self.sql.getRec(tables="ctlvtf", cols=["vtt_paid"],
+-            where=[("vtt_cono", "=", self.opts["conum"]), ("vtt_paid",
+-            "<>", 0)], group="vtt_paid",
+-            order="vtt_paid")
+         self.cats = [
+             ["A", "All"],
+             ["B", "All Except (N)one"],
+@@ -118,10 +114,14 @@
+                 ("M", "Member's Ledger"),
+                 ("R", "Rental's Ledger"))}
+         pdt = {
+-            "stype": "C",
++            "stype": "R",
+             "titl": "Payment Date",
+             "head": ("Date",),
+-            "data": data}
++            "tables": ("ctlvtf",),
++            "cols": (("vtt_paid", "", 0, "Date-Paid"),),
++            "where": [],
++            "group": "vtt_paid",
++            "order": "vtt_paid"}
+         r1s = (("Yes", "Y"), ("No", "N"))
+         r2s = (("Yes", "Y"), ("No", "N"), ("Reprint", "R"))
+         fld = (
+@@ -244,7 +244,7 @@
+         expnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"])
+         self.expheads = [self.head % self.sysdttm]
+-        self.expheads.append("VAT Statements for Period %s to %s" % \
++        self.expheads.append("VAT Statement for Period %s to %s" % \
+             (self.sperd, self.eperd))
+         self.expcolsh = [self.colsh]
+         self.expforms = self.forms
+@@ -259,6 +259,8 @@
+             code, self.pdesc, cat, vtf = vals
+             if not self.pcat:
+                 self.pcat = cat
++                self.expdatas.append(["PAGE", [self.expheads, self.expcolsh,
++                    self.expforms, "Category %s" % cat]])
+             if not self.pcode:
+                 self.pcode = code
+             if cat != self.pcat:
+@@ -266,6 +268,8 @@
+                 self.doPrintCatTotal(ttype="X")
+                 self.pcat = cat
+                 self.pcode = code
++                self.expdatas.append(["PAGE", [self.expheads, self.expcolsh,
++                    self.expforms, "Category %s" % cat]])
+             if code != self.pcode:
+                 self.doPrintCodeTotal(ttype="X")
+                 self.pcode = code
+@@ -309,7 +313,8 @@
+             return
+         self.doPrintCodeTotal(ttype="X")
+         self.doPrintCatTotal(ttype="X", page=False)
+-        self.doPrintGrandTotal(ttype="X")
++        if self.cat in ("A", "B"):
++            self.doPrintSummary(ttype="X")
+         doWriteExport(xtype=self.df.repprt[1], name=expnam,
+             heads=self.expheads, colsh=self.expcolsh, forms=self.expforms,
+             datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
+@@ -335,13 +340,21 @@
+             if not self.pcode:
+                 self.pcode = code
+             if cat != self.pcat:
+-                self.doPrintCodeTotal()
++                if (self.pglin + 5) > self.fpdf.lpp:
++                    self.doPrintHeading("A")
++                    self.doPrintCodeTotal(ttype="P", line=False)
++                else:
++                    self.doPrintCodeTotal()
+                 self.doPrintCatTotal()
+                 self.pcat = cat
+                 self.pcode = code
+                 self.doPrintHeading("A")
+             if code != self.pcode:
+-                self.doPrintCodeTotal()
++                if (self.pglin + 2) > self.fpdf.lpp:
++                    self.doPrintHeading("A")
++                    self.doPrintCodeTotal(ttype="P", line=False)
++                else:
++                    self.doPrintCodeTotal()
+                 self.pcode = code
+                 if self.totsonly == "N":
+                     self.doPrintHeading("C")
+@@ -353,7 +366,6 @@
+                     vtr, tax, inc = self.getValues2(dat)
+                 if self.pglin > self.fpdf.lpp:
+                     self.doPrintHeading("A")
+-                    self.pglin += 1
+                 if vtyp.work == "I":
+                     if self.totsonly != "Y":
+                         self.fpdf.drawText("%s %s %s %s %s %s %s %s %s %s "\
+@@ -391,7 +403,11 @@
+             p2.closeProgress()
+         p1.closeProgress()
+         if self.fpdf.page:
+-            self.doPrintCodeTotal()
++            if (self.pglin + 5) > self.fpdf.lpp:
++                self.doPrintHeading("A")
++                self.doPrintCodeTotal(ttype="P", line=False)
++            else:
++                self.doPrintCodeTotal()
+             self.doPrintCatTotal()
+             if self.cat in ("A", "B"):
+                 self.doPrintHeading("S")
+@@ -470,8 +486,8 @@
+                 flag = "(Transactions Not Flagged)"
+             elif self.flag == "R":
+                 flag = "(Transactions Paid on %s)" % self.paidd
+-            self.fpdf.drawText("%-25s %-7s %-2s %-7s %-78s %4s %5s" % \
+-                ("VAT Statements for Period",
++            self.fpdf.drawText("%-24s %-7s %-2s %-7s %-79s %4s %5s" % \
++                ("VAT Statement for Period",
+                 self.sperd, "to", self.eperd, flag, "Page", self.pgnum))
+             self.fpdf.drawText()
+             if htype == "A":
+@@ -481,10 +497,10 @@
+                 else:
+                     self.fpdf.drawText("Category: %1s %s - Totals Only" % \
+                         (self.pcat, desc))
+-                self.pglin += 1
++                self.pglin = 6
+             else:
+                 self.fpdf.drawText("V.A.T. Summary")
+-            self.pglin = 5
++                self.pglin = 5
+         elif htype == "C":
+             self.fpdf.setFont(style="B")
+             self.fpdf.drawText()
+@@ -505,13 +521,13 @@
+         self.fpdf.setFont()
+         self.pglin += 3
+ 
+-    def doPrintCodeTotal(self, ttype="P"):
++    def doPrintCodeTotal(self, ttype="P", line=True):
+         j = CCD(self.ctipv, "SD", 13.2)
+         k = CCD(self.ctipt, "SD", 13.2)
+         l = CCD(self.ctopv, "SD", 13.2)
+         m = CCD(self.ctopt, "SD", 13.2)
+         if ttype == "P":
+-            if self.totsonly != "Y":
++            if self.totsonly != "Y" and line:
+                 self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+             self.fpdf.drawText("%-41s %-14s %-22s %-13s %-13s %-13s %-13s" %
+                 ("", "Code-Total", self.pcode, j.disp, k.disp, l.disp, m.disp))
+@@ -534,6 +550,8 @@
+             k = CCD(self.ttipt[self.pcat][rte], "SD", 13.2)
+             l = CCD(self.ttopv[self.pcat][rte], "SD", 13.2)
+             m = CCD(self.ttopt[self.pcat][rte], "SD", 13.2)
++            if not j.work and not k.work and not l.work and not m.work:
++                continue
+             if ttype == "P":
+                 if not num:
+                     self.fpdf.drawText("%-125s" % (
+@@ -548,28 +566,18 @@
+                 line = ["TOTAL", ["", "", "", "", "", "", "", "", desc, rte,
+                     j.work, k.work, l.work, m.work]]
+                 self.expdatas.append(line)
+-        if ttype == "X" and page:
+-            self.expdatas.append(["PAGE", [self.expheads, self.expcolsh]])
+-
+-    def doPrintGrandTotal(self, ttype="P"):
+-        j = CCD(self.gtipv, "SD", 13.2)
+-        k = CCD(self.gtipt, "SD", 13.2)
+-        l = CCD(self.gtopv, "SD", 13.2)
+-        m = CCD(self.gtopt, "SD", 13.2)
+-        #if ttype == "P":
+-        #    self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+-        #    self.fpdf.drawText("%-41s %-14s %-15s %-13s %-13s %-13s %-13s" %
+-        #        ("", "Grand-Total", "", j.disp, k.disp, l.disp, m.disp))
+-        #else:
+-        if 'a' == 'a':
+-            self.expdatas.append(["ULINES"])
+-            desc = "Grand-Total"
+-            line = ["TOTAL", ["", "", "", "", "", "", "", "", desc, "",
+-                j.work, k.work, l.work, m.work]]
+-            self.expdatas.append(line)
+-            self.expdatas.append(["ULINED"])
+-
+-    def doPrintSummary(self):
++
++    def doPrintSummary(self, ttype="P"):
++        if ttype == "X":
++            expheads = [self.head % self.sysdttm]
++            expheads.append("VAT Summary for Period %s to %s" % \
++                (self.sperd, self.eperd))
++            expcolsh = [self.colsh[8:]]
++
++            expcolsh[0][0] = "Category"
++            expforms = self.expforms[8:]
++            self.expdatas.append(["PAGE", [expheads, expcolsh, expforms,
++                "Summary"]])
+         tots = [0, 0, 0, 0]
+         for c in self.cats:
+             if c[0] in ("A", "B"):
+@@ -578,8 +586,8 @@
+                 continue
+             rates = self.ttipv[c[0]].keys()
+             rates.sort()
++            desc = True
+             for rte in rates:
+-                d = CCD(c[1], "NA", 30)
+                 j = CCD(self.ttipv[c[0]][rte], "SD", 13.2)
+                 tots[0] = float(ASD(tots[0]) + ASD(j.work))
+                 k = CCD(self.ttipt[c[0]][rte], "SD", 13.2)
+@@ -588,21 +596,43 @@
+                 tots[2] = float(ASD(tots[2]) + ASD(l.work))
+                 m = CCD(self.ttopt[c[0]][rte], "SD", 13.2)
+                 tots[3] = float(ASD(tots[3]) + ASD(m.work))
+-                self.fpdf.drawText("%s %s %s %s %s %s" % (d.disp, rte,
+-                    j.disp, k.disp, l.disp, m.disp))
+-        self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+-        d = CCD("Grand Totals", "NA", 30)
++                if not j.work and not k.work and not l.work and not m.work:
++                    continue
++                if desc:
++                    desc = False
++                    d = CCD(c[1], "NA", 30)
++                else:
++                    d = CCD("", "NA", 30)
++                if ttype == "P":
++                    self.fpdf.drawText("%s %s %s %s %s %s" % (d.disp, rte,
++                        j.disp, k.disp, l.disp, m.disp))
++                else:
++                    line = ["BODY", [d.disp, rte, j.work, k.work, l.work,
++                        m.work]]
++                    self.expdatas.append(line)
++        if ttype == "P":
++            self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
++        else:
++            self.expdatas.append(["ULINES"])
++        d = CCD("Grand Total", "NA", 30)
+         j = CCD(tots[0], "SD", 13.2)
+         k = CCD(tots[1], "SD", 13.2)
+         l = CCD(tots[2], "SD", 13.2)
+         m = CCD(tots[3], "SD", 13.2)
+-        self.fpdf.drawText("%-37s %s %s %s %s" % (d.disp, j.disp, k.disp,
+-            l.disp, m.disp))
+-        self.fpdf.drawText()
+-        self.fpdf.drawText()
+         tvat = CCD(float(ASD(tots[1]) + ASD(tots[3])), "SD", 13.2)
+-        self.fpdf.drawText("%-79s %13s" % ("Total Net Tax Due/Owed",
+-            tvat.disp))
++        if ttype == "P":
++            self.fpdf.drawText("%-37s %s %s %s %s" % (d.disp, j.disp, k.disp,
++                l.disp, m.disp), font="B")
++            self.fpdf.drawText()
++            self.fpdf.drawText("%-79s %13s" % ("Total Net Tax Due/Owed",
++                tvat.disp), font="B")
++        else:
++            line = ["TOTAL", [d.disp, "", j.work, k.work, l.work, m.work]]
++            self.expdatas.append(line)
++            self.expdatas.append(["BLANK"])
++            line = ["TOTAL", ["Total Net Tax Due/Owed", "", "", "", "",
++                tvat.work]]
++            self.expdatas.append(line)
+         if not self.genleg:
+             return
+         bal = 0.0
+@@ -624,9 +654,15 @@
+         else:
+             b = CCD(0, "SD", 13.2)
+         tbal = CCD(float(ASD(bal) + ASD(b.work)), "SD", 13.2)
+-        self.fpdf.drawText()
+-        self.fpdf.drawText("%-79s %13s" % ("Balance of VAT Control",
+-            tbal.disp))
++        if ttype == "P":
++            self.fpdf.drawText()
++            self.fpdf.drawText("%-79s %13s" % ("Balance of VAT Control",
++                tbal.disp), font="B")
++        else:
++            self.expdatas.append(["BLANK"])
++            line = ["TOTAL", ["Balance of VAT Control", "", "", "", "",
++                tbal.work]]
++            self.expdatas.append(line)
+ 
+     def doExit(self):
+         self.df.closeProcess()
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2018-02-17 07:36:43 +0000
++++ mst/msc000.py	2018-05-30 16:22:28 +0000
+@@ -192,13 +192,13 @@
+                 from TartanClasses import tk
+                 from PIL import VERSION
+                 print("%-16s: %s" % ("Tcl/Tk",
+-                        tk.Tcl().eval("info patchlevel")))
++                    tk.Tcl().eval("info patchlevel")))
+                 print("%-16s: %s" % ("PIL", VERSION))
+             try:
+                 import fdb
+-                print("%-16s: %s" % ("FDB", fdb.__version__))
++                print("%-16s: %s" % ("Fdb", fdb.__version__))
+             except:
+-                pass
++                print("%-16s: %s" % ("Fdb", "Not Installed"))
+             try:
+                 import MySQLdb
+                 print("%-16s: %s" % ("MySQLdb", MySQLdb.__version__))
+@@ -207,38 +207,38 @@
+                     import pymysql
+                     print("%-16s: %s" % ("Pymysql", pymysql.__version__))
+                 except:
+-                    pass
++                    print("%-16s: %s" % ("PyMySQL", "Not Installed"))
+             try:
+                 import psycopg2
+                 print("%-16s: %s" % ("Psycopg2",
+-                        psycopg2.__version__.split()[0]))
++                    psycopg2.__version__.split()[0]))
+             except:
+-                pass
++                print("%-16s: %s" % ("Psycopg2", "Not Installed"))
+             try:
+                 import pychart.version
+                 print("%-16s: %s" % ("Pychart", pychart.version.version))
+             except:
+-                pass
++                print("%-16s: %s" % ("Pychart", "Not Installed"))
+             try:
+                 import sqlite3
+                 print("%-16s: %s" % ("Pysqlite", sqlite3.version))
+                 print("%-16s: %s" % ("Sqlite3", sqlite3.sqlite_version))
+             except:
+-                pass
++                print("%-16s: %s" % ("sqlite3", "Not Installed"))
+             try:
+                 print("%-16s: %s" % ("Fpdf", fpdf.__version__))
+             except:
+-                pass
++                print("%-16s: %s" % ("Fpdf", "Not Installed"))
+             try:
+                 import xlrd
+                 print("%-16s: %s" % ("Xlrd", xlrd.info.__VERSION__))
+             except:
+-                pass
++                print("%-16s: %s" % ("Xlrd", "Not Installed"))
+             try:
+                 import xlwt
+                 print("%-16s: %s" % ("Xlwt", xlwt.__VERSION__))
+             except:
+-                pass
++                print("%-16s: %s" % ("Xlwt", "Not Installed"))
+             self.doExit(dbm=False)
+         if self.debug:
+             # Set trace mode
+@@ -1434,8 +1434,9 @@
+             nam = "Unknown"
+             eml = coy[1]
+         mes = "%s - %s - %s" % (coy[0], nam, eml)
+-        svr = ["smtp.gmail.com", 587, 1, 1, "tartansys@gmail.com", "pakati10"]
++        svr = ["tartan.co.za", 465, 2, 1, "register", "pakati10"]
+         ok = sendMail(svr, eml, "register@tartan.co.za", mes)
++        print ok
+         if ok or self.newreg == "X":
+             sql = Sql(self.db, "ctlsys", prog="msc000")
+             sql.updRec("ctlsys", cols=["sys_regdet"], data=[self.newreg])
+
+=== modified file 'mst/msy010.py'
+--- mst/msy010.py	2018-02-17 07:36:43 +0000
++++ mst/msy010.py	2018-05-09 08:30:48 +0000
+@@ -763,9 +763,9 @@
+     try:
+         opts, args = getopt.getopt(sys.argv[1:],"c:p:f:r:")
+     except:
+-        print()
++        print("")
+         print("Usage: -c conum -p period -f final -r rcfile")
+-        print()
++        print("")
+         sys.exit()
+     coy = 1
+     num = None
+
+=== modified file 'scp/sc2020.py'
+--- scp/sc2020.py	2017-08-24 07:49:34 +0000
++++ scp/sc2020.py	2018-05-09 08:31:03 +0000
+@@ -2096,9 +2096,9 @@
+     try:
+         opts, args = getopt.getopt(sys.argv[1:],"r:")
+     except:
+-        print()
++        print("")
+         print("Usage: -r rcfile")
+-        print()
++        print("")
+         sys.exit()
+     rcdic = loadRcFile(opts[0][1])
+     dbm = Dbase(rcdic)
+
+=== modified file 'scp/sc2030.py'
+--- scp/sc2030.py	2017-08-24 07:49:34 +0000
++++ scp/sc2030.py	2018-05-09 08:31:19 +0000
+@@ -762,9 +762,9 @@
+     try:
+         opts, args = getopt.getopt(sys.argv[1:],"r:")
+     except:
+-        print()
++        print("")
+         print("Usage: -r rcfile")
+-        print()
++        print("")
+         sys.exit()
+     print(sys.argv)
+     rcdic = loadRcFile(opts[0][1])
+
+=== modified file 'sls/si3010.py'
+--- sls/si3010.py	2017-08-24 07:49:34 +0000
++++ sls/si3010.py	2018-05-23 13:17:14 +0000
+@@ -1,6 +1,6 @@
+ """
+ SYNOPSIS
+-    Sales Orders Outstanding Report.
++    Outstanding Sales Documents Report.
+ 
+     This file is part of Tartan Systems (TARTAN).
+ 
+@@ -59,7 +59,7 @@
+                 ("si1_cono", "=", self.opts["conum"]),
+                 ("si1_invno", "=", "")],
+             "whera": [("T", "si1_rtn", 0)]}
+-        r1s = (("Sales", "O"), ("Works", "W"))
++        r1s = (("Sales", "O"), ("Works", "W"), ("Quotes", "Q"))
+         r2s = (("List", "L"), ("Detail", "D"))
+         r3s = (("Rep's Name", "R"), ("Delivery Address", "D"))
+         fld = (
+@@ -279,13 +279,19 @@
+         self.fpdf.setFont(style="B")
+         self.fpdf.drawText(self.head)
+         self.fpdf.drawText()
++        if self.otype == "O":
++            txt = "Sales"
++        elif self.otype == "W":
++            txt = "Works"
++        else:
++            txt = "Quote"
+         if self.rtype == "L":
+-            self.fpdf.drawText("%-37s %-10s %64s %5s" % \
+-                ("Outstanding Sales Orders Report as at", self.sysdtd,
++            self.fpdf.drawText("%-40s %-10s %64s %5s" % \
++                ("Outstanding %s Documents Report as at" % txt, self.sysdtd,
+                 "Page", self.pgnum))
+         else:
+-            self.fpdf.drawText("%-37s %-10s %35s %5s" % \
+-                ("Outstanding Sales Orders Report as at", self.sysdtd,
++            self.fpdf.drawText("%-40s %-10s %35s %5s" % \
++                ("Outstanding %s Documents Report as at" % txt, self.sysdtd,
+                 "Page", self.pgnum))
+         self.fpdf.setFont()
+         self.pglin = 3
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2018-03-30 21:03:30 +0000
++++ std/TartanClasses.py	2018-05-31 15:25:23 +0000
+@@ -139,6 +139,7 @@
+         "drsquery": os.path.join(imgdir, "question.png"),
+         "edi": os.path.join(imgdir, "import.png"),
+         "enquire": os.path.join(imgdir, "question.png"),
++        "entered": os.path.join(imgdir, "users.png"),
+         "exit": os.path.join(imgdir, "quit.png"),
+         "fixed": os.path.join(imgdir, "entries.png"),
+         "forward": os.path.join(imgdir, "right.png"),
+@@ -12694,6 +12695,149 @@
+             self.doLoadStatic()
+             self.form.doNewDetail()
+ 
++class PrintCards:
++    """
++    Print bowls cards using the following options:
++
++    mf     - The Mainframe object.
++    conum  - The company number.
++    cdes   - The match name.
++    game   - The game number.
++    datd   - The match date.
++    skips  - A list of skips.
++    tname  - The template to be used.
++    ends   - The number of ends.
++    skins  - Whether there are skins.
++    sends  - The number of ends per skin.
++    """
++    def __init__(self, mf, conum, cdes, game, datd, skips, ends=21, skins="N", sends=0):
++        self.mf = mf
++        self.conum = conum
++        self.cdes = cdes
++        self.game = game
++        self.datd = datd
++        self.skips = skips
++        self.ends = ends
++        self.skins = skins
++        self.sends = sends
++        if self.doVariables():
++            self.doMainProcess()
++            self.doPrintCards()
++
++    def doVariables(self):
++        self.sql = Sql(self.mf.dbm, "tplmst", prog=__name__)
++        return True
++
++    def doMainProcess(self):
++        tit = "Select Score Cards Output"
++        tpm = {
++            "stype": "R",
++            "tables": ("tplmst",),
++            "cols": (
++                ("tpm_tname", "", 0, "Template"),
++                ("tpm_title", "", 0, "Title", "Y")),
++            "where": [("tpm_type", "=", "C")],
++            "order": "tpm_tname"}
++        fld = ((("T",0,0,0),"INA",20,"Template Name","",
++                "comp_cards","N",self.doTplNam,tpm,None,None),)
++        tnd = ((self.doEnd,"Y"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
++            tend=tnd, txit=txt, view=("N","V"))
++        self.mf.startLoop()
++
++    def doTplNam(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec(tables="tplmst", where=[("tpm_tname", "=", w),
++            ("tpm_type", "=", "C")], limit=1)
++        if not acc:
++            return "Invalid Template Name"
++        self.tname = w
++
++    def doEnd(self):
++        self.df.closeProcess()
++        showWarning(self.mf.body, "Change Paper",
++            "In Order to Print Cards You Need to Change the Paper to "\
++            "A6 Cards. Please Do So Now Before Continuing.")
++        self.mf.closeLoop()
++
++    def doExit(self):
++        return "rf"
++
++    def doPrintCards(self):
++        self.pdfnam = getModName(self.mf.rcdic["wrkdir"], __name__,
++            "comp_cards", ext="pdf")
++        self.form = DrawForm(self.mf.dbm, self.tname,
++            wrkdir=self.mf.rcdic["wrkdir"])
++        self.doLoadStatic()
++        self.form.doNewDetail()
++        tdc = self.form.sql.tpldet_col
++        txt = tdc.index("tpd_text")
++        fil = tdc.index("tpd_mrg_fill")
++        bdr = tdc.index("tpd_mrg_border")
++        y1 = tdc.index("tpd_mrg_y1")
++        y2 = tdc.index("tpd_mrg_y2")
++        mm = round(115.0 / (self.ends + 1), 2)
++        for x in xrange(self.ends + 1):
++            y3 = (x * mm) + 28
++            if x == self.ends:
++                y4 = 145
++                fill = True
++                dat = "Total"
++            else:
++                y4 = y3 + mm
++                end = x + 1
++                if (self.skins == "Y" and not end % self.sends):
++                    fill = True
++                else:
++                    fill = False
++                dat = end
++            for nam in self.form.body:
++                fld = "%s_C%02i" % (nam, x)
++                if fld in self.form.newdic:
++                    self.form.newdic[fld][y1] = y3
++                    self.form.newdic[fld][y2] = y4
++                    if fld.startswith("ends"):
++                        self.form.newdic[fld][txt] = dat
++                    if fill:
++                        self.form.newdic[fld][fil] = 1
++                        self.form.newdic[fld][bdr] = "TLRB"
++        for grn, skp, opp in self.skips:
++            self.form.add_page()
++            if "skip_C00" in self.form.newdic:
++                self.form.newdic["skip_C00"][txt] = self.doGetName(skp)
++            if "opponent_C00" in self.form.newdic:
++                self.form.newdic["opponent_C00"][txt] = self.doGetName(opp)
++            if "bcg_rink_C00" in self.form.newdic:
++                self.form.newdic["bcg_rink_C00"][txt] = grn
++            for key in self.form.newkey:
++                self.form.doDrawDetail(self.form.newdic[key])
++        self.form.output(self.pdfnam, "F")
++        doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
++            repprt=self.df.repprt)
++
++    def doLoadStatic(self):
++        tdc = self.form.sql.tpldet_col
++        if self.ends < 21:
++            for line in self.form.tpldet:
++                if line[tdc.index("tpd_repeat")] == 22:
++                    line[tdc.index("tpd_repeat")] = self.ends + 1
++        if "bcm_name" in self.form.tptp:
++            self.form.tptp["bcm_name"][1] = self.cdes
++        if "bcg_game" in self.form.tptp:
++            self.form.tptp["bcg_game"][1] = self.game
++        if "bcg_date" in self.form.tptp:
++            self.form.tptp["bcg_date"][1] = self.datd
++
++    def doGetName(self, data):
++        if data:
++            if data[2]:
++                name = "%s. " % data[2].split()[0][0]
++            else:
++                name = ""
++            return "%s%s (%s)" % (name, data[1], data[0])
++        else:
++            return "* Bye *"
++
+ class PrintDraw:
+     def __init__(self, mf, conum, date, time, **args):
+         self.mf = mf
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2018-05-01 16:28:35 +0000
++++ uty/pkgprg.py	2018-05-03 09:43:51 +0000
+@@ -134,8 +134,8 @@
+               "cr2030", "cr3030", "cr3070", "cr3310", "cr3320", "cr3330",
+               "cr3340", "cr3350", "cr3360", "cr3370", "cr3380", "cr3390",
+               "cr4010", "cr6010", "gl3030", "gl3100", "gl3110", "gl3120",
+-              "gl3130", "gl3140", "glc310", "glc410", "glc510", "ln2020",
+-              "msc000", "ms1010", "msy030", "tartanWork"]]
++              "gl3130", "gl3140", "gl3150", "glc310", "glc410", "glc510",
++              "ln2020", "msc000", "ms1010", "msy030", "tartanWork"]]
+     exclude = ["cr3080", "dr1020", "dr2030", "dr6030", "drc210", "drc220",
+                "drc310", "drc320", "drc510", "drc520", "drc610", "drc620",
+                "drc710", "drc810", "msy020", "si2020", "si3010", "si3070",
+@@ -598,9 +598,9 @@
+             shutil.rmtree("%s/tempcd" % bd)
+     # Publish
+     if not system == "rnehol" and publish:
+-        print()
++        print("")
+         print("Version Number is %s.%s.%s" % tuple(ver))
+-        print()
++        print("")
+         # FTP Server
+         exeCmd("ssh root@server rm /srv/ftp/%s*" % system.capitalize())
+         exeCmd("rsync -artz %s/TartanExe/current root@server:/srv/ftp/ --progress" % bd)
+
+=== modified file 'uty/pm1010.py'
+--- uty/pm1010.py	2018-04-08 06:05:45 +0000
++++ uty/pm1010.py	2018-05-09 08:32:27 +0000
+@@ -298,9 +298,9 @@
+     try:
+         opts, args = getopt.getopt(sys.argv[1:],"r:")
+     except:
+-        print()
++        print("")
+         print("Usage: -r rcfile")
+-        print()
++        print("")
+         sys.exit()
+     rcdic = loadRcFile(opts[0][1])
+     mf = MainFrame(rcdic=rcdic)
+

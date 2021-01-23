@@ -1,0 +1,26 @@
+modified:
+  doc/BKS.rst
+  doc/BQS.rst
+  doc/BWL.rst
+  doc/BWM.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/QST.rst
+  doc/SEC.rst
+  gen/gl2030.py
+  gen/gl2040.py
+  mst/ms0000.py
+  uty/bm1010.py
+unknown:
+  chg
+  doc/Manual.pdf
+  doc/a.pdf
+  doc/a.rst
+  doc/aptget.txt
+  doc/gmailsmtp.txt
+  doc/np.txt
+  scp/file13_1.csv
+  scp/file13_2.csv
+  scp/file13_3.csv
+  scp/file13_4.csv
+  scp/file13_5.csv

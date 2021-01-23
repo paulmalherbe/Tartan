@@ -1,0 +1,20 @@
+added:
+  sls/si3090.py
+modified:
+  doc/BKSMST.rst
+  doc/BWLMST.rst
+  doc/CSHMST.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SECMST.rst
+  gen/gl2030.py
+  mst/ms0000.py
+  std/TartanClasses.py
+  std/rneimp.py
+  std/rnemod.py
+  std/tarimp.py
+  std/tarmod.py
+  uty/pkgprg.py
+unknown:
+  wrk/
+  doc/QuickStart.pdf

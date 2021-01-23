@@ -1,0 +1,23 @@
+added:
+  gen/gl3110_rne.py
+modified:
+  bkm/bk1020.py
+  bkm/bk3010.py
+  bkm/bk3030.py
+  bwl/bc2020.py
+  csv/ctllog_fld.csv
+  csv/telmst_fld.csv
+  doc/Changes.rst
+  doc/Downloads.rst
+  doc/MD.rst
+  gen/gl3050.py
+  gen/gl3100_rne.py
+  men/rnemen.py
+  mst/ms0000.py
+  std/TartanClasses.py
+  tab/tb1020.py
+  uty/bm1010.py
+  uty/td1010.py
+  uty/tdc110.py
+  wag/wg2010.py
+  wag/wg2020.py

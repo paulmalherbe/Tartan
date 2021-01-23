@@ -1,0 +1,27 @@
+modified:
+  bwl/bc1010.py
+  bwl/bc2010.py
+  doc/BKSMST.rst
+  doc/BWLMST.rst
+  doc/CSHMST.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SECMST.rst
+  doc/STR.rst
+  drs/dr3110.py
+  gen/gl1030.py
+  gen/gl1040.py
+  gen/gl3130_rne.py
+  mst/ms0000.py
+  mst/msc000.py
+  mst/msc110.py
+  std/TartanClasses.py
+  std/tartanFunctions.py
+  std/tartanWork.py
+  str/st6040.py
+  tab/tb1030.py
+  uty/pkgprg.py
+  wag/wg2020.py
+  wag/wg4010.py
+unknown:
+  wrk/

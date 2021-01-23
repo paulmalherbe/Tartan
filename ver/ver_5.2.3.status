@@ -1,0 +1,47 @@
+removed:
+  doc/Bowls.rst
+  doc/QuickStart.rst
+added:
+  bks/
+  bks/bs1010.py
+  bks/bs3010.py
+  bks/bsc110.py
+  bks/bsc210.py
+  csv/bksaut_fld.csv
+  csv/bksaut_idx.csv
+  csv/bksmst_fld.csv
+  csv/bksmst_idx.csv
+  csv/bksown_fld.csv
+  csv/bksown_idx.csv
+  csv/bkssys.py
+  doc/UB.rst
+  img/books.png
+  men/bksmen.py
+modified:
+  bwl/bc2010.py
+  bwl/bc3010.py
+  bwl/bc3020.py
+  bwl/bcc110.py
+  crs/cr4010_rne.py
+  csv/frelat.dat
+  doc/Downloads.rst
+  doc/GL.rst
+  doc/MB.rst
+  doc/MD.rst
+  doc/QS.rst
+  doc/SC.rst
+  drs/dr2020.py
+  drs/dr4010.py
+  gen/gl2040.py
+  ibt/ib3010.py
+  lon/ln3030.py
+  lon/ln3040.py
+  men/bwlmen.py
+  mst/ms0000.py
+  mst/ms1010_oth.py
+  mst/msc000.py
+  std/TartanClasses.py
+  std/tartanFunctions.py
+  uty/bm1010.py
+  uty/pkgprg.py
+  uty/rp1010.py

@@ -1,0 +1,10 @@
+1) Fixed a limitation in the sqlite database module which affected restores.
+2) Added the facility to equalise year ends in the General Ledger Toolbox -->
+   Copy Masterfile Records.
+3) Fixed a problem with the tartan menu shortcuts e.g. Alt-S
+4) Fixed a bug in the bowls knockout competition draw with seeded players.
+5) Made some other minor enhancements and bug fixes.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

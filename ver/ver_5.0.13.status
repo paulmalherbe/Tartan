@@ -1,0 +1,21 @@
+modified:
+  bkm/bk1010.py
+  csv/slsiv1_fld.csv
+  doc/Contact.rst
+  doc/Downloads.rst
+  doc/MB.rst
+  doc/MD.rst
+  gen/gl2030.py
+  gen/gl2040.py
+  gen/gl3040.py
+  gen/gl3050.py
+  mst/ms0000.py
+  mst/ms3030.py
+  mst/msc000.py
+  sls/si2010.py
+  sls/si3010.py
+  sls/si3080.py
+  std/TartanClasses.py
+  str/st3030.py
+  str/st3040.py
+  wag/wg3070.py

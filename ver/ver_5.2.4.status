@@ -1,0 +1,50 @@
+removed:
+  doc/GL_rne.rst
+added:
+  doc/BKS.rst
+  doc/GEN_rne.rst
+renamed:
+  doc/AR.rst => doc/ASS.rst
+  doc/BC.rst => doc/BWL.rst
+  doc/BK.rst => doc/BKM.rst
+  doc/CR.rst => doc/CRS.rst
+  doc/CR_rne.rst => doc/CRS_rne.rst
+  doc/DR.rst => doc/DRS.rst
+  doc/GL.rst => doc/GEN.rst
+  doc/HD.rst => doc/HLP.rst
+  doc/IB.rst => doc/IBT.rst
+  doc/LN.rst => doc/LON.rst
+  doc/MB.rst => doc/BWM.rst
+  doc/MD.rst => doc/MST.rst
+  doc/ML.rst => doc/MEM.rst
+  doc/QS.rst => doc/QST.rst
+  doc/RC.rst => doc/RCA.rst
+  doc/RT.rst => doc/RTL.rst
+  doc/SC.rst => doc/SEC.rst
+  doc/SI.rst => doc/SLS.rst
+  doc/SL.rst => doc/SLN.rst
+  doc/ST.rst => doc/STR.rst
+  doc/UB.rst => doc/BWU.rst
+  doc/UD.rst => doc/UTY.rst
+  doc/WG.rst => doc/WAG.rst
+modified:
+  ass/ar4010.py
+  ass/arc210.py
+  bks/bs3010.py
+  bwl/bc2010.py
+  doc/Downloads.rst
+  gen/gl1010.py
+  gen/gl1050.py
+  gen/gl3050.py
+  men/bksmen.py
+  mst/ms0000.py
+  mst/msc000.py
+  std/TartanClasses.py
+  std/tartanFunctions.py
+  uty/pkgprg.py
+  doc/HLP.rst
+  doc/BWM.rst
+  doc/MST.rst
+  doc/SEC.rst
+unknown:
+  doc/Tartan.rst

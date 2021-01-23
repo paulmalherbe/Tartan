@@ -1,0 +1,91 @@
+added:
+  crs/cr6030.py
+  doc/gnugpl.md
+  drs/dr6030.py
+  sls/si6020.py
+renamed:
+  drs/dr6030.py => drs/dr6040.py
+  ibt/ib2010.py => ibt/ib2010_rne.py
+  ibt/ib2020.py => ibt/ib2020_rne.py
+  ibt/ib3010.py => ibt/ib3010_rne.py
+  ibt/ib3020.py => ibt/ib3020_rne.py
+  ibt/ib3030.py => ibt/ib3030_rne.py
+  ibt/ib3040.py => ibt/ib3040_rne.py
+  ibt/ibc110.py => ibt/ibc110_rne.py
+  uty/ss1010.py => uty/ss1010_rne.py
+modified:
+  .bzrignore
+  bwl/bc1010.py
+  bwl/bc1040.py
+  bwl/bc2010.py
+  bwl/bc2050.py
+  crs/cr1010.py
+  crs/cr1010_rne.py
+  crs/cr2010.py
+  crs/cr2010_rne.py
+  crs/cr2020_rne.py
+  crs/cr3050.py
+  crs/cr3060.py
+  crs/cr3080.py
+  crs/cr3090.py
+  crs/cr4010.py
+  crs/cr4010_rne.py
+  crs/cr6020.py
+  crs/cr6020_rne.py
+  doc/BKSMST.rst
+  doc/BWLMST.rst
+  doc/CRS.rst
+  doc/CRS_rne.rst
+  doc/CSHMST.rst
+  doc/DRS.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/POS.rst
+  doc/SECMST.rst
+  doc/SLN.rst
+  doc/SLS.rst
+  doc/STR.rst
+  drs/dr1010.py
+  drs/dr1020.py
+  drs/dr2010.py
+  drs/dr2020.py
+  drs/dr2030.py
+  drs/dr3020.py
+  drs/dr3060.py
+  drs/dr3080.py
+  drs/dr3090.py
+  drs/dr3110.py
+  drs/dr3120.py
+  drs/dr4010.py
+  drs/dr6010.py
+  drs/dr6020.py
+  gen/gl1060.py
+  gen/gl2030.py
+  gen/gl2040.py
+  mem/ml1010.py
+  mst/ms0000.py
+  mst/msc000.py
+  pos/ps2010.py
+  pos/psc110.py
+  sls/si2010.py
+  sls/si3010.py
+  std/TartanClasses.py
+  std/rneimp.py
+  std/rnemod.py
+  std/tarimp.py
+  std/tarmod.py
+  std/tartanFunctions.py
+  std/tartanWork.py
+  std/tartanWork_rne.py
+  str/st1010.py
+  str/st2010.py
+  str/st6030.py
+  str/st6040.py
+  tab/tb1020.py
+  tab/tb1030.py
+  uty/bm1010.py
+  uty/pkgprg.py
+  uty/td1010.py
+  drs/dr6040.py
+  ibt/ib2010_rne.py
+  ibt/ib2020_rne.py

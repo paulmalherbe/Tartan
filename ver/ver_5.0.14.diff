@@ -1,0 +1,646 @@
+=== modified file 'csv/genstr_fld.csv'
+--- csv/genstr_fld.csv	2014-04-07 20:41:10 +0000
++++ csv/genstr_fld.csv	2015-04-30 09:50:10 +0000
+@@ -5,11 +5,11 @@
+ 4,"gls_typ","UA","1.0","Report Type (S/L/M/C)","T"
+ 5,"gls_cno","UI","2.0","Custom Number","CN"
+ 6,"gls_con","UA","1.0","Consolidate (Y/N)","Y"
+-7,"gls_dep","UA","1.0","Departments (Y/N)","Y"
+-8,"gls_rep","UI","3.0","Report Number","Num"
+-9,"gls_gen","UA","1.0","General report (Y/N)","G"
+-10,"gls_val","UA","1.0","Contents (V/B/C/D)","C"
+-11,"gls_det","UI","3.0","Detail Code","Det"
++7,"gls_rep","UI","3.0","Report Number","Num"
++8,"gls_gen","UA","1.0","General report (Y/N)","G"
++9,"gls_val","UA","1.0","Contents (V/B/C/D)","C"
++10,"gls_det","UI","3.0","Detail Code","Det"
++11,"gls_var","UA","1.0","Variance (B/P)","V"
+ 12,"gls_zer","UA","1.0","Include Zeros (Y/N)","Z"
+ 13,"gls_opt","UA","1.0","Print Options (Y/N)","O"
+ 14,"gls_num","UA","1.0","Print Numbers (Y/N)","N"
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-04-24 13:45:12 +0000
++++ doc/Downloads.rst	2015-04-30 10:16:06 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.13 and was released on the 24th April, 2015.
++The latest version of Tartan is 5.0.14 and was released on the 30th April, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.13.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.14.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.13.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.14.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.13.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.13.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.13.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.13.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.14.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.14.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.14.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.14.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2015-04-24 13:45:12 +0000
++++ doc/MB.rst	2015-04-30 10:16:06 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ===============================
+ 
+-:Version:   5.0.13
++:Version:   5.0.14
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-04-24 13:45:12 +0000
++++ doc/MD.rst	2015-04-30 10:16:06 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.13
++:Version:   5.0.14
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl1050.py'
+--- gen/gl1050.py	2014-12-30 15:37:38 +0000
++++ gen/gl1050.py	2015-04-30 09:57:51 +0000
+@@ -29,10 +29,6 @@
+         ctlsys = gc.getCtl("ctlsys")
+         if not ctlsys:
+             return
+-        if ctlsys["sys_gl_dep"] == "Y":
+-            self.deps = True
+-        else:
+-            self.deps = False
+         # Check for multiple companies
+         self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "genrpc", "genstr",
+             "gendtm", "genrpt"], prog=__name__)
+@@ -65,11 +61,11 @@
+                 ("gls_typ", "", 0, "T"),
+                 ("gls_cno", "", 0, "CN"),
+                 ("gls_con", "", 0, "C"),
+-                ("gls_dep", "", 0, "D"),
+                 ("gls_rep", "", 0, "Rep"),
+                 ("gls_gen", "", 0, "G"),
+                 ("gls_val", "", 0, "V"),
+                 ("gls_det", "", 0, "Det"),
++                ("gls_var", "", 0, "B"),
+                 ("gls_zer", "", 0, "Z"),
+                 ("gls_opt", "", 0, "O"),
+                 ("gls_num", "", 0, "N"),
+@@ -139,16 +135,16 @@
+                 0,"N",self.doCus,rpc,None,("efld",)),
+             (("C",0,0,3),"IUA",1,"C","Consolidate (Y/N)",
+                 "N","N",self.doCon,None,None,("in",("Y","N"))),
+-            (("C",0,0,4),"IUA",1,"D","Departmental (Y/N)",
+-                "N","N",self.doDep,None,None,("in",("Y","N"))),
+-            (("C",0,0,5),"IUI",3,"Rep","Report Number",
++            (("C",0,0,4),"IUI",3,"Rep","Report Number",
+                 0,"N",self.doRep,rpt,None,("notzero",)),
+-            (("C",0,0,6),"IUA",1,"G","General Report (Y/N)",
++            (("C",0,0,5),"IUA",1,"G","General Report (Y/N)",
+                 "N","N",self.doGen,None,None,("in",("Y","N"))),
+-            (("C",0,0,7),"IUA",1,"V","Report Contents",
++            (("C",0,0,6),"IUA",1,"V","Report Contents",
+                 "V","N",self.doContent,con,None,("in",("V","B","C","X","D"))),
+-            (("C",0,0,8),"IUI",3,"Cod","Details Code",
++            (("C",0,0,7),"IUI",3,"Cod","Details Code",
+                 "","N",self.doCod,None,None,None),
++            (("C",0,0,8),"IUA",1,"V","Variance (B/P)",
++                "B","N",None,None,None,("in",("B","P"))),
+             (("C",0,0,9),"IUA",1,"Z","Ignore Zeros (Y/N)",
+                 "N","N",None,None,None,("in",("Y","N"))),
+             (("C",0,0,10),"IUA",1,"O","Print Options (Y/N)",
+@@ -207,12 +203,7 @@
+             if not self.coys:
+                 self.con = "N"
+                 self.df.loadEntry(frt, pag, p+2, data="N")
+-                if not self.deps:
+-                    self.dep = "N"
+-                    self.df.loadEntry(frt, pag, p+3, data="N")
+-                    return "sk3"
+-                else:
+-                    return "sk2"
++                return "sk2"
+             return "sk1"
+ 
+     def doCus(self, frt, pag, r, c, p, i, w):
+@@ -224,22 +215,10 @@
+         if not self.coys:
+             self.con = "N"
+             self.df.loadEntry(frt, pag, p+1, data="N")
+-            if not self.deps:
+-                self.dep = "N"
+-                self.df.loadEntry(frt, pag, p+2, data="N")
+-                return "sk2"
+-            else:
+-                return "sk1"
++            return "sk1"
+ 
+     def doCon(self, frt, pag, r, c, p, i, w):
+         self.con = w
+-        if self.con == "N" or not self.deps:
+-            self.dep = "N"
+-            self.df.loadEntry(frt, pag, p+1, data="N")
+-            return "sk1"
+-
+-    def doDep(self, frt, pag, r, c, p, i, w):
+-        self.dep = w
+ 
+     def doRep(self, frt, pag, r, c, p, i, w):
+         rp = self.sql.getRec(tables="genrpt", cols=["glr_cono", "glr_repno"],
+@@ -302,9 +281,8 @@
+         self.typ = w[1]
+         self.cno = w[2]
+         self.con = w[3]
+-        self.dep = w[4]
+-        self.rep = w[5]
+-        self.gen = w[6]
++        self.rep = w[4]
++        self.gen = w[5]
+         for x in xrange(0, len(w)):
+             self.df.loadEntry(frt, pag, p+x, data=w[x])
+         self.df.focusField(frt, pag, c+1)
+@@ -318,8 +296,8 @@
+ 
+     def endData(self):
+         data = [self.opts["conum"], self.strm, self.desc, self.seq, self.typ,
+-            self.cno, self.con, self.dep, self.rep, self.gen]
+-        for x in xrange(7, 14):
++            self.cno, self.con, self.rep, self.gen]
++        for x in xrange(6, 14):
+             data.append(self.df.c_work[self.df.pag][self.df.row][x])
+         if self.newlin == "y":
+             self.sql.insRec("genstr", data=data)
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2015-04-24 13:45:12 +0000
++++ gen/gl2030.py	2015-04-29 11:12:33 +0000
+@@ -51,6 +51,7 @@
+             showError(self.opts["mf"].body, "Error",
+                 "Invalid Routine " + str(self.opts["rtn"]))
+             return
++        self.glrtn = self.opts["rtn"]
+         # Check for Company Record
+         self.gc = GetCtl(self.opts["mf"])
+         ctlmst = self.gc.getCtl("ctlmst", self.opts["conum"])
+@@ -97,12 +98,12 @@
+             if not ctl:
+                 return
+             if ctl["ctc_glint"] == "Y":
+-                if self.opts["rtn"] == 5:
++                if self.glrtn == 5:
+                     showError(self.opts["mf"].body, "Invalid Routine",
+                         "Because Creditors are Integrated, All %ss Must be "\
+                         "Captured via the Creditors System else the Control "\
+                         "Account Will Not Balance!" % \
+-                        gltrtp[self.opts["rtn"]-1][1])
++                        gltrtp[self.glrtn - 1][1])
+                     return
+                 tab.extend(["crsmst", "crstrn"])
+         if mod.count("DR"):
+@@ -110,12 +111,12 @@
+             if not ctl:
+                 return
+             if ctl["ctd_glint"] == "Y":
+-                if self.opts["rtn"] == 1:
++                if self.glrtn == 1:
+                     showError(self.opts["mf"].body, "Invalid Routine",
+                         "Because Debtors are Integrated, All %ss Must be "\
+                         "Captured via the Debtors System else the Control "\
+                         "Account Will Not Balance!" % \
+-                        gltrtp[self.opts["rtn"]-1][1])
++                        gltrtp[self.glrtn - 1][1])
+                     return
+                 tab.extend(["drsmst", "drstrn"])
+         if mod.count("ML"):
+@@ -134,13 +135,13 @@
+         self.ctlctl = self.gc.getCtl("ctlctl", self.opts["conum"])
+         if not self.ctlctl:
+             return
+-        if self.opts["rtn"] == 1:
++        if self.glrtn == 1:
+             if self.gc.chkRec(self.opts["conum"], self.ctlctl, ["drs_ctl"]):
+                 return
+-        elif self.opts["rtn"] == 3:
++        elif self.glrtn == 3:
+             if self.gc.chkRec(self.opts["conum"], self.ctlctl, ["p_cash"]):
+                 return
+-        elif self.opts["rtn"] == 5:
++        elif self.glrtn == 5:
+             if self.gc.chkRec(self.opts["conum"], self.ctlctl, ["crs_ctl"]):
+                 return
+         # Create SQL Object
+@@ -154,24 +155,24 @@
+ 
+     def batchHeader(self):
+         self.bh = Batches(self.opts["mf"], self.opts["conum"],
+-            self.opts["conam"], self.opts["period"], "GEN", self.opts["rtn"])
++            self.opts["conam"], self.opts["period"], "GEN", self.glrtn)
+         self.bh.doBatchHeader()
+-        if self.bh.batno and self.opts["rtn"] not in (1, 6):
++        if self.bh.batno and self.glrtn not in (1, 6):
+             self.bh.batval = float(ASD(0) - ASD(self.bh.batval))
+ 
+     def setVariables(self):
+         t = time.localtime()
+         self.sysdtw = ((t[0] * 10000) + (t[1] * 100) + t[2])
+         # Load Control Account
+-        if self.opts["rtn"] == 1:
++        if self.glrtn == 1:
+             self.conacc = self.ctlctl["drs_ctl"]
+-        elif self.opts["rtn"] == 2:
++        elif self.glrtn == 2:
+             self.conacc = self.bh.acc
+-        elif self.opts["rtn"] == 3:
++        elif self.glrtn == 3:
+             self.conacc = self.ctlctl["p_cash"]
+-        elif self.opts["rtn"] == 5:
++        elif self.glrtn == 5:
+             self.conacc = self.ctlctl["crs_ctl"]
+-        elif self.opts["rtn"] == 6:
++        elif self.glrtn == 6:
+             self.conacc = self.bh.acc
+         # Initialise Pages
+         self.page3 = False
+@@ -181,9 +182,9 @@
+         self.pcash = False
+         self.dorec = False
+         self.rctimp = False
+-        if self.opts["rtn"] == 3:
++        if self.glrtn == 3:
+             self.pcash = True
+-        elif self.opts["rtn"] == 7:
++        elif self.glrtn == 7:
+             imp = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
+                 self.opts["conum"]), ("ctl_code", "=", self.bh.ctl)], limit=1)
+             self.bankac = imp[self.sql.ctlctl_col.index("ctl_bankac")]
+@@ -202,7 +203,7 @@
+         self.bkmpag = 7
+         self.lonpag = 8
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-            "G/Ledger " + gltrtp[self.opts["rtn"] - 1][1] + \
++            "G/Ledger " + gltrtp[self.glrtn - 1][1] + \
+             " Capture (%s)" % __name__)
+         coy = {
+             "stype": "R",
+@@ -447,7 +448,7 @@
+             self.exitPage6,
+             self.exitPage7,
+             self.exitPage8]
+-        if self.opts["rtn"] in (2, 6) or self.pcash or self.dorec:
++        if self.glrtn in (2, 6) or self.pcash or self.dorec:
+             self.but = [
+                 ["Age _Normal",None,self.doAgeNormal,0,None,None,
+                     "Only Show Unallocated Transactions"],
+@@ -678,11 +679,11 @@
+             a,b,self.trndat,memo,self.trnref,payee,amount,c,seq = data[index]
+             if amount < 0:
+                 self.typ = "P"
+-                self.opts["rtn"] = 2
++                self.glrtn = 2
+                 self.trnamt = float(ASD(0) - ASD(amount))
+             else:
+                 self.typ = "R"
+-                self.opts["rtn"] = 6
++                self.glrtn = 6
+                 self.trnamt = amount
+             p = self.df.pos
+             self.df.loadEntry("C", 1, p, data=self.typ)
+@@ -749,7 +750,7 @@
+         if amount < 0:
+             whr.append(("grc_rtn", "=", "P"))
+         else:
+-            whr.append(("grc_rtn", "=", "D"))
++            whr.append(("grc_rtn", "=", "R"))
+         codes = self.sql.getRec(tables="genrcc", where=whr)
+         if codes:
+             # There are standard genrcc codes
+@@ -787,14 +788,14 @@
+                     self.trndet = self.alldet
+                     if trtp == "P":
+                         othrtn = 5
+-                        self.opts["rtn"] = 2
++                        self.glrtn = 2
+                         self.vtyp = "I"
+-                    elif trtp == "D":
++                    elif trtp == "R":
+                         othrtn = 2
+-                        self.opts["rtn"] = 6
++                        self.glrtn = 6
+                         self.vtyp = "O"
+                     else:
+-                        self.opts["rtn"] = 4
++                        self.glrtn = 4
+                         othrtn = 3
+                         if amount < 0:
+                             self.vtyp = "I"
+@@ -806,8 +807,8 @@
+                     if self.doVatCalc(self.vatcod):
+                         self.vatamt = 0
+                     data = (self.opts["conum"], self.bh.acc, self.curdt, date,
+-                        self.opts["rtn"], self.trnref, self.bh.batno,
+-                        self.allamt, 0.00, self.trndet, "", "", date/100,
++                        self.glrtn, self.trnref, self.bh.batno, self.allamt,
++                        0.00, self.trndet, "", "", date/100,
+                         self.opts["capnm"], self.sysdtw, 0)
+                     self.sql.insRec("gentrn", data=data)
+                     amt = float(ASD(0) - ASD(self.allamt))
+@@ -901,14 +902,14 @@
+             if chk:
+                 return chk
+         if self.typ == "P":
+-            self.opts["rtn"] = 2
++            self.glrtn = 2
+         else:
+-            self.opts["rtn"] = 6
++            self.glrtn = 6
+         if self.dorec:
+             self.df.colf[1][1][8]["where"] = [
+                 ("glt_cono", "=", self.opts["conum"]),
+                 ("glt_acno", "=", self.bh.acc),
+-                ("glt_type", "=", self.opts["rtn"]),
++                ("glt_type", "=", self.glrtn),
+                 ("glt_recon", "=", 0)]
+             try:
+                 self.df.rs.selection = None
+@@ -950,7 +951,7 @@
+         except:
+             rs = None
+         if not rs:
+-            wa = [("glt_type", "=", self.opts["rtn"]),
++            wa = [("glt_type", "=", self.glrtn),
+                 ("glt_refno", "=", self.trnref)]
+             opt = {}
+             for k in self.glt:
+@@ -1083,7 +1084,7 @@
+         if not self.ctlctl:
+             return "rf"
+         ctls = ["vat_ctl"]
+-        if self.opts["rtn"] in (2, 3, 6, 7):
++        if self.glrtn in (2, 3, 6, 7):
+             if self.ass_gl == "Y":
+                 ctls.append("ass_sls")
+             if self.bkm_gl == "Y":
+@@ -1126,7 +1127,7 @@
+         self.othtot = 0
+         self.vattot = 0
+         dic = self.sql.genmst_dic
+-        if self.opts["rtn"] in (2, 6):
++        if self.glrtn in (2, 6):
+             if self.ass_gl == "Y" and w in self.assctl:
+                 self.others = "ass"
+             elif self.bkm_gl == "Y" and w == self.ctlctl["bkm_ctl"]:
+@@ -1140,7 +1141,7 @@
+             elif self.mem_gl == "Y" and w == self.ctlctl["mem_ctl"]:
+                 self.others = "mem"
+         if self.others:
+-            if self.opts["rtn"] == 2:
++            if self.glrtn == 2:
+                 if self.others == "bkm":
+                     self.othrtn = 4
+                 elif self.others == "mem":
+@@ -1385,15 +1386,11 @@
+             self.curdt = self.trndat / 100
+         else:
+             self.curdt = self.bh.curdt
+-        if self.pcash:
+-            self.glrtn = 3
+-        else:
+-            self.glrtn = self.opts["rtn"]
+-        if self.opts["rtn"] == 1:                          # Sales
++        if self.glrtn == 1:                          # Sales
+             self.rflag = 0
+             self.vtyp = "O"
+             self.debit(pag)
+-        elif self.opts["rtn"] == 2:                        # Payments
++        elif self.glrtn == 2:                        # Payments
+             if self.pcash:
+                 self.rflag = 0
+             else:
+@@ -1406,11 +1403,11 @@
+                     self.rflag = 0
+             self.vtyp = "I"
+             self.credit(pag)
+-        elif self.opts["rtn"] == 5:                        # Purchases
++        elif self.glrtn == 5:                        # Purchases
+             self.rflag = 0
+             self.vtyp = "I"
+             self.credit(pag)
+-        elif self.opts["rtn"] == 6:                        # Receipts
++        elif self.glrtn == 6:                        # Receipts
+             if self.pcash:
+                 self.rflag = 0
+             else:
+@@ -1584,9 +1581,9 @@
+         self.df.loadEntry(frt, pag, p, data=self.othamt)
+ 
+     def endCrsDrsMem(self):
+-        if      (self.others == "crs" and self.opts["rtn"] == 2) or \
+-                (self.others == "drs" and self.opts["rtn"] == 6) or \
+-                (self.others == "mem" and self.opts["rtn"] == 6):
++        if      (self.others == "crs" and self.glrtn == 2) or \
++                (self.others == "drs" and self.glrtn == 6) or \
++                (self.others == "mem" and self.glrtn == 6):
+             self.tramt = float(ASD(0.0) - ASD(self.othamt))
+             self.dsamt = float(ASD(0.0) - ASD(self.othdis))
+         else:
+@@ -1789,9 +1786,9 @@
+         if type(w) == list:
+             w = w[0] + 1
+         # Do some tests to see if not new again or already sold etc.
+-        if self.opts["rtn"] == 2 and w not in (1, 2):
++        if self.glrtn == 2 and w not in (1, 2):
+             return "Invalid Choice For Payment"
+-        if self.opts["rtn"] == 6 and w not in (5,):
++        if self.glrtn == 6 and w not in (5,):
+             return "Invalid Choice For Recipt"
+         if w == 1 and self.assbuy:
+             return "Asset Already Purchased"
+@@ -1815,7 +1812,7 @@
+         self.df.loadEntry(frt, pag, p+1, data=self.trndet)
+ 
+     def endAssets(self):
+-        if self.opts["rtn"] == 2:
++        if self.glrtn == 2:
+             self.othrtn = 1
+             self.tramt = self.othamt
+             self.vtamt = self.othvat
+@@ -1930,7 +1927,7 @@
+         self.df.loadEntry(frt, pag, p, data=self.othamt)
+ 
+     def endBooks(self):
+-        if self.opts["rtn"] == 6:
++        if self.glrtn == 6:
+             tramt = float(ASD(0.0) - ASD(self.othamt))
+         else:
+             tramt = self.othamt
+@@ -1980,7 +1977,7 @@
+             "=", self.opts["conum"]), ("wlm_empno", "=", self.empnum),
+             ("wlm_loan", "=", self.lonnum)], limit=1)
+         if not acc:
+-            if self.opts["rtn"] == 6:
++            if self.glrtn == 6:
+                 return "Loan Does Not Exist"
+             ok = askQuestion(self.opts["mf"].body, head="New Loan",
+                 mess="Is This a New Loan?", default="no")
+@@ -2007,7 +2004,7 @@
+         else:
+             self.othamt = float(ASD(self.allamt) - ASD(self.vatamt))
+         self.df.loadEntry(frt, pag, p, data=self.othamt)
+-        if self.opts["rtn"] == 6:
++        if self.glrtn == 6:
+             self.newrte = self.lonrte
+             return "nd"
+         if not self.newlon:
+@@ -2033,7 +2030,7 @@
+         self.londed = w
+ 
+     def endLoans(self):
+-        if self.opts["rtn"] == 6:
++        if self.glrtn == 6:
+             tramt = float(ASD(0.0) - ASD(self.othamt))
+         else:
+             tramt = self.othamt
+@@ -2052,7 +2049,7 @@
+                 self.londat, self.trndat, self.bh.batno, self.curdt,
+                 capnm=self.opts["capnm"], update="Y",
+                 glctls=(self.ctlctl["wag_slc"], self.ctlctl["wag_sli"]))
+-            if self.opts["rtn"] == 6:
++            if self.glrtn == 6:
+                 self.othrtn = 4
+             else:
+                 self.othrtn = 3
+
+=== modified file 'gen/gl3050.py'
+--- gen/gl3050.py	2015-04-24 13:45:12 +0000
++++ gen/gl3050.py	2015-04-30 10:04:33 +0000
+@@ -300,7 +300,8 @@
+                     self.typ = rep[col.index("gls_typ")]
+                     self.cno = rep[col.index("gls_cno")]
+                     self.con = rep[col.index("gls_con")]
+-                    self.dep = rep[col.index("gls_dep")]
++                    self.dep = "N"
++                    self.dpl = [0]
+                     self.rep = rep[col.index("gls_rep")]
+                     self.gen = rep[col.index("gls_gen")]
+                     err = self.getRepDetails()
+@@ -308,6 +309,7 @@
+                         continue
+                     self.val = rep[col.index("gls_val")]
+                     self.det = rep[col.index("gls_det")]
++                    self.var = rep[col.index("gls_var")]
+                     self.zer = rep[col.index("gls_zer")]
+                     self.opt = rep[col.index("gls_opt")]
+                     if not self.opt:
+
+=== modified file 'men/posmen.py'
+--- men/posmen.py	2014-07-21 11:34:04 +0000
++++ men/posmen.py	2015-04-30 07:54:59 +0000
+@@ -246,7 +246,7 @@
+     ["PYNN","st_rp","st3110",1,"Item Labels"],
+     ["PYNN","st_rp","st3120",1,"Stock to Order"],
+     ["PYNN","st_tb","st6010",5,"Change Product Codes"],
+-    ["PYYN","st_tb","st6020",5,"Revalue Stock Records",0],
++    ["PYYY","st_tb","st6020",5,"Revalue Stock Records",0],
+     ["PYYY","mm_st","st4010",0,"Interrogation"]]
+ 
+ # Sales Invoicing Routines
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2015-04-04 12:56:14 +0000
++++ men/stdmen.py	2015-04-30 07:54:02 +0000
+@@ -249,7 +249,7 @@
+     ["PYNN","st_rp","st3110",1,"Item Labels"],
+     ["PYNN","st_rp","st3120",1,"Stock to Order"],
+     ["PYNN","st_tb","st6010",5,"Change Product Codes"],
+-    ["PYYN","st_tb","st6020",5,"Revalue Stock Records",0],
++    ["PYYY","st_tb","st6020",5,"Revalue Stock Records",0],
+     ["PYYY","mm_st","st4010",0,"Interrogation"]]
+ 
+ # Sales Invoicing Routines
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-04-24 13:45:12 +0000
++++ mst/ms0000.py	2015-04-30 10:16:06 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 13)
++    VERSION = (5, 0, 14)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'sls/si3010.py'
+--- sls/si3010.py	2015-04-24 13:45:12 +0000
++++ sls/si3010.py	2015-04-30 10:05:37 +0000
+@@ -123,7 +123,6 @@
+             ("si1_rtn", "=", self.otype),
+             ("si1_docno", "between", self.ord1, self.ord2),
+             ("si1_invno", "=", ""))
+-        print whr
+         recs = self.sql.getRec(tables="slsiv1", where=whr)
+         if not recs:
+             showError(self.opts["mf"].body, "Selection Error",
+
+=== modified file 'str/st6020.py'
+--- str/st6020.py	2014-12-30 15:37:38 +0000
++++ str/st6020.py	2015-04-30 07:59:11 +0000
+@@ -134,16 +134,17 @@
+         txt = "Revaluation"
+         self.sql.insRec("strtrn", data=[self.opts["conum"], rec[0], rec[1],
+             rec[2], self.date, rtn, self.cnt, "ST-RVAL", "", dqty, dval, 0,
+-            self.curdt, txt, 0, "", "", "STR", 0, 0, 0, "", self.sysdtw, 0])
++            self.curdt, txt, 0, "", "", "STR", 0, 0, 0, "", self.opts["capnm"],
++            self.sysdtw, 0])
+         # General Ledger Control Transaction (Stock On Hand)
+         self.sql.insRec("gentrn", data=[self.opts["conum"], self.stk_soh,
+             self.curdt, self.date, 4, self.cnt, "ST-RVAL", dval, 0, txt, "N",
+-            "", 0, self.sysdtw, 0])
++            "", 0, self.opts["capnm"], self.sysdtw, 0])
+         # General Ledger Control Transaction (Stock Suspense)
+         val = float(ASD(0) - ASD(dval))
+         self.sql.insRec("gentrn", data=[self.opts["conum"], self.stk_susp,
+             self.curdt, self.date, 4, self.cnt, "ST-RVAL", val, 0, txt, "N",
+-            "", 0, self.sysdtw, 0])
++            "", 0, self.opts["capnm"], self.sysdtw, 0])
+         self.cnt = self.cnt + 1
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2015-03-21 07:40:04 +0000
++++ tab/tb1020.py	2015-04-30 09:50:37 +0000
+@@ -491,8 +491,8 @@
+                         new = "Unknown"
+                     elif self.table == "drstrn" and csf[2] == "drt_capnm":
+                         new = "Unknown"
+-                    elif self.table == "genstr" and csf[2] == "gls_dep":
+-                        new = "N"
++                    elif self.table == "genstr" and csf[2] == "gls_var":
++                        new = "B"
+                     elif self.table == "gentrn" and csf[2] == "glt_capnm":
+                         new = "Unknown"
+                     elif self.table == "memctl" and csf[2] == "mcm_cftpl":
+

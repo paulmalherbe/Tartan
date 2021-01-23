@@ -1,0 +1,14 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Fixed an error the the g/l detail maintenance module.
+ 2) Put a check on importing general ledger accounts from another company.
+ 3) Changed the various audit trails to include missing masterfile records.
+ 4) Added a sales invoice report to list cancelled documents.
+ 5) Changed the timeout value for smtp connections.
+ 6) Fixed a non-responsive continue button.
+ 7) Some minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.0 or later.
+If you have an older version than 5.0 please contact me for assistance.

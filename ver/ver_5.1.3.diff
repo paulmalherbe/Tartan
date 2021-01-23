@@ -1,0 +1,3947 @@
+=== modified file 'bkm/bk1010.py'
+--- bkm/bk1010.py	2015-10-03 07:36:56 +0000
++++ bkm/bk1010.py	2015-10-25 08:27:31 +0000
+@@ -211,11 +211,11 @@
+         self.quit = True
+         self.opts["mf"].closeLoop()
+ 
+-    def doNew(self, *args):
++    def doNew(self):
+         self.newb = True
+         self.opts["mf"].closeLoop()
+ 
+-    def doSch(self, *args):
++    def doSch(self):
+         cols = [
+             ("bkno", "Number", 7, "UI", "F"),
+             ("sname", "Surname", 20, "TX", "Y"),
+
+=== modified file 'bkm/bk1020.py'
+--- bkm/bk1020.py	2015-10-03 07:36:56 +0000
++++ bkm/bk1020.py	2015-10-25 08:28:57 +0000
+@@ -1496,7 +1496,7 @@
+                 ("bum_code", "=", ucod)], limit=1)
+             vatc = umst[self.sql.bkmunm_col.index("bum_vatc")]
+             if not vatc:
+-                vatc = self.ctm_taxdf
++                vatc = self.taxdf
+             if rbas == "A":
+                 inca = quan * days * rate
+             elif rbas == "B":
+
+=== modified file 'bwl/bc1010.py'
+--- bwl/bc1010.py	2015-10-03 07:36:56 +0000
++++ bwl/bc1010.py	2015-10-23 07:30:25 +0000
+@@ -33,8 +33,7 @@
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["bwlent", "bwlgme", "bwltab",
+-            "bwldrt", "bwlflm", "bwlflt", "memmst", "memkon"],
+-            prog=__name__, errs=False)
++            "bwldrt", "bwlflm", "bwlflt", "memmst", "memkon"], prog=__name__)
+         if self.sql.error:
+             if self.sql.error == ["memmst", "memkon"]:
+                 self.memmst = False
+@@ -417,21 +416,27 @@
+             ["Telephone - Work", "N", "btb_work"],
+             ["Telephone - Cell", "N", "btb_cell"],
+             ["Email Address", "N", "btb_mail"],
+-            ["Ratings", "N", "ratings"]])
++            ["Ratings", "N", "ratings"],
++            ["Order", "S", "order"]])
+         tit = ("Print Details",)
+         r1s = (("Members", "M"), ("Guests", "G"), ("All", "A"))
+         r2s = (("Males","M"), ("Females","F"), ("All","A"))
+         r3s = (("Yes", "Y"), ("No", "N"))
++        r4s = (("Surname", "S"), ("Rating", "R"))
+         fld = [
+             (("T",0,0,0),("IRB",r1s),0,"Tab Group","",
+                 "M","Y",self.doCGroup,None,None,None),
+             (("T",0,1,0),("IRB",r2s),0,"Gender","",
+                 "A","Y",self.doCGender,None,None,None)]
+-        for num, dat in enumerate(self.colsd):
+-            des = dat[0]
+-            dft = dat[1]
+-            fld.append((("T",0,num+2,0),("IRB",r3s),0,des,"",
+-                dft,"N",self.doCField,None,None,None))
++        idx = 1
++        for dat in self.colsd:
++            idx += 1
++            if dat == self.colsd[-1]:
++                rb = r4s
++            else:
++                rb = r3s
++            fld.append((("T",0,idx,0),("IRB",rb),0,dat[0],"",
++                dat[1],"N",self.doCField,None,None,None))
+         tnd = ((self.doCEnd,"Y"), )
+         txt = (self.doCExit, )
+         self.pr = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
+@@ -474,8 +479,11 @@
+                 whr.append(("btb_tab", ">=", self.nstart))
+             if self.cgender in ("F", "M"):
+                 whr.append(("btb_gender", "=", self.cgender))
+-            recs = self.sql.getRec(tables="bwltab", where=whr,
+-                order="btb_surname, btb_names")
++            if self.odr == "S":
++                odr = "btb_surname, btb_names"
++            else:
++                odr = "btb_pos1 desc, btb_rate1 desc, btb_surname, btb_names"
++            recs = self.sql.getRec(tables="bwltab", where=whr, order=odr)
+             data = []
+             btc = self.sql.bwltab_col
+             for rec in recs:
+@@ -558,6 +566,9 @@
+             self.pr.loadEntry(frt, pag, p+1, data="N")
+             self.pr.loadEntry(frt, pag, p+2, data="N")
+             return "sk2"
++        if self.pr.topf[0][p][3] == "Ratings" and w == "N":
++            self.pr.loadEntry(frt, pag, p+1, data="S")
++            return "sk1"
+ 
+     def doCEnd(self):
+         self.pr.closeProcess()
+@@ -569,6 +580,8 @@
+         for num, dat in enumerate(self.pr.t_work[0][0][2:end]):
+             if dat == "Y":
+                 self.cols.append(self.colsd[num][2])
++            elif dat in ("S", "R"):
++                self.odr = dat
+         self.opts["mf"].closeLoop()
+ 
+     def doCExit(self):
+
+=== modified file 'bwl/bcc110.py'
+--- bwl/bcc110.py	2015-10-03 07:36:56 +0000
++++ bwl/bcc110.py	2015-10-23 07:30:39 +0000
+@@ -25,7 +25,7 @@
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["memctl", "bwlctl", "bwltab",
+-            "chglog"], prog=__name__, errs=False)
++            "chglog"], prog=__name__)
+         if self.sql.error:
+             if self.sql.error == ["memctl"]:
+                 self.memctl = False
+
+=== modified file 'crs/cr2010.py'
+--- crs/cr2010.py	2015-10-03 07:36:56 +0000
++++ crs/cr2010.py	2015-10-23 12:43:09 +0000
+@@ -351,7 +351,7 @@
+             return "Invalid Account Number"
+         self.cracno = w
+         self.name, self.term, self.base, self.stdt, self.pdis, self.glac = acc
+-        self.df.loadEntry("C", pag, p+1, data=self.name)
++        self.df.loadEntry(frt, pag, p+1, data=self.name)
+ 
+     def doRef1(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables="crstrn", cols=["crt_batch"],
+@@ -382,7 +382,7 @@
+         self.vatcode = w
+         self.vatamt = round((self.trnamt * vrte / (vrte + 100)), 2)
+         self.df.loadEntry(frt, pag, p+1, data=self.vatamt)
+-        if self.vatamt == 0:
++        if not self.vatamt:
+             return "sk1"
+ 
+     def doVatAmt(self, frt, pag, r, c, p, i, w):
+@@ -583,8 +583,8 @@
+         else:
+             self.taxgl = chk[2]
+         self.genacc = w
+-        self.df.loadEntry("C", pag, p+1, data=chk[0])
+-        self.df.loadEntry("C", pag, p+2, data=self.taxgl)
++        self.df.loadEntry(frt, pag, p+1, data=chk[0])
++        self.df.loadEntry(frt, pag, p+2, data=self.taxgl)
+ 
+     def doVatCode2(self, frt, pag, r, c, p, i, w):
+         ctlctl = self.gc.getCtl("ctlctl", self.allcoy, error=False)
+@@ -613,7 +613,7 @@
+             self.df.loadEntry(frt, pag, p, data=incamt)
+         self.df.loadEntry(frt, pag, p+1, data=self.allvat)
+         if not self.allvat:
+-            self.df.loadEntry(frt, pag, p+1, data=self.name)
++            self.df.loadEntry(frt, pag, p+2, data=self.name)
+             return "sk1"
+ 
+     def doAllVat(self, frt, pag, r, c, p, i, w):
+@@ -785,13 +785,13 @@
+             self.opts["conam"]), period=None, user=self.opts["capnm"])
+ 
+     def doLonAcc(self, frt, pag, r, c, p, i, w):
+-        self.newlon = False
++        newacc = False
+         if not w and self.opts["rtn"] == 1:
+             yn = askQuestion(self.opts["mf"].body, "New Account",
+                 "Is This a New Account?", default="no")
+             if yn == "no":
+                 return "Invalid Account Number"
+-            self.newlon = True
++            newacc = True
+             w = callModule(self.opts["mf"], self.df, "ln1010",
+                 coy=(self.allcoy, self.allnam), user=self.opts["capnm"],
+                 args="auto", ret="acno")
+@@ -802,15 +802,17 @@
+         if not acc:
+             return "Invalid Account Number"
+         self.lonacc = w
+-        self.df.loadEntry("C", pag, p+1, data=acc[0])
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
++        if newacc:
++            self.lonnum = 1
++            self.newlon = True
++            self.df.loadEntry(frt, pag, p+2, data=self.lonnum)
++            return "sk2"
+ 
+     def doLonNum(self, frt, pag, r, c, p, i, w):
+         if not w and self.opts["rtn"] == 1:
+-            if self.newlon:
+-                ok = "yes"
+-            else:
+-                ok = askQuestion(self.opts["mf"].body, head="New Loan",
+-                    mess="Is This a New Loan?", default="no")
++            ok = askQuestion(self.opts["mf"].body, head="New Loan",
++                mess="Is This a New Loan?", default="no")
+             if ok == "yes":
+                 self.newlon = True
+                 self.lonnum = getNextCode(self.sql, "lonmf2", "lm2_loan",
+@@ -903,7 +905,7 @@
+             return "Invalid Employee Number"
+         self.empnum = w
+         empnam = "%s, %s" % (acc[0], acc[1].split()[0])
+-        self.df.loadEntry("C", pag, p+1, data=empnam)
++        self.df.loadEntry(frt, pag, p+1, data=empnam)
+ 
+     def doSlnNum(self, frt, pag, r, c, p, i, w):
+         if not w and self.opts["rtn"] == 1:
+
+=== modified file 'crs/cr3050.py'
+--- crs/cr3050.py	2015-10-03 07:36:56 +0000
++++ crs/cr3050.py	2015-10-22 12:28:52 +0000
+@@ -58,6 +58,7 @@
+             "where": [("crm_cono", "=", self.opts["conum"])],
+             "autoc": False}
+         r1s = (("Yes","Y"),("No","N"))
++        r2s = (("Yes","Y"),("No","N"),("Only","O"))
+         fld = (
+             (("T",0,0,0),"Id2",7,"Cut-Off Period","",
+                 (self.sysdtw/100),"Y",self.doCutOff,None,None,None),
+@@ -69,11 +70,9 @@
+                 "","Y",self.doAcc2,crm,None,None),
+             (("T",0,4,0),"IUI",7,"Lower Balance Limit","",
+                 0,"Y",self.doLimit,None,None,None),
+-            (("T",0,5,0),("IRB",r1s),0,"Include Debit Balances",
++            (("T",0,5,0),("IRB",r2s),0,"Include Debit Balances",
+                 "Include Debit Balances","Y","Y",self.doDebit,None,None,None),
+-            (("T",0,6,0),("IRB",r1s),0,"Debit Balances Only",
+-                "Debit Balances Only","N","Y",self.doOnlyDr,None,None,None),
+-            (("T",0,7,0),("IRB",r1s),0,"Ignore Zero Balances",
++            (("T",0,6,0),("IRB",r1s),0,"Ignore Zero Balances",
+                 "Ignore Zero Balances","Y","Y",self.doZero,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+@@ -87,8 +86,8 @@
+     def doTots(self, frt, pag, r, c, p, i, w):
+         self.totsonly = w
+         if self.totsonly == "Y":
+-            self.df.setWidget(self.df.topEntry[0][8][2][0], state="hide")
+-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][7][2][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][7][3][0], state="hide")
+             self.acc1 = ""
+             self.fm = "First"
+             self.acc2 = "zzzzzzz"
+@@ -99,14 +98,12 @@
+             self.df.loadEntry(frt, pag, p+3, data=self.limit)
+             self.debit = "Y"
+             self.df.loadEntry(frt, pag, p+4, data=self.debit)
+-            self.onlydr = "N"
+-            self.df.loadEntry(frt, pag, p+5, data=self.onlydr)
+             self.zero = "Y"
+-            self.df.loadEntry(frt, pag, p+6, data=self.zero)
+-            return "sk6"
++            self.df.loadEntry(frt, pag, p+5, data=self.zero)
++            return "sk5"
+         else:
+-            self.df.setWidget(self.df.topEntry[0][8][2][0], state="show")
+-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][7][2][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][7][3][0], state="show")
+ 
+     def doAcc1(self, frt, pag, r, c, p, i, w):
+         self.acc1 = w
+@@ -130,22 +127,13 @@
+         if self.limit:
+             self.debit = "N"
+             self.df.loadEntry(frt, pag, p+1, data=self.limit)
+-            self.onlydr = "N"
+-            self.df.loadEntry(frt, pag, p+2, data=self.onlydr)
+             self.zero = "Y"
+-            self.df.loadEntry(frt, pag, p+3, data=self.zero)
+-            return "sk3"
++            self.df.loadEntry(frt, pag, p+2, data=self.zero)
++            return "sk2"
+ 
+     def doDebit(self, frt, pag, r, c, p, i, w):
+         self.debit = w
+-        if self.debit == "N":
+-            self.onlydr = "N"
+-            self.df.loadEntry(frt, pag, p+1, data=self.limit)
+-            return "sk1"
+-
+-    def doOnlyDr(self, frt, pag, r, c, p, i, w):
+-        self.onlydr = w
+-        if self.onlydr == "Y":
++        if self.debit in ("Y", "O"):
+             self.zero = "Y"
+             self.df.loadEntry(frt, pag, p+1, data=self.zero)
+             return "sk1"
+@@ -157,8 +145,7 @@
+         self.df.closeProcess()
+         recs = self.sql.getRec(tables="crsmst", cols=["crm_acno", "crm_name"],
+             where=[("crm_cono", "=", self.opts["conum"]), ("crm_acno", ">=",
+-                self.acc1),
+-            ("crm_acno", "<=", self.acc2)], order="crm_acno")
++                self.acc1), ("crm_acno", "<=", self.acc2)], order="crm_acno")
+         if not recs:
+             showError(self.opts["mf"].body, "Selection Error",
+                 "No Accounts Selected")
+@@ -175,8 +162,8 @@
+         self.expheads = [self.head % self.sysdttm]
+         self.expheads.append("Creditor's Age Analaysis up to %s" %
+             self.opts["period"])
+-        self.expheads.append("Options: From %s To %s Low-Bal %s Dr-Bal-Only "\
+-            "%s Ignore-Zeros %s" % (self.fm, self.to, self.limit, self.onlydr,
++        self.expheads.append("Options: From %s To %s Low-Bal %s Dr-Bals "\
++            "%s Ignore-Zeros %s" % (self.fm, self.to, self.limit, self.debit,
+             self.zero))
+         self.expcolsh = [self.colsh]
+         self.expforms = self.forms
+@@ -259,7 +246,7 @@
+             return
+         if self.debit == "N" and bal.work < 0:
+             return
+-        if self.onlydr == "Y" and not bal.work < 0:
++        if self.debit == "O" and not bal.work < 0:
+             return
+         cur = CCD(ages[0], "SD", 13.2)
+         d30 = CCD(ages[1], "SD", 13.2)
+@@ -289,8 +276,8 @@
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-16s%-7s%-3s%-4s%-7s%-3s%-9s%-8s%-3s%-13s%-1s"\
+             "%-3s%-17s%-1s%-1s" % ("(Options: From: ", self.fm, "", "To: ",
+-            self.to, "", "Low-Bal: ", self.limit, "", "Dr-Bal-Only: ",
+-            self.onlydr, "", "Ignore-Zero-Bal: ", self.zero, ")"))
++            self.to, "", "Low-Bal: ", self.limit, "", "Dr-Bals: ",
++            self.debit, "", "Ignore-Zero-Bal: ", self.zero, ")"))
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-7s %-30s %-13s %-13s %-13s %-13s %-13s %-13s "\
+             "%-13s" % ("Acc-Num", "Name", "  Dr-Balance", " Tot-Balance",
+
+=== removed file 'csv/ctlare_fld.csv'
+--- csv/ctlare_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/ctlare_fld.csv	1970-01-01 00:00:00 +0000
+@@ -1,4 +0,0 @@
+-0,"arm_cono","UI","3.0","Company Number","Coy"
+-1,"arm_area","NA","3.0","Area Code","Are"
+-2,"arm_name","NA","30.0","Description","Description"
+-3,"arm_rep","Na","3.0","Rep Number","Rep"
+
+=== removed file 'csv/ctlare_idx.csv'
+--- csv/ctlare_idx.csv	2014-03-28 07:32:49 +0000
++++ csv/ctlare_idx.csv	1970-01-01 00:00:00 +0000
+@@ -1,1 +0,0 @@
+-"Areas Records",1,"U","arm_cono","arm_area"
+
+=== modified file 'csv/drsmst_fld.csv'
+--- csv/drsmst_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/drsmst_fld.csv	2015-10-22 11:24:12 +0000
+@@ -18,17 +18,16 @@
+ 17,"drm_registered","d1","10.0","Date Registered","Date-Regst"
+ 18,"drm_vatno","NA","10.0","VAT Number","VAT-Number"
+ 19,"drm_delivery","NA","7.0","Delivery Address","Del-Add"
+-20,"drm_area","NA","3.0","Area Code","Are"
+-21,"drm_rep","Na","3.0","Rep Code","Rep"
+-22,"drm_bus_activity","UA","3.0","Business Activity","BsA"
+-23,"drm_bus_type","UA","3.0","Business Type","BsT"
+-24,"drm_prices","UI","1.0","Price Level","P"
+-25,"drm_dis_per","UD","5.2","Discount Percentage","Dis-%"
+-26,"drm_int_per","UD","5.2","Interest Percentage","Int-%"
+-27,"drm_rfterms","UI","3.0","Referral Terms","RfT"
+-28,"drm_rjterms","UI","3.0","Rejected Terms","RjT"
+-29,"drm_limit","UI","5.0","Credit Limit","CrLimit"
+-30,"drm_stop","UA","1.0","Stop Indicator","S"
+-31,"drm_invmes","UI","3.0","Invoice Message","IMs"
+-32,"drm_stames","UI","3.0","Statement Message","SMs"
+-33,"drm_rating","UA","1.0","Credit Rating","Rated"
++20,"drm_rep","Na","3.0","Rep Code","Rep"
++21,"drm_bus_activity","UA","3.0","Business Activity","BsA"
++22,"drm_bus_type","UA","3.0","Business Type","BsT"
++23,"drm_prices","UI","1.0","Price Level","P"
++24,"drm_dis_per","UD","5.2","Discount Percentage","Dis-%"
++25,"drm_int_per","UD","5.2","Interest Percentage","Int-%"
++26,"drm_rfterms","UI","3.0","Referral Terms","RfT"
++27,"drm_rjterms","UI","3.0","Rejected Terms","RjT"
++28,"drm_limit","UI","5.0","Credit Limit","CrLimit"
++29,"drm_stop","UA","1.0","Stop Indicator","S"
++30,"drm_invmes","UI","3.0","Invoice Message","IMs"
++31,"drm_stames","UI","3.0","Statement Message","SMs"
++32,"drm_rating","UA","1.0","Credit Rating","Rated"
+
+=== modified file 'csv/rnesys.py'
+--- csv/rnesys.py	2015-08-25 15:02:35 +0000
++++ csv/rnesys.py	2015-10-22 11:27:01 +0000
+@@ -2,18 +2,18 @@
+     # Assets
+     "assctl", "assdep", "assgrp", "assmst", "asstrn",
+     # Controls
+-    "ctlare", "ctlbat", "ctlctl", "ctldep", "ctllog", "ctlmes", "ctlmst",
+-        "ctlnot", "ctlpwm", "ctlpwr", "ctlpwu", "ctlrep", "ctlsys",
+-        "ctlvmf", "ctlvrf", "ctlvtf", "ctlynd", "ctlgrp",
++    "ctlbat", "ctlctl", "ctldep", "ctllog", "ctlmes", "ctlmst", "ctlnot",
++    "ctlpwm", "ctlpwr", "ctlpwu", "ctlrep", "ctlsys", "ctlvmf", "ctlvrf",
++    "ctlvtf", "ctlynd", "ctlgrp",
+     # Creditors
+     "crsage", "crsctl", "crsmst", "crspay", "crsrbm", "crsrdm", "crsrmf",
+-        "crsrtf", "crstrn",
++    "crsrtf", "crstrn",
+     # Debtors
+     "drsact", "drsage", "drschn", "drsctl", "drsdel", "drsmst", "drsrcm",
+-        "drsrct", "drstrn", "drstyp",
++    "drsrct", "drstrn", "drstyp",
+     # General Ledger
+     "genbal", "genbud", "gendtm", "gendtt", "genint", "genjlm", "genjlt",
+-        "genmst", "genrcc", "genrct", "genrpc", "genrpt", "genstr", "gentrn",
++    "genmst", "genrcc", "genrct", "genrpc", "genrpt", "genstr", "gentrn",
+     # Rental
+     "rtlcon", "rtlctl", "rtlmst", "rtlprm", "rtltrn",
+     # Reports
+@@ -24,7 +24,7 @@
+     "stklin", "stkmst", "stkpag",
+     # Stores
+     "strctl", "strgrp", "strloc", "strmf1", "strmf2", "strpom", "strpot",
+-        "strprc", "strrcp", "strtrn", "struoi", "strvar",
++    "strprc", "strrcp", "strtrn", "struoi", "strvar",
+     # Telephone
+     "telcon", "telgrp", "telmst",
+     # Templates
+
+=== modified file 'csv/stdsys.py'
+--- csv/stdsys.py	2015-08-25 15:02:35 +0000
++++ csv/stdsys.py	2015-10-22 11:27:05 +0000
+@@ -3,31 +3,31 @@
+     "assctl", "assdep", "assgrp", "assmst", "asstrn",
+     # Bookings
+     "bkmcon", "bkmctl", "bkmlet", "bkmmst", "bkmrtm", "bkmrtr", "bkmrtt",
+-        "bkmtrn", "bkmunm",
++    "bkmtrn", "bkmunm",
+     # Bowls
+     "bwlclb", "bwlcmp", "bwlctl", "bwldrm", "bwldrt", "bwlent", "bwlflf",
+-        "bwlflm", "bwlflo", "bwlfls", "bwlflt", "bwlgme", "bwlrnd", "bwltab",
+-        "bwltyp",
++    "bwlflm", "bwlflo", "bwlfls", "bwlflt", "bwlgme", "bwlrnd", "bwltab",
++    "bwltyp",
+     # Controls
+-    "ctlare", "ctlbat", "ctlctl", "ctldep", "ctllog", "ctlmes", "ctlmst",
+-        "ctlnot", "ctlpwm", "ctlpwr", "ctlpwu", "ctlrep", "ctlsys", "ctlvmf",
+-        "ctlvrf", "ctlvtf", "ctlynd",
++    "ctlbat", "ctlctl", "ctldep", "ctllog", "ctlmes", "ctlmst", "ctlnot",
++    "ctlpwm", "ctlpwr", "ctlpwu", "ctlrep", "ctlsys", "ctlvmf", "ctlvrf",
++    "ctlvtf", "ctlynd",
+     # Creditors
+     "crsage", "crsctl", "crsmst", "crstrn",
+     # Debtors
+     "drsact", "drsage", "drschn", "drsctl", "drsdel", "drsmst", "drsrcm",
+-        "drsrct", "drstrn", "drstyp",
++    "drsrct", "drstrn", "drstyp",
+     # General Ledger
+     "genbal", "genbud", "gendtm", "gendtt", "genint", "genjlm", "genjlt",
+-        "genmst", "genrcc", "genrct", "genrpc", "genrpt", "genstr", "gentrn",
++    "genmst", "genrcc", "genrct", "genrpc", "genrpt", "genstr", "gentrn",
+     # Loans
+     "lonctl", "lonmf1", "lonmf2", "lonrte", "lontrn",
+     # Members
+     "memadd", "memage", "memcat", "memctc", "memctk", "memctl", "memcto",
+-        "memctp", "memkon", "memlnk", "memmst", "memsta", "memtrn", "memtrs",
++    "memctp", "memkon", "memlnk", "memmst", "memsta", "memtrn", "memtrs",
+     # Rental
+     "rcacon", "rcactl", "rcaint", "rcaowm", "rcaowt", "rcaprm", "rcatnm",
+-        "rcatnt",
++    "rcatnt",
+     "rtlcon", "rtlctl", "rtlmst", "rtlprm", "rtltrn",
+     # Reports
+     "rptcol", "rptexc", "rptjon", "rptmst", "rptord", "rpttab", "rptvar",
+@@ -35,11 +35,11 @@
+     "slsctl", "slsiv1", "slsiv2", "slsiv3",
+     # Stores
+     "strctl", "strgrp", "strloc", "strmf1", "strmf2", "strpom", "strpot",
+-        "strprc", "strrcp", "strtrn", "struoi", "strvar",
++    "strprc", "strrcp", "strtrn", "struoi", "strvar",
+     # Salaries & Wages
+     "wagbal", "wagcap", "wagcod", "wagctl", "wagedc", "wagirp", "waglmf",
+-        "wagltf", "wagmst", "wagrcv", "wagtf1", "wagtf2", "wagtxa", "wagtxr",
+-        "waguni",
++    "wagltf", "wagmst", "wagrcv", "wagtf1", "wagtf2", "wagtxa", "wagtxr",
++    "waguni",
+     # Telephone
+     "telcon", "telgrp", "telmst",
+     # Templates
+
+=== modified file 'doc/AR.rst'
+--- doc/AR.rst	2015-06-17 15:23:42 +0000
++++ doc/AR.rst	2015-10-22 14:18:26 +0000
+@@ -7,7 +7,9 @@
+ Use this routine to create an asset's register control record.
+ 
+ + **G/L Integration** - Yes to integrate else No.
+++ **Sale of Assets** - If integrated, enter the general ledger account number for the `Sale of Assets` account.
+ + **Receiver Dep** - Yes to have separate depreciation rates for the receiver.
+++ **Last Dep Period** - Enter the last financial period that depreciation was raised.
+ 
+ Depreciation Codes (AR)
+ +++++++++++++++++++++++
+
+=== modified file 'doc/BK.rst'
+--- doc/BK.rst	2015-06-17 15:23:42 +0000
++++ doc/BK.rst	2015-10-22 14:21:17 +0000
+@@ -7,9 +7,13 @@
+ Use this routine to maintain a bookings control record.
+ 
+ + **G/L Integration** - Yes to integrate else No.
+++ **Bookings Control** - If integrated, enter the general ledger account number for the `Bookings Control` account.
+++ **Cheques Received** - If integrated, enter the general ledger account number for the `Cheques Received` account.
+++ **Cash Received** - If integrated, enter the general ledger account number for the `Cash Received` account.
+++ **Cancellation Fee** - If integrated, enter the general ledger account number for the `Cancellation Fee` account.
+ + **Booking Template** - The template to use for the booking forms.
+ + **Booking Template** - The template to use for the booking invoice.
+-+ **Booking Template** - The template to use for the booking statement.
+++ **Statement Template** - The template to use for the booking statement.
+ + **Terms and Conditions** - The terms and conditions file to attach to the booking query.
+ 
+ Unit Records (BK)
+
+=== modified file 'doc/CR.rst'
+--- doc/CR.rst	2015-06-17 15:23:42 +0000
++++ doc/CR.rst	2015-10-22 15:04:12 +0000
+@@ -7,11 +7,13 @@
+ Use this routine to create and amend the creditor's control record.
+ 
+ + **G/L Integration** - Whether or not to integrate with the general ledger.
+-+ **G/L Input Method** - Whether allocations to general ledger accounts are entered inclusive or exclusive of V.A.T.
+-+ **Best Account Code** - The Standard Bank account code.
+-+ **Best Account Type** - The Standard Bank account type.
+-+ **Bank Account Code** - The Standard bank account code.
+-+ **Remittance Template** - The remittance advice template.
+++ **Creditors Control** - If integrated, enter the general ledger account number for the `Creditors Control` account.
+++ **Discount Received** - If integrated, enter the general ledger account number for the `Discount Allowed` account.
+++ **G/L Input Method** - If integrated, select whether allocations to general ledger accounts are entered inclusive or exclusive of VAT.
+++ **Best Account Code** - The Standard Bank Best account code.
+++ **Best Account Type** - The Standard Bank Best account type.
+++ **Bank Account Code** - The Standard Bank account code.
+++ **Remittance Template** - The default template to use for remittance advices.
+ 
+ Masterfile Records (CR)
+ +++++++++++++++++++++++
+@@ -107,40 +109,62 @@
+ + **Period Type** - Financial or Capture.
+ + **Starting Period** - The first financial period to include in the report.
+ + **Ending Period** - The last financial period to include in the report.
+-+ **Starting Date** - The from date to include in the report.
+-+ **Ending Date** - The to date to include in the report.
+++ **Starting Date** - The starting date to include in the report.
+++ **Ending Date** - The ending date to include in the report.
+ + **Type** - The transaction type or 0 for all.
+ + **Batch-Number** - The batch number or blank for all.
+ + **Totals Only** - Yes or No.
+ 
+ Due For Payment Listing (CR)
+ ++++++++++++++++++++++++++++
+-Use this routine to produce a listing of creditor's due to be paid at a specific cut off date,
++Use this routine to produce a listing of creditor's due to be paid at a specific cut off date.
++
+++ **Terms Base** - Select the terms base to print.
+++ **Payment Date** - Enter the cut off date.
+++ **Days Leeway** - Enter the number of days to add to the cut off date.
+ 
+ Outstanding Transactions (CR)
+ +++++++++++++++++++++++++++++
+ Use this routine to produce a report of outstanding transactions by creditor.
+ 
+++ **Report Period** - Enter the financial period for the report.
+++ **Account per Page** - Select whether to start a new page for each account.
++
+ Age Analysis (CR)
+ +++++++++++++++++
+ Use this routine to produce a creditor's age analysis.
+ 
+++ **Cut-Off Period** - The financial period.
+++ **Totals Only** - Select totals only or all individual accounts.
+++ **First Account Number** - The first account to include on the report, if applicable.
+++ **Last Account Number** - The last account to include on the report, if applicable.
+++ **Lower Balance Limit** - Enter the minimum balance amount to include.
+++ **Include Debit Balances** - Select whether to include accounts with debit balances.
++
+ Master Listing (CR)
+ +++++++++++++++++++
+ Use this routine to produce a creditor's master listing.
+ 
+++ **Sort Order** - Select the print order of the accounts.
+++ **Use Full Address** - Select whether to print the account's full address.
+++ **Contact Details** - Select which contact details are to be printed.
++
+ Reconciliation Statements (CR)
+ ++++++++++++++++++++++++++++++
+ Use this routine to produce creditor's reconciliation statements. These statements are useful in reconciling with creditor's statements.
+ 
+++ **Period** - The financial period.
+++ **Whole File** - Select whole file or individual accounts.
+++ **Sort Order** - Select the print order of the accounts.
++
+ Remittance Advices (CR)
+ +++++++++++++++++++++++
+ Use this routine to produce creditor's remittance advices.
+ 
+ + **Template Name** - The name of the template to use.
+-+ **Whole File** - Select the accounts to print.
+-+ **From Account** - If Range was selected enter the starting account code.
+-+ **To   Account** - If Range was selected enter the ending account code.
+++ **Whole File** - Select whole file, range or individual accounts.
+++ **From Account** - If range was selected enter the starting account code.
+++ **To   Account** - If range was selected enter the ending account code.
+ + **Sort Order** - Select the sorting order.
+ + **Terms Base** - Select either monthly or daily terms base.
+ + **Exceptions** - Select Yes to enter exceptions i.e. add, edit or exclude various transactions.
+@@ -160,6 +184,12 @@
+ ++++++++++++++++++++++++++++
+ Use this routine to produce creditor's name and address labels.
+ 
+++ **Whole File** - Select whole file or individual accounts.
+++ **Sort Order** - Sort by account number, name or postal code.
+++ **Avery A4 Code** - The Avery code for the label being used.
+++ **First Label Row** - The first available blank label row.
+++ **First Label Column** - The first available blank label column.
++
+ Notes Listing (CR)
+ ++++++++++++++++++
+ Use this routine to print any notes on the creditor's ledger accounts.
+
+=== modified file 'doc/DR.rst'
+--- doc/DR.rst	2015-06-17 15:23:42 +0000
++++ doc/DR.rst	2015-10-22 14:23:58 +0000
+@@ -6,9 +6,19 @@
+ +++++++++++++++++++
+ Use this routine to create and amend the debtor's control record.
+ 
+++ **G/L Integration** - Select whether to integrate the general ledger.
+++ **Debtors Control** - If integrated, enter the general ledger account number for the `Debtors Control` account.
+++ **Discount Allowed** - If integrated, enter the general ledger account number for the `Discount Allowed` account.
+++ **G/L Input Method** - If integrated, select whether allocations to general ledger accounts are entered inclusive or exclusive of VAT.
+++ **Chain Stores** - Select whether to enable chain store groups.
+++ **Statement Template** - The default template to use for statements.
++
+ Chain Stores (DR)
+ +++++++++++++++++
+-Use this routine to create, amend or delete chain store records.
++Use this routine to create, amend or delete chain store records if enabled. All fields are self explanatory with the exception of the following:
++
+++ **Chn** - The chain store code.
+++ **Vat Code** - The default VAT code to use for accounts in the chain.
+ 
+ Business Activities (DR)
+ ++++++++++++++++++++++++
+@@ -18,10 +28,6 @@
+ +++++++++++++++++++
+ Use this routine to create, amend or delete business type records.
+ 
+-Areas (DR)
+-++++++++++
+-Use this routine to create, amend or delete area records.
+-
+ Salesmen (DR)
+ +++++++++++++
+ Use this routine to create, amend or delete salesman's records.
+@@ -209,26 +215,64 @@
+ ++++++++++++++++++++++++++++
+ Use this routine to produce a listing of debtor's due to pay at a specific cut off date,
+ 
+++ **Payment Date** - Enter the cut off date.
++
+ Outstanding Transactions (DR)
+ +++++++++++++++++++++++++++++
+ Use this routine to produce a report of outstanding transactions by debtor.
+ 
+++ **Report Period** - Enter the financial period for the report.
+++ **Account per Page** - Select whether to start a new page for each account.
++
+ Age Analysis (DR)
+ +++++++++++++++++
+ Use this routine to produce a debtor's age analysis.
+ 
+++ **Cut-Off Period** - The financial period.
+++ **Totals Only** - Select totals only or all individual accounts.
+++ **Business Activity** - Enter the business activity, if applicable.
+++ **Business Type** - Enter the business type, if applicable.
+++ **Lower Balance Limit** - Enter the minimum balance amount to include.
+++ **Include Credit Balances** - Select whether to include accounts with credit balances.
++
+ Master Listing (DR)
+ +++++++++++++++++++
+ Use this routine to produce a debtor's master listing.
+ 
+++ **Activity** - The business activity, if applicable.
+++ **Type** - The business type, if applicable.
+++ **Sort Order** - Select the print order of the accounts.
+++ **Use Full Address** - Select whether to print the account's full address.
+++ **Contact Details** - Select which contact details are to be printed.
++
+ Statements (DR)
+ +++++++++++++++
+ Use this routine to produce debtor's statements.
+ 
+++ **Template Name** - The name of the template to use.
+++ **Open Item** - If a non-standard template is selected you can choose to print the statement in open item or balance forward format.
+++ **Maximum Pages** - If a non-standard template is selected you can choose the maximum number of pages per account.
+++ **Whole File** - Select whole file, range or individual accounts.
+++ **From Account** - If range was selected enter the starting account code.
+++ **To   Account** - If range was selected enter the ending account code.
+++ **Sort Order** - Select the sorting order.
+++ **Include Zero Balances** - Select whether to include accounts with zero balances.
+++ **Include Negative Balances** - Select whether to include accounts with credit balances.
+++ **Include Stopped Balances** - Select whether to include stopped accounts.
+++ **Include Allocated Transactions** - Select whether to include allocated transactions.
+++ **Statement Date** - The date to be used for the cut-off.
+++ **Message Number** - The message number to print, if applicable.
++
+ Name and Address Labels (DR)
+ ++++++++++++++++++++++++++++
+ Use this routine to produce debtor's name and address labels.
+ 
+++ **Whole File** - Select whole file or individual accounts.
+++ **Sort Order** - Sort by account number, name or postal code.
+++ **Avery A4 Code** - The Avery code for the label being used.
+++ **First Label Row** - The first available blank label row.
+++ **First Label Column** - The first available blank label column.
++
+ Notes Listing (DR)
+ ++++++++++++++++++
+ Use this routine to print any notes on the debtor's ledger accounts.
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-10-13 07:46:15 +0000
++++ doc/Downloads.rst	2015-10-25 09:32:48 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.1.2 and was released on the 13th October, 2015.
++The latest version of Tartan is 5.1.3 and was released on the 25th October, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.1.2.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.1.3.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.1.2.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.1.3.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.1.2.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.1.2.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.1.2.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.1.2.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.1.3.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.1.3.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.1.3.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.1.3.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/GL.rst'
+--- doc/GL.rst	2015-08-25 15:02:35 +0000
++++ doc/GL.rst	2015-10-24 10:10:45 +0000
+@@ -2,13 +2,6 @@
+ --------------
+ File Maintenance (GL)
+ .....................
+-Control Record (GL)
+-+++++++++++++++++++
+-This routine is used to create or amend a company's control record.
+-
+-+ **Departments** - Yes or No (Not used at present)
+-+ **Number of Digits** - Number of leading digits used for department codes.
+-
+ Masterfile Records (GL)
+ +++++++++++++++++++++++
+ This routine is used to create or amend general ledger account records. For a new company you can **automatically populate** the company with standard accounts and reports by selecting the `Populate` button. You can also import a chart of accounts by selecting the `Import` button in which case the file must be in `csv` or `xls` format and must contain all the fields as listed below.
+@@ -528,6 +521,10 @@
+ + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+ + **Ref-Num** - Enter the transaction reference number.
+ 
++Merge Accounts Into a Control (GL)
++++++++++++++++++++++++++++++++++++
++Use this routine to transfer all transactions of selected accounts into a control account and then delete the accounts e.g. Transfer individual loan accounts into a loan's control account.
++
+ Interrogation (GL)
+ ..................
+ This routine is for querying individual general ledger accounts.
+
+=== modified file 'doc/LN.rst'
+--- doc/LN.rst	2015-10-05 14:03:48 +0000
++++ doc/LN.rst	2015-10-22 14:27:06 +0000
+@@ -7,9 +7,9 @@
+ Use this routine to create and amend the loan's control record.
+ 
+ + **G/L Integration** - Whether or not to integrate with the general ledger.
+-+ **Loans Control** - The G/L loans control account number.
+-+ **Interest Received** - The G/L loans interest received account number.
+-+ **Interest Paid** - The G/L loans interest paid account number.
+++ **Loans Control** - If integrated, enter the general ledger account number for the `Loans Control` account.
+++ **Interest Received** - If integrated, enter the general ledger account number for the `Interest Received` account.
+++ **Interest Paid** - If integrated, enter the general ledger account number for the `Interest Paid` account.
+ + **Interest Method** - The method for raising interest as follows:
+   + **Daily** - Interest is raised on daily balance.
+   + **Monthly** - Interest is raised on monthly balance.
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2015-10-13 07:46:15 +0000
++++ doc/MB.rst	2015-10-25 09:32:48 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.1.2
++:Version:   5.1.3
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-10-13 07:46:15 +0000
++++ doc/MD.rst	2015-10-25 09:32:48 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.1.2
++:Version:   5.1.3
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/ML.rst'
+--- doc/ML.rst	2015-06-17 15:23:42 +0000
++++ doc/ML.rst	2015-10-22 14:29:56 +0000
+@@ -7,6 +7,8 @@
+ This routine is used to create or amend a member's ledger control record.
+ 
+ + **G/L Integration** - Whether or not to integrate with the general ledger.
+++ **Members Control** - If integrated, enter the general ledger account number for the `Members Control` account.
+++ **Members Penalties** - If integrated, enter the general ledger account number for the `Members Penalties` account.
+ + **Bonus Days** - The number of days leeway for for raising charges.
+ + **Last Month End** - The date the last month end was performed.
+ + **Photo's Path** - Where the members photographs are stored.
+@@ -241,12 +243,13 @@
+ +++++++++++++++++++++++
+ Use this report to print name and address labels.
+ 
+-* **Status** - The member's status to filter the report.
+-* **Category** - The membership category to further filter the report.
+-* **Code** - The category code, 0 for all.
+-* **Sort Order** - Sort by membership number or surname or postal code.
+-* **Avery A4 Code** - The Avery code for the label being used. At this stage only L7159, (3x8), is supported.
+-* **First Label Position** - The first available blank label, 1-24.
+++ **Status** - The member's status to filter the report.
+++ **Category** - The membership category to further filter the report.
+++ **Code** - The category code, 0 for all.
+++ **Sort Order** - Sort by membership number or surname or postal code.
+++ **Avery A4 Code** - The Avery code for the label being used. At this stage only L7159, (3x8), is supported.
+++ **First Label Row** - The first available blank label row.
+++ **First Label Column** - The first available blank label column.
+ 
+ Toolbox
+ .......
+
+=== added file 'doc/QuickStart.rst'
+--- doc/QuickStart.rst	1970-01-01 00:00:00 +0000
++++ doc/QuickStart.rst	2015-10-22 13:03:44 +0000
+@@ -0,0 +1,205 @@
++==============================
++ Tartan Systems - Quick Start
++==============================
++
++Once Tartan Systems has been installed, the following procedures have to be performed before any meaningful work can be done. These procedures obviously depend on which modules are going to be used but this will be explained as we progress.
++
+++ Start Tartan by either clicking on the icon on the desktop or from the command line as follows:
++
++    + **Linux** - `program_path/ms0000.py [options]`
++    + **Windows** - `program_path\\ms0000.exe [options]`
++
++  To find out what the available command line options are, use the -h option.
++
+++ Login using **admin** as the user name and a password if prompted.
++
+++ The first time Tartan is started you will be taken to `Preferences` where you will have to set up your preferences regarding database, paths, utilities and various other choices. You will then have to enter the system record using `System Record Maintenance` as well as a company record using `Company Records Maintenance`. For most SOHO installations there will only be one company, however there is provision for up to 999 integrated companies.
++
++General Ledger
++..............
++If you are going to use the `General Ledger` you must perform the following procedures in order:
++
+++ Create, Populate or Import the chart of accounts using `Masterfile Records`.
+++ Create control accounts using `Control Accounts` if not populated.
+++ Capture the account's opening balances using `Opening Balances`.
+++ Print a trial balance using `Trial Balance` and ensure that your accounts balance. If not, recapture the incorrect ones.
+++ Capture the account's budgets using `Budgets` if required.
++
++The General Ledger is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
++
++Creditor's Ledger
++.................
++If you are going to use the `Creditor's Ledger` you must perform the following procedures in order:
++
+++ Create a control record for the company using `Control Record`.
+++ Create Creditor's accounts using `Masterfile Records`.
+++ Capture the account's opening balances using `Journals` in `Data Capture`.
+++ Print an aged analysis using `Age Analysis` and ensure that your totals balance. If not, recapture the incorrect ones.
++
++Please remember that if you are integrating the Creditors and General Ledger systems, the control account must balance with the age analysis.
++
++The Creditor's Ledger is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
++
++Please also note that within the Creditor's system all balances are stored as positive even though they are stored as credits in the General Ledger.  Therefore to increase a supplier's balance you would capture a Journal Credit and to decrease a supplier's balance you would capture a Journal Debit.
++
++Debtor's Ledger
++...............
++If you are going to use the `Debtor's Ledger` you must perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ If you are going to make use of chain stores, i.e. the facility to have separate accounts for branches within a chain with a consolidated statement. You would have to create the necessary chain store records using `Chain Stores`.
+++ If you are going to group your accounts by business activity, create the necessary records using `Business Activities`.
+++ If you are going to group your accounts by business types, create the necessary records using `Business Types`.
+++ If you are going to group your accounts by area, create the necessary records using `Areas`.
+++ If you are going to group your accounts by salesman, create the necessary records using `Salesmen`.
+++ Create Debtor's accounts using `Masterfile Records`.
+++ Capture the account's opening balances using `Journals` in `Data Capture`.
+++ Print an aged analysis using `Age Analysis` and ensure that your totals balance. If not, recapture the incorrect ones.
++
++Please remember that if you are integrating the Debtors and General Ledger systems, the control account must balance with the age analysis.
++
++The Debtor's Ledger is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
++
++Store's Ledger
++..............
++If you are going to use the `Store's Ledger` you must perform the following procedures in order:
++
+++ Create a control record for the company using `Control Record`.
+++ Create units of issue records using `Units of Issue`.
+++ Create product groups using `Product Groups`.
+++ Create stock records for the company by selecting `Masterfile Records`.
+++ Enter the current stock on hand for the company by selecting `Stock Take Returns`.
+++ Print a variance report using `Stock Take Variance Report` and ensure that all the quantities have been entered correctly. Correct any errors by redoing the previous step for the incorrect ones only.
+++ Update the stock items using `Stock Take Merge`.
+++ Print a stock on hand report using `Stock on Hand`.
++
++Please remember that if you are integrating the Stores and General Ledger systems, the control account must balance with the stock on hand report.
++
++The Store's Ledger is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
++
++Sales Invoicing
++...............
++If you are going to use `Sales Invoicing` you must perform the following procedures in order:
++
+++ Setup the Debtor's System as detailed above ensuring that you create at least one salesman's record.
+++ Setup the Store's System as detailed above.
+++ Create a control record using `Control Record`.
++
++The Sales's Invoicing system is at this stage fully functional and you can capture invoices, credit notes, sales orders and quotations.
++
++Asset's Ledger
++..............
++If you are going to use the `Asset's Register` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ Create depreciation codes using `Depreciation Codes`.
+++ Create group records using `Group Records`.
+++ Create masterfile records and take on opening balances for existing assets using `Opening Balances`.
++
++The Asset's Register is at this stage fully functional and you can capture payments, receipts and journal entries. Please note that new assets are captured via the data capture routines i.e. Payments and/or Journal Entries.
++
++Bookings Manager
++................
++If you are going to use the `Booking's Manager` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ Create unit records using `Unit Records`.
+++ Create rate records using `Rate Records`.
+++ Create booking letters using `Booking Letters`.
++
++The Booking's Manager is at this stage fully functional and you can capture bookings and booking's movements.
++
++Bowling Clubs
++.............
++If you are going to use `Bowling Clubs` you must first of all ensure that the `System and Company` records have been created.
++
+++ Create a systems record, by selecting `System Record Maintenance` from the Control menu.
+++ Create a company/club record, by selecting `Company Records Maintenance` from the Control menu.
+++ **Tabs Draw**
++    * Create a Control record by selecting `Control Record` from the File Maintenance menu.
++    * Create Tab records by selecting `TABS Maintenance` from the File Maintenance menu.
++    * Do a draw by selecting `New Draw` from the menu.
++    * Reprint a draw by selecting `Reprint Draw` from the menu.
+++ **League Selections**
++    * Create a league format record by selecting `League Formats` from the File Maintenance menu.
++    * Create Tab records by selecting `TABS Maintenance` from the File Maintenance menu.
++    * Create side records by selecting `Side's Maintenance` from the File Maintenance menu.
++    * Enter team selections by selecting `Capture Selections` from the menu.
++    * To print `Assessment Forms` select Assessment Forms from the menu.
++    * To print flag `Declaration Forms` select Declaration Forms from the menu.
++    * To capture the completed `Assessment Forms` select `Capture Assessments` from the menu.
++    * To print the `Match Assessment Report` select Match Assessment Report from the menu.
++    * To print the `Assessment Summary` select `Assessment Summary` from the menu.
++    * To clear historical selections select `Clear League History` from the toolbox menu.
+++ **Club Competitions**
++    * Create a Competition Type record by selecting `Competition Types` from the File Maintenance menu.
++    * Create player's records by selecting `Player's Maintenance` from the File Maintenance menu.
++    * Capture Competition Entries by selecting `Capture Entries` from the menu.
++    * Print Match Cards and Match Report by selecting `Print Match Cards` from the menu.
++    * Print Match Cards Summary by selecting `Print Cards Summary` from the menu. This report is a running summary of all draws.
++    * To change Match Cards select `Change Match Cards` from the menu. After changing the cards you must reprint them as per above. Please note that to only reprint certain cards you must select `All Cards No`.
++    * After the games have been played enter the results by selecting `Capture Results` from the menu.
++    * Print the game and match results by selecting the applicable routines from the menu.
++
++Loan's Ledger
++.............
++If you are going to use the `Loan's Ledger` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
++
++The Loan's Ledger is at this stage fully functional and you can add members, edit member details, capture postings, produce basic reports and do interrogations etc.
++
++Member's Ledger
++...............
++If you are going to use the `Member's Ledger` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ If you elected to integrate with the General Ledger you must create the `mem_ctl` and `mem_pen` controls as per above.
+++ Create category records using `Category Records`.
+++ Create contact records using `Contact Records`.
++
++The Member's Ledger is at this stage fully functional and you can add members, edit member details, capture postings, produce basic reports and do interrogations etc.
++
++Rental's Ledger - Standard
++..........................
++If you are going to use the `Rental's Ledger (Standard)` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ Create premises records using `Premises Records`.
+++ Create masterfile records using `Masterfile Records`.
++
++The Rental's Ledger (Standard) is at this stage fully functional and you can capture payments, receipts and journal entries.
++
++Rental's Ledger - Extended
++..........................
++If you are going to use the `Rental's Ledger (Extended)` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ Create owners records using `Owners Records`.
+++ Create premises records using `Premises Records`.
+++ Create tenants records using `Tenants Records`.
++
++The Rental's Ledger (Standard) is at this stage fully functional and you can capture payments, receipts and journal entries.
++
++Salaries and Wages
++..................
++If you are going to use `Salaries and Wages` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ If you elected to integrate with the General Ledger you must create the `wag_ctl`, `wag_slc` and `wag_sli` controls as per above.
+++ Create at least one branch record using `Branch Records`.
+++ Create at least one department record using `Department Records`.
+++ Create all necessary earnings and deduction records using `Earning and Deduction Codes`.
+++ Create employee records using `Employee Masterfile`.
++
++The Salaries and Wages system is at this stage fully functional and you can capture clock cards and produce payslips etc.
++
++Staff Loans
++...........
++If you are going to use `Staff Loans` you must first of all set up `Salaries and Wages` as detailed above and then, at least, perform the following procedures in order:
++
+++ Ensure that there is a deduction record, in the salaries system, for loan repayments.
+++ Ensure that all employees with loans have the deduction record included in their masterfile records as a deduction, without values.
+++ Capture existing loans using `New Loans`. If Salaries are integrated with the general ledger un-integrate salaries to capture loans balances. Once all opening balances have been captured re-integrate salaries.
++
++The Staff Loans system is at this stage functional.
+
+=== modified file 'doc/RC.rst'
+--- doc/RC.rst	2015-06-17 15:23:42 +0000
++++ doc/RC.rst	2015-10-22 14:36:14 +0000
+@@ -7,7 +7,14 @@
+ This routine is used to create or amend a member's ledger control record.
+ 
+ + **G/L Integration** - Whether or not to integrate with the general ledger.
+-+ **G/L Bank Account** - If integrated this is the primary bank ledger account number.
+++ **Commission Raised** - If integrated, enter the general ledger account number for the `Commission Raised` account.
+++ **Deposits Control** - If integrated, enter the general ledger account number for the `Deposits Control` account.
+++ **Contract Fees** - If integrated, enter the general ledger account number for the `Contract Fees` account.
+++ **Owners Control** - If integrated, enter the general ledger account number for the `Owners Control` account.
+++ **Owners Charges** - If integrated, enter the general ledger account number for the `Owners Charges` account.
+++ **Tenants Control** - If integrated, enter the general ledger account number for the `Tenants Control` account.
+++ **Tenants Charges** - If integrated, enter the general ledger account number for the `Tenants Charges` account.
+++ **Bank Account** - If integrated, enter the general ledger account number for the `Bank Account`.
+ + **Last Month End** - The date of the last month end.
+ + **Owner Template** - The template to be used to print owner's statements.
+ + **Tenant Template** - The template to be used to print tenant's statements.
+
+=== modified file 'doc/SI.rst'
+--- doc/SI.rst	2015-06-17 15:23:42 +0000
++++ doc/SI.rst	2015-10-22 14:38:41 +0000
+@@ -6,9 +6,10 @@
+ +++++++++++++++++++
+ Use this routine to create or amend the sales invoicing control record.
+ 
+-+ **Address** - Which address to put on the sales documents.
+ + **Delivery Notes** - Whether to print delivery notes.
+ + **Print Values** - Whether to include values on delivery notes.
+++ **Invoice Template** - Enter the template to be used for sales documents.
+++ **Point of Sale Tills** - This has not yet been implemented.
+ 
+ Reporting (SI)
+ ..............
+
+=== modified file 'doc/ST.rst'
+--- doc/ST.rst	2015-06-17 15:23:42 +0000
++++ doc/ST.rst	2015-10-24 10:05:34 +0000
+@@ -6,47 +6,168 @@
+ +++++++++++++++++++
+ Use this routine to create and amend the store's control record.
+ 
+++ **G/L Integration** - Select whether to integrate with the general ledger.
+++ **Stock on Hand** - If integrated this is the general ledger account number for the `Stock on Hand` account.
+++ **Stock Reconciliation** - If integrated this is the general ledger account number for the `Stock Reconciliation` account. This could also be referred to as the `Stock Adjustment` account.
+++ **Multiple Locations** - Select whether to allow multiple stores locations or warehouses.
+++ **Number of Price Levels** - Select the number of price levels up to a maximum of five.
+++ **Automatic Markup** - Select whether to allow automatic markup of items received based on a percentage stored in the group or masterfile records.
+++ **Orders Template** - The template to use to purchases orders.
++
+ Units of Issue (ST)
+ +++++++++++++++++++
+ Use this routine to create, amend and delete units of issue records.
+ 
+++ **Unit of Issue** - This is a unit of issue code.
+++ **Description** - This is a further description of the unit of issue code.
++
+ Product Groups (ST)
+ +++++++++++++++++++
+ Use this routine to create, amend and delete product group records.
+ 
+++ **Product Group** - This is a three character code for the product group.
+++ **Description** - This is the description of the group.
+++ **Vat Code** - This is the default VAT Code for the group.
+++ **Sales Account** - If integrated with the general ledger this is the default sales account for the group.
+++ **COS Account** - If integrated with the general ledger this is the default cost of sale account for the group.
+++ **Mark-Up Percent** - This is the default mark-up percentage for the group.
+++ **Re-Order Factor** - This is the percentage to alter the average monthly usage of items in the group to calculate a re-order level.
++
+ Locations (ST)
+ ++++++++++++++
+-Use this routine to create, amend and delete location records.
++If multiple locations has been enabled in the control record, use this routine to create, amend and delete location records. The location code is a single digit or character. The default location is 1.
+ 
+ Masterfile Records (ST)
+ +++++++++++++++++++++++
+ Use this routine to create, amend and delete store's ledger records.
+ 
+++ **Grp** - The product group.
+++ **Code** - The product code up to 20 characters long.
+++ **Loc** - The location where this item is stored.
+++ **Basic-A**
++    + **Type of Item** - Select whether the item is a normal item or a recipe.
++    + **Description** - The description of the item.
++    + **Unit of Issue** - The unit of issue code relating to the item.
++    + **Units Per Pack** - The number of units making up the pack. If applicable, the price for a single item would be the purchase or selling price divided by this number.
++    + **Value Indicator** - Select the cost price value indicator as follows:
++      + **Average** - The cost price will be the total value divided quantity.
++      + **Standard** - The cost will be a fixed cost price.
++      + **None** - The item will not have a cost print. This is normally used for goods which are not purchased and are not standard e.g. recipes, travelling, labour etc.
++    + **VAT Code** - The default vat code for the item.
++    + **Exclusive Chain Store** - If chain stores are enabled in the debtor's ledger and the item is exclusive to a Chain Store, this is the Chain Store code.
++    + **Exclusive Account** - If the item is exclusive to a debtor's account, this is the debtor's account number.
+++ **Sales Account** - If integrated with the general ledger this is the default sales account for the item.
+++ **COS Account** - If integrated with the general ledger this is the default cost of sale account for the item.
+++ **Basic-B**
++    + **Bin Number** - The bin number for the item, if applicable.
++    + **Re-Order Indicator** - Select how re-order levels are maintained:
++      + **Manual** - Manually entered.
++      + **Automatic** - Automatically generated.
++      + **Zero** - No re-order level nor re-order quantity.
++    + **Re-Order Level** - The initial re-order level.
++    + **Re-Order Quantity** - The initial re-order quantity.
++    + **Selling Price Markup** - The default mark-up to calculate selling price.
+++ **Recipes**
++    + **If the item is a recipe enter all the items making up the recipe**
++      + **Grp** - The product group.
++      + **Code** - The product code.
++      + **Quantity** - The quantity of the item needed for the recipe.
++
+ Selling Prices (ST)
+ +++++++++++++++++++
+-Use this routine to create and amend product selling prices.
++Use this routine to create and amend product selling prices. Selling prices can also be automatically calculated when receiving stock.
++
+++ **Product Group** - The product group.
+++ **Product Code** - The product code.
+++ **Location** - The location code, if applicable.
+++ **Price Level(s)** - The price for each applicable price level.
+ 
+ Data Capture (ST)
+ .................
+-Purchase Orders - Place (ST)
+-++++++++++++++++++++++++++++
++Purchase Orders (ST)
++++++++++++++++++++++
+ Use this routine to place purchase orders against suppliers.
+ 
+-Purchase Orders - Receive (ST)
+-++++++++++++++++++++++++++++++
+-Use this routine to receive purchase orders from suppliers.
+++ **Printer Selection**
++    + **Template Name** - The template to be used for the purchase orders.
++    + **Order Date** - The date of the orders.
++    + **Auto Markup** - Whether to automatically calculate new selling prices.
++
+++ **Order Header**
++    + **Action** - Select the applicable action to perform.
++      + **New** - Create a new order.
++      + **Amend** - Amend an existing order.
++      + **Receive** - Receive an existing order.
++      + **Cancel** - Cancel an existing order.
++    + **Ord-No** - The order number of an existing order.
++    + **Loc** - The location placing the order.
++    + **Acc-No** - The creditor's account number.
++    + **Ord-By** - The code of the representative placing the order.
++    + **Del-No** - The delivery note number when receiving an order.
++    + **Date** - The date of the delivery when receiving an order.
++
++**Order Body**
++    + **Grp** - The product group.
++    + **Product-Code** - The product code.
++    + **Description** - The product description to appear on the order.
++    + **Quantity** - The quantity ordered.
++    + **V** - The VAT code to apply.
++    + **Price** - The exclusive cost price.
++    + **Dis-%** - The percentage of discount allowed.
++
++**Buttons**
++    + **Cancel** - Cancel a new order whilst in the body.
++    + **DelAdd** - Enter a delivery address.
++    + **Ribbon** - Enter ribbon details e.g. Contact Person, VAT Number etc.
++    + **Message** - Enter a message to print on the order.
++    + **Edit** - Edit the body of the order.
++    + **Reprint** - Reprint an existing order.
++    + **CrsMaint** - Maintain creditor's records.
++    + **CrsQuery** - Interrogate creditor's records.
++    + **StrMaint** - Maintain store's records.
++    + **StrQuery** - Interrogate store's records.
++    + **Exit** - Exit purchase orders and return to the main menu.
++    + **Accept** - Accept the order and print/email, if applicable.
+ 
+ Goods Received Notes (ST)
+ +++++++++++++++++++++++++
+-Use this routine to receive goods into stock without purchase orders.
+-
+-Issues to General Ledger (ST)
+-+++++++++++++++++++++++++++++
+-Use this routine to issue stock directly to general ledger accounts.
++Use this routine to receive goods into stock without creating purchase orders.
++
+++ **Header**
++    + **GRN Number** - Goods received number.
++    + **Date** - Date received.
++    + **Order Number** - Order number, if applicable.
++    + **Auto Markup** - Whether or not to automatically generate selling prices.
+++ **Body**
++    + **Grp** - The product group.
++    + **Product Code** - The product code.
++    + **L** - the location code, if applicable.
++    + **Units** - The number of items ordered.
++    + **Unit-Cost**- The cost price per unit.
++    + **Dis-%** - The allowed discount, if applicable.
++    + **Unit-Sell** - The selling price per unit.
++
++Goods Issued Notes (ST)
+++++++++++++++++++++++++
++Use this routine to issue stock i.e. journalise stock out.
++
+++ **Grp** - The product group.
+++ **Product Code** - The product code.
+++ **L** - the location code, if applicable.
+++ **Quantity** - The number of items issued.
+++ **Recipe Items** - If the product is a recipe the items in the recipe will be displayed and you can edit them by selecting the applicable item and changing the quantity. When ready to continue press the `Exit` button.
+++ **G/L-Acc** - If integrated with the general ledger, enter the applicable general ledger account number and details.
+ 
+ Location Transfers (ST)
+ +++++++++++++++++++++++
+-Use this routine to transfer stock from one location to another.
++Use this routine to transfer stock from one location to another, if applicable.
++
+++ **Grp** - The product group.
+++ **Product Code** - The product code.
+++ **Quantity** - The quantity to transfer.
+++ **F** - The location from where the items are being transferred.
+++ **T** - The receiving location.
+++ **Details** - The details of the transfer.
+ 
+ Stock Take (ST)
+ ...............
+@@ -54,23 +175,47 @@
+ ++++++++++++++++++++++
+ Use this routine to produce a stock take report. This report is used to facilitate counting physical stock.
+ 
+++ **Sort Order** - Select the order the items must appear on the report.
+++ **Location** - The location code, if applicable.
+++ **First Bin Number** - The starting bin number, if applicable.
+++ **Last Bin Number** - The ending bin number, if applicable.
+++ **Product Group** - The product group, if applicable.
+++ **Quantity to Print** - The number of items to print, if applicable.
+++ **Ignore Zero Balances** - Select whether to ignore items with zero balances.
++
+ Stock Take Returns (ST)
+ +++++++++++++++++++++++
+ Use this routine to enter physical stock count quantities.
+ 
+++ **Header**
++    + **Sort Order** - Select the order the items will be entered.
++    + **Location** - The location code, if applicable.
++    + **Auto Sequence** - Whether to automatically display the next item in order.
++    + **First Bin Number** - The starting bin number, if applicable.
++    + **First Group** - The starting product group, if applicable.
++    + **First Code** - The starting product code, if applicable.
++    + **Selling Prices** - Select whether selling prices must be changed.
++    + **Automatic Markup** - If selling prices are to be changed select whether it must be automatic or manual.
+++ **Body**
++    + **Grp** - The product group if not auto sequence.
++    + **Product Code** - The product code if not auto sequence.
++    + **Unit Cost** - The unit cost price.
++    + **Unit Sell** - The unit selling price, if applicable.
++    + **Quantity** - The quantity in stock.
++
+ Stock Take Variance Report (ST)
+ +++++++++++++++++++++++++++++++
+ Use this routine to produce a report of variances between the stock in the ledger as opposed to the stock counted.
+ 
+ Stock Take Merge (ST)
+ +++++++++++++++++++++
+-Use this routine to create adjustments to the stock records to bring them in line with the actual stock counted.
++Use this routine to create adjustments to the stock records to bring the ledger in line with the actual stock counted.
+ 
+ Reporting (ST)
+ ..............
+ Units Of Issue Listing (ST)
+ +++++++++++++++++++++++++++
+-Use this routine to produce a list of all units of issue.
++Use this routine to produce a list of all units of issue records.
+ 
+ Product Groups Listing (ST)
+ +++++++++++++++++++++++++++
+@@ -100,30 +245,70 @@
+ + **Batch-Number** - The batch number or blank for all.
+ + **Totals Only** - Yes or No.
+ 
+-Selling And Cost Price Listing (ST)
+-+++++++++++++++++++++++++++++++++++
+-Use this routine to produce a list of selected products' cost and selling prices.
++Price Lists (ST)
++++++++++++++++++
++Use this routine to produce a list of selected products' prices.
++
+++ **Product Group** - The product group, if applicable.
+++ **Ignore Out of Stock** - Select whether to ignore items with zero balances.
+++ **Report Type** - Select the applicable report type. If `Cost Price` is selected no more details will be required.
+++ **Price Type** - Select the type of selling prices to print. Either level prices or calculated mark up prices.
+++ **Price Level** - If level prices select enter the required level or zero for all.
+++ **Ignore Un-priced** - Select whether to ignore items without a selling price.
+++ **Use Last S/P** - If printing items without a selling price select whether to use the last selling price used.
+++ **VAT Inclusive** - Print VAT inclusive or exclusive selling prices.
+++ **Show Cost Price** - Select whether to include the cost price on the report.
+ 
+ Master Code List (ST)
+ +++++++++++++++++++++
+-Use this routine to to produce a master list of products.
++Use this routine to to produce a master list of products by type.
++
++Recipe Listing (ST)
+++++++++++++++++++++
++Use this routine to to produce a listing of recipes.
++
+++ **Product Group** - The product group, if applicable.
+++ **Whole File** - Select whether to print all available records or individuals.
+++ **Recipe per Page** - Select whether to print each recipe on a separate page.
+ 
+ Stock Movements (ST)
+ ++++++++++++++++++++
+ Use this routine to produce a report of selected products' movements.
+ 
+++ **Start Period** - Enter the starting financial period.
+++ **End Period** - Enter the ending financial period.
+++ **Location** - Enter the location code, if applicable.
+++ **Product Group** - Enter the product group, if applicable.
+++ **Exclude Zeros** - Select whether to include items with zero balances.
++
+ Purchase Orders (ST)
+ ++++++++++++++++++++
+ Use this routine to produce a report of purchase orders.
+ 
+++ **Location** - The location code, if applicable.
+++ **Outstanding Only** - Select whether to only print outstanding orders.
+++ **From Order Number** - Enter the starting order number, if applicable.
+++ **To Order Number** - Enter the ending order number, if applicable.
++
+ Stock On Hand (ST)
+ ++++++++++++++++++
+ Use this routine to produce a stock on hand report.
+ 
+++ **Reporting Period** - Enter the relevant financial period.
+++ **Location** - Enter the location code, if applicable.
+++ **Product Group** - Enter the product group, if applicable.
+++ **Ignore Zero Balances** - Select whether to ignore items with zero balances.
++
+ Stock Accounts (ST)
+ +++++++++++++++++++
+ Use this routine to produce product statements showing opening balances and movements.
+ 
+++ **Start Period** - Enter the starting financial period.
+++ **End Period** - Enter the ending financial period.
+++ **Location** - Enter the location code, if applicable.
+++ **Product Group** - Enter the product group, if applicable.
+++ **New Account on New Page** - Select whether to start a new page for each item.
++
+ Notes Listing (ST)
+ ++++++++++++++++++
+ Use this routine to print any notes on the store's ledger accounts.
+@@ -134,12 +319,12 @@
+ + **From Action Date** - The starting action date.
+ + **To Action Date** - The ending action date.
+ 
+-Price Tags (ST)
+-+++++++++++++++
++Item Labels (ST)
++++++++++++++++++
+ Use this routine to produce price tags for products.
+ 
+ + **Reporting Date** - The report date.
+-+ **Location** - The location code if applicable.
+++ **Location** - The location code, if applicable.
+ + **Product Group** - The product group or blank for all.
+ + **Product Code** - The product code or blank for all.
+ + **Item Types** - Either Normal, Recipe or All.
+@@ -160,6 +345,10 @@
+ ++++++++++++++++++++++++++
+ Use this routine to revalue stock records by average or last cost. It also provides for the zeroing of items with negative balances.
+ 
++Delete Purchase Orders (ST)
+++++++++++++++++++++++++++++
++Use this routine to delete outstanding purchases orders.
++
+ Interrogation (ST)
+ ..................
+ This routine is for querying individual Store's Ledger Accounts.
+
+=== modified file 'doc/WG.rst'
+--- doc/WG.rst	2015-06-17 15:23:42 +0000
++++ doc/WG.rst	2015-10-22 15:04:18 +0000
+@@ -6,6 +6,24 @@
+ +++++++++++++++++++
+ Use this routine to create and amend the control record.
+ 
+++ **G/L Integration** - Whether or not to integrate with the general ledger.
+++ **Salaries Control** - If integrated, enter the general ledger account number for the `Salaries Control` account.
+++ **Staff Loans Control** - If integrated, enter the general ledger account number for the `Staff Loans Control` account.
+++ **Staff Loans Interest** - If integrated, enter the general ledger account number for the `Staff Loans Interest` account.
+++ **Registration Number** - Enter the SARS registration number.
+++ **SDL Number** - Enter the SARS SDL registration number.
+++ **UIF Number** - Enter the SARS UIF registration number.
+++ **Trade Number** - Enter the SARS Trade registration number.
+++ **Daily Hours** - Enter the normal daily hours worked e.g. 8
+++ **Weekly Hours** - Enter the normal weekly hours worked e.g. 40
+++ **Monthly Hours** - Enter the normal monthly hours worked e.g. 173.33
+++ **Diplomatic Immunity** - Select if diplomatic immunity applies.
+++ **S/L Interest Rate** - Enter the default interest rate on staff loans.
+++ **Last Interest Date** - Enter the last date interest was raised.
+++ **Best Account Code** - Enter the Standard bank Best Account Code.
+++ **Best Account Type** - Enter the Standard bank Best Account Type.
+++ **Payslip Template** - Enter the default template to use for payslips.
++
+ Receiver Codes (WG)
+ +++++++++++++++++++
+ Use this routine to create and amend the receiver of revenue irp5 codes.
+@@ -14,14 +32,14 @@
+ ++++++++++++++++++++++++++++++++
+ Use this routine to create and amend the earnings and deduction records.
+ 
+-The following fields need more explanation:
++**Detail-A**
+ 
+ + **Type** - E for Earning and D for Deduction.
+ + **Code** - The code's number. Certain earning codes are fixed i.e.
+     + 1 for Normal Pay
+     + 2-5 for Overtime Pay
+ + **Description** - The code's description.
+-+ **Type** - The type of code.
+++ **Type** - The type of code:
+     + **Variable** - If the code is a fixed rate for all employees
+     + **Fixed** - If the code is different for each employee
+ + **Employee Portion** - Amount if the portion is a monetary value or Rate if the portion is a rate.
+@@ -38,12 +56,10 @@
+             + **\*** indicates multiplication.
+             + **\/** indicates division
+             + **Factor** refers to the 'Amount' field below.
+-
+         + **Amount** - The actual amount or rate to be used in the calculations.
+         + **Limit** - The maximum amount allowed e.g. U.I.F. - 116.62.
+-        + **GL/Cono** - The General Ledger company number to be updated. This will take preference to the general ledger company number in the department record.
+-        + **GL/Acno** - The general ledger account number to be updated. This will take preference to the general ledger account number in the department record.
+-
++        + **GL/Cono** - If integrated, the general ledger company number to be updated. This will take preference to the general ledger company number in the department record.
++        + **GL/Acno** - If integrated, the general ledger account number to be updated. This will take preference to the general ledger account number in the department record.
+ + **Earnings Type** - Salary if the earning is a salary amount or Commission if the earning is a commission amount.
+ + **Employer Portion** - These are the same as for employee portion above.
+ + **Tax Code** - Indicates whether the earning is taxable or not and if so what type of to apply as follows:
+@@ -54,7 +70,7 @@
+     + **Retrench** - If the earning is in respect of a retrenchment package.
+ + **Tax Portion** - If taxable or tax deductible, the portion to be taxed.
+ 
+-    The following fields need more explanation:
++**Detail-B**
+ 
+ + **Rec Of Rev Code** - This is the code assigned by the receiver of revenue for this type of earning or deduction.
+ + **Union Report** - Indicates whether the deduction must be included in a union report.
+@@ -62,6 +78,8 @@
+ + **Balance Number** - This is used for a finite deduction e.g. If you want to deduct a total garnishee order of R1000 at a rate of R100 per month you would create a 'Garnishee' deduction record and enter a 1, 2 or 3 in this field. You would then edit the employee's record and under 'Balances' you would enter R1000 in the corresponding balance field. This deduction of R100 would then continue automatically until the full R1000 rand was deducted.
+ + **Hourly Limit** - Indicates that a deduction is only applicable if the number of normal hours worked in a period, is less than or equal to the amount in this field.
+ + **Monthly Deduction** - Indicates whether the deduction is to be deducted only once a month in the case of weekly or fortnightly paid employees.
+++ **UIF Percentage** - What portion is liable for UIF e.g. 100
+++ **SDL Percentage** - What portion is liable for SDL e.g. 100
+ 
+ Union Records (WG)
+ ++++++++++++++++++
+
+=== modified file 'drs/dr1010.py'
+--- drs/dr1010.py	2015-08-25 15:02:35 +0000
++++ drs/dr1010.py	2015-10-22 11:36:22 +0000
+@@ -26,9 +26,9 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlare", "ctlmes", "ctlrep",
+-            "chglog", "ctlnot", "slsiv1", "drsact", "drschn", "drsdel",
+-            "drsmst", "drstrn", "drstyp"], prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmes", "ctlrep", "chglog",
++            "ctlnot", "slsiv1", "drsact", "drschn", "drsdel", "drsmst",
++            "drstrn", "drstyp"], prog=__name__)
+         if self.sql.error:
+             return
+         gc = GetCtl(self.opts["mf"])
+@@ -70,14 +70,6 @@
+             "cols": (
+                 ("del_code", "", 0, "Del-Cod"),
+                 ("del_add1", "", 0, "Address", "Y"))}
+-        arm = {
+-            "stype": "R",
+-            "tables": ("ctlare",),
+-            "cols": (
+-                ("arm_area", "", 0, "Are"),
+-                ("arm_name", "", 0, "Name", "Y"),
+-                ("arm_rep", "", 0, "Rep")),
+-            "where": [("arm_cono", "=", self.opts["conum"])]}
+         rpm = {
+             "stype": "R",
+             "tables": ("ctlrep",),
+@@ -168,18 +160,15 @@
+                 "","N",None,None,None,("efld",)),
+             (("T",1,12,0),"INa",7,"Delivery Code","",
+                 "","N",self.doDelivery,dlm,None,("efld",)),
+-            (("T",1,13,0),"INA",3,"Area","",
+-                "","N",self.doArea,arm,None,("efld",)),
++            (("T",1,13,0),"INa",3,"Rep Code","",
++                "","N",self.doRep,rpm,None,("efld",)),
+             (("T",1,13,20),"ONA",26,""),
+-            (("T",1,14,0),"INa",3,"Rep Code","",
+-                "","N",self.doRep,rpm,None,("efld",)),
++            (("T",1,14,0),"IUA",3,"Business Activity","",
++                "","N",self.doBusAct,act,None,("efld",)),
+             (("T",1,14,20),"ONA",26,""),
+-            (("T",1,15,0),"IUA",3,"Business Activity","",
+-                "","N",self.doBusAct,act,None,("efld",)),
++            (("T",1,15,0),"IUA",3,"Business Type","",
++                "","N",self.doBusTyp,typ,None,("efld",)),
+             (("T",1,15,20),"ONA",26,""),
+-            (("T",1,16,0),"IUA",3,"Business Type","",
+-                "","N",self.doBusTyp,typ,None,("efld",)),
+-            (("T",1,16,20),"ONA",26,""),
+             (("T",2,0,0),"IUI",1,"Price Level","",
+                 "","N",None,None,None,("efld",)),
+             (("T",2,1,0),"IUD",5.2,"Discount Percentage","",
+@@ -272,7 +261,7 @@
+             d = 4
+             for pag in xrange(1, self.df.pgs+1):
+                 for x in xrange(0, self.df.topq[pag]):
+-                    if pag == 1 and x in (17, 19, 21, 23):
++                    if pag == 1 and x in (17, 19, 21):
+                         continue
+                     elif pag == 2 and x in (8, 10):
+                         continue
+@@ -282,38 +271,30 @@
+                         data = self.old[d]
+                     self.df.loadEntry("T", pag, x, data=data)
+                     d += 1
+-            self.loadArea()
+             self.loadRep()
+             self.loadAct()
+             self.loadTyp()
+             self.loadInvMess()
+             self.loadStaMess()
+ 
+-    def loadArea(self):
+-        acc = self.sql.getRec(tables="ctlare", cols=["arm_name"],
+-            where=[("arm_cono", "=", self.opts["conum"]), ("arm_area", "=",
+-            self.df.t_work[1][0][16])], limit=1)
+-        if acc:
+-            self.df.loadEntry("T", 1, 17, data=acc[0])
+-
+     def loadRep(self):
+         acc = self.sql.getRec(tables="ctlrep", cols=["rpm_name"],
+             where=[("rpm_cono", "=", self.opts["conum"]), ("rpm_rep", "=",
+-            self.df.t_work[1][0][18])], limit=1)
++            self.df.t_work[1][0][16])], limit=1)
+         if acc:
+-            self.df.loadEntry("T", 1, 19, data=acc[0])
++            self.df.loadEntry("T", 1, 17, data=acc[0])
+ 
+     def loadAct(self):
+         acc = self.sql.getRec(tables="drsact", cols=["dac_desc"],
+-            where=[("dac_code", "=", self.df.t_work[1][0][20])], limit=1)
++            where=[("dac_code", "=", self.df.t_work[1][0][18])], limit=1)
+         if acc:
+-            self.df.loadEntry("T", 1, 21, data=acc[0])
++            self.df.loadEntry("T", 1, 19, data=acc[0])
+ 
+     def loadTyp(self):
+         acc = self.sql.getRec(tables="drstyp", cols=["dtp_desc"],
+-            where=[("dtp_code", "=", self.df.t_work[1][0][22])], limit=1)
++            where=[("dtp_code", "=", self.df.t_work[1][0][20])], limit=1)
+         if acc:
+-            self.df.loadEntry("T", 1, 23, data=acc[0])
++            self.df.loadEntry("T", 1, 21, data=acc[0])
+ 
+     def loadInvMess(self):
+         acc = self.sql.getRec(tables="ctlmes", cols=["mss_detail"],
+@@ -359,15 +340,6 @@
+                 if not acc:
+                     return "rf"
+ 
+-    def doArea(self, frt, pag, r, c, p, i, w):
+-        if w:
+-            acc = self.sql.getRec(tables="ctlare", cols=["arm_name"],
+-                where=[("arm_cono", "=", self.opts["conum"]), ("arm_area",
+-                "=", w)], limit=1)
+-            if not acc:
+-                return "Invalid Area"
+-            self.df.loadEntry("T", 1, 17, data=acc[0])
+-
+     def doRep(self, frt, pag, r, c, p, i, w):
+         if w:
+             acc = self.sql.getRec(tables="ctlrep", cols=["rpm_name"],
+@@ -375,7 +347,7 @@
+                 "=", w)], limit=1)
+             if not acc:
+                 return "Invalid Rep"
+-            self.df.loadEntry("T", 1, 19, data=acc[0])
++            self.df.loadEntry("T", 1, p+1, data=acc[0])
+ 
+     def doBusAct(self, frt, pag, r, c, p, i, w):
+         if w:
+@@ -383,7 +355,7 @@
+                 where=[("dac_code", "=", w)], limit=1)
+             if not acc:
+                 return "Invalid Business Activity"
+-            self.df.loadEntry("T", 1, 21, data=acc[0])
++            self.df.loadEntry("T", 1, p+1, data=acc[0])
+ 
+     def doBusTyp(self, frt, pag, r, c, p, i, w):
+         if w:
+@@ -391,7 +363,7 @@
+                 where=[("dtp_code", "=", w)], limit=1)
+             if not acc:
+                 return "Invalid Business Type"
+-            self.df.loadEntry("T", 1, 23, data=acc[0])
++            self.df.loadEntry("T", 1, p+1, data=acc[0])
+ 
+     def doImes(self, frt, pag, r, c, p, i, w):
+         if w:
+@@ -400,7 +372,7 @@
+                 limit=1)
+             if not acc:
+                 return "Invalid Invoice Message"
+-            self.df.loadEntry("T", 2, 8, data=acc[0])
++            self.df.loadEntry("T", 2, p+1, data=acc[0])
+ 
+     def doSmes(self, frt, pag, r, c, p, i, w):
+         if w:
+@@ -409,7 +381,7 @@
+                 limit=1)
+             if not acc:
+                 return "Invalid Statement Message"
+-            self.df.loadEntry("T", 2, 10, data=acc[0])
++            self.df.loadEntry("T", 2, p+1, data=acc[0])
+ 
+     def doDelete(self, widget=None):
+         trs = self.sql.getRec(tables="drstrn", cols=["count(*)"],
+@@ -453,7 +425,7 @@
+         for x in xrange(f, f+2):
+             data.append(self.df.t_work[0][0][x])
+         for x in xrange(0, len(self.df.t_work[1][0])):
+-            if x in (17, 19, 21, 23):
++            if x in (17, 19, 21):
+                 continue
+             data.append(self.df.t_work[1][0][x])
+         for x in xrange(0, len(self.df.t_work[2][0])):
+@@ -546,14 +518,14 @@
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+     def doPrint(self, widget=None):
+-        state = self.df.disableButtonsTagsTags()
++        state = self.df.disableButtonsTags()
+         self.df.setWidget(self.df.mstFrame, state="hide")
+         TabPrt(self.opts["mf"], self.opts["conum"], self.opts["conam"],
+             name=__name__, tabs="drsmst", where=[("drm_cono", "=",
+             self.opts["conum"]), ("drm_chain", "=", self.chain),
+             ("drm_acno", "=", self.acno)])
+         self.df.setWidget(self.df.mstFrame, state="show")
+-        self.df.enableButtonsTagsTags(state=state)
++        self.df.enableButtonsTags(state=state)
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+     def doCancel(self, widget=None):
+
+=== modified file 'drs/dr2010.py'
+--- drs/dr2010.py	2015-10-03 07:36:56 +0000
++++ drs/dr2010.py	2015-10-23 12:43:04 +0000
+@@ -297,7 +297,7 @@
+         self.vatcode = w
+         self.vatamt = round((self.trnamt * vrte / (vrte + 100)), 2)
+         self.df.loadEntry(frt, pag, p+1, self.vatamt)
+-        if self.vatamt == 0:
++        if not self.vatamt:
+             return "sk1"
+ 
+     def doVatAmt(self, frt, pag, r, c, p, i, w):
+@@ -493,6 +493,9 @@
+         else:
+             self.df.loadEntry(frt, pag, p, data=incamt)
+         self.df.loadEntry(frt, pag, p+1, data=self.allvat)
++        if not self.allvat:
++            self.df.loadEntry(frt, pag, p+2, data=self.name)
++            return "sk1"
+ 
+     def doAllVat(self, frt, pag, r, c, p, i, w):
+         if (self.allamt < 0 and w > 0) or (self.allamt > 0 and w < 0):
+
+=== modified file 'drs/dr3050.py'
+--- drs/dr3050.py	2015-10-03 07:36:56 +0000
++++ drs/dr3050.py	2015-10-22 12:30:22 +0000
+@@ -62,6 +62,7 @@
+                 ("dtp_code", "", 0, "Cod"),
+                 ("dtp_desc", "", 0, "Description", "Y"))}
+         r1s = (("Yes","Y"),("No","N"))
++        r2s = (("Yes","Y"),("No","N"),("Only","O"))
+         fld = (
+             (("T",0,0,0),"ID2",7,"Cut-Off Period","",
+                 (self.sysdtw/100),"Y",self.doCutOff,None,None,None),
+@@ -73,11 +74,9 @@
+                 "","Y",self.doDrsTyp,drt,None,None),
+             (("T",0,4,0),"IUI",7,"Lower Balance Limit","",
+                 0,"Y",self.doLimit,None,None,None),
+-            (("T",0,5,0),("IRB",r1s),0,"Credit Balances", "",
++            (("T",0,5,0),("IRB",r2s),0,"Include Credit Balances", "",
+                 "Y","Y",self.doCredit,None,None,None),
+-            (("T",0,6,0),("IRB",r1s),0,"Credit Balances Only","",
+-                "N","Y",self.doOnlyCr,None,None,None),
+-            (("T",0,7,0),("IRB",r1s),0,"Ignore Zero Balances","",
++            (("T",0,6,0),("IRB",r1s),0,"Ignore Zero Balances","",
+                 "Y","Y",self.doZero,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+@@ -91,8 +90,8 @@
+     def doTots(self, frt, pag, r, c, p, i, w):
+         self.totsonly = w
+         if self.totsonly == "Y":
+-            self.df.setWidget(self.df.topEntry[0][8][2][0], state="hide")
+-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][7][2][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][7][3][0], state="hide")
+             self.drsact = "All"
+             self.df.loadEntry(frt, pag, p+1, data=self.drsact)
+             self.drstyp = "All"
+@@ -101,14 +100,12 @@
+             self.df.loadEntry(frt, pag, p+3, data=self.limit)
+             self.credit = "Y"
+             self.df.loadEntry(frt, pag, p+4, data=self.credit)
+-            self.onlycr = "N"
+-            self.df.loadEntry(frt, pag, p+5, data=self.onlycr)
+             self.zero = "Y"
+-            self.df.loadEntry(frt, pag, p+6, data=self.zero)
+-            return "sk6"
++            self.df.loadEntry(frt, pag, p+5, data=self.zero)
++            return "sk5"
+         else:
+-            self.df.setWidget(self.df.topEntry[0][8][2][0], state="show")
+-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][7][2][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][7][3][0], state="show")
+ 
+     def doDrsAct(self, frt, pag, r, c, p, i, w):
+         if w:
+@@ -135,22 +132,13 @@
+         if self.limit:
+             self.credit = "N"
+             self.df.loadEntry(frt, pag, p+1, data=self.limit)
+-            self.onlycr = "N"
+-            self.df.loadEntry(frt, pag, p+2, data=self.onlycr)
+             self.zero = "Y"
+             self.df.loadEntry(frt, pag, p+3, data=self.zero)
+-            return "sk3"
++            return "sk2"
+ 
+     def doCredit(self, frt, pag, r, c, p, i, w):
+         self.credit = w
+-        if self.credit == "N":
+-            self.onlycr = "N"
+-            self.df.loadEntry(frt, pag, p+1, data=self.limit)
+-            return "sk1"
+-
+-    def doOnlyCr(self, frt, pag, r, c, p, i, w):
+-        self.onlycr = w
+-        if self.onlycr == "Y":
++        if self.credit in ("Y", "O"):
+             self.zero = "Y"
+             self.df.loadEntry(frt, pag, p+1, data=self.zero)
+             return "sk1"
+@@ -185,8 +173,8 @@
+         self.expheads.append("Debtor's Age Analaysis up to %s" %
+             self.opts["period"])
+         self.expheads.append("Options: Activity %s Type %s Low-Bal %s "\
+-            "Cr-Bal-Only %s Ignore-Zeros %s" % (self.drsact, self.drstyp,
+-            self.limit, self.onlycr, self.zero))
++            "Cr-Bals %s Ignore-Zeros %s" % (self.drsact, self.drstyp,
++            self.limit, self.credit, self.zero))
+         self.expcolsh = [self.colsh]
+         self.expforms = self.forms
+         self.expdatas = []
+@@ -272,7 +260,7 @@
+             return
+         if self.credit == "N" and bal.work < 0:
+             return
+-        if self.onlycr == "Y" and not bal.work < 0:
++        if self.credit == "O" and not bal.work < 0:
+             return
+         cur = CCD(ages[0], "SD", 13.2)
+         d30 = CCD(ages[1], "SD", 13.2)
+@@ -302,7 +290,7 @@
+         self.fpdf.drawText()
+         self.fpdf.drawText("(%s%-3s%3s%6s%-3s%3s%9s%-8s%3s%13s%1s%3s%17s%s)" %
+             ("Options: Activity: ", self.drsact, "", "Type: ", self.drstyp, "",
+-            "Low-Bal: ", self.limit, "", "Cr-Bal-Only: ", self.onlycr, "",
++            "Low-Bal: ", self.limit, "", "Cr-Bals: ", self.credit, "",
+             "Ignore-Zero-Bal: ", self.zero))
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-3s %-7s %-30s %-13s %-13s %-13s %-13s %-13s "\
+
+=== modified file 'drs/dr3080.py'
+--- drs/dr3080.py	2015-10-03 07:36:56 +0000
++++ drs/dr3080.py	2015-10-24 09:59:16 +0000
+@@ -87,41 +87,43 @@
+                 ("mss_message", "", 0, "Num"),
+                 ("mss_detail", "NA", 50, "Details")),
+             "where": [("mss_system", "=", "STA")]}
+-        r1s = (("Yes","Y"),("Range","R"),("Singles", "S"))
+-        r2s = (("Number","N"),("Name","M"),("Postal Code","P"))
+-        r3s = (("Yes","Y"),("No","N"))
++        r1s = (("Yes","Y"),("No","N"))
++        r2s = (("Yes","Y"),("Range","R"),("Singles", "S"))
++        r3s = (("Number","N"),("Name","M"),("Postal Code","P"))
+         fld = [
+             [["T",0,0,0],"INA",20,"Template Name","",
+                 self.stpl,"Y",self.doTplNam,tpm,None,None],
+-            [["T",0,1,0],"IUI",2,"Maximum Pages","",
++            [["T",0,1,0],("IRB",r1s),0,"Open Item","",
++                "Y","Y",self.doOItem,None,None,None],
++            [["T",0,2,0],"IUI",2,"Maximum Pages","",
+                 1,"Y",self.doPages,None,None,None],
+-            [["T",0,2,0],("IRB",r1s),0,"Whole File","",
++            [["T",0,3,0],("IRB",r2s),0,"Whole File","",
+                 "S","Y",self.doWhole,None,None,None],
+-            [["T",0,3,0],"IUI",3,"From Chain","",
+-                "","Y",self.doChn,drc,None,None],
+-            [["T",0,4,0],"INA",7,"From Account","",
+-                "","Y",self.doAcc,drm,None,None],
+-            [["T",0,5,0],"INA",3,"To Chain","",
+-                "","Y",self.doChn,drc,None,None],
+-            [["T",0,6,0],"INA",7,"To Account","",
+-                "","Y",self.doAcc,drm,None,None],
+-            [["T",0,7,0],("IRB",r2s),0,"Sort Order","",
++            [["T",0,4,0],"IUI",3,"From Chain","",
++                "","Y",self.doChn,drc,None,None],
++            [["T",0,5,0],"INA",7,"From Account","",
++                "","Y",self.doAcc,drm,None,None],
++            [["T",0,6,0],"INA",3,"To Chain","",
++                "","Y",self.doChn,drc,None,None],
++            [["T",0,7,0],"INA",7,"To Account","",
++                "","Y",self.doAcc,drm,None,None],
++            [["T",0,8,0],("IRB",r3s),0,"Sort Order","",
+                 "N","Y",self.doSort,None,None,None],
+-            [["T",0,8,0],("IRB",r3s),0,"Include Zero Balances","",
++            [["T",0,9,0],("IRB",r1s),0,"Include Zero Balances","",
+                 "N","Y",self.doZeros,None,None,None],
+-            [["T",0,9,0],("IRB",r3s),0,"Include Negative Balances","",
++            [["T",0,10,0],("IRB",r1s),0,"Include Negative Balances","",
+                 "N","Y",self.doMinus,None,None,None],
+-            [["T",0,10,0],("IRB",r3s),0,"Include Stopped Accounts","",
++            [["T",0,11,0],("IRB",r1s),0,"Include Stopped Accounts","",
+                 "N","Y",self.doStops,None,None, None],
+-            [["T",0,11,0],("IRB",r3s),0,"Include Allocated Transactions","",
++            [["T",0,12,0],("IRB",r1s),0,"Include Allocated Transactions","",
+                 "N","Y",self.doAlloc,None,None,None],
+-            [["T",0,12,0],"ID1",10,"Statement Date","",
++            [["T",0,13,0],"ID1",10,"Statement Date","",
+                 self.sysdtw,"Y",self.doDat,None,None,("efld",)],
+-            [["T",0,13,0],"IUI",3,"Message Number","",
++            [["T",0,14,0],"IUI",3,"Message Number","",
+                 "","Y",self.doMessno,mss,None,("efld",)]]
+         if self.chains != "Y":
+-            del fld[5]
+-            del fld[3]
++            del fld[6]
++            del fld[4]
+             for n, f in enumerate(fld):
+                 fld[n][0][2] = n
+         tnd = ((self.doEnd,"Y"), )
+@@ -137,6 +139,15 @@
+         self.tname = w
+         self.sttyp = acc[self.sql.tplmst_col.index("tpm_sttp")]
+         if self.sttyp == "N":
++            self.oitem = "Y"
++            self.pages = 0
++            self.df.loadEntry(frt, pag, p+1, data=self.oitem)
++            self.df.loadEntry(frt, pag, p+2, data=self.pages)
++            return "sk2"
++
++    def doOItem(self, frt, pag, r, c, p, i, w):
++        self.oitem = w
++        if self.oitem == "N":
+             self.pages = 0
+             self.df.loadEntry(frt, pag, p+1, data=self.pages)
+             return "sk1"
+@@ -202,6 +213,10 @@
+ 
+     def doStops(self, frt, pag, r, c, p, i, w):
+         self.stops = w
++        if self.sttyp == "O":
++            self.alloc = "Y"
++            self.df.loadEntry(frt, pag, p+1, data=self.alloc)
++            return "sk1"
+ 
+     def doAlloc(self, frt, pag, r, c, p, i, w):
+         self.alloc = w
+@@ -301,19 +316,18 @@
+                 self.form.newdic[d][tdc.index("tpd_text")] = dat
+         bals = Balances(self.opts["mf"], "DRS", self.opts["conum"], self.curdt,
+             (self.chn, self.acc))
+-        if self.sttyp == "O" or self.alloc == "Y":
++        if self.alloc == "Y":
+             tt = "A"
+         else:
+             tt = "Y"
+-        self.obal, self.tbal, self.ages, trns = bals.doAllBals(trans=tt)
++        obal, self.tbal, self.ages, trns = bals.doAllBals(trans=tt)
+         if not trns[1]:
+             return
+         if self.sttyp == "O":
+             self.tots = [0.0, 0.0, 0.0]
+             cmth = False
+-            for t in trns[1]:
+-                if t[dtc.index("drt_curdt")] == self.curdt:
+-                    cmth = True
++            tran = copyList(trns[1])
++            for t in tran:
+                 if t[dtc.index("drt_type")] not in (2, 6) and \
+                         t[dtc.index("drt_curdt")] == self.curdt:
+                     self.tots[1] = float(ASD(self.tots[1]) + \
+@@ -326,10 +340,26 @@
+                 else:
+                     self.tots[0] = float(ASD(self.tots[0]) + \
+                         ASD(t[dtc.index("drt_tramt")]))
++                if t[dtc.index("drt_curdt")] == self.curdt:
++                    cmth = True
++                elif self.oitem == "N":
++                    trns[1].remove(t)
+             if self.zeros == "N" and not self.tbal and not cmth:
+                 return
+             if self.minus == "N" and self.tbal < 0:
+                 return
++            if self.oitem == "N" and obal:
++                t[trns[0].index("drt_type")] = 3
++                t[trns[0].index("drt_ref1")] = "O/Bal"
++                t[trns[0].index("drt_batch")] = ""
++                t[trns[0].index("drt_trdt")] = (self.curdt * 100) + 1
++                t[trns[0].index("drt_ref2")] = ""
++                t[trns[0].index("drt_tramt")] = obal
++                t[trns[0].index("drt_taxamt")] = 0
++                t[trns[0].index("drt_desc")] = "Opening Balance"
++                t[trns[0].index("drt_taxind")] = ""
++                t[trns[0].index("drt_batind")] = ""
++                trns[1].insert(0, t)
+             if not len(trns[1]) > self.form.maxlines:
+                 self.doBody(trns[0], trns[1], tdc)
+             else:
+
+=== modified file 'drs/dr4010.py'
+--- drs/dr4010.py	2015-10-03 07:36:56 +0000
++++ drs/dr4010.py	2015-10-22 11:38:49 +0000
+@@ -29,7 +29,7 @@
+ 
+     def setVariables(self):
+         tables = [
+-            "ctlare", "ctlrep", "ctlmes",
++            "ctlrep", "ctlmes",
+             "drsact", "drschn", "drsmst", "drstrn", "drstyp",
+             "slsiv1"]
+         self.sql = Sql(self.opts["mf"].dbm, tables, prog=__name__)
+@@ -110,14 +110,12 @@
+             (("T",1,11,0),"Od1",10,"Date Registered"),
+             (("T",1,12,0),"ONA",10,"V.A.T Number"),
+             (("T",1,13,0),"ONA",7,"Delivery Code"),
+-            (("T",1,14,0),"ONA",3,"Area"),
+-            (("T",1,14,20),"ONA",26,""),
+-            (("T",1,15,0),"ONa",3,"Rep Code"),
++            (("T",1,14,0),"ONa",3,"Rep Code"),
++            (("T",1,14,0),"ONA",26,""),
++            (("T",1,15,0),"ONA",3,"Business Activity"),
+             (("T",1,15,0),"ONA",26,""),
+-            (("T",1,16,0),"ONA",3,"Business Activity"),
++            (("T",1,16,0),"ONA",3,"Business Type"),
+             (("T",1,16,0),"ONA",26,""),
+-            (("T",1,17,0),"ONA",3,"Business Type"),
+-            (("T",1,17,0),"ONA",26,""),
+             (("T",2,0,0),"OUI",1,"Price Level"),
+             (("T",2,1,0),"OUD",5.2,"Discount Percentage"),
+             (("T",2,2,0),"OUD",5.2,"Interest Percentage"),
+@@ -209,7 +207,6 @@
+                     data = acc[d]
+                 self.df.loadEntry("T", pag, x, data=data)
+                 d = d + 1
+-        self.loadArea()
+         self.loadRep()
+         self.loadAct()
+         self.loadTyp()
+@@ -221,31 +218,24 @@
+         self.df.last[0] = [0, 0]
+         self.df.setWidget(self.df.topEntry[0][0], state="disabled")
+ 
+-    def loadArea(self):
+-        acc = self.sql.getRec(tables="ctlare", where=[("arm_cono", "=",
+-            self.opts["conum"]), ("arm_area", "=", self.df.t_work[1][0][17])],
+-            cols=["arm_name"], limit=1)
+-        if acc:
+-            self.df.loadEntry("T", 1, 18, data=acc[0])
+-
+     def loadRep(self):
+         acc = self.sql.getRec(tables="ctlrep", where=[("rpm_cono", "=",
+-            self.opts["conum"]), ("rpm_rep", "=", self.df.t_work[1][0][19])],
++            self.opts["conum"]), ("rpm_rep", "=", self.df.t_work[1][0][17])],
+             cols=["rpm_name"], limit=1)
+         if acc:
+-            self.df.loadEntry("T", 1, 20, data=acc[0])
++            self.df.loadEntry("T", 1, 18, data=acc[0])
+ 
+     def loadAct(self):
+         acc = self.sql.getRec(tables="drsact", where=[("dac_code", "=",
+-            self.df.t_work[1][0][21])], cols=["dac_desc"], limit=1)
++            self.df.t_work[1][0][19])], cols=["dac_desc"], limit=1)
+         if acc:
+-            self.df.loadEntry("T", 1, 22, data=acc[0])
++            self.df.loadEntry("T", 1, 20, data=acc[0])
+ 
+     def loadTyp(self):
+         acc = self.sql.getRec(tables="drstyp", where=[("dtp_code", "=",
+-            self.df.t_work[1][0][23])], cols=["dtp_desc"], limit=1)
++            self.df.t_work[1][0][21])], cols=["dtp_desc"], limit=1)
+         if acc:
+-            self.df.loadEntry("T", 1, 24, data=acc[0])
++            self.df.loadEntry("T", 1, 22, data=acc[0])
+ 
+     def loadMes(self):
+         acc = self.sql.getRec(tables="ctlmes", where=[("mss_system", "=",
+
+=== modified file 'drs/drc220.py'
+--- drs/drc220.py	2015-10-03 07:36:56 +0000
++++ drs/drc220.py	2015-10-23 08:59:15 +0000
+@@ -56,8 +56,7 @@
+         cols = []
+         dics = self.sql.drschn_dic
+         for col in self.sql.drschn_col:
+-            if col in ("chm_cono", "chm_add1", "chm_add2", "chm_add3",
+-                    "chm_pcod"):
++            if col in ("chm_cono","chm_add1","chm_add2","chm_add3","chm_pcod"):
+                 continue
+             dat = [col, dics[col][2], dics[col][3], dics[col][4]]
+             if col == "chm_email":
+
+=== removed file 'drs/drc310.py'
+--- drs/drc310.py	2014-12-30 15:37:38 +0000
++++ drs/drc310.py	1970-01-01 00:00:00 +0000
+@@ -1,129 +0,0 @@
+-#! /usr/bin/env python
+-
+-"""
+-SYNOPSIS
+-    Debtors Areas File Maintenance.
+-
+-    This file is part of Tartan Systems (TARTAN).
+-
+-AUTHOR
+-    Written by Paul Malherbe, <paul@tartan.co.za>
+-
+-COPYING
+-    Copyright (C) 2004-2015 Paul Malherbe.
+-"""
+-
+-from TartanClasses import Sql, TartanDialog
+-class drc310:
+-    def __init__(self, **opts):
+-        self.opts = opts
+-        if self.setVariables():
+-            self.mainProcess()
+-            self.opts["mf"].startLoop()
+-
+-    def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlare", "ctlrep"],
+-            prog=__name__)
+-        if self.sql.error:
+-            return
+-        return True
+-
+-    def mainProcess(self):
+-        tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-                "Debtors Areas File Maintenance (%s)" % __name__)
+-        arm = {
+-            "stype": "R",
+-            "tables": ("ctlare",),
+-            "cols": (
+-                ("arm_area", "", 0, "Are"),
+-                ("arm_name", "", 0, "Name", "Y"),
+-                ("arm_rep", "", 0, "Rep")),
+-            "where": [("arm_cono", "=", self.opts["conum"])]}
+-        rpm = {
+-            "stype": "R",
+-            "tables": ("ctlrep",),
+-            "cols": (
+-                ("rpm_rep", "", 0, "Rep"),
+-                ("rpm_name", "", 0, "Name", "Y")),
+-            "where": [("rpm_cono", "=", self.opts["conum"])]}
+-        self.fld = (
+-            (("T",0,0,0),"INA",3,"Area","Area Number",
+-                "","N",self.doArea,arm,None,("notblank",)),
+-            (("T",0,1,0),"INA",30,"Name","",
+-                "","N",None,None,self.doDelete,("notblank",)),
+-            (("T",0,2,0),"INa",3,"Rep Number","",
+-                "","N",self.doRep,rpm,None,("efld",)),
+-            (("T",0,2,0),"ONA",30,""))
+-        but = (
+-            ("Accept",None,self.doAccept,0,("T",0,2),("T",0,0)),
+-            ("Cancel",None,self.doCancel,0,("T",0,2),("T",0,0)),
+-            ("Quit",None,self.doExit,1,None,None))
+-        tnd = ((self.doEnd,"Y"), )
+-        txt = (self.doExit, )
+-        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+-            butt=but, tend=tnd, txit=txt)
+-
+-    def doArea(self, frt, pag, r, c, p, i, w):
+-        self.area = w
+-        acc = self.sql.getRec(tables="ctlare", where=[("arm_cono", "=",
+-            self.opts["conum"]), ("arm_area", "=", self.area)], limit=1)
+-        if not acc:
+-            self.new = "Y"
+-        else:
+-            self.new = "N"
+-            rep = self.sql.getRec(tables="ctlrep", cols=["rpm_name"],
+-                where=[("rpm_cono", "=", self.opts["conum"]), ("rpm_rep", "=",
+-                acc[self.sql.ctlare_col.index("arm_rep")])], limit=1)
+-            if not rep:
+-                acc.append("Invalid Rep Record")
+-            else:
+-                acc.append(rep[0])
+-            for x in xrange(0, self.df.topq[pag]):
+-                self.df.loadEntry(frt, pag, p+x, data=acc[x+1])
+-
+-    def doRep(self, frt, pag, r, c, p, i, w):
+-        if w:
+-            rep = self.sql.getRec(tables="ctlrep", cols=["rpm_name"],
+-                where=[("rpm_cono", "=", self.opts["conum"]), ("rpm_rep", "=",
+-                w)], limit=1)
+-            if not rep:
+-                return "Invalid Rep Record"
+-            self.df.loadEntry("T", 0, 3, data=rep[0])
+-
+-    def doDelete(self):
+-        self.sql.delRec("ctlare", where=[("arm_cono", "=", self.opts["conum"]),
+-            ("arm_area", "=", self.area)])
+-        self.opts["mf"].dbm.commitDbase()
+-        self.df.focusField("T", 0, 1)
+-
+-    def doEnd(self):
+-        dat = []
+-        dat.append(self.opts["conum"])
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            if x == 3:
+-                continue
+-            dat.append(self.df.t_work[0][0][x])
+-        if self.new == "Y":
+-            self.sql.insRec("ctlare", data=dat)
+-        else:
+-            self.sql.updRec("ctlare", data=dat, where=[("arm_cono", "=",
+-                self.opts["conum"]), ("arm_area", "=", self.area)])
+-        self.opts["mf"].dbm.commitDbase()
+-        self.df.focusField("T", 0, 1)
+-
+-    def doAccept(self, widget=None):
+-        frt, pag, col, mes = self.df.doCheckFields()
+-        if mes:
+-            self.df.focusField(frt, pag, (col+1), err=mes)
+-        else:
+-            self.df.doEndFrame("T", 0, cnf="N")
+-
+-    def doCancel(self, widget=None):
+-        self.opts["mf"].dbm.rollbackDbase()
+-        self.df.focusField("T", 0, 1)
+-
+-    def doExit(self, widget=None):
+-        self.df.closeProcess()
+-        self.opts["mf"].closeLoop()
+-
+-# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== renamed file 'drs/drc410.py' => 'drs/drc310.py'
+--- drs/drc410.py	2014-12-30 15:37:38 +0000
++++ drs/drc310.py	2015-10-22 11:50:43 +0000
+@@ -15,7 +15,7 @@
+ 
+ from TartanClasses import Sql, TartanDialog
+ 
+-class drc410:
++class drc310:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== removed file 'drs/drc320.py'
+--- drs/drc320.py	2015-10-03 07:36:56 +0000
++++ drs/drc320.py	1970-01-01 00:00:00 +0000
+@@ -1,78 +0,0 @@
+-#! /usr/bin/env python
+-
+-"""
+-SYNOPSIS
+-    Debtors Areas Listing.
+-
+-    This file is part of Tartan Systems (TARTAN).
+-
+-AUTHOR
+-    Written by Paul Malherbe, <paul@tartan.co.za>
+-
+-COPYING
+-    Copyright (C) 2004-2015 Paul Malherbe.
+-"""
+-
+-import time
+-from TartanClasses import RepPrt, Sql, TartanDialog
+-
+-class drc320:
+-    def __init__(self, **opts):
+-        self.opts = opts
+-        if self.setVariables():
+-            self.mainProcess()
+-            self.opts["mf"].startLoop()
+-
+-    def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, "ctlare", prog=__name__)
+-        if self.sql.error:
+-            return
+-        t = time.localtime()
+-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
+-            (t[0], t[1], t[2], t[3], t[4])
+-        return True
+-
+-    def mainProcess(self):
+-        tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-            "Debtors Areas Master Listing (%s)" % __name__)
+-        r1s = (("Area","A"),("Description","D"),("Rep","R"))
+-        fld = (
+-            (("T",0,0,0),("IRB",r1s),0,"Sort Order","",
+-                "A","Y",self.doSort,None,None,None),)
+-        tnd = ((self.doEnd,"Y"), )
+-        txt = (self.closeProcess, )
+-        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld, tend=tnd,
+-            txit=txt, view=("Y","V"), mail=("Y","N"))
+-
+-    def doSort(self, frt, pag, r, c, p, i, w):
+-        self.sort = w
+-
+-    def doEnd(self):
+-        self.df.closeProcess()
+-        heads = ["Debtor's Areas Master Listing"]
+-        opts = "%-5s%-6s" % ("Sort-", self.sort)
+-        cols = []
+-        dics = self.sql.ctlare_dic
+-        for col in self.sql.ctlare_col:
+-            if col in ("arm_cono",):
+-                continue
+-            dat = [col, dics[col][2], dics[col][3], dics[col][4]]
+-            cols.append(dat)
+-        if self.sort == "A":
+-            sort = "arm_area"
+-        elif self.sort == "D":
+-            sort = "arm_name"
+-        elif self.sort == "R":
+-            sort = "arm_rep"
+-        RepPrt(self.opts["mf"], tables=["ctlare"], heads=heads, cols=cols,
+-            where=[("arm_cono", "=", self.opts["conum"])], order=sort,
+-            opts=opts, conum=self.opts["conum"], conam=self.opts["conam"],
+-            repprt=self.df.repprt, repeml=self.df.repeml)
+-        self.opts["mf"].closeLoop()
+-
+-    def closeProcess(self):
+-        self.df.closeProcess()
+-        self.opts["mf"].closeLoop()
+-
+-# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== renamed file 'drs/drc420.py' => 'drs/drc320.py'
+--- drs/drc420.py	2015-10-03 07:36:56 +0000
++++ drs/drc320.py	2015-10-22 11:50:49 +0000
+@@ -16,7 +16,7 @@
+ import time
+ from TartanClasses import RepPrt, Sql, TartanDialog
+ 
+-class drc420:
++class drc320:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'drs/drc510.py' => 'drs/drc410.py'
+--- drs/drc510.py	2014-12-30 15:37:38 +0000
++++ drs/drc410.py	2015-10-22 11:50:57 +0000
+@@ -15,7 +15,7 @@
+ 
+ from TartanClasses import Sql, TartanDialog
+ 
+-class drc510:
++class drc410:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'drs/drc520.py' => 'drs/drc420.py'
+--- drs/drc520.py	2015-10-03 07:36:56 +0000
++++ drs/drc420.py	2015-10-22 11:51:08 +0000
+@@ -16,7 +16,7 @@
+ from TartanClasses import RepPrt, Sql, TartanDialog
+ from tartanFunctions import showError
+ 
+-class drc520:
++class drc420:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'drs/drc610.py' => 'drs/drc510.py'
+--- drs/drc610.py	2014-12-30 15:37:38 +0000
++++ drs/drc510.py	2015-10-22 11:51:15 +0000
+@@ -15,7 +15,7 @@
+ 
+ from TartanClasses import Sql, TartanDialog
+ 
+-class drc610:
++class drc510:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'drs/drc620.py' => 'drs/drc520.py'
+--- drs/drc620.py	2015-10-03 07:36:56 +0000
++++ drs/drc520.py	2015-10-22 11:51:22 +0000
+@@ -17,7 +17,7 @@
+ from TartanClasses import CCD, MyFpdf, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import getModName, textFormat, doPrinter, showError
+ 
+-class drc620:
++class drc520:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'drs/drc710.py' => 'drs/drc610.py'
+--- drs/drc710.py	2014-12-30 15:37:38 +0000
++++ drs/drc610.py	2015-10-22 11:51:30 +0000
+@@ -15,7 +15,7 @@
+ 
+ from TartanClasses import Sql, TartanDialog
+ 
+-class drc710:
++class drc610:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'drs/drc810.py' => 'drs/drc710.py'
+--- drs/drc810.py	2014-12-30 15:37:38 +0000
++++ drs/drc710.py	2015-10-22 11:51:38 +0000
+@@ -15,7 +15,7 @@
+ 
+ from TartanClasses import Sql, TartanDialog
+ 
+-class drc810:
++class drc710:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== modified file 'gen/gl1010.py'
+--- gen/gl1010.py	2015-10-03 07:36:56 +0000
++++ gen/gl1010.py	2015-10-22 15:22:00 +0000
+@@ -49,6 +49,8 @@
+             tabs.append("drsctl")
+         if "ST" in self.mods:
+             tabs.extend(["strctl", "strloc"])
++        if "SI" in self.mods:
++            tabs.append("slsctl")
+         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=__name__)
+         if self.sql.error:
+             return
+@@ -353,8 +355,8 @@
+                     where=[("glm_cono", "=", self.opts["conum"]),
+                     ("glm_acno", "=", drsctl)])
+         if "ST" in self.mods:
+-            chk = self.sql.getRec(tables="drsctl",
+-                where=[("ctd_cono", "=", self.opts["conum"])])
++            chk = self.sql.getRec(tables="strctl",
++                where=[("cts_cono", "=", self.opts["conum"])])
+             if not chk:
+                 self.sql.insRec("strctl", data=[self.opts["conum"],self.igstr,
+                     "N", 1, "N", "purchase_order"])
+@@ -370,6 +372,12 @@
+                 self.sql.updRec("genmst", cols=["glm_ind"], data=["N"],
+                     where=[("glm_cono", "=", self.opts["conum"]),
+                     ("glm_acno", "=", stksoh)])
++        if "SI" in self.mods:
++            chk = self.sql.getRec(tables="slsctl",
++                where=[("ctv_cono", "=", self.opts["conum"])])
++            if not chk:
++                self.sql.insRec("slsctl", data=[self.opts["conum"],
++                    "Y", "Y", "sales_document", "N"])
+         sp.closeSplash()
+         self.opts["mf"].dbm.commitDbase()
+         self.df.setWidget(self.df.mstFrame, state="show")
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2015-10-13 07:46:15 +0000
++++ gen/gl2030.py	2015-10-20 10:13:21 +0000
+@@ -1053,9 +1053,9 @@
+                 amt = float(ASD(0) - ASD(rs[4]))
+             else:
+                 amt = rs[4]
+-            self.df.loadEntry("C", 1, p+1, data=rs[0])
+-            self.df.loadEntry("C", 1, p+2, data=amt)
+-            self.df.loadEntry("C", 1, p+3, data=rs[5])
++            self.df.loadEntry(frt, pag, p+1, data=rs[0])
++            self.df.loadEntry(frt, pag, p+2, data=amt)
++            self.df.loadEntry(frt, pag, p+3, data=rs[5])
+             self.seq = rs[3]
+             return "nd"
+         else:
+@@ -1250,27 +1250,27 @@
+                 self.taxgl = "N"
+         else:
+             self.taxgl = chk[2]
+-        self.df.loadEntry("C", 2, p+1, chk[0])
++        self.df.loadEntry(frt, pag, p+1, chk[0])
+ 
+     def doAllAmt(self, frt, pag, r, c, p, i, w):
+         if not w:
+             w = float(ASD(self.trnamt) - ASD(self.allocated))
+-            self.df.loadEntry("C", 2, p, w)
++            self.df.loadEntry(frt, pag, p, w)
+         self.allamt = w
+         if self.others in ("bkm", "drs", "crs", "mem"):
+             self.vatcod = "N"
+             self.vatamt = 0
+-            self.df.loadEntry("C", 2, p+1, self.vatcod)
+-            self.df.loadEntry("C", 2, p+2, self.vatamt)
++            self.df.loadEntry(frt, pag, p+1, self.vatcod)
++            self.df.loadEntry(frt, pag, p+2, self.vatamt)
+             return "sk2"
+         else:
+-            self.df.loadEntry("C", 2, p+1, self.taxgl)
++            self.df.loadEntry(frt, pag, p+1, self.taxgl)
+ 
+     def doVatCod(self, frt, pag, r, c, p, i, w):
+         chk = self.doVatCalc(w)
+         if chk:
+             return chk
+-        self.df.loadEntry("C", 2, p+1, self.vatamt)
++        self.df.loadEntry(frt, pag, p+1, self.vatamt)
+         if not self.vatamt:
+             return "sk1"
+ 
+@@ -1559,7 +1559,7 @@
+                 self.othacno)], limit=1)
+             if not acc:
+                 return "rf"
+-        self.df.loadEntry("C", pag, p+1, data=acc[0])
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
+         self.allref = self.trnref
+ 
+     def doCrsRef(self, frt, pag, r, c, p, i, w):
+@@ -1598,7 +1598,7 @@
+                 self.chain), ("drm_acno", "=", self.othacno)], limit=1)
+             if not acc:
+                 return "rf"
+-        self.df.loadEntry("C", pag, p+1, data=acc[0])
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
+         self.allref = self.trnref
+ 
+     def doDrsRef(self, frt, pag, r, c, p, i, w):
+@@ -1626,7 +1626,7 @@
+         if not acc:
+             return "Invalid Member Number"
+         self.name = "%s, %s" % (acc[0], acc[1])
+-        self.df.loadEntry("C", pag, p+1, data=self.name)
++        self.df.loadEntry(frt, pag, p+1, data=self.name)
+         self.allref = self.trnref
+ 
+     def doMemDis(self, frt, pag, r, c, p, i, w):
+@@ -1834,7 +1834,7 @@
+             limit=1)
+         if sel:
+             self.asssel = sel[0]
+-        self.df.loadEntry("C", pag, p+1, data=acc[0])
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
+         if self.newass:
+             self.othmov = 1
+             self.df.loadEntry(frt, pag, p+2, data=self.othmov)
+@@ -2019,13 +2019,13 @@
+             self.opts["mf"].closeLoop()
+ 
+     def doLonAcc(self, frt, pag, r, c, p, i, w):
+-        self.newlon = False
++        newacc = False
+         if not w and self.glrtn == 2:
+             yn = askQuestion(self.opts["mf"].body, "New Account",
+                 "Is This a New Account?", default="no")
+             if yn == "no":
+                 return "Invalid Account Number"
+-            self.newlon = True
++            newacc = True
+             w = callModule(self.opts["mf"], self.df, "ln1010",
+                 coy=(self.allcoy, self.allnam), user=self.opts["capnm"],
+                 args="auto", ret="acno")
+@@ -2036,15 +2036,18 @@
+         if not acc:
+             return "Invalid Account Number"
+         self.lonacc = w
+-        self.df.loadEntry("C", pag, p+1, data=acc[0])
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
++        if newacc:
++            self.lonnum = 1
++            self.newlon = True
++            self.df.loadEntry(frt, pag, p+2, data=self.lonnum)
++            return "sk2"
+ 
+     def doLonNum(self, frt, pag, r, c, p, i, w):
++        self.newlon = False
+         if not w and self.glrtn == 2:
+-            if self.newlon:
+-                ok = "yes"
+-            else:
+-                ok = askQuestion(self.opts["mf"].body, head="New Loan",
+-                    mess="Is This a New Loan?", default="no")
++            ok = askQuestion(self.opts["mf"].body, head="New Loan",
++                mess="Is This a New Loan?", default="no")
+             if ok == "yes":
+                 self.newlon = True
+                 self.lonnum = getNextCode(self.sql, "lonmf2", "lm2_loan",
+@@ -2139,7 +2142,7 @@
+             return "Invalid Employee Number"
+         self.empnum = w
+         empnam = "%s, %s" % (acc[0], acc[1].split()[0])
+-        self.df.loadEntry("C", pag, p+1, data=empnam)
++        self.df.loadEntry(frt, pag, p+1, data=empnam)
+ 
+     def doSlnNum(self, frt, pag, r, c, p, i, w):
+         if not w:
+
+=== modified file 'gen/gl6060.py'
+--- gen/gl6060.py	2015-10-03 07:36:56 +0000
++++ gen/gl6060.py	2015-10-24 10:00:04 +0000
+@@ -13,8 +13,8 @@
+     Copyright (C) 2004-2015 Paul Malherbe.
+ """
+ 
+-from TartanClasses import ASD, CCD, ProgressBar, Sql, TartanDialog
+-from tartanFunctions import copyList, getSingleRecords
++from TartanClasses import ASD, Sql, TartanDialog
++from tartanFunctions import copyList, getSingleRecords, showError
+ 
+ class gl6060:
+     def __init__(self, **opts):
+
+=== modified file 'lon/ln2010.py'
+--- lon/ln2010.py	2015-10-05 14:03:48 +0000
++++ lon/ln2010.py	2015-10-20 10:00:25 +0000
+@@ -170,13 +170,13 @@
+         self.df.focusField("C", 1, 1)
+ 
+     def doLonAcc(self, frt, pag, r, c, p, i, w):
+-        self.newlon = False
++        newacc = False
+         if not w and self.opts["rtn"] in (1, 2, 3):
+             yn = askQuestion(self.opts["mf"].body, "New Account",
+                 "Is This a New Account?", default="no")
+             if yn == "no":
+                 return "Invalid Account Number"
+-            self.newlon = True
++            newacc = True
+             w = callModule(self.opts["mf"], self.df, "ln1010",
+                 coy=(self.opts["conum"], self.opts["conam"]),
+                 user=self.opts["capnm"], args="auto", ret="acno")
+@@ -188,19 +188,18 @@
+             return "Invalid Account Number"
+         self.lonacc = w
+         self.name = acc[0]
+-        self.df.loadEntry("C", pag, p+1, data=self.name)
+-        if self.newlon:
++        self.df.loadEntry(frt, pag, p+1, data=self.name)
++        if newacc:
+             self.lonnum = 1
+-            self.df.loadEntry("C", pag, p+2, data=self.lonnum)
++            self.newlon = True
++            self.df.loadEntry(frt, pag, p+2, data=self.lonnum)
+             return "sk2"
+ 
+     def doLonNum(self, frt, pag, r, c, p, i, w):
++        self.newlon = False
+         if not w and self.opts["rtn"] in (1, 2, 3):
+-            if self.newlon:
+-                ok = "yes"
+-            else:
+-                ok = askQuestion(self.opts["mf"].body, head="New Loan",
+-                    mess="Is This a New Loan?", default="no")
++            ok = askQuestion(self.opts["mf"].body, head="New Loan",
++                mess="Is This a New Loan?", default="no")
+             if ok == "yes":
+                 self.newlon = True
+                 self.lonnum = getNextCode(self.sql, "lonmf2", "lm2_loan",
+@@ -367,7 +366,7 @@
+         if type(chk) is str:
+             return chk
+         self.genacc = w
+-        self.df.loadEntry("C", pag, p+1, data=chk[0])
++        self.df.loadEntry(frt, pag, p+1, data=chk[0])
+ 
+     def doAllAmt(self, frt, pag, r, c, p, i, w):
+         if w == 0:
+
+=== modified file 'lon/ln3030.py'
+--- lon/ln3030.py	2015-10-04 09:29:52 +0000
++++ lon/ln3030.py	2015-10-24 12:00:28 +0000
+@@ -100,7 +100,7 @@
+                 lon = CCD(dat[self.sql.lonmf2_col.index("lm2_loan")], "UI", 2)
+                 des = CCD(dat[self.sql.lonmf2_col.index("lm2_desc")], "NA", 30)
+                 dte = CCD(dat[self.sql.lonmf2_col.index("lm2_start")], "d1", 10)
+-                lint = LoanInterest("L", self.opts["mf"].dbm, dat, update="Y",
++                LoanInterest("L", self.opts["mf"].dbm, dat, update="Y",
+                     tdate=self.date, batch="Pending", curdt=self.date / 100)
+                 lbal = self.sql.getRec(tables="lontrn", cols=["sum(lnt_tramt)"],
+                     where=[("lnt_cono", "=", self.opts["conum"]), ("lnt_acno",
+
+=== modified file 'lon/ln3040.py'
+--- lon/ln3040.py	2015-10-04 09:29:52 +0000
++++ lon/ln3040.py	2015-10-24 11:43:02 +0000
+@@ -218,13 +218,14 @@
+                 self.doBody(ltc, trns, tdc)
+         self.doTotal(tdc)
+         self.doTail(tdc)
++        self.opts["mf"].dbm.rollbackDbase()
+         if self.df.repeml[1] == "Y" and not self.emadd:
+             self.df.repeml[2] = self.emlto
+             self.doPrint()
+ 
+     def doPrint(self):
+         if self.df.repeml[1] == "Y" and not self.emadd:
+-            key = "%s_%s_%s" % (self.opts["conum"], self.chn, self.acno)
++            key = "%s_%s_%s" % (self.opts["conum"], self.acno, self.loan)
+         else:
+             key = "%s_all_all" % self.opts["conum"]
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__, key,
+
+=== modified file 'mem/ml2010.py'
+--- mem/ml2010.py	2015-10-03 07:36:56 +0000
++++ mem/ml2010.py	2015-10-23 19:11:46 +0000
+@@ -213,7 +213,7 @@
+         self.vatcode = w
+         self.vatamt = round((self.trnamt * vrte / (vrte + 100)), 2)
+         self.df.loadEntry(frt, pag, p+1, self.vatamt)
+-        if self.vatamt == 0:
++        if not self.vatamt:
+             return "sk1"
+ 
+     def doVatAmt(self, frt, pag, r, c, p, i, w):
+@@ -390,6 +390,9 @@
+             self.allamt = w
+             self.allvat = round((self.allamt * self.vatrte / 100), 2)
+         self.df.loadEntry(frt, pag, p+1, data=self.allvat)
++        if not self.allvat:
++            self.df.loadEntry(frt, pag, p+2, data=self.name)
++            return "sk1"
+ 
+     def doAllVat(self, frt, pag, r, c, p, i, w):
+         if self.allamt < 0 and w > 0:
+
+=== modified file 'mem/ml3060.py'
+--- mem/ml3060.py	2015-10-03 07:36:56 +0000
++++ mem/ml3060.py	2015-10-25 08:59:47 +0000
+@@ -237,7 +237,7 @@
+                     vals[10].work]])
+             lmemno = vals[0].work
+         p.closeProgress()
+-        doWriteExport(xtype=self.view, name=expnam,
++        doWriteExport(xtype=self.repprt[1], name=expnam,
+             heads=self.expheads, colsh=self.expcolsh, forms=self.expforms,
+             datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
+ 
+
+=== modified file 'men/posmen.py'
+--- men/posmen.py	2015-08-25 15:02:35 +0000
++++ men/posmen.py	2015-10-22 11:49:25 +0000
+@@ -173,12 +173,11 @@
+ drmod = [
+     ["PYNY","dr_fm","drc110",5,"Control Record"],
+     ["PYNN","dr_fm","drc210",3,"Chain Stores"],
+-    ["PNNN","dr_fm","drc710",3,"Business Activities"],
+-    ["PNNN","dr_fm","drc810",3,"Business Types"],
+-    ["PYNN","dr_fm","drc310",3,"Areas"],
+-    ["PYNN","dr_fm","drc410",3,"Salesmen"],
+-    ["PYNN","dr_fm","drc510",3,"Delivery Addresses"],
+-    ["PNNN","dr_fm","drc610",3,"Messages"],
++    ["PNNN","dr_fm","drc610",3,"Business Activities"],
++    ["PNNN","dr_fm","drc710",3,"Business Types"],
++    ["PYNN","dr_fm","drc310",3,"Salesmen"],
++    ["PYNN","dr_fm","drc410",3,"Delivery Addresses"],
++    ["PNNN","dr_fm","drc510",3,"Messages"],
+     ["PYNY","dr_fm","dr1010",3,"Masterfile Records"],
+     ["PYYN","dr_fm","dr1020",3,"Recurring Charges Records"],
+     ["PYYY","dr_dc","dr2010",2,"Sales",1],
+@@ -188,10 +187,9 @@
+     ["PYYY","dr_dc","dr2010",2,"Payments",5],
+     ["PYYY","dr_dc","dr2030",2,"Recurring Charges",1],
+     ["PYNN","dr_rp","drc220",1,"Chain Stores Listing"],
+-    ["PYNN","dr_rp","drc320",1,"Areas Listing"],
+-    ["PYNN","dr_rp","drc420",1,"Salesmen Listing"],
+-    ["PYNN","dr_rp","drc520",1,"Delivery Addresses Listing"],
+-    ["PNNN","dr_rp","drc620",1,"Messages Listing"],
++    ["PYNN","dr_rp","drc320",1,"Salesmen Listing"],
++    ["PYNN","dr_rp","drc420",1,"Delivery Addresses Listing"],
++    ["PNNN","dr_rp","drc520",1,"Messages Listing"],
+     ["PYNN","dr_rp","dr3010",1,"Batch Error Listing"],
+     ["PYYN","dr_rp","dr3020",1,"Transaction Audit Trail"],
+     ["PYNN","dr_rp","dr3030",1,"Due for Payment Listing"],
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2015-10-04 09:29:52 +0000
++++ men/rnemen.py	2015-10-22 11:44:47 +0000
+@@ -218,13 +218,13 @@
+     ["CM","mm_dr","dr_tb","Toolbox"]]
+ drmod = [
+     ["PYNY","dr_fm","drc110",5,"Control Record"],
+-    ["PYNN","dr_fm","drc410",3,"Salesmen Records"],
++    ["PYNN","dr_fm","drc310",3,"Salesmen Records"],
+     ["PYNY","dr_fm","dr1010",3,"Masterfile Records"],
+     ["PYYY","dr_dc","si2010",2,"Invoices and Credit Notes",0],
+     ["PYYY","dr_dc","dr2020",2,"Receipts",2],
+     ["PYYY","dr_dc","dr2010",2,"Journals",3],
+     ["PYYY","dr_dc","dr2010",2,"Payments",5],
+-    ["PYNN","dr_rp","drc420",1,"Salesmen Listing"],
++    ["PYNN","dr_rp","drc320",1,"Salesmen Listing"],
+     ["PYNN","dr_rp","dr3010",1,"Batch Error Listing"],
+     ["PYYN","dr_rp","dr3020",1,"Transaction Audit Trail"],
+     ["PYNN","dr_rp","dr3030",1,"Due for Payment Listing"],
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2015-10-13 07:46:15 +0000
++++ men/stdmen.py	2015-10-22 11:49:07 +0000
+@@ -177,12 +177,11 @@
+ drmod = [
+     ["PYNY","dr_fm","drc110",5,"Control Record"],
+     ["PYNN","dr_fm","drc210",3,"Chain Stores"],
+-    ["PNNN","dr_fm","drc710",3,"Business Activities"],
+-    ["PNNN","dr_fm","drc810",3,"Business Types"],
+-    ["PYNN","dr_fm","drc310",3,"Areas"],
+-    ["PYNN","dr_fm","drc410",3,"Salesmen"],
+-    ["PYNN","dr_fm","drc510",3,"Delivery Addresses"],
+-    ["PNNN","dr_fm","drc610",3,"Messages"],
++    ["PNNN","dr_fm","drc610",3,"Business Activities"],
++    ["PNNN","dr_fm","drc710",3,"Business Types"],
++    ["PYNN","dr_fm","drc310",3,"Salesmen"],
++    ["PYNN","dr_fm","drc410",3,"Delivery Addresses"],
++    ["PNNN","dr_fm","drc510",3,"Messages"],
+     ["PYNY","dr_fm","dr1010",3,"Masterfile Records"],
+     ["PYYN","dr_fm","dr1020",3,"Recurring Charges Records"],
+     ["PYYY","dr_dc","dr2010",2,"Sales",1],
+@@ -192,10 +191,9 @@
+     ["PYYY","dr_dc","dr2010",2,"Payments",5],
+     ["PYYY","dr_dc","dr2030",2,"Recurring Charges",1],
+     ["PYNN","dr_rp","drc220",1,"Chain Stores Listing"],
+-    ["PYNN","dr_rp","drc320",1,"Areas Listing"],
+-    ["PYNN","dr_rp","drc420",1,"Salesmen Listing"],
+-    ["PYNN","dr_rp","drc520",1,"Delivery Addresses Listing"],
+-    ["PNNN","dr_rp","drc620",1,"Messages Listing"],
++    ["PYNN","dr_rp","drc320",1,"Salesmen Listing"],
++    ["PYNN","dr_rp","drc420",1,"Delivery Addresses Listing"],
++    ["PNNN","dr_rp","drc520",1,"Messages Listing"],
+     ["PYNN","dr_rp","dr3010",1,"Batch Error Listing"],
+     ["PYYN","dr_rp","dr3020",1,"Transaction Audit Trail"],
+     ["PYNN","dr_rp","dr3030",1,"Due for Payment Listing"],
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-10-13 07:46:15 +0000
++++ mst/ms0000.py	2015-10-25 09:32:48 +0000
+@@ -34,7 +34,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 1, 2)
++    VERSION = (5, 1, 3)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms1040.py'
+--- mst/ms1040.py	2015-10-03 07:36:56 +0000
++++ mst/ms1040.py	2015-10-20 08:22:12 +0000
+@@ -44,7 +44,6 @@
+                 showError(self.opts["mf"].body, "Unregistered",
+                     "The Company Record Does Not Have a V.A.T. Number")
+                 return
+-        self.changes = False
+         return True
+ 
+     def mainProcess(self):
+@@ -83,10 +82,10 @@
+                 "","N",None,None,self.doDelete,("notblank",)),
+             (("T",0,2,0),"IUA",1,"Category","",
+                 "S","N",self.doCat,vtt,None,("in", ("C","N","S","X","Z"))),
+-            (("T",0,3,0),"Id1",10,"Date","",
++            (("T",0,3,0),"Id1",10,"Start Date","",
+                 "","N",self.doStart,vtr,None,("efld",)),
+             (("T",0,4,0),"IUD",6.2,"Rate","",
+-                "","N",self.doRate,None,None,("efld",)))
++                "","N",self.doRate,None,self.doDelete,("efld",)))
+         but = (
+             ("Print",None,self.doPrint,0,("T",0,1),(("T",0,2),("T",0,4))),
+             ("Exit",None,self.doExit,1,None,None))
+@@ -154,18 +153,24 @@
+                 return "Invalid Rate"
+ 
+     def doDelete(self):
+-        if self.doCheckTrn():
+-            return "Transactions Exist, Not Deleted"
+-        self.sql.delRec("ctlvmf", where=[("vtm_cono", "=", self.opts["conum"]),
+-            ("vtm_code", "=", self.code)])
+-        self.sql.delRec("ctlvrf", where=[("vtr_cono", "=", self.opts["conum"]),
+-            ("vtr_code", "=", self.code)])
+-        dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+-        self.sql.insRec("chglog", data=["ctlvmf", "D", "%03i%-1s" % \
+-            (self.opts["conum"], self.code), "", dte, self.opts["capnm"], "",
+-            "", 0])
+-        self.changes = True
+-        self.df.focusField("T", 0, 1)
++        if self.df.pos == 1:
++            self.sql.delRec("ctlvmf", where=[("vtm_cono", "=",
++                self.opts["conum"]), ("vtm_code", "=", self.code)])
++            dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++            self.sql.insRec("chglog", data=["ctlvmf", "D", "%03i%-1s" % \
++                (self.opts["conum"], self.code), "", dte, self.opts["capnm"],
++                "", "", 0])
++            self.sql.delRec("ctlvrf", where=[("vtr_cono", "=",
++                self.opts["conum"]), ("vtr_code", "=", self.code)])
++            self.opts["mf"].dbm.commitDbase()
++        else:
++            self.sql.delRec("ctlvrf", where=[("vtr_cono", "=",
++                self.opts["conum"]), ("vtr_code", "=", self.code),
++                ("vtr_date", "=", self.start)])
++            self.opts["mf"].dbm.commitDbase()
++            self.df.loadEntry(self.df.frt, self.df.pag, 3, data=0)
++            self.df.loadEntry(self.df.frt, self.df.pag, 4, data=0)
++            return (self.df.frt, self.df.pag, 4)
+ 
+     def doCheckTrn(self, date=None):
+         where = [
+@@ -197,8 +202,8 @@
+             self.sql.insRec("ctlvrf", data=datr)
+         elif datr != self.oldr:
+             self.sql.updRec("ctlvrf", data=datr, where=[("vtr_cono", "=",
+-                self.opts["conum"]), ("vtr_code", "=", self.code), ("vtr_date",
+-                "=", self.start)])
++                self.opts["conum"]), ("vtr_code", "=", self.code),
++                ("vtr_date", "=", self.start)])
+             dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+             for num, dat in enumerate(self.oldr):
+                 if dat != datr[num]:
+@@ -206,7 +211,7 @@
+                     "U", "%03i%-1s" % (self.opts["conum"], self.code),
+                     self.sql.ctlvmf_col[num], dte, self.opts["capnm"],
+                     str(dat), str(datr[num]), 0])
+-        self.changes = True
++        self.opts["mf"].dbm.commitDbase()
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+@@ -230,9 +235,20 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doExit(self, widget=None):
+-        self.df.closeProcess()
+-        if self.changes:
+-            self.opts["mf"].dbm.commitDbase()
+-        self.opts["mf"].closeLoop()
++        chks = ""
++        recs = self.sql.getRec(tables="ctlvmf", cols=["vtm_code", "vtm_desc"],
++            where=[("vtm_cono", "=", self.opts["conum"])])
++        for rec in recs:
++            rte = self.sql.getRec(tables="ctlvrf", where=[("vtr_cono",
++            "=", self.opts["conum"]), ("vtr_code", "=", rec[0])])
++            if not rte:
++                chks = "%s\n%s %s" % (chks, rec[0], rec[1])
++        if chks:
++            showError(self.opts["mf"].body, "Missing Rate Record", "The "\
++                "following VAT Codes do not have Rate Records:\n%s" % chks)
++            self.df.focusField("T", 0, 1)
++        else:
++            self.df.closeProcess()
++            self.opts["mf"].closeLoop()
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2015-10-03 07:36:56 +0000
++++ mst/msc000.py	2015-10-25 08:42:28 +0000
+@@ -308,33 +308,31 @@
+                     ("-s", self.sysmod),
+                     ("-v", self.current[1]),
+                     ("-x", True)]
+-                create = DBCreate(dbm=self.db, opts=opts)
+-        self.db.openDbase()
++                DBCreate(dbm=self.db, opts=opts)
++                self.tarUpd(True)
+         if not self.nocheck:
+-            self.doVersionCheck("get")
+-            if self.oldver < (4, 1, 10):
+-                showError(self.mf.window, "Version Error",
+-                    """This version of Tartan, %s.%s.%s, is too Old.
+-
+-Please follow the upgrade instructions at http//www.tartan.co.za
+-
+-or
+-
+-Email info@tartan.co.za, with your current version number, for assistance.""" % self.oldver)
+-                self.doExit()
+-            # Check for ctlsys and if missing call msc110
++            # Open the database
++            self.db.openDbase()
++            # Check tartan version
++            self.doVersionCheck()
++            # Check for ctlsys and ctlmst
+             err = self.doCheckSys()
+             # Check for ctlmst and if missing call ms1010 or scc110
+             if not err:
+                 err = self.doCheckMst()
++            # Close the database
+             if err:
++                self.db.closeDbase()
+                 self.doExit(dbm=True)
+-        # Check if user supplied else login user
++            if not self.reg:
++                self.doAskRegister()
++            self.db.closeDbase()
+         if not self.user:
++            # Login user
+             self.userLogin()
+         else:
++            # Check if user details supplied are valid
+             self.userReadCheck(user=self.user["name"], pwd=self.user["pwd"])
+-        self.db.closeDbase()
+         if not self.user:
+             self.doExit()
+         if self.query:
+@@ -409,6 +407,11 @@
+         self.emadd = None
+ 
+     def userLogin(self):
++        if not self.db.dbopen:
++            self.db.openDbase()
++            dbopend = True
++        else:
++            dbopend = False
+         if not self.user:
+             self.userReadCheck()
+             if self.user and not self.user["pwd"]:
+@@ -435,6 +438,8 @@
+         self.li = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
+             butt=but, tend=((self.endUser, "n"),), txit=(self.noUser,))
+         self.mf.startLoop()
++        if dbopend:
++            self.db.closeDbase()
+ 
+     def usrNam(self, frt, pag, r, c, p, i, w):
+         self.userReadCheck(w)
+@@ -603,7 +608,7 @@
+     def userLogout(self):
+         self.user = {}
+ 
+-    def execCommand(self, typ, prg, tit="", rtn=None, opendb=True, menu=True, password=True):
++    def execCommand(self, typ, prg, tit="", rtn=None, menu=True, password=True):
+         if menu:
+             self.tarmen.closeMenu()
+         if not prg in ("sysUpd", "sysEnd"):
+@@ -619,8 +624,11 @@
+             rtn = int(rtn)
+         except:
+             rtn = None
+-        if opendb:
++        if not self.db.dbopen:
+             self.db.openDbase()
++            dbopend = True
++        else:
++            dbopend = False
+         if password and self.getCtlSys(["sys_pwmust"]) == "Y" and not \
+                 self.user["pwd"] and not prg in ("chgPwd", "chgUsr", "sysEnd"):
+             showError(self.mf.window, "Missing Password",
+@@ -642,6 +650,8 @@
+                 else:
+                     showException(None, self.rcdic["wrkdir"],
+                         "Function %s Error" % prg, dbm=self.db)
++                if dbopend:
++                    self.db.closeDbase()
+                 sys.exit()
+         elif typ[0] == "P":
+             error = False
+@@ -707,7 +717,7 @@
+             self.db.rollbackDbase()
+         except:
+             pass
+-        if opendb:
++        if dbopend:
+             # Close the database
+             self.db.closeDbase()
+         if menu:
+@@ -878,8 +888,7 @@
+                 rtn = popt["rtn"]
+             else:
+                 rtn = 0
+-            sql = Sql(self.mf.dbm, ["ffield", "ctllog"], prog="msc000",
+-                errs=False)
++            sql = Sql(self.mf.dbm, ["ffield", "ctllog"], prog="msc000")
+             if not sql.error:
+                 chk = sql.getRec(tables="ffield", where=[("ff_tabl", "=",
+                     "ctllog")])
+@@ -899,7 +908,7 @@
+                     logd.append(0)
+                 logd.append(long(
+                     "%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3]))
+-                sql.insRec("ctllog", data=logd, excp=False)
++                sql.insRec("ctllog", data=logd)
+                 self.mf.dbm.commitDbase()
+             runModule(prg[0], **popt)
+         except:
+@@ -1026,11 +1035,13 @@
+ 
+     def chgUsr(self):
+         self.userLogout()
+-        dbopen = self.db.dbopen
+-        if not dbopen:
++        if not self.db.dbopen:
+             self.db.openDbase()
++            dbopend = True
++        else:
++            dbopend = False
+         self.userLogin()
+-        if not dbopen:
++        if dbopend:
+             self.db.closeDbase()
+         if not self.user:
+             self.doExit()
+@@ -1285,6 +1296,8 @@
+             if self.xdisplay:
+                 self.mf.head.configure(text="Update File Formats (tarUpd)")
+                 self.mf.updateStatus("")
++        dbopen = self.db.dbopen
++        if not dbopen:
+             self.db.openDbase()
+         popt = {
+             "mf": self.mf,
+@@ -1298,12 +1311,7 @@
+             "usr": self.mf.rcdic["dbuser"],
+             "ver": self.current[1]}
+         self.doRunModule("tb1020", **popt)
+-        if not self.reg:
+-            if not dbcreate:
+-                self.db.openDbase()
+-            self.doAskRegister()
+-            self.db.closeDbase()
+-        elif dbcreate:
++        if not dbopen:
+             self.db.closeDbase()
+ 
+     def doAskRegister(self):
+@@ -1313,10 +1321,6 @@
+             urllib2.urlopen("http://tartan.co.za", timeout=2)
+         except urllib2.URLError:
+             return
+-        self.svr = self.getCtlSys(["sys_msvr", "sys_mprt", "sys_msec",
+-            "sys_maut", "sys_mnam", "sys_mpwd"])
+-        if not self.svr[0]:
+-            return
+         tit = ("User Registration",)
+         r1s = (("Yes","Y"), ("Not-Now","N"), ("Never","X"))
+         fld = (
+@@ -1349,8 +1353,9 @@
+         else:
+             nam = "Unknown"
+             eml = "anonymous@unknown.org"
+-        err = sendMail(self.svr, eml, "register@tartan.co.za",
+-            "%s - %s - %s" % (coy, nam, eml))
++        mes = "%s - %s - %s" % (coy, nam, eml)
++        svr = ["smtp.gmail.com", 587, 1, 1, "tartansys@gmail.com", "tarpwd09"]
++        err = sendMail(svr, eml, "register@tartan.co.za", mes)
+         if not err or self.newreg == "X":
+             sql = Sql(self.db, "ctlsys", prog="msc000")
+             sql.updRec("ctlsys", cols=["sys_regdet"], data=[self.newreg])
+@@ -1371,10 +1376,10 @@
+         else:
+             scrn = "text"
+         if not self.db.dbopen:
+-            opendb = True
+             self.db.openDbase()
++            dbopend = True
+         else:
+-            opendb = False
++            dbopend = False
+         sql = Sql(self.db, "verupd", prog="msc000")
+         if sql.error:
+             if vtype == "chk":
+@@ -1390,13 +1395,13 @@
+                 where=[("ver_version", "=", ver[0])], limit=1)
+             if upd:
+                 upddate = CCD(upd[0], "d1", 10)
+-        if opendb:
++        if dbopend:
+             self.db.closeDbase()
+-        if vtype == "get":
+-            return
+         if vtype == "chk" and not self.nocheck:
+             if self.oldver == (0, 0, 0):
+                 error = "not"
++            elif self.oldver < (4, 1, 10):
++                error = "tooold"
+             elif self.oldver < self.current[0]:
+                 error = "newer"
+             elif self.oldver > self.current[0]:
+@@ -1408,7 +1413,17 @@
+                 error = "updated"
+             elif self.oldver > self.current[0]:
+                 error = "older"
+-        if error == "not":
++        if error == "tooold":
++            showError(scrn, "Version Error",
++                """This version of Tartan, %s.%s.%s, is too Old.
++
++Please follow the upgrade instructions at http//www.tartan.co.za
++
++or
++
++Email info@tartan.co.za, with your current version number, for assistance.""" % self.oldver)
++            self.doExit()
++        elif error == "not":
+             showError(scrn, "Version Error", """'Update File Formats'
+ Not Yet Done for this Version of TARTAN.""")
+         elif error == "newer":
+@@ -1438,15 +1453,13 @@
+             passwd=self.bpwd)
+         if cf.flag == "ok":
+             try:
+-                sql = Sql(self.db, ["ctlmst", "ctlsys"], prog="msc000",
+-                    errs=False)
++                sql = Sql(self.db, ["ctlmst", "ctlsys"], prog="msc000")
+                 if sql.error:
+                     raise Exception
+                 csys = sql.getRec(tables="ctlsys", cols=["sys_budays",
+                     "sys_msvr", "sys_mprt", "sys_msec", "sys_maut",
+-                    "sys_mnam", "sys_mpwd"], limit=1,
+-                    excp=self.xdisplay)
+-                if csys == "Exception":
++                    "sys_mnam", "sys_mpwd"], limit=1)
++                if not csys:
+                     raise Exception
+             except:
+                 csys = None
+@@ -1494,7 +1507,6 @@
+         else:
+             try:
+                 import webbrowser
+-                import urllib2
+                 web = "http://tartan.co.za/cgi-bin/simple_web.py/%s" % doc
+                 urllib2.urlopen(urllib2.Request(web))
+                 webbrowser.open(web)
+@@ -1577,7 +1589,7 @@
+         if not rec:
+             self.user = {"name": "admin", "pwd": "", "lvl": 9}
+             self.execCommand("PNNY", "msc110", tit="System Record Maintenance",
+-                opendb=False, menu=False, password=False)
++                menu=False, password=False)
+             rec = sql.getRec(tables="ctlsys", limit=1)
+         if rec:
+             if "sys_regdet" in sql.ctlsys_col:
+@@ -1600,15 +1612,14 @@
+             module = "ms1010"
+         self.user = {"name": "admin", "pwd": "", "lvl": 9}
+         self.execCommand("PNNY", module, tit="Company Records Maintenance",
+-            opendb=False, menu=False, password=False)
++            menu=False, password=False)
+         chk = self.conoCheck(1, ctl=True)
+         if chk:
+             return "error"
+-        self.doAskRegister()
+ 
+     def getCtlSys(self, cols):
+         try:
+-            sql = Sql(self.db, "ctlsys", prog="msc000", errs=False)
++            sql = Sql(self.db, "ctlsys", prog="msc000")
+             if sql.error:
+                 raise Exception
+             sss = sql.getRec(tables="ctlsys", cols=cols, limit=1)
+
+=== modified file 'mst/msc110.py'
+--- mst/msc110.py	2015-10-03 07:36:56 +0000
++++ mst/msc110.py	2015-10-23 07:31:19 +0000
+@@ -25,7 +25,7 @@
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["ctlsys", "ctlpwu", "chglog",
+-            "genmst"], prog=__name__, errs=False)
++            "genmst"], prog=__name__)
+         if self.sql.error:
+             if self.sql.error == ["genmst"]:
+                 self.gl = False
+@@ -109,6 +109,9 @@
+         if not w:
+             self.df.loadEntry(frt, pag, p+1, data="")
+             self.df.loadEntry(frt, pag, p+2, data="")
++            self.df.loadEntry(frt, pag, p+3, data="")
++            self.df.loadEntry(frt, pag, p+4, data="")
++            self.df.loadEntry(frt, pag, p+5, data="")
+             return "sk5"
+ 
+     def doAuth(self, frt, pag, r, c, p, i, w):
+
+=== modified file 'rca/rcc110.py'
+--- rca/rcc110.py	2015-10-03 07:36:56 +0000
++++ rca/rcc110.py	2015-10-22 14:35:46 +0000
+@@ -121,7 +121,7 @@
+                 (("T",0,7,0),"IUI",7,self.ctl[6][1],"",
+                     self.ctl[6][2],"N",self.doGenAcc,glm,None,("efld",)),
+                 (("T",0,7,0),"ONA",30,""),
+-                (("T",0,8,0),"IUI",7,"G/L Bank Account","",
++                (("T",0,8,0),"IUI",7,"Bank Account","",
+                     self.acc[2],"N",self.doGlbnk,ctl,None,("efld",))]
+             seq = 9
+         else:
+
+=== modified file 'sls/si2010.py'
+--- sls/si2010.py	2015-10-13 07:46:15 +0000
++++ sls/si2010.py	2015-10-25 07:02:32 +0000
+@@ -662,14 +662,14 @@
+                 pos = seq * 9
+             # Load Values
+             self.df.loadEntry("C", 0, pos, self.grp)
+-            self.df.loadEntry("C", 0, pos+1, self.code)
+-            self.df.loadEntry("C", 0, pos+2, self.desc)
+-            self.df.loadEntry("C", 0, pos+3, self.loc)
+-            self.df.loadEntry("C", 0, pos+4, self.qty)
+-            self.df.loadEntry("C", 0, pos+5, self.vatcod)
+-            self.df.loadEntry("C", 0, pos+6, self.price)
+-            self.df.loadEntry("C", 0, pos+7, self.disrat)
+-            self.df.loadEntry("C", 0, pos+8, self.incamt)
++            self.df.loadEntry("C", 0, pos + 1, self.code)
++            self.df.loadEntry("C", 0, pos + 2, self.desc)
++            self.df.loadEntry("C", 0, pos + 3, self.loc)
++            self.df.loadEntry("C", 0, pos + 4, self.qty)
++            self.df.loadEntry("C", 0, pos + 5, self.vatcod)
++            self.df.loadEntry("C", 0, pos + 6, self.price)
++            self.df.loadEntry("C", 0, pos + 7, self.disrat)
++            self.df.loadEntry("C", 0, pos + 8, self.incamt)
+             self.totvat = float(ASD(self.totvat) + ASD(self.vatamt))
+             self.totinv = float(ASD(self.totinv) + ASD(self.incamt))
+         if seq >= (self.row[0] - 1):
+@@ -1417,6 +1417,7 @@
+                 tname=self.tname, repprt=self.pr.repprt,
+                 repeml=repeml, dnote=dnote, dvals=self.delval)
+             self.df.setWidget(self.df.mstFrame, state="show")
++        # Clear total and focus
+         self.df.setViewPort(self.typs, 0)
+         self.df.focusField("T", 0, 1)
+ 
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-10-04 09:29:52 +0000
++++ std/TartanClasses.py	2015-10-25 07:17:01 +0000
+@@ -2521,12 +2521,11 @@
+         table_dic  = A dictionary of columns having:
+                      {"colname": table, seq, type, size, desc, head}
+     """
+-    def __init__(self, dbm, tables=None, prog=None, errs=True):
++    def __init__(self, dbm, tables=None, prog=None):
+         """
+         dbm    - The database class
+         tables - The tables required for the insRec function
+         prog   - The calling module name
+-        errs   - Whether to display errors
+         """
+         self.dbm = dbm
+         if prog:
+@@ -2543,8 +2542,8 @@
+         for table in self.tables:
+             setattr(self, table, table)
+             cols = self.sqlRec(state=("Select * from ffield where ff_tabl=%s "
+-                "order by ff_seq" % self.dbm.dbf, (table,)), excp=errs)
+-            if cols:
++                "order by ff_seq" % self.dbm.dbf, (table,)))
++            if cols and type(cols) in (list, tuple):
+                 col = []
+                 for c in cols:
+                     col.append(c[2])
+@@ -2557,18 +2556,10 @@
+                 fld = fld[:-2]
+                 setattr(self, "%s_fld" % table, fld)
+                 setattr(self, "%s_dic" % table, dic)
+-            elif errs:
+-                mess = """
+-The ffield record for %s Does Not Exist
+-
+-Please Inform Your IT Manager A.S.A.P.
+-""" % table
+-                showError(None, "ffield Error", mess)
+-                self.error.append(table)
+             else:
+                 self.error.append(table)
+ 
+-    def sqlRec(self, state=None, limit=None, fetch=False, excp=False):
++    def sqlRec(self, state=None, limit=None, fetch=False):
+         """
+         state = A sql statement. It can also be a tuple of the statement and
+                 the data required for the clause e.g.
+@@ -2578,7 +2569,6 @@
+                     ("Insert into xyz values (?,?,?)", (1,2,3))
+         limit = The number of records to return. None = All
+         fetch = Only fetch from a previous select. True or False
+-        excp  = False = Show the exception, True = just return 'Exception'
+         """
+         def retList(ret):
+             # Adjust to return [] instead of None and convert to list(s)
+@@ -2624,20 +2614,17 @@
+                 self.dbm.rollbackDbase()
+             except:
+                 pass
+-            if excp and not "TARTANDB" in os.environ:
+-                return "Exception"
+             showException(None, self.dbm.wrkdir,
+-                "Error Executing SQL Statement\n\n%s\n\nIn module %s" % \
++                "Error Executing SQL Statement\n\n%s\n\nIn module %s" %
+                 (str(state), self.prog), dbm=self.dbm)
+             os._exit(0)
+ 
+-    def insRec(self, table, data=[], unique=None, dofmt=True, excp=False, pbar=None):
++    def insRec(self, table, data=[], unique=None, dofmt=True, pbar=None):
+         """
+         table   = The table to insert into
+         data    = A list or a list of lists of all the column's data
+         unique  = Any column which must be unique e.g. drt_ref1
+         dofmt   = Whether or not to format the data before inserting
+-        excp    = False = Show the exception, True = just return 'Exception'
+         pbar    = ProgressBar object
+         """
+         if table not in self.tables:
+@@ -2766,24 +2753,24 @@
+                 if pbar:
+                     pbar.displayProgress(onum)
+                 if self.dbm.mrecs:
+-                    self.sqlRec(("Insert into %s (%s) values %s" % (table,
+-                        nfld, tfmt), ndat), excp=excp)
++                    self.sqlRec(("Insert into %s (%s) values %s" %
++                        (table, nfld, tfmt), ndat))
+                     tfmt = ""
+                 else:
+-                    self.sqlRec(("Insert into %s (%s) values (%s)" % (table,
+-                        nfld, nfmt), ndat), excp=excp)
++                    self.sqlRec(("Insert into %s (%s) values (%s)" %
++                        (table, nfld, nfmt), ndat))
+                 ndat = []
+         if ndat:
+             if pbar:
+                 pbar.displayProgress(onum)
+             if self.dbm.mrecs:
+-                self.sqlRec(("Insert into %s (%s) values %s" % (table,
+-                    nfld, tfmt), ndat), excp=excp)
++                self.sqlRec(("Insert into %s (%s) values %s" %
++                    (table, nfld, tfmt), ndat))
+             else:
+-                self.sqlRec(("Insert into %s (%s) values (%s)" % (table,
+-                    nfld, nfmt), ndat), excp=excp)
++                self.sqlRec(("Insert into %s (%s) values (%s)" %
++                    (table, nfld, nfmt), ndat))
+ 
+-    def getRec(self, tables, join=None, cols=None, where=None, data=None, group=None, order=None, fetch=False, limit=None, excp=False):
++    def getRec(self, tables, join=None, cols=None, where=None, data=None, group=None, order=None, fetch=False, limit=None):
+         """
+         tables = A string or list of tables
+         join   = A join statement
+@@ -2810,7 +2797,6 @@
+         order  = A string of columns to order by e.g. "drt_cono, drt_acno"
+         fetch  = Only fetch record from a previous select. True or False
+         limit  = The number of records to return e.g. 1 else returns all
+-        excp   = Return the exception immediately
+         """
+         # check for tables
+         if not tables:
+@@ -2921,18 +2907,17 @@
+         if order:
+             get = "%s order by %s" % (get, order)
+         if not dat:
+-            return self.sqlRec(get, fetch=fetch, limit=limit, excp=excp)
++            return self.sqlRec(get, fetch=fetch, limit=limit)
+         else:
+-            return self.sqlRec((get, dat), fetch=fetch, limit=limit, excp=excp)
++            return self.sqlRec((get, dat), fetch=fetch, limit=limit)
+ 
+-    def updRec(self, table, where=None, data=None, cols=None, dofmt=True, excp=False):
++    def updRec(self, table, where=None, data=None, cols=None, dofmt=True):
+         """
+         table   = The table to update
+         where   = A where statement like the getRec one
+         data    = A list of data matching the columns in cols or all if no cols
+         cols    = A list of columns matching 'data' else None for all
+         dofmt   = Whether or not to format the data before updating
+-        excp    = False = Show the exception, True = just return 'Exception'
+         """
+         cmd = ""
+         if not where and not data:
+@@ -2959,7 +2944,7 @@
+             whr, ext = self.getSqlWhere(where)
+             dat.extend(ext)
+             cmd = "%s %s" % (cmd, whr)
+-        self.sqlRec((cmd, tuple(dat)), excp=excp)
++        self.sqlRec((cmd, tuple(dat)))
+ 
+     def delRec(self, table, cols=None, data=None, where=None):
+         """
+@@ -6414,9 +6399,9 @@
+         for x in xrange(1, self.rows[pag]):
+             for y in xrange(self.colq[pag]):
+                 d = self.c_work[pag][x][y]
+-                p = ((x-1) * self.colq[pag]) + y
++                p = ((x - 1) * self.colq[pag]) + y
+                 self.loadEntry("C", pag, p, data=d)
+-        self.clearLine(pag, row=(self.rows[pag]-1))
++        self.clearLine(pag, row=(self.rows[pag] - 1))
+         col = (self.rows[pag] * self.colq[pag]) - (self.colq[pag] - 1)
+         if focus:
+             self.focusField("C", pag, col)
+@@ -9358,7 +9343,6 @@
+             ("btm_batno", "=", self.batno),
+             ("btm_styp", "=", self.sys),
+             ("btm_rtyp", "=", self.rtn)]
+-            #("btm_curdt", "between", self.s_per, self.e_per)]
+         self.bat = self.sql.getRec(tables="ctlbat", where=whr, limit=1)
+         bc = self.sql.ctlbat_col
+         if not self.bat:
+@@ -10707,7 +10691,7 @@
+ and Create It."""}
+ 
+     def getCtl(self, table, conum=None, error=True):
+-        sql = Sql(self.mf.dbm, ["ffield", table], prog=__name__, errs=error)
++        sql = Sql(self.mf.dbm, ["ffield", table], prog=__name__)
+         if sql.error:
+             return None
+         dics = {}
+@@ -13932,10 +13916,9 @@
+     def removeTables(self, tab):
+         n = tab.split(" as ")
+         if len(n) == 1:
+-            n = n[0]
++            return n[0]
+         else:
+-            n = n[1]
+-        return(n)
++            return n[1]
+ 
+ class TabPrt:
+     """
+@@ -14470,13 +14453,13 @@
+         self.slsinv = False
+         if self.coys:
+             # Check for Intercompany Facility
+-            sql = Sql(self.mf.dbm, "genint", errs=False, prog=__name__)
++            sql = Sql(self.mf.dbm, "genint", prog=__name__)
+             if not sql.error:
+                 itg = sql.getRec(tables="genint", cols=["count(*)"], limit=1)
+                 if itg[0]:
+                     self.incoac = True
+             # Check for Sales Invoicing
+-            sql = Sql(self.mf.dbm, "bkmiv1", errs=False, prog=__name__)
++            sql = Sql(self.mf.dbm, "bkmiv1", prog=__name__)
+             if not sql.error:
+                 inv = sql.getRec(tables="bkmiv1", cols=["count(*)"], limit=1)
+                 if inv[0]:
+@@ -14504,7 +14487,7 @@
+             self.syss.append([s, det[0]])
+             if len(det) == 1:
+                 continue
+-            sql = Sql(self.mf.dbm, det[1], errs=False, prog=__name__)
++            sql = Sql(self.mf.dbm, det[1], prog=__name__)
+             if sql.error:
+                 continue
+             itg = sql.getRec(tables=det[1], cols=[det[2]])
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2015-10-03 07:36:56 +0000
++++ std/tartanFunctions.py	2015-10-25 08:06:53 +0000
+@@ -308,7 +308,9 @@
+                 smtp = sql.getRec(tables=tab, cols=["ctm_name", "sys_msvr",
+                     "sys_mprt", "sys_msec", "sys_maut", "sys_mnam", "sys_mpwd",
+                     "ctm_email", "ver_version"], where=[("ctm_cono", "=", 1)],
+-                    limit=1, excp=True)
++                    limit=1)
++                if not smtp:
++                    raise Exception
+                 sendMail(smtp[1:7], smtp[7], ["errors@tartan.co.za"],
+                     "Version: %s Company: %s Host: %s User: %s" %
+                     (smtp[8], smtp[0], host, user), attach=[fnam])
+@@ -482,7 +484,7 @@
+                 ok = "DB-ERR"
+                 raise Exception
+             dbm.openDbase()
+-            sql = Sql(dbm, tables=["ctlsys", "ctlmst", "emllog"], prog=__name__)
++            sql = Sql(dbm, tables=["ctlsys", "ctlmst", "emllog"])
+             if not conum:
+                 conum = 1
+             smtp = sql.getRec(tables=["ctlmst", "ctlsys"], cols=["sys_msvr",
+@@ -542,13 +544,12 @@
+             if not ok:
+                 ok = "UNKNOWN"
+         # Try and Log the email status into table emllog
+-        try:
+-            for add in toad:
+-                sql.insRec("emllog", data=[fromad.strip(), add.strip(),
+-                    subj, "%04i-%02i-%02i %02i:%02i" % time.localtime()[0:5],
+-                    ok], excp=True)
+-        except:
+-            pass
++        for add in toad:
++            try:
++                sql.insRec("emllog", data=[fromad.strip(), add.strip(), subj,
++                    "%04i-%02i-%02i %02i:%02i" % time.localtime()[0:5], ok])
++            except:
++                pass
+         try:
+             dbm.commitDbase()
+             dbm.closeDbase()
+@@ -1132,7 +1133,8 @@
+         sql = Sql(dbm, tab, prog=__name__)
+         col = copyList(sql.memtrn_col)
+         join = "left outer join memage on mta_cono=mlt_cono and "\
+-            "mta_memno=mlt_memno and mta_type=mlt_type and mta_refno=mlt_refno"
++            "mta_memno=mlt_memno and mta_type=mlt_type and "\
++            "mta_refno=mlt_refno"
+         if dte:
+             if whr:
+                 whr.append(("mlt_curdt", "<=", dte))
+
+=== modified file 'str/st1010.py'
+--- str/st1010.py	2015-10-03 07:36:56 +0000
++++ str/st1010.py	2015-10-22 07:56:42 +0000
+@@ -158,7 +158,7 @@
+             (("T",2,1,0),"IUA",8,"Bin Number","",
+                 "","N",None,None,self.doDelete,("efld",)),
+             (("T",2,2,0),("IRB",r3s),0,"Re-Order Indicator",
+-                "Re-Order Indicator","A","N",None,None,None,None),
++                "Re-Order Indicator","A","N",self.doReord,None,None,None),
+             (("T",2,3,0),"IUI",7,"Re-Order Level",
+                 "Re-Order Level","","N",None,None,None,("efld",)),
+             (("T",2,4,0),"IUI",7,"Re-Order Quantity",
+@@ -369,6 +369,12 @@
+             return "Invalid COS Account"
+         self.df.loadEntry(frt, pag, p+1, data=acc[0])
+ 
++    def doReord(self, frt, pag, r, c, p, i, w):
++        if w == "N":
++            self.df.loadEntry(frt, pag, p+1, data=0)
++            self.df.loadEntry(frt, pag, p+2, data=0)
++            return "sk2"
++
+     def getUoi(self, dat):
+         acc = self.sql.getRec(tables="struoi", cols=["unm_desc"],
+             where=[("unm_cono", "=", self.opts["conum"]), ("unm_unit", "=",
+
+=== modified file 'str/st2010.py'
+--- str/st2010.py	2015-10-03 07:36:56 +0000
++++ str/st2010.py	2015-10-25 07:18:43 +0000
+@@ -199,7 +199,7 @@
+             (("T",0,5,0),"ID1",10,"Date","Delivery Date",
+                 self.trdt,"N",self.doDelDate,None,None,("efld",)),
+             (("C",0,0,0),"INA",3,"Grp","Product Group",
+-                "r","Y",self.doGrp,grp,None,None),
++                "","Y",self.doGrp,grp,None,None),
+             (("C",0,0,1),"INA",20,"Product-Code","",
+                 "","N",self.doCod,cod,None,None),
+             (("C",0,0,2),"INA",(20,30),"Description","",
+@@ -355,10 +355,6 @@
+             # Clear Totals
+             self.doClearTots()
+         elif self.acttyp == "C":
+-            # Print Deletetion
+-            PrintOrder(self.opts["mf"], self.opts["conum"], self.opts["conam"],
+-                self.ordno, tname=self.tname, repprt=self.pr.repprt,
+-                repeml=self.pr.repeml, copy="d", commit=False)
+             # Update Deletetion
+             self.sql.updRec("strpom", cols=["pom_delno"], data=["cancel"],
+                 where=[("pom_cono", "=", self.opts["conum"]), ("pom_ordno",
+@@ -367,6 +363,11 @@
+                 self.opts["conum"]), ("pot_ordno", "=", self.ordno)])
+             # COMMIT Deletetion
+             self.opts["mf"].dbm.commitDbase()
++            # Print Deletetion
++            PrintOrder(self.opts["mf"], self.opts["conum"], self.opts["conam"],
++                self.ordno, tname=self.tname, repprt=self.pr.repprt,
++                repeml=self.pr.repeml, copy="d")
++            # Clear totals and focus
+             self.doClearTots()
+             self.df.focusField("T", 0, 1)
+         else:
+@@ -388,18 +389,18 @@
+                 pos = seq * 9
+             # Load Values
+             self.df.loadEntry("C", 0, pos, data=self.grp)
+-            self.df.loadEntry("C", 0, pos+1, data=self.code)
+-            self.df.loadEntry("C", 0, pos+2, data=self.desc)
+-            self.df.loadEntry("C", 0, pos+3, data=self.qty)
+-            self.df.loadEntry("C", 0, pos+5, data=self.vatcod)
+-            self.df.loadEntry("C", 0, pos+6, data=self.price)
+-            self.df.loadEntry("C", 0, pos+7, data=self.disrat)
++            self.df.loadEntry("C", 0, pos + 1, data=self.code)
++            self.df.loadEntry("C", 0, pos + 2, data=self.desc)
++            self.df.loadEntry("C", 0, pos + 3, data=self.qty)
++            self.df.loadEntry("C", 0, pos + 5, data=self.vatcod)
++            self.df.loadEntry("C", 0, pos + 6, data=self.price)
++            self.df.loadEntry("C", 0, pos + 7, data=self.disrat)
+             self.vattot = float(ASD(self.vattot) + ASD(self.vatamt))
+             self.ordtot = float(ASD(self.ordtot) + ASD(self.excamt))
+-        if seq >= self.row[0]:
++        if seq >= (self.row[0] - 1):
+             self.df.scrollScreen(0)
+         else:
+-            self.df.focusField("C", 0, pos+10)
++            self.df.focusField("C", 0, pos + 10)
+ 
+     def doTopExit(self, widget=None):
+         self.df.closeProcess()
+
+=== modified file 'str/st2030.py'
+--- str/st2030.py	2015-10-03 07:36:56 +0000
++++ str/st2030.py	2015-10-24 06:54:11 +0000
+@@ -121,7 +121,7 @@
+             (("T",0,0,0),"ID1",10,"Date","Issue Date",
+                 self.sysdtw,"N",self.doDte,None,None,("efld",)),
+             (("C",0,0,0),"IUA",3,"Grp","Product Group",
+-                "r","N",self.doGroup,gpm,None,("notblank",)),
++                "","N",self.doGroup,gpm,None,("notblank",)),
+             [("C",0,0,1),"INA",20,"Product Code","",
+                 "","N",self.doCode,stm,None,("notblank",)],
+             (("C",0,0,2),"ONA",5,"U.O.I"),
+
+=== modified file 'str/st2040.py'
+--- str/st2040.py	2014-12-30 15:37:38 +0000
++++ str/st2040.py	2015-10-22 09:26:02 +0000
+@@ -15,7 +15,7 @@
+ 
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, Sql, TartanDialog
+-from tartanFunctions import askQuestion
++from tartanFunctions import askQuestion, showError
+ 
+ class st2040:
+     def __init__(self, **opts):
+@@ -35,6 +35,8 @@
+             return
+         self.locs = strctl["cts_locs"]
+         if self.locs == "N":
++            showError(self.opts["mf"].body, "Error",
++                "Multiple Locations Are Not Enabled")
+             return
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+
+=== modified file 'str/st3030.py'
+--- str/st3030.py	2015-10-03 07:36:56 +0000
++++ str/st3030.py	2015-10-22 12:54:13 +0000
+@@ -77,21 +77,21 @@
+         fld.extend([
+             (("T",0,1,0),"IUA",3,"Product Group","",
+                 "","Y",self.doGroup,grp,None,None),
+-            (("T",0,2,0),("IRB",r1s),0,"Ignore Out of Stock","Ignore Out "\
+-                "of Stock","Y","Y",self.doNoStock,None,None,None),
++            (("T",0,2,0),("IRB",r1s),0,"Ignore Out of Stock","",
++                "Y","Y",self.doNoStock,None,None,None),
+             (("T",0,3,0),("IRB",r2s),0,"Report Type","",
+                 "S","Y",self.doType,None,None,None),
+-            (("T",0,4,0),("IRB",r3s),0,"Price Type","Price Type",
++            (("T",0,4,0),("IRB",r3s),0,"Price Type","",
+                 "L","Y",self.doPriceType,None,None,None),
+             (("T",0,5,0),"IUI",1,"Price Level","",
+                 0,"Y",self.doLvl,None,None,("between",0,self.prcs)),
+-            (("T",0,6,0),("IRB",r1s),0,"Ignore Unpriced","Ignore Unpriced",
++            (("T",0,6,0),("IRB",r1s),0,"Ignore Un-priced","",
+                 "Y","Y",self.doNoPrice,None,None,None),
+             (("T",0,7,0),("IRB",r1s),0,"Use Last S/P","Use Last S/P if "\
+-                "Unpriced","Y","Y",self.doLastSP,None,None,None),
+-            (("T",0,8,0),("IRB",r1s),0,"V.A.T Inclusive","V.A.T Inclusive",
++                "Un-priced","Y","Y",self.doLastSP,None,None,None),
++            (("T",0,8,0),("IRB",r1s),0,"V.A.T Inclusive","",
+                 "Y","Y",self.doVat,None,None,None),
+-            (("T",0,9,0),("IRB",r1s),0,"Show Cost Price","Show Cost Price",
++            (("T",0,9,0),("IRB",r1s),0,"Show Cost Price","",
+                 "N","Y",self.doCost,None,None,None)])
+         tnd = ((self.doEnd,"Y"),)
+         txt = (self.doExit,)
+@@ -178,9 +178,9 @@
+         if self.rtype == "S":
+             expheads.append("Selling Price List as at %s" % self.sysdtd)
+             mess = "Options:- Ignore Out of Stock: %s  VAT Inclusive: %s  "\
+-                "Ignore Unpriced: %s" % (self.nostock,self.vatinc,self.noprice)
++                "Ignore Un-priced: %s" % (self.nostock,self.vatinc,self.noprice)
+             if self.noprice == "N":
+-                mess = "%s  Use Last S/P for Unpriced: %s" % (mess, self.lasts)
++                mess = "%s  Use Last S/P for Un-priced: %s" % (mess, self.lasts)
+             expheads.append(mess)
+             expcolsh = [["Grp", "Product-Code", "Description", "U.O.I",
+                 "V", "Qty-Balance", "Price-1", "Price-2", "Price-3", "Price-4",
+@@ -388,9 +388,9 @@
+             mess = "%-31s %1s %-14s %1s %-16s %s" % (
+                 "(Options:- Ignore Out of Stock:", self.nostock,
+                 "VAT Inclusive:", self.vatinc,
+-                "Ignore Unpriced:", self.noprice)
++                "Ignore Un-priced:", self.noprice)
+             if self.noprice == "N":
+-                mess = "%s Use Last S/P for Unpriced: %s" % (mess, self.lasts)
++                mess = "%s Use Last S/P for Un-priced: %s" % (mess, self.lasts)
+             self.fpdf.drawText("%s%s" % (mess, ")"))
+         else:
+             self.fpdf.drawText("%-21s %-10s %57s %5s" % \
+
+=== modified file 'str/st3120.py'
+--- str/st3120.py	2015-10-03 07:36:56 +0000
++++ str/st3120.py	2015-10-22 07:20:27 +0000
+@@ -217,7 +217,7 @@
+             return
+         req = CCD(st2[1], "SD", 12.2)
+         bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
+-            self.repdtw, keys=(grp.work, code.work, self.loc))
++            self.repdtw / 100, keys=(grp.work, code.work, self.loc))
+         cbal, obal, bbal = bals.doStrOrds()
+         tbal = float(ASD(cbal.work) + ASD(obal.work) - ASD(bbal.work))
+         if req.work < tbal:
+
+=== modified file 'str/st5030.py'
+--- str/st5030.py	2015-10-03 07:36:56 +0000
++++ str/st5030.py	2015-10-24 10:01:30 +0000
+@@ -16,7 +16,7 @@
+ import time
+ from TartanClasses import ASD, Balances, CCD, GetCtl, ProgressBar, RepPrt, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import doPrinter, showError
++from tartanFunctions import showError
+ 
+ class st5030:
+     def __init__(self, **opts):
+
+=== modified file 'str/st6030.py'
+--- str/st6030.py	2015-10-13 07:46:15 +0000
++++ str/st6030.py	2015-10-24 10:06:12 +0000
+@@ -14,8 +14,7 @@
+ """
+ 
+ import time
+-from TartanClasses import CCD, GetCtl, MyFpdf, ProgressBar, Sql, TartanDialog
+-from tartanFunctions import getModName, doPrinter, showError
++from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class st6030:
+     def __init__(self, **opts):
+@@ -121,6 +120,6 @@
+ 
+     def doExit(self):
+         self.df.closeProcess()
+-        self.closeProcess()
++        self.opts["mf"].closeLoop()
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2015-10-03 07:36:56 +0000
++++ tab/tb1020.py	2015-10-23 07:32:52 +0000
+@@ -82,8 +82,7 @@
+         else:
+             self.rcdic = self.opts["mf"].rcdic
+             self.dbm = self.opts["mf"].dbm
+-        self.sql = Sql(self.dbm, ["ffield", "ftable", "verupd"],
+-            prog=__name__, errs=False)
++        self.sql = Sql(self.dbm, ["ffield", "ftable", "verupd"], prog=__name__)
+         if "ffield" in self.sql.error or "ftable" in self.sql.error:
+             sys.exit()
+         elif "verupd" in self.sql.error:
+@@ -373,7 +372,7 @@
+         opts.append(("-t", self.table))
+         DBCreate(dbm=self.dbm, opts=opts)
+         ndata = []
+-        if data and data not in (Exception, "Exception"):
++        if data:
+             sql = Sql(self.dbm, self.table, prog=__name__)
+             # Create Dictionaries
+             olddic = {}
+@@ -598,8 +597,7 @@
+         self.dbm.commitDbase()
+ 
+     def doWagCal(self):
+-        sql = Sql(self.dbm, ["wagedc", "wagtf1", "wagtf2"],
+-            prog=__name__, errs=False)
++        sql = Sql(self.dbm, ["wagedc", "wagtf1", "wagtf2"], prog=__name__)
+         if sql.error:
+             return
+         emps = sql.getRec(tables="wagtf1")
+@@ -707,7 +705,7 @@
+                     pb.displayProgress(n1)
+             if t not in csf:
+                 sql = Sql(self.dbm, t, prog=__name__)
+-                sql.sqlRec("Drop table %s" % t, excp=True)
++                sql.sqlRec("Drop table %s" % t)
+                 self.doRemoveTable(t)
+             elif not self.dbm.checkTable(t):
+                 self.doRemoveTable(t)
+@@ -739,15 +737,15 @@
+             self.opts["mf"].updateStatus("Creating Standard Records")
+         elif self.opts["bar"]:
+             print "Creating Standard Records .... Please Wait"
+-        sql = Sql(self.dbm, "frelat", prog=__name__, errs=False)
++        sql = Sql(self.dbm, "frelat", prog=__name__)
+         if not sql.error:
+             sql.sqlRec("Delete from frelat")
+             self.doPopulate(sql, "frelat")
+-        sql = Sql(self.dbm, "wagrcv", prog=__name__, errs=False)
++        sql = Sql(self.dbm, "wagrcv", prog=__name__)
+         if not sql.error:
+             sql.sqlRec("Delete from wagrcv")
+             self.doPopulate(sql, "wagrcv")
+-        sql = Sql(self.dbm, ["tplmst", "tpldet"], prog=__name__, errs=False)
++        sql = Sql(self.dbm, ["tplmst", "tpldet"], prog=__name__)
+         if not sql.error:
+             for tpl in stdtpl:
+                 sql.sqlRec("Delete from tplmst where tpm_tname = '%s'" % tpl)
+@@ -764,7 +762,7 @@
+                     l.insert(8, "#000000")
+                     l.insert(24, "#000000")
+                 sql.insRec("tpldet", l)
+-        sql = Sql(self.dbm, ["wagtxa", "wagtxr"], prog=__name__, errs=False)
++        sql = Sql(self.dbm, ["wagtxa", "wagtxr"], prog=__name__)
+         if not sql.error:
+             try:
+                 from tartanWork import payeRates, siteRates, uifRates, sdlRates
+@@ -801,7 +799,7 @@
+             except:
+                 pass
+         # genrcc - Deposits changes to Receipts
+-        sql = Sql(self.dbm, "genrcc", prog=__name__, errs=False)
++        sql = Sql(self.dbm, "genrcc", prog=__name__)
+         if not sql.error:
+             sql.updRec("genrcc", cols=["grc_rtn"], data=["R"],
+                 where=[("grc_rtn", "=", "D")])
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2015-10-05 14:03:48 +0000
++++ uty/pkgprg.py	2015-10-20 12:55:33 +0000
+@@ -548,11 +548,12 @@
+         exeCmd("ssh root@mailserver rm /srv/ftp/%s*" % system.capitalize())
+         exeCmd("rsync -artz %s/TartanExe/%s* root@mailserver:/srv/ftp/ --progress" % (bd, system.capitalize()))
+         exeCmd("ssh root@mailserver chmod a+rwx /srv/ftp/*")
++        exeCmd("ssh root@mailserver chown paul:users /srv/ftp/*")
+         exeCmd("ssh root@mailserver chmod a-w /srv/ftp")
+         # WWW Server
+         if system == "tartan":
+             exeCmd("rsync -artz %s/Tartan-5/doc/Tartan.rst root@mailserver:/var/www/tartan.co.za/htdocs/Manual/Manual.rst --progress" % bd)
+-            exeCmd("rsync -artz %s/Tartan-5/doc/QS.rst root@mailserver:/var/www/tartan.co.za/htdocs/Quickstart/Quickstart.rst --progress" % bd)
++            exeCmd("rsync -artz %s/Tartan-5/doc/QS.rst root@mailserver:/var/www/tartan.co.za/htdocs/QuickStart/QuickStart.rst --progress" % bd)
+             exeCmd("rsync -artz %s/Tartan-5/doc/Downloads.rst root@mailserver:/var/www/tartan.co.za/htdocs/Downloads/ --progress" % bd)
+             exeCmd("rsync -artz %s/Tartan-5/doc/Changes.rst root@mailserver:/var/www/tartan.co.za/htdocs/Changes/ --progress" % bd)
+ exeCmd("rm %s/Tartan-5/doc/%s.rst" % (bd, man))
+@@ -589,12 +590,12 @@
+             "mike@annettelaing.co.za",
+             "no2pigstash@hotmail.com",
+             "paul@tartan.co.za",
+-            "rene@hazeldean.co.za"]
++            "rene@hazeldean.co.za",
++            "tyron@i-volt.net"]
+             #"avanhasselt@jadeworld.com"
+             #"deonk@spargs.co.za",
+             #"knorton@xsinet.co.za"
+             #"mjredman@bigpond.net.au"
+-            #"tyron@i-volt.net"
+         for addr in addrs:
+             sendMail(serv, mfrm, addr, subj, mess=(text, html))
+ # END
+
+=== modified file 'wag/wg2020.py'
+--- wag/wg2020.py	2015-10-03 07:36:56 +0000
++++ wag/wg2020.py	2015-10-25 07:20:28 +0000
+@@ -900,8 +900,8 @@
+         psl = PrintPayslip(self.opts["mf"], self.opts["conum"],
+             self.opts["conam"], self.empnos, self.rundt, progs="y",
+             runtp=runtp, repprt=self.df.repprt, tname=self.tname,
+-            repeml=self.df.repeml, message=self.mess,
+-            export=self.export, bestac=self.bestac)
++            repeml=self.df.repeml, message=self.mess, export=self.export,
++            bestac=self.bestac)
+         self.etotal = float(ASD(self.etotal) + ASD(psl.etotal))
+ 
+     def doIntegration(self):
+

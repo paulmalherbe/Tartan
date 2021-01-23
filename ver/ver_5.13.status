@@ -1,0 +1,20 @@
+added:
+  tartan.ico
+modified:
+  .bzrignore*
+  TartanClasses.py
+  doc/Changes.rst
+  doc/Downloads.rst
+  doc/SYS.rst
+  ms0000.py
+  rca/rc3050.py
+  rca/rc3060.py
+  tab/tb1020.py
+  tartanWork.py
+  uty/pkgprg.py
+unknown:
+  C:\Tartan\bup/
+  C:\Tartan\upg/
+  C:\Tartan\wrk/
+  aaa
+  z:\home\paul\fle/

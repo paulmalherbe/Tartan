@@ -1,0 +1,638 @@
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2017-08-24 07:49:34 +0000
++++ doc/BKS.rst	2017-09-10 14:30:29 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.1
++:Version:   5.3.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -17,7 +17,7 @@
+ 
+ Installation Procedure
+ ----------------------
+-Browse to the Bksclb_5.2.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
++Browse to the Bksclb_5.x.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+
+=== modified file 'doc/BQS.rst'
+--- doc/BQS.rst	2017-08-24 07:49:34 +0000
++++ doc/BQS.rst	2017-08-25 06:34:44 +0000
+@@ -9,11 +9,13 @@
+     + **Linux** - `program_path/ms0000.py [options]`
+     + **Windows** - `program_path\\ms0000.exe [options]`
+ 
+-  To find out what the available command line options are, use the -h option.
+-
+-+ Login using **admin** as the user name and a password, if prompted.
+-
+-+ The first time Tartan is started you will be taken to `Preferences` where you will have to enter your preferences regarding database, paths, utilities and various other choices. In order to use the defaults press `Enter` to accept the `Configuration File` and then click the `Save Button`. You will then have to create the system record using `System Record Maintenance`. Click on the `Accept Button` to accept the defaults. You will also have to create a club record using `Club Master Record`. For most club installations there will only be one club record.
++  To find out what the available command line options are use the -h option.
++
++|
++
+++ The first time Tartan is started you will be taken to `Preferences` where you will have to enter your preferences regarding database, paths, utilities and various other choices. In order to use the defaults press `Enter` to accept the `Configuration File` and then click the `Save Button`. You will then have to create the system record using `System Record Maintenance`. Click on the `Accept Button` to accept the defaults. You will also have to create the club record using `Club Master Record`. The only field of initial importance is the club name.
++
++|
+ 
+ + **Tabs Draw**
+     * Create a Control record by selecting `Control Record` from the menu.
+@@ -21,7 +23,12 @@
+     * Do a draw by selecting `Tabs-In Draw` from the menu.
+     * Reprint a draw by selecting `Reprint Draw` from the menu.
+     * Print a draw summary by selecting `Draws Summary` from the menu.
++
++|
++
+ + **League Selections**
++    * Create a Control record, if not already done, by selecting `Control Record` from the menu.
++    * Create Tab records, if not already done, by selecting `Tabs Maintenance` from the menu.
+     * Create a league format record by selecting `League Formats` from the menu.
+     * Create Tab records by selecting `Tabs Maintenance` from the Tabs menu.
+     * Create side records by selecting `Side's Maintenance` from the menu.
+@@ -32,7 +39,12 @@
+     * To print the `Match Assessment Report` select Match Assessment Report from the menu.
+     * To print the `Assessment Summary` select `Assessment Summary` from the menu.
+     * To clear historical selections select `Clear League History` from the Toolbox menu.
++
++|
++
+ + **Competitions**
++    * Create a Control record, if not already done, by selecting `Control Record` from the menu.
++    * Create Tab records, if not already done, by selecting `Tabs Maintenance` from the menu.
+     * Create a Competition Type record by selecting `Competition Types` from the menu.
+     * Capture Competition Entries by selecting `Capture Entries` from the menu.
+     * Print Match Draw and Cards by selecting `cCompetition Draw` from the menu.
+
+=== modified file 'doc/BWL.rst'
+--- doc/BWL.rst	2017-08-24 07:49:34 +0000
++++ doc/BWL.rst	2017-08-25 06:48:21 +0000
+@@ -1,5 +1,5 @@
+-Bowls Clubs
+------------
++Bowls Clubs (BC)
++----------------
+ Tabs
+ ....
+ Control Record (BC)
+@@ -23,8 +23,8 @@
+     + **S32L-L23S** - Skip, 3rd, 2nd, Lead - Lead, 2nd, 3rd, Skip
+ + **Email Address** - The email address of the person in charge of bowls, if not the default email address in the company record.
+ 
+-Tab's Maintenance
+-+++++++++++++++++
++Tab's Maintenance (BC)
++++++++++++++++++++++++
+ Use this routine to create, delete or amend tab records.
+ 
+ + **Tab Number** - The number of the tab or zero for the next available number depending on the gender of the member.
+@@ -55,8 +55,8 @@
+ + **Convert** - Use this button to convert visitor's tabs to member's tabs.
+ + **Print** - Use this button to print a listing of member's details.
+ 
+-Tabs-In Draw
+-++++++++++++
++Tabs-In Draw (BC)
+++++++++++++++++++
+ Use this routine to make a new draw or to amend a current draw.
+ 
+ + **Date** - The date of the draw.
+@@ -103,8 +103,8 @@
+     + **Include Empty Rinks** - Whether to include or exclude empty rinks when printing a tabs draw board.
+ + **Exit** - Use this button to exit the program. If the draw has not yet been done you will be prompted to confirm exiting.
+ 
+-Reprint Draw
+-++++++++++++
++Reprint Draw (BC)
+++++++++++++++++++
+ Use this routine to reprint a previous draw.
+ 
+ + **Date** - The date of the draw.
+@@ -118,8 +118,8 @@
+ 
+     PageBreak
+ 
+-How the Draw Works
+-++++++++++++++++++
++How the Draw Works (BC)
+++++++++++++++++++++++++
+ All the tab numbers, names and ratings are stored in a relational database.
+ 
+ When a draw is made the following takes place:
+@@ -162,15 +162,15 @@
+ 
+ League
+ ......
+-Club Records
+-++++++++++++
++Club Records (BC)
+++++++++++++++++++
+ Use this routine to add, amend and delete club records. These records are used by the `League Selections` modules.
+ 
+ + **Club Code** - The applicable club's code. A zero code will automatically select the next available code.
+ + **Club Name** - The name of the club.
+ 
+-League Formats
+-++++++++++++++
++League Formats (BC)
+++++++++++++++++++++
+ Use this routine to create league format records e.g. Flag or Muter.
+ 
+ + **Format Code** - The applicable format code. A zero code will automatically select the next available code.
+@@ -182,11 +182,11 @@
+ + **Sets Format** - Whether sets are to be played.
+ + **Logo** - The logo image file of the sponsor, if applicable.
+ 
+-Side's Maintenance
+-++++++++++++++++++
++Side's Maintenance (BC)
+++++++++++++++++++++++++
+ Use this routine to create or amend side records. These are sides as entered in the league e.g. `WPCC A` or `WPCC B`.
+ 
+-+ **Format Code** - The applicable league format code as created using `League Formats`_.
+++ **Format Code** - The applicable league format code as created using `League Formats (BC)`_.
+ + **Side Code** - The applicable side code. A zero code will automatically select the next available code.
+ + **Description** - The description of the side e.g. `WPCC A`
+ + **League** - Select whether this side is playing in the `Main` or `Friendly` league.
+@@ -194,11 +194,11 @@
+ + **Number of Teams** - The number of teams in the side.
+ + **Active Flag** - Whether or not this side is still active. If a team gets relegated or promoted it must be made inactive and a new side must be created. An inactive side can be made active again in the future if it once again becomes applicable.
+ 
+-Capture Selections
+-++++++++++++++++++
++Capture Selections (BC)
+++++++++++++++++++++++++
+ Use this routine to capture team selections as follows:
+ 
+-+ **Format Code** - The applicable league format code as created using `League Formats`_.
+++ **Format Code** - The applicable league format code as created using `League Formats (BC)`_.
+ + **Type** - Select the type of match, Fixture or Practice.
+ + **Match Date** - YYYYMMDD.
+ + **Side Code** - The applicable side code. If no sides have as yet been entered enter a zero and create a side code as follows:
+@@ -219,23 +219,23 @@
+     + **Plr** - The tab code of the next team member.
+ + When all sides have been entered press the `Esc` key twice to exit. You will then be asked whether or not you would like to View or Print the Selections. If Yes continue as follows:
+ 
+-Assessment Forms
+-++++++++++++++++
++Assessment Forms (BC)
+++++++++++++++++++++++
+ Use this routine to print assessment forms as follows:
+ 
+ + **Format Code** - The applicable league format code.
+ + **Type** - Select the type of match, Fixture or Practice.
+ + **Match Date** - Enter the match date to print.
+ 
+-Declaration Forms
+-+++++++++++++++++
++Declaration Forms (BC)
++++++++++++++++++++++++
+ Use this routine to print declaration forms as follows:
+ 
+ + **Format Code** - The applicable league format code.
+ + **Match Date** - Enter the match date to print.
+ 
+-Capture Assessments
+-+++++++++++++++++++
++Capture Assessments (BC)
++++++++++++++++++++++++++
+ Use this routine to capture completed assessment forms as follows:
+ 
+ + **Format Code** - The applicable league format code.
+@@ -253,16 +253,16 @@
+     * **1** - The lead's rating.
+     * **Remarks** - Any remarks.
+ 
+-Match Assessment Report
+-+++++++++++++++++++++++
++Match Assessment Report (BC)
++++++++++++++++++++++++++++++
+ Use this routine to print a match assessment reports as follows:
+ 
+ + **Format Code** - The applicable league format code.
+ + **Type** - Select the type of match, Fixture or Practice.
+ + **Match Date** - Enter the match date to print.
+ 
+-Assessment Summary
+-++++++++++++++++++
++Assessment Summary (BC)
+++++++++++++++++++++++++
+ Use this routine to print an assessment summary as follows:
+ 
+ + **Format Code** - The applicable league format code.
+@@ -275,8 +275,8 @@
+ 
+ Club Competitions
+ .................
+-Competition Types
+-+++++++++++++++++
++Competition Types (BC)
++++++++++++++++++++++++
+ Use this routine to create competition type records as follows:
+ 
+ + **Type Code** - zero for the next number else an existing number. To see existing types press the F1 key.
+@@ -304,35 +304,35 @@
+     + **Win by More Than** - If bonus points are allocated enter the number of points which the winning margin must be more than.
+     + **Lose by Less Than** - If bonus points are allocated enter the number of points which the losing margin must be less than.
+ 
+-Capture Entries
+-+++++++++++++++
++Capture Entries (BC)
++++++++++++++++++++++
+ Use this routine to capture entries in a competition as follows:
+ 
+ + **Code** - The relevant competition number or zero for the next available number.
+ + **Name** - The name of the competition.
+ + **Date** - The starting date of the competition.
+-+ **Type** - The competition type as created in `Competition Types`_.
+++ **Type** - The competition type as created in `Competition Types (BC)`_.
+ 
+ In the event of drawn games enter all player's codes else enter only the skip's codes.
+ 
+-+ **Code** - The player's code as created in `Tab's Maintenance`_ or you can enter a zero to enter a new player as per `Tab's Maintenance`_.
+++ **Code** - The player's code as created in `Tab's Maintenance (BC)`_ or you can enter a zero to enter a new player as per `Tab's Maintenance (BC)`_.
+ + **Team** - The team's code, if relevant i.e. H or V if the competition type is Teams.
+ + **P** - Whether or not the player has paid, Y or N.
+ 
+-Entries Listing
+-+++++++++++++++
++Entries Listing (BC)
++++++++++++++++++++++
+ Use this routine to print a list of entered players.
+ 
+ + **Competition Code** - The relevant competition number.
+ 
+-Competition Format
+-++++++++++++++++++
++Competition Format (BC)
+++++++++++++++++++++++++
+ Use this routine to print the competition format.
+ 
+ + **Competition Code** - The relevant competition number.
+ 
+-Competition Draw
+-++++++++++++++++
++Competition Draw (BC)
+++++++++++++++++++++++
+ Use this routine to create a draw and, if relevant, print match cards as follows:
+ 
+ + **Tournament, Teams and Round Robin**
+@@ -355,15 +355,15 @@
+     + **Completion Dates** - Enter the dates each round must be completed by.
+     + **Number of Seeds** - Enter the number of seeded players and then enter each seeded player's code, in sequence, starting with the first seed.
+ 
+-Draw Summary
+-++++++++++++
++Draw Summary (BC)
+++++++++++++++++++
+ Use this routine to print a summary of all draws, excluding knockout, to date.
+ 
+ + **Competition Code** - The relevant competition number.
+ 
+-Change Draw
+-+++++++++++
+-Use this routine to change individual draws, excluding knockout, in a competition. After changing the draws you must reprint them as per `Competition Draw`_. Please note that to only reprint certain cards you must select `All Cards No`.
++Change Draw (BC)
++++++++++++++++++
++Use this routine to change individual draws, excluding knockout, in a competition. After changing the draws you must reprint them as per `Competition Draw (BC)`_. Please note that to only reprint certain cards you must select `All Cards No`.
+ 
+ + **Competition Code** - The relevant competition code.
+ + **Game Number** - The relevant game number.
+@@ -372,8 +372,8 @@
+     + **O-Code** - The opposition's code.
+     + **RK** - The rink number e.g. A1
+ 
+-Capture Game Results
+-++++++++++++++++++++
++Capture Game Results (BC)
+++++++++++++++++++++++++++
+ Use this routine to capture completed games, excluding knockout, as follows:
+ 
+ + **Competition Code** - The relevant competition code.
+@@ -386,8 +386,8 @@
+     + **SA** - Shots scored by the opposing side.
+     + **Pnts** - Points scored by the opposing side.
+ 
+-Match Results Report
+-++++++++++++++++++++
++Match Results Report (BC)
+++++++++++++++++++++++++++
+ Use this routine to print the match results as follows:
+ 
+ + **Competition Code** - The relevant competition code.
+@@ -405,8 +405,8 @@
+ 
+ Results are ranked in the order of most points, largest shot difference and then least shots conceded.
+ 
+-Contact Request Forms
+-+++++++++++++++++++++
++Contact Request Forms (BC)
++++++++++++++++++++++++++++
+ Use this routine to print forms with player's missing contact details.
+ 
+ .. raw:: pdf
+@@ -415,8 +415,8 @@
+ 
+ Toolbox
+ .......
+-Change Tab Numbers
+-++++++++++++++++++
++Change Tab Numbers (BC)
+++++++++++++++++++++++++
+ Use this routine to change Tab numbers.
+ 
+ + **Old Tab** - The old tab number
+@@ -424,14 +424,14 @@
+ 
+ The **Generate** button is used to automatically renumber tabs in surname and names sequence.
+ 
+-Delete Visitors' Tabs
+-+++++++++++++++++++++
++Delete Visitors' Tabs (BC)
++++++++++++++++++++++++++++
+ Use this routine to delete visitor's tabs without competition history and re-number the remaining visitor's tabs.
+ 
+ + **Minimum Tabs-In** - Enter the minimum number of times a visitor must have played tabs-in to stay in the system.
+ 
+-Clear History
+-+++++++++++++
++Clear History (BC)
++++++++++++++++++++
+ Use this routine to selectively erase historical data. Please ensure that you make a **backup** before selecting this routine as there is no going back.
+ 
+ + **Clear** - Select what to clear.
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2017-08-24 07:49:34 +0000
++++ doc/BWM.rst	2017-09-10 14:30:29 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.1
++:Version:   5.3.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -17,7 +17,7 @@
+ 
+ Installation Procedure
+ ----------------------
+-Browse to the Bwlclb_5.2.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
++Browse to the Bwlclb_5.x.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2017-08-24 07:49:34 +0000
++++ doc/Downloads.rst	2017-09-10 14:30:29 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.1 and was released on the 24th August, 2017.
++The latest version of Tartan is 5.3.2 and was released on the 10th September, 2017.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.1.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.2.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.1.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.2.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.1.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.1.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.1.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.1.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.2.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.2.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.2.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.2.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2017-08-24 07:49:34 +0000
++++ doc/MST.rst	2017-09-10 14:30:29 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.1
++:Version:   5.3.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/QST.rst'
+--- doc/QST.rst	2017-08-24 07:49:34 +0000
++++ doc/QST.rst	2017-08-25 06:24:49 +0000
+@@ -11,6 +11,8 @@
+ 
+   To find out what the available command line options are, use the -h option.
+ 
++|
++
+ + Login using **admin** as the user name and a password if prompted.
+ 
+ + The first time Tartan is started you will be taken to `Preferences` where you will have to set up your preferences regarding database, paths, utilities and various other choices. You will then have to enter the system record using `System Record Maintenance` as well as a company record using `Company Records Maintenance`. For most SOHO installations there will only be one company, however there is provision for up to 999 integrated companies.
+@@ -49,6 +51,10 @@
+ 
+ The Booking's Manager system is at this stage fully functional and you can capture bookings and booking's movements.
+ 
++.. raw:: pdf
++
++   PageBreak
++
+ Bowling Clubs
+ .............
+ If you are going to use `Bowling Clubs` you must first of all ensure that the `System and Company` records have been created.
+@@ -97,6 +103,10 @@
+ 
+ Please also note that within the Creditor's system all balances are stored as positive even though they are stored as credits in the General Ledger.  Therefore to increase a supplier's balance you would capture a Journal Credit and to decrease a supplier's balance you would capture a Journal Debit.
+ 
++.. raw:: pdf
++
++   PageBreak
++
+ Debtor's Ledger
+ ...............
+ If you are going to use the `Debtor's Ledger` you must perform the following procedures in order:
+@@ -148,6 +158,10 @@
+ 
+ The Rental's Ledger (Standard) system is at this stage fully functional and you can capture payments, receipts and journal entries.
+ 
++.. raw:: pdf
++
++   PageBreak
++
+ Store's Ledger
+ ..............
+ If you are going to use the `Store's Ledger` you must perform the following procedures in order:
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2017-08-24 07:49:34 +0000
++++ doc/SEC.rst	2017-09-10 14:30:29 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.1
++:Version:   5.3.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -17,7 +17,7 @@
+ 
+ Installation Procedure
+ ----------------------
+-Browse to the Seccmp_5.2.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
++Browse to the Seccmp_5.x.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2017-08-24 07:49:34 +0000
++++ gen/gl2030.py	2017-09-10 14:27:07 +0000
+@@ -31,7 +31,7 @@
+ from tartanFunctions import askQuestion, callModule, chkGenAcc, getNextCode
+ from tartanFunctions import getSingleRecords, getVatRate, copyList, mthendDate
+ from tartanFunctions import showError
+-from tartanWork import armvtp, gltrtp, rcmvtp
++from tartanWork import gltrtp
+ 
+ class gl2030:
+     def __init__(self, **opts):
+@@ -275,6 +275,7 @@
+                     ("C", "asm_cono", 0, 2),
+                     ("C", "asm_group", 0, self.tagp["AR"])]}
+             data = []
++            from tartanWork import armvtp
+             for x in xrange(1, len(armvtp)+1):
+                 if x == 4:
+                     continue
+@@ -380,6 +381,7 @@
+                     ("C", "rcc_code", 0, self.tagp["RC"]),
+                     ("C", "rcc_acno", 4, self.tagp["RC"])]}
+             data = []
++            from tartanWork import rcmvtp
+             for x in xrange(1, len(rcmvtp)+1):
+                 if x == 2:
+                     continue
+@@ -1043,6 +1045,7 @@
+                             self.bh.batno, date, "", amt, 0, 0, self.curdt,
+                             0, "", 0, self.trndet, "", "", self.opts["capnm"],
+                             self.sysdtw, 0]
++                        print data
+                         self.sql.insRec("crstrn", data=data, unique="crt_ref1")
+                     elif adrs:
+                         AgeAll(self.opts["mf"], system="drs", agetyp=aage,
+@@ -2468,7 +2471,7 @@
+         for b in xrange(self.beg, (self.beg + 4)):
+             wid = getattr(self.df, "B%s" % b)
+             self.df.setWidget(wid, "normal")
+-        wid = getattr(self.df, "B%s" % self.bwg)
++        wid = getattr(self.df, "B%s" % self.beg)
+         self.df.setWidget(wid, "focus")
+         self.opts["mf"].startLoop()
+         self.df.enableButtonsTags(state=state)
+
+=== modified file 'gen/gl2040.py'
+--- gen/gl2040.py	2017-08-24 07:49:34 +0000
++++ gen/gl2040.py	2017-08-31 12:18:42 +0000
+@@ -17,7 +17,7 @@
+ from TartanClasses import TartanDialog
+ from tartanFunctions import askQuestion, callModule, chkGenAcc, getNextCode
+ from tartanFunctions import getVatRate, showError
+-from tartanWork import armvtp, gltrtp, rcmvtp
++from tartanWork import gltrtp
+ 
+ class gl2040:
+     def __init__(self, **opts):
+@@ -215,6 +215,7 @@
+                     ("C", "asm_cono", 2, 1),
+                     ("C", "asm_group", 0, self.tagp["AR"])]}
+             data = []
++            from tartanWork import armvtp
+             for x in xrange(1, len(armvtp)+1):
+                 if x == 4:
+                     continue
+@@ -320,6 +321,7 @@
+                     ("C", "rcc_code", 0, self.tagp["RC"]),
+                     ("C", "rcc_acno", 4, self.tagp["RC"])]}
+             data = []
++            from tartanWork import rcmvtp
+             for x in xrange(1, len(rcmvtp)+1):
+                 if x == 2:
+                     continue
+@@ -603,7 +605,7 @@
+         self.importing = True
+         impcol = []
+         pos = 0
+-        for num, fld in enumerate(self.fld[2:9]):
++        for num, fld in enumerate(self.fld[2:11]):
+             if num == 4:
+                 continue
+             if type(fld[2]) in (tuple, list):
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2017-08-24 07:49:34 +0000
++++ mst/ms0000.py	2017-09-10 14:30:29 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 1)
++    VERSION = (5, 3, 2)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'uty/bm1010.py'
+--- uty/bm1010.py	2017-08-24 07:49:34 +0000
++++ uty/bm1010.py	2017-09-04 12:54:58 +0000
+@@ -296,7 +296,9 @@
+                 fld.append((("T",0,2,0),"INA",3,"Type","Account Type",
+                     "","N",self.doFltTyp,typ,None,None))
+                 fld.append((("T",0,2,0),"ONA",30,""))
+-                idx = 3
++                fld.append((("T",0,3,0),("IRB",r2s),0,"Include Stopped","",
++                    "N","N",self.doFltStp,None,None,None))
++                idx = 4
+             else:
+                 idx = 1
+             fld.append((("T",0,idx,0),("IRB",r2s),0,"Individuals","",
+@@ -445,6 +447,9 @@
+                 return "Invalid Type Code"
+             self.ff.loadEntry(frt, pag, p+1, data=chk[1])
+ 
++    def doFltStp(self, frt, pag, r, c, p, i, w):
++        self.fltstp = w
++
+     def doFltGrp(self, frt, pag, r, c, p, i, w):
+         self.fltgrp = []
+         if w == "A":
+@@ -946,6 +951,8 @@
+                 whr.append(("drm_bus_activity", "=", self.fltact))
+             if self.flttyp:
+                 whr.append(("drm_bus_type", "=", self.flttyp))
++            if self.fltstp == "N":
++                whr.append(("drm_stop", "=", "N"))
+             odr = col[0]
+             sel = col[0]
+             recs = self.doGetRecs(tab, col, whr, odr, sel)
+

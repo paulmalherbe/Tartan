@@ -1,0 +1,233 @@
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2018-02-17 07:36:43 +0000
++++ doc/BKS.rst	2018-02-25 13:05:41 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.3
++:Version:   5.3.4
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2018-02-17 07:36:43 +0000
++++ doc/BWM.rst	2018-02-25 13:05:41 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.3
++:Version:   5.3.4
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2018-02-17 07:36:43 +0000
++++ doc/Downloads.rst	2018-02-25 13:05:41 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.3 and was released on the 17th February, 2018.
++The latest version of Tartan is 5.3.4 and was released on the 25th February, 2018.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.3.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.4.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.3.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.4.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.3.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.3.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.3.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.3.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.4.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.4.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.4.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.4.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2018-02-17 07:36:43 +0000
++++ doc/MST.rst	2018-02-25 13:05:41 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.3
++:Version:   5.3.4
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2018-02-17 07:36:43 +0000
++++ doc/SEC.rst	2018-02-25 13:05:41 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.3
++:Version:   5.3.4
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl2040.py'
+--- gen/gl2040.py	2018-02-17 07:36:43 +0000
++++ gen/gl2040.py	2018-02-21 11:45:03 +0000
+@@ -894,7 +894,7 @@
+             for a in ass:
+                 self.assctl.append(a[0])
+         # Get for Rental Accounts
+-        if self.ass_gl == "Y":
++        if self.rtl_gl == "Y":
+             self.rtlctl = []
+             rtl = self.sql.getRec(tables="rtlprm", cols=["rtp_rtlacc"],
+                 where=[("rtp_cono", "=", self.allcoy)])
+
+=== modified file 'gen/gl3030_rne.py'
+--- gen/gl3030_rne.py	2018-02-17 07:36:43 +0000
++++ gen/gl3030_rne.py	2018-02-19 13:38:35 +0000
+@@ -70,7 +70,7 @@
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Whole File","",
+                 "S","Y",self.doWhole,None,None,None),
+-            (("T",0,1,0),("IRB",r2s),0,"Whole File","",
++            (("T",0,1,0),("IRB",r2s),0,"Account Type","",
+                 "P","Y",self.doType,None,None,None),
+             (("T",0,2,0),"IUI",7,"From Account","",
+                 "","Y",self.doStartAcc,glm,None,("efld",)),
+@@ -94,7 +94,9 @@
+             self.eacno = 0
+             self.df.loadEntry("T", 0, 1, data=self.sacno)
+             self.df.loadEntry("T", 0, 2, data=self.eacno)
+-            return "sk2"
++            return "sk3"
++        elif self.whole == "R":
++            return "sk1"
+ 
+     def doType(self, frt, pag, r, c, p, i, w):
+         self.type = w
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2018-02-17 07:36:43 +0000
++++ mst/ms0000.py	2018-02-25 13:05:41 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 3)
++    VERSION = (5, 3, 4)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'std/tartanWork.py'
+--- std/tartanWork.py	2017-08-24 07:49:34 +0000
++++ std/tartanWork.py	2018-02-21 16:00:33 +0000
+@@ -548,7 +548,17 @@
+             [296540, 61910, 31],
+             [189880, 34178, 26],
+             [0, 0, 18]],
+-        "allow": [13635, 7479, 2493, 0]}}
++        "allow": [13635, 7479, 2493, 0]},
++    "2019": {
++        "rates": [
++            [1500000, 532041, 45],
++            [708310, 207448, 41],
++            [555600, 147891, 39],
++            [423300, 100263, 36],
++            [305850, 63853, 31],
++            [195850, 35253, 26],
++            [0, 0, 18]],
++        "allow": [14067, 7713, 2574, 0]}}
+ siteRates = {
+     "2004": 60000,
+     "2005": 60000,
+@@ -564,7 +574,8 @@
+     "2015": 0,
+     "2016": 0,
+     "2017": 0,
+-    "2018": 0}
++    "2018": 0,
++    "2019": 0}
+ uifRates = {
+     "2004": [1.00, 1.00],
+     "2005": [1.00, 1.00],
+@@ -580,7 +591,8 @@
+     "2015": [1.00, 1.00],
+     "2016": [1.00, 1.00],
+     "2017": [1.00, 1.00],
+-    "2018": [1.00, 1.00]}
++    "2018": [1.00, 1.00],
++    "2019": [1.00, 1.00]}
+ sdlRates = {
+     "2004": [0.00, 1.00],
+     "2005": [0.00, 1.00],
+@@ -596,7 +608,8 @@
+     "2015": [0.00, 1.00],
+     "2016": [0.00, 1.00],
+     "2017": [0.00, 1.00],
+-    "2018": [0.00, 1.00]}
++    "2018": [0.00, 1.00],
++    "2019": [0.00, 1.00]}
+ # Labels
+ labels = {
+     "L7159": {
+
+=== modified file 'str/st3020.py'
+--- str/st3020.py	2017-08-24 07:49:34 +0000
++++ str/st3020.py	2018-02-20 15:46:20 +0000
+@@ -143,6 +143,8 @@
+ 
+     def doBatNum(self, frt, pag, r, c, p, i, w):
+         self.batch = w
++        if self.batch:
++            self.whr.append(("stt_batch", "=", self.batch))
+ 
+     def doTots(self, frt, pag, r, c, p, i, w):
+         self.totsonly = w
+
+=== modified file 'str/st4010.py'
+--- str/st4010.py	2018-02-17 07:36:43 +0000
++++ str/st4010.py	2018-02-20 13:29:45 +0000
+@@ -522,8 +522,8 @@
+             elif ss.selection[0] == "T":
+                 tab = ["strtrn"]
+                 hds = ["Stores's Transactions",
+-                    "Location: %s  Code: %s  Description: %s" % (self.loc,
+-                    self.code, self.desc)]
++                        "Location: %s  Group: %s  Code: %s  Description: %s" %
++                        (self.loc, self.group, self.code, self.desc)]
+                 col = []
+                 dic = self.sql.strtrn_dic
+                 for c in ["stt_ref1", "stt_trdt", "stt_type", "stt_qty",
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2018-02-17 07:36:43 +0000
++++ uty/pkgprg.py	2018-02-17 08:02:12 +0000
+@@ -158,9 +158,7 @@
+                "ms3010", "ms3020", "ms3030", "msy010", "msy020", "msy030"]
+ elif system == "t":
+     if publish or verinc:
+-        exeCmd("mv %s/TartanExe/Tartan_%s.?.?.tgz %s/TartanOld/" % (bd, vv, bd))
+-        if windows:
+-            exeCmd("mv %s/TartanExe/Tartan_%s.?.?.exe %s/TartanOld/" % (bd, vv, bd))
++        exeCmd("mv %s/TartanExe/Tartan_%s.* %s/TartanOld/" % (bd, vv, bd))
+     system = "tartan"
+     sysmod = "stdsys"
+     modfle = "tarmod"
+

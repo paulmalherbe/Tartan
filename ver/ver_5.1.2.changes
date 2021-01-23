@@ -1,0 +1,6 @@
+1) Added stores module to Delete outstanding purchase orders.
+2) Minor bug fixes.
+
+Notes:
+------
+You can only upgrade to this version if your current version is 4.1.10 or later.

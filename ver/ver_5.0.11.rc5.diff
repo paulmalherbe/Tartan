@@ -1,0 +1,35 @@
+=== modified file 'bwl/bc2070.py'
+--- bwl/bc2070.py	2015-04-04 12:56:14 +0000
++++ bwl/bc2070.py	2015-04-04 13:02:57 +0000
+@@ -208,10 +208,9 @@
+     def doSkpCod(self, frt, pag, r, c, p, i, w):
+         chk = self.sql.getRec(tables=["bwlgme", "bwltab"], cols=["btb_surname",
+             "btb_names", "bcg_ocod", "bcg_shots_for", "bcg_shots_agt",
+-            "bcg_points", "bcg_aflag"], where=[("bcg_cono", "=",
+-            self.opts["conum"]), ("bcg_ccod", "=", self.ccod), ("bcg_scod",
+-            "=", w), ("bcg_game", "=", self.gcod), ("btb_tab=bcg_scod",)],
+-            limit=1)
++            "bcg_points"], where=[("bcg_cono", "=", self.opts["conum"]),
++            ("bcg_ccod", "=", self.ccod), ("bcg_scod", "=", w), ("bcg_game",
++            "=", self.gcod), ("btb_tab=bcg_scod",)], limit=1)
+         if not chk:
+             return "Invalid Skip Code"
+         if chk[3] or chk[4] or chk[5]:
+@@ -227,7 +226,6 @@
+         self.opp = chk[2]
+         if self.opp > 900000:
+             return "This Skip Had a Bye"
+-        self.aflag = chk[6]
+         name = "%s, %s" % tuple(chk[:2])
+         self.df.loadEntry(frt, pag, p+1, data=name)
+         if self.only == "N":
+@@ -307,7 +305,7 @@
+             elif self.only == "N" and not self.s_for and not self.s_agt:
+                 aflag = "S"
+             else:
+-                aflag = self.aflag
++                aflag = ""
+             self.sql.updRec("bwlgme", cols=["bcg_shots_for", "bcg_shots_agt",
+                 "bcg_points", "bcg_a_shots_for", "bcg_a_shots_agt",
+                 "bcg_a_points", "bcg_aflag"], data=[self.s_for, self.s_agt,
+

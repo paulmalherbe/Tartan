@@ -1,0 +1,712 @@
+=== modified file 'doc/BKSMST.rst'
+--- doc/BKSMST.rst	2019-01-13 16:38:59 +0000
++++ doc/BKSMST.rst	2019-01-15 09:24:31 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.0
++:Version:   5.4.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWLMST.rst'
+--- doc/BWLMST.rst	2019-01-13 16:38:59 +0000
++++ doc/BWLMST.rst	2019-01-15 09:24:31 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.0
++:Version:   5.4.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/CSHMST.rst'
+--- doc/CSHMST.rst	2019-01-13 16:38:59 +0000
++++ doc/CSHMST.rst	2019-01-15 09:24:31 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.0
++:Version:   5.4.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2019-01-13 16:38:59 +0000
++++ doc/Downloads.rst	2019-01-15 09:24:31 +0000
+@@ -11,27 +11,27 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.4.0 and was released on the 13th January, 2019.
++The latest version of Tartan is 5.4.1 and was released on the 15th January, 2019.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.4.0.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.4.1.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.4.0.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.4.1.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.4.0.tgz
+-.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.4.0.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.4.0.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.4.0.exe
+-.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.4.0.tgz
+-.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.4.0.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.4.0.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.4.0.exe
++.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.4.1.tgz
++.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.4.1.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.4.1.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.4.1.exe
++.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.4.1.tgz
++.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.4.1.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.4.1.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.4.1.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2019-01-13 16:38:59 +0000
++++ doc/MST.rst	2019-01-15 09:24:31 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.0
++:Version:   5.4.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SECMST.rst'
+--- doc/SECMST.rst	2019-01-13 16:38:59 +0000
++++ doc/SECMST.rst	2019-01-15 09:24:31 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.0
++:Version:   5.4.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2019-01-13 16:38:59 +0000
++++ mst/ms0000.py	2019-01-15 09:24:31 +0000
+@@ -43,7 +43,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2].strip()))
+ else:
+-    VERSION = (5, 4, 0)
++    VERSION = (5, 4, 1)
+     os.environ["TARVER"] = "%s.%s.%s" % VERSION
+ if __name__ == "__main__":
+     # Run Tartan
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2019-01-13 16:38:59 +0000
++++ mst/msc000.py	2019-01-15 08:49:28 +0000
+@@ -422,11 +422,7 @@
+             self.doExit()
+         if not self.program or self.program != "tarUpd":
+             # Check tartan version
+-            self.db.openDbase()
+-            err = self.doVersionCheck()
+-            self.db.closeDbase()
+-            if err:
+-                self.doExit()
++            self.doVersionCheck()
+         if self.query:
+             # Excecute sql query
+             if self.user["lvl"] == 9:
+@@ -690,8 +686,9 @@
+                             continue
+                         if mod[2] == "ms1010" and "msy010" not in tarmod.modlst:
+                             mod[4] = "Club Record Maintenance"
+-                    if mod[2] == "doQuick" and self.mods[0][0] in (
+-                            "BS", "GLCS", "SC"):
++                    if mod[2] == "doQuick" and \
++                            self.mods and \
++                            self.mods[0][0] in ("BS", "GLCS", "SC"):
+                         continue
+                     for sss in nos:
+                         if mod[2][:2] == sss:
+@@ -1517,10 +1514,7 @@
+         upddate = CCD(0, "d1", 10)
+         sql = Sql(self.db, "verupd", prog="msc000")
+         if sql.error:
+-            if vtype == "chk":
+-                return "missing"
+-            else:
+-                return
++            self.doExit()
+         ver = sql.getRec(tables="verupd", limit=1)
+         if ver:
+             v = ver[0].split(".")
+@@ -1562,10 +1556,7 @@
+ 
+ Email info@tartan.co.za, with your current version number, for assistance.""" % self.ovlst)
+             self.doExit()
+-        elif error == "not":
+-            showError(scrn, "Version Error", """'Update File Formats'
+-Not Yet Done for this Version of TARTAN.""")
+-        elif error == "newer":
++        elif error in ("not", "newer"):
+             if self.lvl < 8:
+                 showError(scrn, "Version Error", """Your Version of TARTAN (%s) Is Newer than the File Formats!
+ 
+@@ -1577,6 +1568,7 @@
+ Do You Want to Update Your File Formats Now?""" % self.current[1],
+                 default="yes")
+                 if ok == "yes":
++                    error = None
+                     self.tarUpd(True)
+                 else:
+                     self.doExit()
+
+=== added file 'std/bksimp.py'
+--- std/bksimp.py	1970-01-01 00:00:00 +0000
++++ std/bksimp.py	2019-01-14 07:03:47 +0000
+@@ -0,0 +1,13 @@
++# Tartan Modules to Include with Pyinstaller Exe
++import sys
++import bs1010
++import bs3010
++import bsc110
++import bsc210
++import ms0000
++import ms1010
++import ms1040
++import ms3030
++import msc000
++import tb1020
++import tb1030
+
+=== added file 'std/bksmod.py'
+--- std/bksmod.py	1970-01-01 00:00:00 +0000
++++ std/bksmod.py	2019-01-14 07:03:47 +0000
+@@ -0,0 +1,2 @@
++# List of Tartan Modules Packaged for a Distribution
++modlst = ['bs1010', 'bs3010', 'bsc110', 'bsc210', 'ms0000', 'ms1010', 'ms1040', 'ms3030', 'msc000', 'tb1020', 'tb1030']
+\ No newline at end of file
+
+=== modified file 'std/bwlimp.py'
+--- std/bwlimp.py	2019-01-13 16:38:59 +0000
++++ std/bwlimp.py	2019-01-14 06:58:32 +0000
+@@ -1,3 +1,4 @@
++# Tartan Modules to Include with Pyinstaller Exe
+ import sys
+ import bc1010
+ import bc1020
+
+=== modified file 'std/bwlmod.py'
+--- std/bwlmod.py	2019-01-13 16:38:59 +0000
++++ std/bwlmod.py	2019-01-14 06:58:32 +0000
+@@ -1,1 +1,2 @@
++# List of Tartan Modules Packaged for a Distribution
+ modlst = ['bc1010', 'bc1020', 'bc1030', 'bc1040', 'bc2010', 'bc2020', 'bc2030', 'bc2040', 'bc2050', 'bc2060', 'bc2070', 'bc3010', 'bc3020', 'bc3030', 'bc3040', 'bc3050', 'bc3060', 'bc3070', 'bc3080', 'bc3090', 'bc3100', 'bc3110', 'bc6010', 'bc6020', 'bc6030', 'bcc110', 'bcc210', 'ms0000', 'ms1010', 'ms3030', 'msc000', 'msc110', 'tb1020', 'tb1030', 'bm1010', 'pm1010', 'rp1010', 'td1010', 'tdc110', 'tp1010']
+\ No newline at end of file
+
+=== modified file 'std/cshimp.py'
+--- std/cshimp.py	2019-01-13 16:38:59 +0000
++++ std/cshimp.py	2019-01-14 07:01:28 +0000
+@@ -1,3 +1,4 @@
++# Tartan Modules to Include with Pyinstaller Exe
+ import sys
+ import cs2010
+ import cs3010
+
+=== modified file 'std/cshmod.py'
+--- std/cshmod.py	2019-01-13 16:38:59 +0000
++++ std/cshmod.py	2019-01-14 07:01:28 +0000
+@@ -1,1 +1,2 @@
++# List of Tartan Modules Packaged for a Distribution
+ modlst = ['cs2010', 'cs3010', 'gl1010', 'gl3060', 'ms0000', 'ms1010', 'ms1040', 'msc000', 'msc110', 'tb1020', 'tb1030']
+\ No newline at end of file
+
+=== modified file 'std/rneimp.py'
+--- std/rneimp.py	2019-01-13 16:38:59 +0000
++++ std/rneimp.py	2019-01-14 07:05:57 +0000
+@@ -1,3 +1,4 @@
++# Tartan Modules to Include with Pyinstaller Exe
+ import sys
+ import ar1010
+ import ar2010
+
+=== modified file 'std/rnemod.py'
+--- std/rnemod.py	2019-01-13 16:38:59 +0000
++++ std/rnemod.py	2019-01-14 07:05:57 +0000
+@@ -1,1 +1,2 @@
++# List of Tartan Modules Packaged for a Distribution
+ modlst = ['ar1010', 'ar2010', 'ar2020', 'ar2030', 'ar3010', 'ar3020', 'ar3030', 'ar3040', 'ar3050', 'ar4010', 'ar6010', 'ar6020', 'ar6030', 'arc110', 'arc210', 'arc310', 'arc320', 'cr1010', 'cr2010', 'cr2020', 'cr2030', 'cr3010', 'cr3020', 'cr3030', 'cr3040', 'cr3050', 'cr3060', 'cr3070', 'cr3080', 'cr3090', 'cr3100', 'cr3110', 'cr3120', 'cr3130', 'cr3140', 'cr3150', 'cr3160', 'cr3170', 'cr3180', 'cr3190', 'cr3200', 'cr4010', 'cr6010', 'cr6020', 'crc110', 'dr1010', 'dr2010', 'dr2020', 'dr3010', 'dr3020', 'dr3030', 'dr3040', 'dr3050', 'dr3060', 'dr3080', 'dr3090', 'dr3100', 'dr3110', 'dr3120', 'dr4010', 'dr6010', 'dr6020', 'drc110', 'drc410', 'drc420', 'gl1010', 'gl1020', 'gl1030', 'gl1040', 'gl1050', 'gl1060', 'gl2010', 'gl2020', 'gl2030', 'gl2040', 'gl2050', 'gl3010', 'gl3020', 'gl3030', 'gl3040', 'gl3050', 'gl3060', 'gl3070', 'gl3080', 'gl3090', 'gl3100', 'gl3110', 'gl3120', 'gl3130', 'gl3140', 'gl3150', 'gl4010', 'gl4020', 'gl6010', 'gl6020', 'gl6030', 'gl6040', 'gl6050', 'gl6060', 'gl6070', 'glc110', 'glc210', 'glc310', 'glc410', 'glc510', 'ib2010', 'ib2020', 'ib3010', 'ib3020', 'ib3030', 'ib3040', 'ibc110', 'ln1010', 'ln2010', 'ln2020', 'ln2030', 'ln3010', 'ln3020', 'ln3030', 'ln3040', 'ln3050', 'ln4010', 'ln6010', 'lnc110', 'ms0000', 'ms1010', 'ms1020', 'ms1030', 'ms1040', 'ms3010', 'ms3020', 'ms3030', 'msc000', 'msc110', 'msy010', 'msy030', 'rt1010', 'rt2010', 'rt3010', 'rt3020', 'rt3030', 'rt3040', 'rt3050', 'rt4010', 'rt6010', 'rtc110', 'rtc210', 'rtm010', 'si2010', 'si3020', 'si3030', 'si3040', 'si3050', 'si3060', 'si3080', 'si6010', 'st1010', 'stc110', 'stc210', 'stc310', 'tb1020', 'tb1030', 'bm1010', 'fc1010', 'pm1010', 'rp1010', 'ss1010', 'td1010', 'tdc110', 'tp1010']
+\ No newline at end of file
+
+=== modified file 'std/secimp.py'
+--- std/secimp.py	2019-01-13 16:38:59 +0000
++++ std/secimp.py	2019-01-14 07:08:18 +0000
+@@ -1,3 +1,4 @@
++# Tartan Modules to Include with Pyinstaller Exe
+ import sys
+ import ms0000
+ import ms1010
+
+=== modified file 'std/secmod.py'
+--- std/secmod.py	2019-01-13 16:38:59 +0000
++++ std/secmod.py	2019-01-14 07:08:18 +0000
+@@ -1,1 +1,2 @@
++# List of Tartan Modules Packaged for a Distribution
+ modlst = ['ms0000', 'ms1010', 'msc000', 'msc110', 'sc1010', 'sc2010', 'sc2020', 'sc2030', 'sc3010', 'scc110', 'tb1020', 'tb1030']
+\ No newline at end of file
+
+=== modified file 'std/tarchg.py'
+--- std/tarchg.py	2019-01-13 16:38:59 +0000
++++ std/tarchg.py	2019-01-13 19:02:17 +0000
+@@ -1,7 +1,7 @@
+ changes = """ver_5.4.0
+ =========
+-Tartan Systems Ugrade
+----------------------
++Tartan Systems Upgrade
++----------------------
+  1) This is a Major Upgrade leading up to Python version 3.
+  2) Converted to GPL, version 3, open source license.
+  3) Changed stores selling price capturing and added file import facility.
+@@ -543,4 +543,4 @@
+ -----
+ You can only upgrade to this version if your current version is 4.1.10 or later
+ 
+-"""
+\ No newline at end of file
++"""
+
+=== modified file 'std/tartanWork.py'
+--- std/tartanWork.py	2019-01-13 16:38:59 +0000
++++ std/tartanWork.py	2019-01-15 09:17:04 +0000
+@@ -3687,20 +3687,7 @@
+             [3, "wtr_tax", "UI", 7.0, "Tax Amount", "Tax-Amt"],
+             [4, "wtr_rate", "UD", 5.2, "Rate", "Rate"]],
+         "idx": [
+-            ["PAYE Rates", 1, "U", "wtr_year", "wtr_from"]]},
+-    "waguni": {
+-        "fld": [
+-            [0, "wgu_code", "UA", 3.0, "Union", "Uni"],
+-            [1, "wgu_name", "NA", 30.0, "Name", "Name"],
+-            [2, "wgu_add1", "NA", 30.0, "Address Line 1", "Address Line 1"],
+-            [3, "wgu_add2", "NA", 30.0, "Address Line 2", "Address Line 2"],
+-            [4, "wgu_add3", "NA", 30.0, "Address Line 3", "Address Line 3"],
+-            [5, "wgu_pcod", "NA", 4.0, "Postal Code", "Pcod"],
+-            [6, "wgu_contact", "NA", 30.0, "Contact Name", "Contact"],
+-            [7, "wgu_tel", "NA", 20.0, "Telephone Number", "Telephone Number"],
+-            [8, "wgu_fax", "NA", 20.0, "Fax Number", "Fax Number"]],
+-        "idx": [
+-            ["Wages Unions Records", 1, "U", "wgu_code"]]}}
++            ["PAYE Rates", 1, "U", "wtr_year", "wtr_from"]]}}
+ # Standard Menu
+ """
+ Module Types
+@@ -4130,8 +4117,7 @@
+         ["PYNY","wg_fm","wgc110",5,"Control Record"],
+         ["PNNN","wg_fm","wgc210",3,"Receiver Codes"],
+         ["PYNN","wg_fm","wgc310",3,"Earning and Deduction Codes"],
+-        ["PYNN","wg_fm","wgc410",3,"Union Records"],
+-        ["PNNN","wg_fm","wgc510",3,"Payslip Messages"],
++        ["PNNN","wg_fm","wgc410",3,"Payslip Messages"],
+         ["PNNN","wg_fm","wgc610",3,"PAYE Tables"],
+         ["PYNY","wg_fm","wg1010",3,"Employee Masterfile"],
+         ["PYNY","wg_dc","wg2010",2,"Clock Cards"],
+@@ -4139,8 +4125,7 @@
+         ["PYNN","wg_dc","wg2030",2,"Terminations"],
+         ["PNNN","wg_rp","wgc220",1,"Receiver Codes Listing"],
+         ["PYNN","wg_rp","wgc320",1,"Earning and Deduction Codes"],
+-        ["PYNN","wg_rp","wgc420",1,"Union Records Listing"],
+-        ["PNNN","wg_rp","wgc520",1,"Payslip Messages Listing"],
++        ["PNNN","wg_rp","wgc420",1,"Payslip Messages Listing"],
+         ["PYNN","wg_rp","wg3010",1,"Employee Master Listing"],
+         ["PYNN","wg_rp","wg3020",1,"Data Capture Listing"],
+         ["PYNN","wg_rp","wg3030",1,"SARS EMP201 Report"],
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2019-01-13 16:38:59 +0000
++++ uty/pkgprg.py	2019-01-14 06:10:19 +0000
+@@ -156,6 +156,7 @@
+     exclude = ["msy030", "pw1010", "ss1010"]
+ else:
+     sys.exit()
++csys = system.capitalize()
+ 
+ ver = list(VERSION)
+ if system == "tartan":
+@@ -405,7 +406,7 @@
+ os.chdir(pypath)
+ if os.path.exists("%s/tmp" % pypath):
+     shutil.rmtree("%s/tmp" % pypath)
+-man = system.capitalize()
++man = csys
+ if system == "bksclb":
+     fles = ["doc/BKSMST.rst", "doc/BKS.rst", "doc/BKSHLP.rst"]
+ elif system == "bwlclb":
+@@ -486,20 +487,20 @@
+ if publish or verinc:
+     # Move Current to Old
+     exeCmd("mv %s/TartanExe/%s_%s.* %s/TartanOld/" %
+-        (bd, system.capitalize, vv, bd))
++        (bd, csys, vv, bd))
+     # Create Source tgz
+     exeCmd("tar -czf %s/TartanExe/%s_%s.%s.%s.tgz *" %
+-        (bd, system.capitalize(), ver[0], ver[1], ver[2]))
++        (bd, csys, ver[0], ver[1], ver[2]))
+     # Create Source zip
+     exeCmd("cp %s/TartanSve/%s-%s.zip %s/TartanSve/%s_%s.%s.%s.zip" %
+-        (bd, system, vv, bd, system.capitalize(), ver[0], ver[1], ver[2]))
++        (bd, system, vv, bd, csys, ver[0], ver[1], ver[2]))
+ if windows:
+     # Python windows executable
+     exeCmd("wine2 wineconsole c:/PyInstall/maker.bat %s" % system)
+     if publish or verinc:
+         exeCmd("cp %s/TartanExe/%s-%s.exe %s/TartanExe/%s_%s.%s.%s.exe" %
+-            (bd, system, vv, bd, system.capitalize(), ver[0], ver[1], ver[2]))
+-        exeCmd("cp %s/TartanExe/%s_upd-%s.exe %s/TartanExe/%s_%s.%s.%s_upd.exe" % (bd, system, vv, bd, system.capitalize(), ver[0], ver[1], ver[2]))
++            (bd, system, vv, bd, csys, ver[0], ver[1], ver[2]))
++        exeCmd("cp %s/TartanExe/%s_upd-%s.exe %s/TartanExe/%s_%s.%s.%s_upd.exe" % (bd, system, vv, bd, csys, ver[0], ver[1], ver[2]))
+     if not system == "rnehol" and publish:
+         # Publish
+         print("")
+@@ -507,20 +508,20 @@
+         print("")
+         if sys == "tartan":
+             # Dropbox
+-            exeCmd("rm /home/paul/Dropbox/Updates/%s*" % system.capitalize())
+-            exeCmd("cp %s/TartanExe/%s_%s.exe /home/paul/Dropbox/Updates/" % (bd, system.capitalize(), ver))
++            exeCmd("rm /home/paul/Dropbox/Updates/%s*" % csys)
++            exeCmd("cp %s/TartanExe/%s_%s.exe /home/paul/Dropbox/Updates/" % (bd, csys, ver))
+         # FTP Server
+-        exeCmd("ssh root@server rm /srv/ftp/%s*" % system.capitalize())
++        exeCmd("ssh root@server rm /srv/ftp/%s*" % csys)
+         exeCmd("rsync -az %s/TartanExe/current root@server:/srv/ftp/ --progress" % bd)
+-        exeCmd("rsync -az %s/TartanExe/%s* root@server:/srv/ftp/ --progress" % (bd, system.capitalize()))
++        exeCmd("rsync -az %s/TartanExe/%s* root@server:/srv/ftp/ --progress" % (bd, csys))
+         exeCmd("ssh root@server chmod a+r /srv/ftp/*")
+         exeCmd("ssh root@server chown paul:users /srv/ftp/*")
+         # WWW Server
+-        exeCmd("ssh root@server rm /var/www/tartan.co.za/files/%s*" % system.capitalize())
+-        exeCmd("rsync -az %s/TartanExe/current root@server:/var/www/tartan.co.za/files/ --progress" % bd)
+-        exeCmd("rsync -az %s/TartanExe/%s* root@server:/var/www/tartan.co.za/files/ --progress" % (bd, system.capitalize()))
+-        exeCmd("ssh root@server chmod a+r /var/www/tartan.co.za/files/*")
+-        exeCmd("ssh root@server chown paul:users /var/www/tartan.co.za/files/*")
++        #exeCmd("ssh root@server rm /var/www/tartan.co.za/files/%s*" % csys)
++        #exeCmd("rsync -az %s/TartanExe/current root@server:/var/www/tartan.co.za/files/ --progress" % bd)
++        #exeCmd("rsync -az %s/TartanExe/%s* root@server:/var/www/tartan.co.za/files/ --progress" % (bd, csys))
++        #exeCmd("ssh root@server chmod a+r /var/www/tartan.co.za/files/*")
++        #exeCmd("ssh root@server chown paul:users /var/www/tartan.co.za/files/*")
+         if system == "tartan":
+             exeCmd("rsync -az %s/%s/doc/Tartan.rst root@server:/var/www/tartan.co.za/htdocs/Manual/Manual.rst --progress" % (bd, bv))
+             exeCmd("rsync -az %s/%s/doc/QST.rst root@server:/var/www/tartan.co.za/htdocs/QuickStart/QuickStart.rst --progress" % (bd, bv))
+
+=== modified file 'wag/wg2020.py'
+--- wag/wg2020.py	2019-01-13 16:38:59 +0000
++++ wag/wg2020.py	2019-01-15 09:15:49 +0000
+@@ -636,19 +636,6 @@
+             # Update Balance Records
+             if bal:
+                 self.sql.updRec("wagbal", data=bal, where=bwh)
+-            # Update Union Records
+-#            if report == "Y":
+-#                uni = self.sql.getRec(tables="waguni", cols=["wgu_eamt"],
+-#                    where=[("wgu_cono", "=", self.opts["conum"]),
+-#                    ("wgu_empno", "=", self.empno)], limit=1)
+-#                if not uni:
+-#                    dat = [self.opts["conum"], self.empno, emt, 0]
+-#                    self.sql.insRec("waguni", data=dat)
+-#                else:
+-#                    amt = float(ASD(uni[0]) + ASD(emt))
+-#                    self.sql.updRec("waguni", cols=["wgu_eamt"], data=[amt],
+-#                    where=[("wgu_cono", "=", self.opts["conum"]),
+-#                    ("wgu_empno", "=", self.empno)])
+             if rind == "N":
+                 rmt = 0
+             elif eind == "R":
+
+=== removed file 'wag/wgc410.py'
+--- wag/wgc410.py	2019-01-13 16:38:59 +0000
++++ wag/wgc410.py	1970-01-01 00:00:00 +0000
+@@ -1,122 +0,0 @@
+-"""
+-SYNOPSIS
+-    Wages Unions File Maintenance.
+-
+-    This file is part of Tartan Systems (TARTAN).
+-
+-AUTHOR
+-    Written by Paul Malherbe, <paul@tartan.co.za>
+-
+-COPYING
+-    Copyright (C) 2004-2019 Paul Malherbe.
+-
+-    This program is free software: you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation, either version 3 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+-    GNU General Public License for more details.
+-
+-    You should have received a copy of the GNU General Public License
+-    along with this program. If not, see <https://www.gnu.org/licenses/>.
+-"""
+-
+-from TartanClasses import Sql, TartanDialog
+-
+-class wgc410:
+-    def __init__(self, **opts):
+-        self.opts = opts
+-        if self.setVariables():
+-            self.mainProcess()
+-            self.opts["mf"].startLoop()
+-
+-    def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, "waguni", prog=__name__)
+-        if self.sql.error:
+-            return
+-        return True
+-
+-    def mainProcess(self):
+-        tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-                "Wages Unions Maintenance (%s)" % __name__)
+-        wgu = {
+-            "stype": "R",
+-            "tables": ("waguni",),
+-            "cols": (
+-                ("wgu_code", "", 0, "Cde"),
+-                ("wgu_name", "", 0, "Name", "Y"))}
+-        self.fld = (
+-            (("T",0,0,0),"IUA",3,"Union Code","",
+-                "","N",self.doCode,wgu,None,("notblank",)),
+-            (("T",0,1,0),"INA",30,"Name","",
+-                "","N",None,None,self.doDelete,("notblank",)),
+-            (("T",0,2,0),"INA",30,"Address Line 1","",
+-                "","N",None,None,None,("notblank",)),
+-            (("T",0,3,0),"INA",30,"Address Line 2","",
+-                "","N",None,None,None,("efld",)),
+-            (("T",0,4,0),"INA",30,"Address Line 3","",
+-                "","N",None,None,None,("efld",)),
+-            (("T",0,5,0),"INA",4,"Postal Code","",
+-                "","N",None,None,None,("efld",)),
+-            (("T",0,6,0),"INA",30,"Contact Person","",
+-                "","N",None,None,None,("efld",)),
+-            (("T",0,7,0),"INA",20,"Telephone Number","",
+-                "","N",None,None,None,("efld",)),
+-            (("T",0,8,0),"INA",20,"Fax Number","",
+-                "","N",None,None,None,("efld",)))
+-        but = (
+-            ("Accept",None,self.doAccept,0,("T",0,2),("T",0,0)),
+-            ("Cancel",None,self.doCancel,0,("T",0,2),("T",0,0)),
+-            ("Quit",None,self.doExit,1,None,None))
+-        tnd = ((self.doEnd,"Y"), )
+-        txt = (self.doExit, )
+-        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+-            butt=but, tend=tnd, txit=txt)
+-
+-    def doCode(self, frt, pag, r, c, p, i, w):
+-        self.code = w
+-        acc = self.sql.getRec(tables="waguni", where=[("wgu_code", "=",
+-            self.code)], limit=1)
+-        if not acc:
+-            self.new = "Y"
+-        else:
+-            self.new = "N"
+-            for x in xrange(0, self.df.topq[pag]):
+-                self.df.loadEntry(frt, pag, p+x, data=acc[x])
+-
+-    def doDelete(self):
+-        self.sql.delRec("waguni", where=[("wgu_code", "=", self.code)])
+-        self.opts["mf"].dbm.commitDbase()
+-        self.df.focusField("T", 0, 1)
+-
+-    def doEnd(self):
+-        dat = []
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            dat.append(self.df.t_work[0][0][x])
+-        if self.new == "Y":
+-            self.sql.insRec("waguni", data=dat)
+-        else:
+-            self.sql.updRec("waguni", data=dat, where=[("wgu_code", "=",
+-                self.code)])
+-        self.opts["mf"].dbm.commitDbase()
+-        self.df.focusField("T", 0, 1)
+-
+-    def doAccept(self, widget=None):
+-        frt, pag, col, mes = self.df.doCheckFields()
+-        if mes:
+-            self.df.focusField(frt, pag, (col+1), err=mes)
+-        else:
+-            self.df.doEndFrame("T", 0, cnf="N")
+-
+-    def doCancel(self, widget=None):
+-        self.opts["mf"].dbm.rollbackDbase()
+-        self.df.focusField("T", 0, 1)
+-
+-    def doExit(self, widget=None):
+-        self.df.closeProcess()
+-        self.opts["mf"].closeLoop()
+-
+-# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== renamed file 'wag/wgc510.py' => 'wag/wgc410.py'
+--- wag/wgc510.py	2019-01-13 16:38:59 +0000
++++ wag/wgc410.py	2019-01-15 09:18:04 +0000
+@@ -26,7 +26,7 @@
+ 
+ from TartanClasses import Sql, TartanDialog
+ 
+-class wgc510:
++class wgc410:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== removed file 'wag/wgc420.py'
+--- wag/wgc420.py	2019-01-13 16:38:59 +0000
++++ wag/wgc420.py	1970-01-01 00:00:00 +0000
+@@ -1,110 +0,0 @@
+-"""
+-SYNOPSIS
+-    Unions Codes Listing.
+-
+-    This file is part of Tartan Systems (TARTAN).
+-
+-AUTHOR
+-    Written by Paul Malherbe, <paul@tartan.co.za>
+-
+-COPYING
+-    Copyright (C) 2004-2019 Paul Malherbe.
+-
+-    This program is free software: you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation, either version 3 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+-    GNU General Public License for more details.
+-
+-    You should have received a copy of the GNU General Public License
+-    along with this program. If not, see <https://www.gnu.org/licenses/>.
+-"""
+-
+-import time
+-from TartanClasses import RepPrt, Sql, TartanDialog
+-from tartanFunctions import showError
+-
+-class wgc420:
+-    def __init__(self, **opts):
+-        self.opts = opts
+-        if self.setVariables():
+-            self.mainProcess()
+-            self.opts["mf"].startLoop()
+-
+-    def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, "waguni", prog=__name__)
+-        if self.sql.error:
+-            return
+-        t = time.localtime()
+-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
+-            (t[0], t[1], t[2], t[3], t[4])
+-        return True
+-
+-    def mainProcess(self):
+-        tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-                "Unions Listing (%s)" % __name__)
+-        r1s = (("Code Number","N"),("Name","D"))
+-        fld = (
+-            (("T",0,1,0),("IRB",r1s),0,"Sort Order","",
+-                "N","Y",self.doSort,None,None,None),)
+-        tnd = ((self.doEnd,"Y"), )
+-        txt = (self.doExit, )
+-        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld, tend=tnd,
+-            txit=txt, view=("N","V"))
+-
+-    def doSort(self, frt, pag, r, c, p, i, w):
+-        self.sort = w
+-
+-    def doEnd(self):
+-        self.df.closeProcess()
+-        if self.sort == "N":
+-            odr = "wgu_code"
+-        else:
+-            odr = "wgu_name"
+-        recs = self.sql.getRec(tables="waguni", order=odr)
+-        if not recs:
+-            showError(self.opts["mf"].body, "Transaction Error",
+-            "No Transactions Selected")
+-        else:
+-            self.printReport(recs)
+-        self.opts["mf"].closeLoop()
+-
+-    def printReport(self, recs):
+-        descs = ["Code Number", "Name", "Address 1", "Address 2",
+-            "Address 3", "Pcod", "Contact", "Telephone Number", "Fax Number"]
+-        tables = []
+-        for x in xrange(0, len(recs)):
+-            for y in xrange(0, len(recs[0])-1):
+-                lin = []
+-                lin.append("")
+-                lin.append(descs[y])
+-                lin.append(recs[x][y+1])
+-                tables.append(lin)
+-                if y == len(recs[0]) - 2:
+-                    lin = []
+-                    for _ in xrange(0, 3):
+-                        lin.append("")
+-                    for _ in xrange(0, 3):
+-                        tables.append(lin)
+-                if x % 6 == 5:
+-                    pass
+-        heads = ["Unions Master Listing"]
+-        cols = [["a","NA",15.0," "],
+-                ["b","NA",30.0,"Field Name"],
+-                ["c","NA",30.0,"Description"]]
+-        state = self.df.disableButtonsTags()
+-        RepPrt(self.opts["mf"], name=__name__, tables=tables, heads=heads,
+-            cols=cols, conum=self.opts["conum"], ttype="D",
+-            conam=self.opts["conam"], repprt=self.df.repprt)
+-        self.df.enableButtonsTags(state=state)
+-
+-    def doExit(self):
+-        self.df.closeProcess()
+-        self.opts["mf"].closeLoop()
+-
+-# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== renamed file 'wag/wgc520.py' => 'wag/wgc420.py'
+--- wag/wgc520.py	2019-01-13 16:38:59 +0000
++++ wag/wgc420.py	2019-01-15 09:18:13 +0000
+@@ -29,7 +29,7 @@
+ from tartanFunctions import getModName, textFormat, doPrinter
+ from tartanFunctions import showError
+ 
+-class wgc520:
++class wgc420:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+

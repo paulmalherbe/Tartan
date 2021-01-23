@@ -1,0 +1,7 @@
+1) Fixed a problem in the creditor's data capture module.
+2) Updated the reference manual.
+3) Some minor bug fixes.
+
+Notes:
+------
+You can only upgrade to this version if your current version is 4.1.10 or later.

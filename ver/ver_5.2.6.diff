@@ -1,0 +1,4369 @@
+=== modified file '.bzrignore'
+--- .bzrignore	2016-05-21 12:42:32 +0000
++++ .bzrignore	2016-10-04 07:00:31 +0000
+@@ -79,3 +79,5 @@
+ mst/thm
+ thm
+ img/tcltk.png
++doc/vpn_files.txt
++lon/rnelon.py
+
+=== modified file 'bks/bs3010.py'
+--- bks/bs3010.py	2016-07-10 11:57:24 +0000
++++ bks/bs3010.py	2016-09-08 13:26:01 +0000
+@@ -145,7 +145,7 @@
+             sp = SplashScreen(self.opts["mf"].body,
+                 "Preparing precis of New Books ... Please Wait")
+             try:
+-                urllib2.urlopen("http://tartan.co.za",timeout=1)
++                urllib2.urlopen("http://tartan.co.za",timeout=10)
+                 self.new = True
+                 self.fpdf.add_page()
+                 for book in new:
+@@ -158,8 +158,9 @@
+                         self.fpdf.drawText("Author: %s" % book[0].strip(),
+                             font="B")
+                         self.fpdf.drawText("Details:", font="B")
+-                        self.fpdf.drawText(desc, font="I", ctyp="M")
+-                        self.fpdf.drawText()
++                        self.fpdf.drawText(desc.rstrip(), font="I", ctyp="M")
++                        if not book == new[-1]:
++                            self.fpdf.drawText()
+             except:
+                 pass
+             sp.closeSplash()
+@@ -201,15 +202,16 @@
+             titl = titl[4:]
+         elif titl[-4:] == " the":
+             titl = titl[:-4]
+-        print titl
+         get = requests.get("https://www.googleapis.com/books/v1/volumes?q="\
+             "'%s'+inauthor:'%s'" % (titl, auth))
+         if get.status_code == 200 and get.json()["totalItems"]:
+             ok = False
+             for item in get.json()["items"]:
++                tita = titl.lower().\
++                    replace("the ","").replace(", the", "")
+                 titb = item["volumeInfo"]["title"].lower().\
+                     replace("the ","").replace(", the", "")
+-                if titb.count(titl):
++                if titb.count(tita):
+                     if "description" in item["volumeInfo"].keys():
+                         ok = True
+                         break
+
+=== modified file 'bks/bsc210.py'
+--- bks/bsc210.py	2016-06-22 08:28:55 +0000
++++ bks/bsc210.py	2016-09-26 20:12:40 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ from TartanClasses import TartanDialog, Sql
+-from tartanFunctions import getNextCode
++from tartanFunctions import getNextCode, showError
+ 
+ class bsc210:
+     def __init__(self, **opts):
+@@ -24,7 +24,7 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["bksaut"], prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["bksaut", "bksmst"], prog=__name__)
+         if self.sql.error:
+             return
+         return True
+@@ -43,7 +43,7 @@
+             (("T",0,0,0),"I@baf_code",0,"","",
+                 "","Y",self.doCode,clb,None,("efld",)),
+             (("T",0,1,0),"I@baf_snam",0,"","",
+-                "","N",self.doSnam,None,None,("notblank",)),
++                "","N",self.doSnam,None,self.doDelete,("notblank",)),
+             (("T",0,2,0),"I@baf_fnam",0,"","",
+                 "","N",self.doFnam,None,None,("efld",)))
+         tnd = ((self.doEnd,"y"),)
+@@ -66,6 +66,15 @@
+             for num, fld in enumerate(chk):
+                 self.df.loadEntry(frt, pag, num, data=fld)
+ 
++    def doDelete(self):
++        chk = self.sql.getRec(tables="bksmst", where=[("bmf_auth",
++            "=", self.author)], limit=1)
++        if chk:
++            showError(self.opts["mf"].body, "Error", "Author in Use")
++            return
++        self.sql.delRec("bksaut", where=[("baf_code", "=", self.author)])
++        self.opts["mf"].dbm.commitDbase()
++
+     def doSnam(self, frt, pag, r, c, p, i, w):
+         self.snam = w
+ 
+
+=== modified file 'bwl/bc1040.py'
+--- bwl/bc1040.py	2016-05-21 12:42:32 +0000
++++ bwl/bc1040.py	2016-09-29 12:27:58 +0000
+@@ -42,9 +42,10 @@
+             "where": [("bct_cono", "=", self.opts["conum"])]}
+         r1s = (
+             ("Tournament", "T"),
+-            ("Knockout", "K"),
+-            ("Round Robin", "R"),
+-            ("Match", "X"))
++            ("K/Out (D)", "D"),
++            ("K/Out (N)", "K"),
++            ("R/Robin", "R"),
++            ("Teams", "X"))
+         r2s = (("Yes", "Y"), ("No", "N"))
+         fld = (
+             (("T",0,0,0),"I@bct_code",0,"","",
+@@ -145,7 +146,7 @@
+ 
+     def doTSize(self, frt, pag, r, c, p, i, w):
+         self.tsize = w
+-        if self.cfmat in ("K", "R"):
++        if self.cfmat in ("D", "K", "R"):
+             self.df.loadEntry(frt, pag, p+1, data=0)
+             return "sk1"
+ 
+@@ -154,8 +155,8 @@
+ 
+     def doEnds(self, frt, pag, r, c, p, i, w):
+         self.ends = w
+-        if self.cfmat in ("K", "R", "X"):
+-            if self.cfmat in ("K", "R"):
++        if self.cfmat in ("D", "K", "R", "X"):
++            if self.cfmat in ("D", "K", "R"):
+                 defaults = ["N", 0, "N", "", 0, 0, "N", "N"]
+             else:
+                 defaults = ["N", 0, "N", "", 0, self.games, "N", "N"]
+@@ -211,7 +212,7 @@
+             self.sql.updRec("bwltyp", data=data, where=[("bct_cono", "=",
+                 self.opts["conum"]), ("bct_code", "=", self.ctype)])
+         self.perr = False
+-        if self.cfmat in ("K", "R"):
++        if self.cfmat in ("D", "K", "R"):
+             if self.newtyp:
+                 self.sql.insRec("bwlpts", data=[self.opts["conum"],
+                     self.ctype, "D", "N", 0, "N", 0, 0, 0, "N", 0, 0])
+
+=== modified file 'bwl/bc2010.py'
+--- bwl/bc2010.py	2016-09-03 14:07:52 +0000
++++ bwl/bc2010.py	2016-10-11 19:13:27 +0000
+@@ -8,9 +8,10 @@
+ 
+     Draw Parameters
+     ---------------
+-    1) Enter preferred team size i.e. trips or fours
+-    2) Select whether in trips to replace 4/4 with 2 x 2/2 (rep42)
+-    2) If format S (Not Mixed), Group tabs by gender, position else
++    1) Enter type of draw i.e. random or strength v strength
++    2) Enter preferred team size i.e. trips or fours
++    3) Select whether in trips to replace 4/4 with 2 x 2/2 (rep42)
++    4) If format S (Not Mixed), Group tabs by gender, position else
+                                 Group tabs by position only
+ 
+     Trips
+@@ -66,13 +67,13 @@
+     1) Determine number of teams and odds i.e. 4/3 or pairs etc.
+     2) Determine number of skips, thirds, seconds and leads required.
+     3) Select skips for number of teams using all players, by position,
+-       randomly.
++       randomly or by strength.
+     4) Select thirds for number of teams using remainder of players, by
+-       position, randomly. Skip if 3/3 or 2/2 or ?/3
++       position, randomly or by strength. Skip if 3/3 or 2/2 or ?/3
+     5) Select self.seconds for number of teams using remainder of players, by
+-       position, randomly. Skip if 2/2 and 1/1.
++       position, randomly or by strength. Skip if 2/2 and 1/1.
+     6) Select self.leads for number of teams using remainder of all players, by
+-       position, randomly. Skip if 1/1.
++       position, randomly or by strength. Skip if 1/1.
+ 
+     Variables:
+     ----------
+@@ -187,15 +188,19 @@
+                 "Y","N",self.doMixed,None,None,None),
+             (("T",0,3,0),("IRB",r2s),0,"Mixed Rating","",
+                 "Y","N",self.doRating,None,None,None),
+-            (("T",0,4,0),("IRB",r3s),0,"Draw By","",
++            (("T",0,4,0),("IRB",r2s),0,"Mix Broken","",
++                "Y","N",self.doBroken,None,None,None,None,"If Both "\
++                "Genders have an Odd number of tabs, move a Random "\
++                "tab to the least gender thus eliminating Broken Rinks."),
++            (("T",0,5,0),("IRB",r3s),0,"Draw By","",
+                 self.dbase,"N",self.doBase,None,None,None),
+-            (("T",0,5,0),"IUD",5.2,"Fees - Member R","",
++            (("T",0,6,0),"IUD",5.2,"Fees - Member R","",
+                 self.ratem.work,"Y",self.doRate,None,None,("efld",)),
+-            (("T",0,5,0),"IUD",5.2," Visitor R","",
++            (("T",0,6,0),"IUD",5.2," Visitor R","",
+                 self.ratev.work,"N",self.doRate,None,None,("efld",)),
+-            (("T",0,6,0),"OUI",3,"Entered: Total"),
+-            (("T",0,6,0),"OUI",3," Males"),
+-            (("T",0,6,0),"OUI",3," Females"),
++            (("T",0,7,0),"OUI",3,"Entered: Total"),
++            (("T",0,7,0),"OUI",3," Males"),
++            (("T",0,7,0),"OUI",3," Females"),
+             (("T",1,0,0),"I@btb_tab",0,"","Tab Number(noesc)",
+                 "","Y",self.doTab,mem,None,("efld",)),
+             (("T",1,1,0),"I@btb_surname",0,"","",
+@@ -307,14 +312,14 @@
+         self.rating = drm[self.sql.bwldrm_col.index("bdm_rating")]
+         self.df.loadEntry("T", 0, 3, data=self.rating)
+         self.nbase = drm[self.sql.bwldrm_col.index("bdm_dbase")]
+-        self.df.loadEntry("T", 0, 4, data=self.nbase)
++        self.df.loadEntry("T", 0, 5, data=self.nbase)
+         self.dtype = drm[self.sql.bwldrm_col.index("bdm_dtype")]
+         self.dhist = drm[self.sql.bwldrm_col.index("bdm_dhist")]
+         self.tsize = drm[self.sql.bwldrm_col.index("bdm_tsize")]
+         self.mrate = drm[self.sql.bwldrm_col.index("bdm_mrate")]
+-        self.df.loadEntry("T", 0, 5, data=self.mrate)
++        self.df.loadEntry("T", 0, 6, data=self.mrate)
+         self.vrate = drm[self.sql.bwldrm_col.index("bdm_vrate")]
+-        self.df.loadEntry("T", 0, 6, data=self.vrate)
++        self.df.loadEntry("T", 0, 7, data=self.vrate)
+ 
+     def doLoadTabs(self):
+         draws = self.sql.getRec(tables="bwldrt", cols=["bdt_tab",
+@@ -393,14 +398,23 @@
+         if self.mixed == "N":
+             self.rating = "N"
+             self.df.loadEntry(frt, pag, p + 1, data=self.rating)
+-            if self.dbase == "C":
+-                return "sk1"
+-            else:
+-                self.df.loadEntry(frt, pag, p + 2, data=self.dbase)
+-                return "sk2"
++            return "sk1"
+ 
+     def doRating(self, frt, pag, r, c, p, i, w):
+         self.rating = w
++        self.dofix = False
++        self.df.loadEntry(frt, pag, p + 1, data="N")
++        if self.dbase == "C":
++            return "sk1"
++        self.nbase = self.dbase
++        self.df.loadEntry(frt, pag, p + 1, data=self.dbase)
++        return "sk2"
++
++    def doBroken(self, frt, pag, r, c, p, i, w):
++        if w == "Y":
++            self.dofix = True
++        else:
++            self.dofix = False
+         if not self.dbase == "C":
+             self.nbase = self.dbase
+             self.df.loadEntry(frt, pag, p + 1, data=self.dbase)
+@@ -1044,7 +1058,7 @@
+         if self.dtype == "S":
+             self.dhist = "N"
+             self.dw.loadEntry(frt, pag, p+1, data="N")
+-            return "sk1"
++            #return "sk1"
+ 
+     def doHist(self, frt, pag, r, c, p, i, w):
+         self.dhist = w
+@@ -1186,37 +1200,45 @@
+             self.bcl = 0
+             self.tcl = 0
+         else:
+-            groups = [[]]
++            grps = [[]]
+             ntabs = []
+             for tab in self.ndict:
+                 # Create rest of players
+                 ntabs.append([tab] + self.ndict[tab])
+             if self.mixed.upper() == "N":
+                 mess = None
+-                groups.append([])
++                grps.append([])
+                 for tab in ntabs:
+                     if tab[3] == "M":
+-                        groups[0].append(tab)
++                        grps[0].append(tab)
+                     else:
+-                        groups[1].append(tab)
+-                if groups[0] and len(groups[0]) in (1, 3, 5):
++                        grps[1].append(tab)
++                if grps[0] and len(grps[0]) in (1, 3, 5):
+                     mess = "Not Enough Men, Do You Want a Mixed Draw?"
+-                elif groups[1] and len(groups[1]) in (1, 3, 5):
++                elif grps[1] and len(grps[1]) in (1, 3, 5):
+                     mess = "Not Enough Ladies, Do You Want a Mixed Draw?"
+                 if mess:
+                     ok = askQuestion(self.opts["mf"].body,
+                         "Insufficient Numbers", mess, default="yes")
+                     if ok == "yes":
+                         self.mixed = "Y"
+-                        groups = [[]]
++                        self.dofix = False
++                        grps = [[]]
+                         for tab in ntabs:
+-                            groups[0].append(tab)
++                            grps[0].append(tab)
+                     else:
+                         return None, None
++                elif self.dofix and len(grps[0]) % 2 and len(grps[1]) % 2:
++                    if len(grps[0]) > len(grps[1]):
++                        tt = random.randrange(0, len(grps[0]))
++                        grps[1].append(grps[0].pop(tt))
++                    else:
++                        tt = random.randrange(0, len(grps[1]))
++                        grps[0].append(grps[1].pop(tt))
+             else:
+                 for tab in ntabs:
+-                    groups[0].append(tab)
+-            for num, grp in enumerate(groups):
++                    grps[0].append(tab)
++            for num, grp in enumerate(grps):
+                 # Gender or Mixed
+                 alldraw = []
+                 self.doPositions(grp)
+@@ -1782,14 +1804,18 @@
+         total = 0
+         self.adraw2 = []
+         for x in xrange(0, len(draws), 2):
++            # Allocate rink
+             g = rinks2.pop(0)
++            # Load team A
+             self.loadData(g, draws[x])
+-            tot = draws[x][1]
++            # Load team B
+             self.loadData(g, draws[x + 1])
+-            if self.dhist == "N":
++            if self.dtype == "S":
+                 # Try and balance teams
+                 self.doBalance(x)
++            # Extract average strengths
+             av1, av2 = self.doAverage(self.adraw2[x], self.adraw2[x + 1])
++            # Calculate difference
+             tot = av1 - av2
+             if tot < 0:
+                 tot = 0 - tot
+@@ -2200,8 +2226,8 @@
+                 men += 1
+             else:
+                 wom += 1
+-        self.df.loadEntry("T", 0, 7, data=men + wom)
+-        self.df.loadEntry("T", 0, 8, data=men)
+-        self.df.loadEntry("T", 0, 9, data=wom)
++        self.df.loadEntry("T", 0, 8, data=men + wom)
++        self.df.loadEntry("T", 0, 9, data=men)
++        self.df.loadEntry("T", 0, 10, data=wom)
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'bwl/bc2040.py'
+--- bwl/bc2040.py	2016-05-21 12:42:32 +0000
++++ bwl/bc2040.py	2016-10-02 14:38:45 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ from TartanClasses import GetCtl, Sql, TartanDialog
+-from tartanFunctions import askQuestion, getNextCode
++from tartanFunctions import askQuestion, getNextCode, showError
+ 
+ class bc2040:
+     def __init__(self, **opts):
+@@ -86,13 +86,13 @@
+                 "","N",None,None,None,("efld",)),
+             (("T",0,0,0),"I@bcm_type",0,"Type","",
+                 "","N",self.doCmpTyp,typ,None,("efld",)),
+-            (("C",0,0,0),"I@btb_tab",0,"Skip","",
++            (("C",0,0,0),"I@btb_tab",0,"P-Code","Player's Code",
+                 "","Y",self.doSkpCod,sk1,None,("efld",)),
+             (("C",0,0,1),"ONA",30,"Name","",
+                 "","N",None,None,None,("notblank",)),
+-            (("C",0,0,2),"I@bce_tcod",0,"T","",
++            (("C",0,0,2),"I@bce_tcod",0,"T","Team Code (H or V)",
+                 "H","n",self.doTeam,None,None,("in", ("H","V"))),
+-            (("C",0,0,4),"I@bce_paid",0,"","",
++            (("C",0,0,4),"I@bce_paid",0,"","Paid Flag (Y or N)",
+                 "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N"))))
+         but = (("Entered Players",sk2,None,0,("C",0,1),("T",0,1)),)
+         tnd = ((self.doEnd,"y"),)
+@@ -129,7 +129,7 @@
+ 
+ Do You Want to Erase All Draws and Results?""", default="no")
+                 if ok == "no":
+-                    return "Invalid Competition"
++                    return "rf"
+                 self.erase = True
+             self.newcmp = False
+             for num, fld in enumerate(chk[1:]):
+@@ -141,10 +141,22 @@
+                 self.skips.append(e[0])
+ 
+     def doDelCmp(self, widget=None):
+-        if self.newcmp or self.skips:
++        if self.newcmp:
++            showError(self.opts["mf"].body, "Delete", "New Competition")
+             return
++        if self.skips:
++            ok = askQuestion(self.opts["mf"].body, "Delete", "Entries Exist "\
++                "for this Competition, Are You Sure it must be Deleted?",
++                default="no")
++            if ok == "no":
++                return
+         self.sql.delRec("bwlcmp", where=[("bcm_cono", "=", self.opts["conum"]),
+             ("bcm_code", "=", self.ccod)])
++        if self.skips:
++            self.sql.delRec("bwlent", where=[("bce_cono",
++                "=", self.opts["conum"]), ("bce_ccod", "=", self.ccod)])
++            self.sql.delRec("bwlgme", where=[("bcg_cono",
++                "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod)])
+         self.opts["mf"].dbm.commitDbase()
+         self.df.focusField("T", 0, 1)
+ 
+@@ -200,6 +212,7 @@
+     def doNewCode(self):
+         tit = ("New Player",)
+         r1s = (("Male","M"), ("Female","F"))
++        r2s = (("Skip",4), ("Third",3), ("Second",2), ("Lead",1))
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Gender","",
+                 "M","Y",None,None,None,None),
+@@ -214,6 +227,10 @@
+             (("T",0,5,0),"I@btb_cell",0,"","",
+                 "","Y",None,None,None,("efld",)),
+             (("T",0,6,0),"I@btb_mail",0,"","",
++                "","Y",self.doNMail,None,None,("efld",)),
++            (("T",0,7,0),("IRB",r2s),0,"Position","",
++                4,"Y",self.doNPos,None,None,None),
++            (("T",0,8,0),"I@btb_rate1",0,"Rating","",
+                 "","Y",None,None,None,("efld",)))
+         state = self.df.disableButtonsTags()
+         self.df.setWidget(self.df.mstFrame, state="hide")
+@@ -224,6 +241,26 @@
+         self.df.enableButtonsTags(state)
+         return self.newcod
+ 
++    def doNMail(self, frt, pag, r, c, p, i, w):
++        if self.cfmat in ("T", "K", "R", "X"):
++            if self.dbase in ("C", "P"):
++                self.ns.loadEntry(frt, pag, p+1, data=4)
++            else:
++                self.ns.loadEntry(frt, pag, p+1, data=0)
++            if self.dbase in ("C", "R"):
++                self.ns.loadEntry(frt, pag, p+2, data=5)
++            else:
++                self.ns.loadEntry(frt, pag, p+2, data=0)
++            return "sk2"
++        if self.dbase == "R":
++            self.ns.loadEntry(frt, pag, p+1, data=0)
++            return "sk1"
++
++    def doNPos(self, frt, pag, r, c, p, i, w):
++        if self.dbase == "P":
++            self.ns.loadEntry(frt, pag, p+1, data=0)
++            return "sk1"
++
+     def doNEnd(self):
+         self.ns.closeProcess()
+         self.newcod = getNextCode(self.sql, "bwltab", "btb_tab",
+@@ -233,12 +270,8 @@
+         data.extend(self.ns.t_work[0][0][1:3])
+         data.extend([self.ns.t_work[0][0][0], "", "", "", ""])
+         data.extend(self.ns.t_work[0][0][3:])
+-        if self.dbase == "C":
+-            data.extend([4, 5, 4, 5, 0])
+-        elif self.dbase == "P":
+-            data.extend([4, 0, 4, 0, 0])
+-        else:
+-            data.extend([0, 5, 0, 5, 0])
++        data.extend(self.ns.t_work[0][0][7:])
++        data.append(0)
+         self.sql.insRec("bwltab", data=data)
+         self.opts["mf"].closeLoop()
+ 
+
+=== modified file 'bwl/bc2050.py'
+--- bwl/bc2050.py	2016-05-21 12:42:32 +0000
++++ bwl/bc2050.py	2016-10-03 13:07:12 +0000
+@@ -25,7 +25,9 @@
+ """
+ 
+ import copy, random, time
+-from TartanClasses import CCD, DrawForm, MyFpdf, TartanDialog, Sql
++from operator import itemgetter
++from TartanClasses import CCD, DrawForm, GetCtl, MyFpdf, RepPrt, SplashScreen
++from TartanClasses import Sql, TartanDialog
+ from tartanFunctions import askQuestion, callModule, doPrinter, doWriteExport
+ from tartanFunctions import getModName, getGreens, getSingleRecords, copyList
+ from tartanFunctions import showError, showWarning
+@@ -38,12 +40,17 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        t = time.localtime()
+-        self.today = ((t[0] * 10000) + (t[1] * 100) + t[2])
+         self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwlgme", "bwltab",
+             "bwltyp", "bwlpts", "bwlrnd", "bwlent", "tplmst"], prog=__name__)
+         if self.sql.error:
+             return
++        gc = GetCtl(self.opts["mf"])
++        bwlctl = gc.getCtl("bwlctl", 1)
++        if not bwlctl:
++            return
++        self.nstart = bwlctl["ctb_nstart"]
++        t = time.localtime()
++        self.today = ((t[0] * 10000) + (t[1] * 100) + t[2])
+         self.game = 0
+         random.seed()
+         self.grpcod = ["", "A", "B", "C"]
+@@ -78,8 +85,8 @@
+                 ("tpm_title", "", 0, "Title", "Y")),
+             "where": [("tpm_type", "=", "C")],
+             "order": "tpm_tname"}
+-        r1s = (("First", "F"), ("Last", "L"))
+-        r2s = (("Yes","Y"),("No", "N"))
++        r1s = (("No","N"),("Yes", "Y"))
++        r2s = (("First", "F"), ("Last", "L"))
+         r3s = (("No", "N"),("Yes","Y"),("Only", "O"))
+         fld = (
+             (("T",0,0,0),"I@bcm_code",0,"","",
+@@ -89,33 +96,39 @@
+                 self.game,"N",self.doGamNum,gme,None,("efld",)),
+             (("T",0,2,0),"I@bcg_date",0,"","",
+                 self.today,"N",self.doGamDte,None,None,("efld",)),
+-            (("T",0,3,0),"IUI",1,"Number of Groups","",
++            (("T",0,3,0),("IRB",r1s),0,"Pair Home with Away Skips","",
++                "N","N",self.doHAPair,None,None,None,None,
++                "For the First Drawn game Try and Pair Visiting skips "\
++                "with Home skips so that Visitors are Not Drawn against "\
++                "each other."),
++            (("T",0,4,0),"IUI",1,"Number of Groups","",
+                 0,"N",self.doGrpNum,None,None,("in", (0, 2, 3))),
+-            (("T",0,4,0),("IRB",r1s),0,"Smallest Group","",
++            (("T",0,5,0),("IRB",r2s),0,"Smallest Group","",
+                 "L","N",self.doGrpSml,None,None,None),
+-            (("T",0,5,0),"IUA",30,"Greens","Greens (A,B,C)",
++            (("T",0,6,0),"IUA",30,"Greens","Greens (A,B,C)",
+                 "","N",self.doGreens,None,None,("notblank",),None,"Available "\
+                 "Greens in the format A,B or A,B345 showing Green Code and "\
+                 "Rinks. If the Rinks are Not Entered they will Default to 6. "\
+                 "To Default to 7 Rinks enter the Green Code followd by 7 e.g. "\
+                 "A7 or A1234567"),
+-            (("T",0,6,0),("IRB",r2s),0,"Group per Green","",
++            (("T",0,7,0),("IRB",r1s),0,"Group per Green","",
+                 "N","N",self.doGrpGrn,None,None,None),
+-            (("T",0,7,0),("IRB",r3s),0,"Print Cards","",
++            (("T",0,8,0),("IRB",r3s),0,"Print Cards","",
+                 "N","N",self.doPrtCards,None,None,None),
+-            (("T",0,8,0),("IRB",r2s),0,"All Cards","",
++            (("T",0,9,0),("IRB",r1s),0,"All Cards","",
+                 "Y","N",self.doAllCards,None,None,None),
+-            (("T",0,9,0),"INA",20,"Template Name","",
++            (("T",0,10,0),"INA",20,"Template Name","",
+                 "comp_cards","N",self.doTplNam,tpm,None,None))
+         tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+         self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
+-            eflds=fld, tend=tnd, txit=txt, view=("N","V"), mail=("Y","Y"))
+-        self.df.setWidget(self.df.topEntry[0][11][2][0], state="hide")
++            eflds=fld, tend=tnd, txit=txt, view=("Y","V"), mail=("Y","Y"))
++        self.df.setWidget(self.df.topEntry[0][12][2][0], state="hide")
++        self.df.setWidget(self.df.topEntry[0][12][3][0], state="hide")
+ 
+     def doCmpCod(self, frt, pag, r, c, p, i, w):
+-        bwlcmp = self.sql.getRec(tables="bwlcmp", where=[("bcm_cono", "=",
+-            self.opts["conum"]), ("bcm_code", "=", w)], limit=1)
++        bwlcmp = self.sql.getRec(tables="bwlcmp", where=[("bcm_cono",
++            "=", self.opts["conum"]), ("bcm_code", "=", w)], limit=1)
+         if not bwlcmp:
+             return "Invalid Competition Code"
+         self.ccod = w
+@@ -129,14 +142,21 @@
+         self.tsize = bwltyp[self.sql.bwltyp_col.index("bct_tsize")]
+         self.drawn = bwltyp[self.sql.bwltyp_col.index("bct_drawn")]
+         teams = self.sql.getRec(tables="bwlent", cols=["bce_scod"],
+-            where=[("bce_cono", "=", self.opts["conum"]), ("bce_ccod", "=",
+-            self.ccod)])
+-        self.totskp = len(teams)
+-        if self.totskp % 2 and not self.cfmat in ("K", "R"):
++            where=[("bce_cono", "=", self.opts["conum"]),
++            ("bce_ccod", "=", self.ccod)])
++        if self.cfmat == "D":
++            if len(teams) % self.tsize:
++                showError(self.opts["mf"].body, "Mismatch",
++                    "There is an Odd Number of Entries (%s)" % len(teams))
++                return "rf"
++            self.totskp = len(teams) / self.tsize
++        else:
++            self.totskp = len(teams)
++        if self.totskp % 2 and not self.cfmat in ("D", "K", "R"):
+             showError(self.opts["mf"].body, "Mismatch",
+                 "There is an Uneven Number of Teams (%s)" % self.totskp)
+             return "rf"
+-        if self.cfmat == "K":
++        if self.cfmat in ("D", "K"):
+             if self.totskp > 64:
+                 showError(self.opts["mf"].body, "Maximum Exceeded",
+                     "There are Too Many Entries (%s)" % self.totskp)
+@@ -148,8 +168,11 @@
+             else:
+                 self.games = 1
+         elif self.cfmat == "R":
++            self.df.setWidget(self.df.topEntry[0][12][4][0], state="hide")
+             self.games = self.totskp - 1
++            self.drawn = self.games
+         else:
++            self.df.setWidget(self.df.topEntry[0][12][4][0], state="hide")
+             self.games = bwltyp[self.sql.bwltyp_col.index("bct_games")]
+         self.ends = bwltyp[self.sql.bwltyp_col.index("bct_ends")]
+         self.groups = bwltyp[self.sql.bwltyp_col.index("bct_groups")]
+@@ -169,7 +192,7 @@
+             "bcg_date", "bcg_aflag", "sum(bcg_points)"], where=[("bcg_cono",
+             "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod)],
+             group="bcg_game, bcg_type, bcg_aflag", order="bcg_game")
+-        if not gme and self.cfmat in ("K", "R"):
++        if not gme and self.cfmat in ("D", "K", "R"):
+             if self.totskp % 2 and self.cfmat == "R":
+                 ok = askQuestion(self.opts["mf"].body, "Mismatch",
+                     "There is an Uneven Number of Teams (%s), "\
+@@ -180,10 +203,13 @@
+                     self.games += 1
+                 else:
+                     return "rf"
++            elif self.cfmat == "D":
++                # Drawn Knockout, Create Teams
++                teams = self.doDrawTeams(copyList(teams))
+             # Populate bwlgme records
+             data = [self.opts["conum"], self.ccod, 0, 0, "D", 0, 0, "",
+                 0, 0, 0, 0, 0, 0, 0, "", 0, 0]
+-            if self.cfmat == "K":
++            if self.cfmat in ("D", "K"):
+                 games = 1
+             else:
+                 games = self.totskp - 1
+@@ -200,14 +226,14 @@
+             else:
+                 self.grpsel = False
+                 self.grpgrn = "N"
+-                return "sk10"
+-        elif self.cfmat == "K":
++                return "sk11"
++        elif self.cfmat in ("D", "K"):
+             ok = askQuestion(self.opts["mf"].body, "Drawn", "This Knockout "\
+                 "Competition has Already Been Drawn, Do You Want to Reprint?")
+             if ok == "yes":
+                 self.reprint = True
+                 self.datd = CCD(gme[0][2], "D1", 10).disp
+-                return "sk10"
++                return "sk11"
+             else:
+                 return "rf"
+         for game in gme:
+@@ -223,6 +249,88 @@
+         else:
+             return "rf"
+ 
++    def doDrawTeams(self, teams):
++        tabs = []
++        col = ["btb_tab", "btb_gender", "btb_pos1", "btb_rate1"]
++        men = 0
++        wom = 0
++        for tab in teams:
++            rec = self.sql.getRec(tables="bwltab", cols=col, where=[("btb_cono",
++                "=", self.opts["conum"]), ("btb_tab", "=", tab[0])], limit=1)
++            tabs.append(rec)
++            if rec[1] == "M":
++                men += 1
++            else:
++                wom += 1
++        tabs = sorted(tabs, key=itemgetter(2, 3))
++        qty = len(teams) / self.tsize
++        skips = []
++        for _ in range(qty):
++            skips.append(tabs.pop())
++        if self.tsize == 3:
++            seconds = []
++            for _ in range(qty):
++                seconds.append(tabs.pop())
++        leads = []
++        for _ in range(qty):
++            leads.append(tabs.pop())
++        if men and wom:
++            qm = (men / qty)
++            if men % qty:
++                qm += 1
++            qw = (wom / qty)
++            if wom % qty:
++                qw += 1
++            count = 50000
++        else:
++            count = 1
++        for num in range(count):
++            team = []
++            redraw = False
++            self.teams = {}
++            if not num or num % self.tsize == 0:
++                random.shuffle(skips)
++            sk = copyList(skips)
++            if self.tsize == 3:
++                if not num or num % self.tsize == 1:
++                    random.shuffle(seconds)
++                sc = copyList(seconds)
++                if not num or num % self.tsize == 2:
++                    random.shuffle(leads)
++            elif not num or num % self.tsize == 1:
++                random.shuffle(leads)
++            ld = copyList(leads)
++            for _ in range(qty):
++                skp = sk.pop()
++                team.append([skp[0]])
++                if self.tsize == 2:
++                    self.teams[skp[0]] = [skp, ld.pop()]
++                else:
++                    self.teams[skp[0]] = [skp, sc.pop(), ld.pop()]
++            if men and wom:
++                # Mixed Draw
++                text = "Draw Number %s" % (num + 1)
++                if not num:
++                    self.sp = SplashScreen(self.opts["mf"].body, text)
++                else:
++                    self.sp.label.configure(text=text)
++                    self.sp.refreshSplash()
++                for tm in self.teams:
++                    mm = 0
++                    ww = 0
++                    for m in self.teams[tm]:
++                        if m[1] == "M":
++                            mm += 1
++                        else:
++                            ww += 1
++                    if mm > qm or ww > qw:
++                        redraw = True
++            if not redraw:
++                break
++        if men and wom:
++            self.sp.closeSplash()
++        return team
++
+     def doGamNum(self, frt, pag, r, c, p, i, w):
+         if w > self.game:
+             return "Invalid Game Number, Previous Games Unfinished"
+@@ -247,7 +355,7 @@
+             self.date = chk[2]
+             self.datd = CCD(self.date, "D1", 10).disp
+             self.df.loadEntry(frt, pag, p+1, data=self.date)
+-            return "sk5"
++            return "sk6"
+         if w == 1 and self.drawn > 1 and (self.cfmat == "R" or \
+                 (self.cfmat in ("T", "X") and self.gtyp == "D")):
+             ok = askQuestion(self.opts["mf"].body, "Drawn Games",
+@@ -260,10 +368,24 @@
+             return "Invalid Date, in the Past or Before the Starting Date"
+         self.date = w
+         self.datd = self.df.t_disp[pag][0][i]
+-        if self.groups == "Y" and self.grgame == (self.game - 1):
+-            self.grpsel = True
+-        else:
+-            self.grpsel = False
++        self.grpsel = False
++        if self.cfmat == "R":
++            self.hapair = "N"
++            self.df.loadEntry(frt, pag, p+1, data="N")
++            return "sk3"
++        elif self.game > 1:
++            if self.groups == "Y" and self.grgame == (self.game - 1):
++                self.grpsel = True
++            self.hapair = "N"
++            self.df.loadEntry(frt, pag, p+1, data="N")
++            if not self.cfmat == "R" or self.grpsel:
++                return "sk1"
++            else:
++                return "sk3"
++
++    def doHAPair(self, frt, pag, r, c, p, i, w):
++        self.hapair = w
++        if not self.grpsel:
+             return "sk2"
+ 
+     def doGrpNum(self, frt, pag, r, c, p, i, w):
+@@ -338,8 +460,10 @@
+                         self.allocateRinks(final=True)
+                     elif self.allocateRinks(final=False):
+                         break
+-        if self.cfmat == "K":
++        if self.cfmat in ("D", "K"):
+             self.printKnockout()
++            if self.cfmat == "D":
++                self.printTeams()
+             if not self.reprint:
+                 self.opts["mf"].dbm.commitDbase(ask=True)
+             self.opts["mf"].closeLoop()
+@@ -392,7 +516,7 @@
+             self.opts["mf"].closeLoop()
+ 
+     def pairSkips(self):
+-        if self.cfmat == "K":
++        if self.cfmat in ("D", "K"):
+             return True
+         if self.gtyp == "D":
+             # Drawn Games
+@@ -436,19 +560,42 @@
+                 self.skips = pair
+                 return True
+             # Other
+-            chk = self.sql.getRec(tables="bwlgme", cols=["bcg_scod"],
++            recs = self.sql.getRec(tables="bwlgme", cols=["bcg_scod"],
+                 where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+                 self.ccod), ("bcg_game", "=", self.game)], order="bcg_scod")
+-            if len(chk) % 2:
++            if len(recs) % 2:
+                 showError(self.opts["mf"].body, "Mismatch",
+-                    "There is an Uneven Number of Teams (%s)" % len(chk))
++                    "There is an Uneven Number of Teams (%s)" % len(recs))
+                 return
+             self.skips = []
+-            for c in chk:
+-                self.skips.append(c[0])
++            if self.game == 1 and self.hapair == "Y":
++                # Separate home and away skips
++                home = []
++                away = []
++                for rec in recs:
++                    if rec[0] < self.nstart:
++                        home.append(rec[0])
++                    else:
++                        away.append(rec[0])
++                # pair home and away skips
++                random.shuffle(home)
++                random.shuffle(away)
++                while home:
++                    self.skips.append(home.pop())
++                    if away:
++                        self.skips.append(away.pop())
++                    else:
++                        self.skips.append(home.pop())
++                while away:
++                    self.skips.append(away.pop())
++                    self.skips.append(away.pop())
++                return True
++            for rec in recs:
++                self.skips.append(rec[0])
+             chk = True
+             while chk:
+                 random.shuffle(self.skips)
++                # Check for pair clashes in all drawn games
+                 for x in xrange(0, len(self.skips), 2):
+                     one = self.skips[x]
+                     two = self.skips[x+1]
+@@ -563,7 +710,7 @@
+             "=", one), ("bcg_ocod", "=", two), ("bcg_game", "<", self.game)])
+ 
+     def allocateRinks(self, final=False):
+-        if self.cfmat == "K":
++        if self.cfmat in ("D", "K"):
+             return
+         allrnk = []
+         for grn in self.greens:
+@@ -578,6 +725,7 @@
+             num = len(groups)                   # Number of groups
+             lst = None                          # Last group processed
+             cnt = 0                             # Number of rinks allocated
++            end = len(self.greens[self.first])  # Last rink of first green
+             for x in xrange(0, len(self.skips), 2):
+                 one = self.skips[x]
+                 two = self.skips[x+1]
+@@ -590,30 +738,30 @@
+                     pos = 0
+                 rnk = None
+                 if grp == 0 and pos < len(self.greens[self.first]):
+-                    rnk = "%s%s" % (self.first, [4, 3, 5, 2, 1, 6, 7][pos])
++                    rnk = "%s%s" % (self.first, [4, 3, 5, 2, 6, 1, 7][pos])
+                 elif grp == 1:
+                     if self.grpgrn == "Y" and self.gr1:
+-                        rnk = "%s%s" % (self.gr1, [4, 3, 5, 2, 1, 6, 7][pos])
++                        rnk = "%s%s" % (self.gr1, [4, 3, 5, 2, 6, 1, 7][pos])
+                     elif pos < len(self.greens[self.first]) - 2:
+-                        rnk = "%s%s" % (self.first, [4, 3, 5, 2, 7][pos])
++                        rnk = "%s%s" % (self.first, [4, 3, 5, 2, 6][pos])
+                 elif grp == 2:
+                     if self.grpgrn == "Y" and self.gr2:
+-                        rnk = "%s%s" % (self.gr2, [4, 3, 5, 2, 1, 6, 7][pos])
++                        rnk = "%s%s" % (self.gr2, [4, 3, 5, 2, 6, 1, 7][pos])
+                     elif num == 2 and pos < 2:
+-                        rnk = "%s%s" % (self.first, [1, 6][pos])
+-                elif grp == 2 and num == 3 and pos == 0:
+-                    rnk = "%s1" % self.first
++                        rnk = "%s%s" % (self.first, [1, end][pos])
++                    elif num == 3 and pos == 0:
++                        rnk = "%s1" % self.first
+                 elif grp == 3:
+                     if self.grpgrn == "Y" and self.gr3:
+-                        rnk = "%s%s" % (self.gr3, [4, 3, 5, 2, 1, 6, 7][pos])
++                        rnk = "%s%s" % (self.gr3, [4, 3, 5, 2, 6, 1, 7][pos])
+                     elif num == 3 and pos == 0:
+-                        rnk = "%s6" % self.first
++                        rnk = "%s%s" % (self.first, end)
+                 if rnk and rnk in allrnk:
+                     skpdic[one] = (two, rnk)
+                     allrnk.remove(rnk)
+                     if self.grpgrn == "N":
+                         cnt += 1
+-                        if cnt == 6:
++                        if cnt == end:
+                             break
+                 pos += 1
+         # Allocate Balance of Rinks to End Rinkers
+@@ -627,7 +775,8 @@
+             random.shuffle(allrnk)
+             done = False
+             for rk in allrnk:
+-                if rk[1] in ("1", "6"):
++                s, e = (self.greens[rk[0]][0], self.greens[rk[0]][-1])
++                if rk[1] in (str(s), str(e)):
+                     continue
+                 if not self.checkRink(one, two, rk):
+                     skpdic[one] = (two, rk)
+@@ -714,7 +863,7 @@
+                 where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+                 self.ccod), ("bcg_scod", "=", sk), ("bcg_rink", "<>", "")])
+             for rk in rnks:
+-                if rk[0][1] in ("1", "6"):
++                if rk[0][1] in ("1", "6", "7"):
+                     ends += 1
+             if ends >= check:
+                 return True
+@@ -724,6 +873,30 @@
+             self.opts["conum"]), ("bcg_ccod", "=", self.ccod), ("bcg_scod",
+             "in", (one, two)), ("bcg_rink", "=", rnk)])
+ 
++    def printTeams(self):
++        def getNames(mem):
++            rec = self.sql.getRec(tables="bwltab", cols=["btb_surname",
++                "btb_names"], where=[("btb_cono", "=", self.opts["conum"]),
++                ("btb_tab", "=", mem[0])], limit=1)
++            if rec[1]:
++                return "%s, %s (%s)" % (rec[0], rec[1].split()[0][0], mem[1])
++            else:
++                return rec[0]
++        head = [(self.opts["conam"], 14), ("Teams for %s" % self.cdes, 12)]
++        cols = [
++            ["a", "NA", 25, "Skip", "y"]]
++        if self.tsize == 3:
++            cols.append(["b", "NA", 25, "Second", "y"])
++        cols.append(["c", "NA", 25, "Lead", "y"])
++        data = []
++        for skip in self.teams:
++            dat = []
++            for mem in self.teams[skip]:
++                dat.append(getNames(mem))
++            data.append(dat)
++        RepPrt(self.opts["mf"], name=__name__, tables=data, heads=head,
++            cols=cols, ttype="D", repprt=self.df.repprt, repeml=self.df.repeml)
++
+     def printKnockout(self):
+         pwrs = 2
+         self.rnds = 1
+@@ -912,7 +1085,8 @@
+             skips = self.sql.getRec(tables="bwlgme", cols=["bcg_scod",
+                 "bcg_ocod", "bcg_seed", "bcg_pair"], where=[("bcg_cono",
+                 "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
+-                ("bcg_group", "=", grp)], order="bcg_pair, bcg_scod")
++                ("bcg_game", "=", 1), ("bcg_group", "=", grp)],
++                order="bcg_pair, bcg_scod")
+             if self.df.repprt[2] == "export":
+                 self.exportBracket(skips)
+             else:
+@@ -1388,9 +1562,12 @@
+                     nam = "%s, %s" % (nam, skp[2].split()[0])
+                 a = CCD(nam, "NA", 30)
+                 b = CCD(skp[4], "UA", 2)
+-                nam = opp[1].strip()
+-                if opp[2]:
+-                    nam = "%s, %s" % (nam, opp[2].split()[0])
++                if opp:
++                    nam = opp[1].strip()
++                    if opp[2]:
++                        nam = "%s, %s" % (nam, opp[2].split()[0])
++                else:
++                    nam = "Unknown"
+                 c = CCD(nam, "NA", 30)
+                 self.printLine(a.disp, " %s " % b.disp, c.disp)
+                 self.pglin += 1
+
+=== modified file 'bwl/bc2060.py'
+--- bwl/bc2060.py	2016-02-27 13:18:41 +0000
++++ bwl/bc2060.py	2016-10-03 07:15:04 +0000
+@@ -99,8 +99,8 @@
+         chk = self.sql.getRec(tables="bwltyp", cols=["bct_cfmat"],
+             where=[("bct_cono", "=", self.opts["conum"]), ("bct_code", "=",
+             ctyp)], limit=1)
+-        if chk[0] == "K":
+-            return "Knockout Draw Cannot be Changed"
++        if chk[0] in ("D", "K", "R"):
++            return "Knockout and R/Robin Draws Cannot be Changed"
+         chk = self.sql.getRec(tables="bwlgme", cols=["bcg_game", "bcg_date",
+             "bcg_aflag", "sum(bcg_ocod)", "sum(bcg_shots_for)"],
+             where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+
+=== modified file 'bwl/bc2070.py'
+--- bwl/bc2070.py	2016-05-21 12:42:32 +0000
++++ bwl/bc2070.py	2016-10-03 14:01:36 +0000
+@@ -116,7 +116,7 @@
+         bwltyp = self.sql.getRec(tables="bwltyp", where=[("bct_cono", "=",
+             self.opts["conum"]), ("bct_code", "=", com[1])], limit=1)
+         self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
+-        if self.cfmat == "K":
++        if self.cfmat in ("D", "K"):
+             return "Knockout Competition, Results Capturing Not Supported"
+         elif self.cfmat == "R":
+             self.games = self.sql.getRec(tables="bwlent", cols=["count(*)"],
+
+=== modified file 'bwl/bc3080.py'
+--- bwl/bc3080.py	2016-05-21 12:42:32 +0000
++++ bwl/bc3080.py	2016-09-29 10:53:39 +0000
+@@ -142,7 +142,7 @@
+                 h=h, ln=0)
+             if ldic["bct_cfmat"] == "T":
+                 txt = "Tournament"
+-            elif ldic["bct_cfmat"] == "K":
++            elif ldic["bct_cfmat"] in ("D", "K"):
+                 txt = "Knockout"
+             elif ldic["bct_cfmat"] == "R":
+                 txt = "Round Robin"
+@@ -152,7 +152,7 @@
+             self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_tsize"][4],
+                 h=h, ln=0)
+             self.fpdf.drawText(txt=ldic["bct_tsize"], x=x1, h=h, ctyp="M")
+-            if ldic["bct_cfmat"] in ("K", "R"):
++            if ldic["bct_cfmat"] in ("D", "K", "R"):
+                 return
+             self.fpdf.drawText(txt="Draw", h=h, ln=0)
+             if ldic["bct_drawn"] == ldic["bct_games"]:
+
+=== modified file 'bwl/bc3090.py'
+--- bwl/bc3090.py	2016-05-21 12:42:32 +0000
++++ bwl/bc3090.py	2016-09-29 10:54:00 +0000
+@@ -70,7 +70,7 @@
+         bwltyp = self.sql.getRec(tables="bwltyp", where=[("bct_cono", "=",
+             self.opts["conum"]), ("bct_code", "=", ctyp)], limit=1)
+         self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
+-        if self.cfmat == "K":
++        if self.cfmat in ("D", "K"):
+             return "Knockout Competitions has No Summary"
+         if self.cfmat == "R":
+             self.games = self.sql.getRec(tables="bwlent", cols=["count(*)"],
+
+=== modified file 'bwl/bc3110.py'
+--- bwl/bc3110.py	2016-05-21 12:42:32 +0000
++++ bwl/bc3110.py	2016-09-29 10:54:14 +0000
+@@ -77,7 +77,7 @@
+             self.opts["conum"]), ("bct_code", "=", self.ctyp)], limit=1)
+         self.cfmat = chk[self.sql.bwltyp_col.index("bct_cfmat")]
+         self.tsize = chk[self.sql.bwltyp_col.index("bct_tsize")]
+-        if self.cfmat in ("K", "R"):
++        if self.cfmat in ("D", "K", "R"):
+             self.games = self.sql.getRec(tables="bwlent", cols=["count(*)"],
+                 where=[("bce_cono", "=", self.opts["conum"]), ("bce_ccod", "=",
+                 self.ccod)], limit=1)[0] - 1
+
+=== modified file 'bwl/bc6020.py'
+--- bwl/bc6020.py	2016-02-27 13:18:41 +0000
++++ bwl/bc6020.py	2016-11-05 09:01:57 +0000
+@@ -44,12 +44,14 @@
+     def mainProcess(self):
+         splash = SplashScreen(self.opts["mf"].body,
+             "Merging Duplicate Names ... Please Wait")
++        # Get all visitor's tabs
+         tabs = self.sql.getRec(tables="bwltab", cols=["btb_tab", "btb_surname",
+             "btb_names", "btb_pos1", "btb_pos2"], where=[("btb_cono", "=",
+             self.opts["conum"]), ("btb_tab", ">=", self.nstart)],
+             order="btb_surname, btb_names, btb_tab")
+         old = []
+         for tab in tabs:
++            # Set default position and rating
+             chk = self.sql.getRec(tables="bwlent", where=[("bce_cono", "=",
+                 self.opts["conum"]), ("bce_scod", "=", tab[0])], limit=1)
+             if chk and self.dbase in ("C", "P") and tab[3] == 1:
+@@ -62,6 +64,7 @@
+                 self.sql.updRec("bwltab", cols=["btb_pos1", "btb_rate1",
+                     "btb_pos2", "btb_rate2"], data=dat, where=[("btb_cono",
+                     "=", self.opts["conum"]), ("btb_tab", "=", tab[0])])
++            # Check if duplicate and merge
+             if tab[1:3] == old[1:3]:
+                 for ot in self.tables:
+                     col = getattr(self.sql, "%s_col" % ot[0])
+
+=== modified file 'crs/cr3360_rne.py'
+--- crs/cr3360_rne.py	2016-05-21 12:42:32 +0000
++++ crs/cr3360_rne.py	2016-09-21 12:33:32 +0000
+@@ -92,14 +92,22 @@
+         if not acc:
+             return "Invalid Template Name"
+         self.tname = w
++        if "args" in self.opts:
++            self.period = 0
++            self.snum = self.opts["args"]
++            self.enum = self.opts["args"]
++            self.df.loadEntry(frt, pag, p+1, data=self.period)
++            self.df.loadEntry(frt, pag, p+2, data=self.snum)
++            self.df.loadEntry(frt, pag, p+3, data=self.enum)
++            return "sk3"
+ 
+     def doPer(self, frt, pag, r, c, p, i, w):
+         self.period = w
+ 
+     def doNum(self, frt, pag, r, c, p, i, w):
+         chk = self.sql.getRec(tables="crstrn", cols=["crt_ref1"],
+-            where=[("crt_cono", "=", self.opts["conum"]), ("crt_type", "=", 5),
+-            ("crt_ref1", "=", w)], limit=1)
++            where=[("crt_cono", "=", self.opts["conum"]), ("crt_type",
++            "=", 5), ("crt_ref1", "=", w)], limit=1)
+         if not chk:
+             return "Invalid Reference Number"
+         if c == 3:
+@@ -110,12 +118,13 @@
+ 
+     def doEnd(self):
+         self.emadd = self.df.repeml[2]
+-        recs = self.sql.getRec(tables="crstrn", cols=["crt_acno", "crt_ref1",
+-            "crt_trdt"], where=[("crt_cono", "=", self.opts["conum"]),
+-            ("crt_type", "=", 5), ("crt_ref1", "between", self.snum,
+-            self.enum)], order="crt_ref1")
++        recs = self.sql.getRec(tables="crstrn", cols=["crt_acno",
++            "crt_ref1", "crt_trdt"], where=[("crt_cono", "=",
++            self.opts["conum"]), ("crt_type", "=", 5), ("crt_ref1",
++            "between", self.snum, self.enum)], order="crt_ref1")
+         if not recs:
+             showError(self.opts["mf"].body, "Error", "No Records Selected")
++            self.df.focusField("T", 0, 1)
+         else:
+             self.form = DrawForm(self.opts["mf"].dbm, self.tname,
+                 wrkdir=self.opts["mf"].rcdic["wrkdir"])
+@@ -123,15 +132,18 @@
+             self.form.doNewDetail()
+             self.df.setWidget(self.df.mstFrame, state="hide")
+             p = ProgressBar(self.opts["mf"].body, mxs=len(recs))
+-            for num, rec in enumerate(recs):
++            for num, ref in enumerate(recs):
+                 p.displayProgress(num)
+-                self.doProcess(rec)
++                self.doProcess(ref)
+             p.closeProgress()
+             self.df.setWidget(self.df.mstFrame, state="show")
+             if self.df.repeml[1] == "N" or self.emadd:
+                 self.df.repeml[2] = self.emadd
+                 self.doPrint()
+-        self.df.focusField("T", 0, 1)
++            if "args" in self.opts:
++                self.doExit()
++            else:
++                self.df.focusField("T", 0, 1)
+ 
+     def doLoadStatic(self):
+         cmc = self.sql.ctlmst_col
+@@ -370,9 +382,9 @@
+         else:
+             fromad = "recon4@spargs.co.za"
+         self.form.output(pdfnam, "F")
+-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+-            head=self.tit, repprt=self.df.repprt, fromad=fromad,
+-            repeml=self.df.repeml)
++        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
++            pdfnam=pdfnam, head=self.tit, repprt=self.df.repprt,
++            fromad=fromad, repeml=self.df.repeml)
+         if self.df.repeml[1] == "Y":
+             self.form = DrawForm(self.opts["mf"].dbm, self.tname,
+                 wrkdir=self.opts["mf"].rcdic["wrkdir"])
+
+=== modified file 'crs/cr4010_rne.py'
+--- crs/cr4010_rne.py	2016-06-22 08:28:55 +0000
++++ crs/cr4010_rne.py	2016-09-21 12:02:17 +0000
+@@ -16,7 +16,7 @@
+ import time
+ from TartanClasses import ASD, Balances, NotesCreate, RepPrt, SChoice
+ from TartanClasses import SelectChoice, Sql, TabPrt, TartanDialog
+-from tartanFunctions import getTrn, copyList
++from tartanFunctions import callModule, getTrn, copyList
+ from tartanWork import crtrtp, mthnam
+ 
+ """
+@@ -293,16 +293,22 @@
+             state = self.df.disableButtonsTags()
+             while True:
+                 rec = SelectChoice(self.df.nb.Page4, titl, cols, data)
+-                # Display all transaction details
++                # If Remittance Advice attempt to display the document
++                # else display all transaction details
+                 if rec.selection:
+                     self.df.setWidget(self.df.mstFrame, state="hide")
+-                    whr = [
+-                        ("crt_cono", "=", self.opts["conum"]),
+-                        ("crt_acno", "=", self.acno),
+-                        ("crt_type", "=", rec.selection[4]),
+-                        ("crt_ref1", "=", rec.selection[5])]
+-                    TabPrt(self.opts["mf"], tabs="crstrn", where=whr,
+-                        pdia=False)
++                    if rec.selection[5][:3] == "EFT":
++                        callModule(self.opts["mf"], self.df, "cr3360",
++                            coy=(self.opts["conum"], self.opts["conam"]),
++                            period=None, user=None, args=rec.selection[5])
++                    else:
++                        whr = [
++                            ("crt_cono", "=", self.opts["conum"]),
++                            ("crt_acno", "=", self.acno),
++                            ("crt_type", "=", rec.selection[4]),
++                            ("crt_ref1", "=", rec.selection[5])]
++                        TabPrt(self.opts["mf"], tabs="crstrn", where=whr,
++                            pdia=False)
+                     self.df.setWidget(self.df.mstFrame, state="show")
+                 else:
+                     break
+
+=== added file 'csv/genqra_fld.csv'
+--- csv/genqra_fld.csv	1970-01-01 00:00:00 +0000
++++ csv/genqra_fld.csv	2016-08-27 10:35:07 +0000
+@@ -0,0 +1,3 @@
++0,"gqa_group","UI","3.0","Group Code","Grp"
++1,"gqa_facc","UI","7.0","From Account Number","From-Ac"
++2,"gqa_tacc","UI","7.0","To Account Number","To-Acc"
+
+=== added file 'csv/genqra_idx.csv'
+--- csv/genqra_idx.csv	1970-01-01 00:00:00 +0000
++++ csv/genqra_idx.csv	2016-08-27 10:35:15 +0000
+@@ -0,0 +1,1 @@
++"Statistics - Accounts",1,"N","gqa_group"
+
+=== modified file 'csv/genqrb_fld.csv'
+--- csv/genqrb_fld.csv	2016-05-21 12:42:32 +0000
++++ csv/genqrb_fld.csv	2016-11-01 13:28:44 +0000
+@@ -1,4 +1,3 @@
+ 0,"gqb_bcod","UI","3.0","Branch Code","Bch"
+ 1,"gqb_name","NA","12.0","Branch Name","Branch-Name"
+ 2,"gqb_ccod","UA","1.0","Country Code","C"
+-3,"gqb_gcod","UI","1.0","Group Code","G"
+
+=== modified file 'csv/genqrb_idx.csv'
+--- csv/genqrb_idx.csv	2016-09-03 14:07:52 +0000
++++ csv/genqrb_idx.csv	2016-10-10 15:16:25 +0000
+@@ -1,1 +1,1 @@
+-"Quick Results - Branches",1,"U","gqb_bcod"
++"Statistics - Branches",1,"U","gqb_bcod"
+
+=== modified file 'csv/genqrc_idx.csv'
+--- csv/genqrc_idx.csv	2016-09-03 14:07:52 +0000
++++ csv/genqrc_idx.csv	2016-10-10 15:16:36 +0000
+@@ -1,1 +1,1 @@
+-"Quick Results - Departments",1,"U","gqc_dcod"
++"Statistics - Departments",1,"U","gqc_dcod"
+
+=== modified file 'csv/genqrd_idx.csv'
+--- csv/genqrd_idx.csv	2016-09-03 14:07:52 +0000
++++ csv/genqrd_idx.csv	2016-10-10 15:16:49 +0000
+@@ -1,2 +1,2 @@
+-"Quick Results - Companies",1,"U","gqd_bcod","gqd_dcod","gqd_cono"
++"Statistics - Companies",1,"U","gqd_bcod","gqd_dcod","gqd_cono"
+ "",2,"U","gqd_cono"
+
+=== added file 'csv/genqrg_fld.csv'
+--- csv/genqrg_fld.csv	1970-01-01 00:00:00 +0000
++++ csv/genqrg_fld.csv	2016-08-27 10:34:51 +0000
+@@ -0,0 +1,2 @@
++0,"gqg_group","UI","3.0","Group Code","Grp"
++1,"gqg_desc","NA","30.0","Group Description","Description"
+
+=== added file 'csv/genqrg_idx.csv'
+--- csv/genqrg_idx.csv	1970-01-01 00:00:00 +0000
++++ csv/genqrg_idx.csv	2016-10-10 15:17:09 +0000
+@@ -0,0 +1,1 @@
++"Statistics - Account Groups",1,"U","gqg_group"
+
+=== added file 'csv/genqrp_fld.csv'
+--- csv/genqrp_fld.csv	1970-01-01 00:00:00 +0000
++++ csv/genqrp_fld.csv	2016-10-13 07:05:53 +0000
+@@ -0,0 +1,4 @@
++0,"gqp_bcod","UI","3.0","Branch Code","Bch"
++1,"gqp_dcod","UI","3.0","Department Code","Dep"
++2,"gqp_rate","UD","6.2","Tartget Rate","T-Rate"
++3,"gqp_allow","UD","6.2","Allowance Rate","A-Rate"
+
+=== added file 'csv/genqrp_idx.csv'
+--- csv/genqrp_idx.csv	1970-01-01 00:00:00 +0000
++++ csv/genqrp_idx.csv	2016-10-10 15:17:18 +0000
+@@ -0,0 +1,1 @@
++"Statistics - Targets",1,"U","gqp_bcod","gqp_dcod"
+
+=== modified file 'csv/lonrte_fld.csv'
+--- csv/lonrte_fld.csv	2015-10-03 07:36:56 +0000
++++ csv/lonrte_fld.csv	2016-10-06 08:46:14 +0000
+@@ -1,6 +1,6 @@
+ 0,"lrt_cono","UI","3.0","Company Number","Coy"
+ 1,"lrt_acno","UA","7.0","Account Number","Acc-Num"
+ 2,"lrt_loan","UI","2.0","Loan","Ln"
+-3,"lrt_start","D1","10.0","Start Date","Start-Date"
++3,"lrt_start","d1","10.0","Start Date","Start-Date"
+ 4,"lrt_drte","UD","6.2","Debit Rate","DRte-%"
+ 5,"lrt_crte","UD","6.2","Credit Rate","CRte-%"
+
+=== modified file 'csv/rnesys.py'
+--- csv/rnesys.py	2016-09-03 14:07:52 +0000
++++ csv/rnesys.py	2016-09-10 01:39:42 +0000
+@@ -14,7 +14,7 @@
+     # General Ledger
+     "genbal", "genbud", "gendtm", "gendtt", "genint", "genjlm", "genjlt",
+     "genmst", "genrcc", "genrct", "genrpc", "genrpt", "genstr", "gentrn",
+-    "genqra", "genqrb", "genqrc", "genqrd", "genqrg", "genqrt",
++    "genqra", "genqrb", "genqrc", "genqrd", "genqrg", "genqrp", "genqrt",
+     # Inter Branch Transfers
+     "ibtctl", "ibtcod", "ibtmst", "ibttrn",
+     # Loans
+
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2016-09-03 14:07:52 +0000
++++ doc/BKS.rst	2016-11-07 16:11:34 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.2.5
++:Version:   5.2.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWL.rst'
+--- doc/BWL.rst	2016-09-03 14:07:52 +0000
++++ doc/BWL.rst	2016-10-02 16:03:36 +0000
+@@ -90,11 +90,11 @@
+ 
+ + **Type Code** - zero for the next number else an existing number. To see existing types press the F1 key.
+ + **Description** - The competition description.
+-+ **Competition Format** - The type of competition i.e. Tournament, Knockout, Round Robin or Match i.e. Home versus Visitors.
+++ **Competition Format** - The type of competition i.e. Tournament, K/Out (D), K/Out (N), R/Robin or Teams. K/Out (D) is for drawn teams knockout and K/Out (N) is for nominated teams knockout. Teams is for a competition between the home club and a visiting club.
+ + **Team Size** - The number of players in a team.
+ + **Number of Games** - The total number of games comprising the competition.
+ + **Number of Ends per Game** - The number of ends to be completed in a game.
+-+ **Groups by Position** - Whether or not the teams must be split into different groups. If grouping is not going to occur continue with `Skins` below.
+++ **Groups by Position** - Whether or not the teams must be split into different groups. If grouping is not going to occur continue with `Strict S v S` below.
+ + **Group After Game** - Select the game after which the grouping is to take place.
+ + **Adjust Scores** - Whether or not the scores are to be adjusted.
+ + **Expunge Games** - Which games, if any, must be expunged i.e. cleared. The games must be comma separated e.g. 1,2
+@@ -315,15 +315,15 @@
+ + **Date** - The starting date of the competition.
+ + **Type** - The competition type as created in `Competition Types`_.
+ 
+-Enter the Skip's Codes
++In the event of drawn games enter all player's codes else enter only the skip's codes.
+ 
+-+ **Skip** - The skip's code as created in `Tab's Maintenance`_ or you can enter a zero to enter a new player as per `Tab's Maintenance`_.
+-+ **Team** - The team's code i.e. H or V if the competition type is Match.
+-+ **P** - Whether or not the skip has paid, Y or N.
+++ **Code** - The player's code as created in `Tab's Maintenance`_ or you can enter a zero to enter a new player as per `Tab's Maintenance`_.
+++ **Team** - The team's code, if relevant i.e. H or V if the competition type is Teams.
+++ **P** - Whether or not the player has paid, Y or N.
+ 
+ Entries Listing
+ +++++++++++++++
+-Use this routine to print a report of entered skips.
++Use this routine to print a list of entered players.
+ 
+ + **Competition Code** - The relevant competition number.
+ 
+@@ -335,32 +335,41 @@
+ 
+ Competition Draw
+ ++++++++++++++++
+-Use this routine to create a draw and to print match cards as follows:
++Use this routine to create a draw and, if relevant, print match cards as follows:
+ 
+-+ **Competition Code** - The relevant competition code.
+-+ **Game Number** - The relevant game number.
+-+ **Game Date** - The date of the game.
+-+ **Number of Groups** - The number of groups, if applicable, to split the players into.
+-+ **Smallest Group** - Select which group will have the least number of teams if applicable.
+-+ **Greens** - The greens to be used, comma separated e.g. A,B,C will default to 6 rinks per green. You can default a green to seven by entering A7,B7,C which would give us 23 rinks. You can also exclude rinks by entering rinks to be used e.g. A2345,B345 which would give us 7 rinks.
+-+ **Group per Green** - Whether to allocate greens to groups. This only applies to the final game.
+-+ **Print Cards** - Whether or not to print score cards.
+-+ **All Cards** - If cards were selected to be printed, whether to print all cards or only selected ones.
+-+ **Template Name** - The template to use for the cards.
+++ **Tournament, Teams and Round Robin**
++    + **Competition Code** - The relevant competition code.
++    + **Game Number** - The relevant game number.
++    + **Game Date** - The date of the game.
++    + **Pair Home with Away Skips** - This only applies to the first drawn game.
++        + **No** - Standard random draw where anyone could be paired with anyone.
++        + **Yes** - An attempt will be made to pair visitors with local members.
++    + **Number of Groups** - The number of groups, if applicable, to split the players into.
++    + **Smallest Group** - Select which group will have the least number of teams if applicable.
++    + **Greens** - The greens to be used, comma separated e.g. A,B,C will default to 6 rinks per green. You can default a green to seven by entering A7,B7,C which would give us 20 rinks. You can also exclude rinks by entering rinks to be used e.g. A2345,B345 which would give us 7 rinks.
++    + **Group per Green** - Whether to allocate greens to groups. This only applies to the final game.
++    + **Print Cards** - Whether or not to print score cards.
++    + **All Cards** - If cards were selected to be printed, whether to print all cards or only selected ones.
++    + **Template Name** - The template to use for the cards.
+ 
+ .. raw:: pdf
+ 
+     PageBreak
+ 
+++ **Knockout**
++    + **Competition Code** - The relevant competition code.
++    + **Completion Dates** - Enter the dates each round must be completed by.
++    + **Number of Seeds** - Enter the number of seeded players and then enter each seeded player's code, in sequence, starting with the first seed.
++
+ Draw Summary
+ ++++++++++++
+-Use this routine to print a summary of all draws to date.
++Use this routine to print a summary of all draws, excluding knockout, to date.
+ 
+ + **Competition Code** - The relevant competition number.
+ 
+ Change Draw
+ +++++++++++
+-Use this routine to change individual match cards. After changing the cards you must reprint them as per `Competition Draw`_. Please note that to only reprint certain cards you must select `All Cards No`.
++Use this routine to change individual draws, excluding knockout, in a competition. After changing the draws you must reprint them as per `Competition Draw`_. Please note that to only reprint certain cards you must select `All Cards No`.
+ 
+ + **Competition Code** - The relevant competition code.
+ + **Game Number** - The relevant game number.
+@@ -371,7 +380,7 @@
+ 
+ Capture Game Results
+ ++++++++++++++++++++
+-Use this routine to capture completed matches as follows:
++Use this routine to capture completed games, excluding knockout, as follows:
+ 
+ + **Competition Code** - The relevant competition code.
+ + **Game Number** - The relevant game number.
+@@ -385,7 +394,7 @@
+ 
+ Game Results Report
+ +++++++++++++++++++
+-Use this routine to print game results as follows:
++Use this routine to print game results, excluding knockout, as follows:
+ 
+ + **Competition Code** - The relevant competition code.
+ + **Game Number** - The relevant game number.
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2016-09-03 14:07:52 +0000
++++ doc/BWM.rst	2016-11-07 16:11:34 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.2.5
++:Version:   5.2.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2016-09-03 14:07:52 +0000
++++ doc/Downloads.rst	2016-11-07 16:11:35 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.2.5 and was released on the 3rd September, 2016.
++The latest version of Tartan is 5.2.6 and was released on the 7th November, 2016.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.5.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.6.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.5.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.6.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.5.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.5.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.5.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.5.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.6.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.6.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.6.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.6.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/GEN_rne.rst'
+--- doc/GEN_rne.rst	2016-09-03 14:07:52 +0000
++++ doc/GEN_rne.rst	2016-11-03 09:36:20 +0000
+@@ -34,6 +34,30 @@
+ + **Acc-Num-1** - Company 2's inter company loan account number in company 1.
+ + **Acc-Num-2** - Company 1's inter company loan account number in company 2.
+ 
++Branch Records (GL)
+++++++++++++++++++++
++Use this routine to create, amend and delete branch records used in the `Quick Trading Results (GL)`_ and the `Preliminary Results (GL)`_ reports.
++
+++ **Branch Code** - This is the code for the branch.
+++ **Branch Name** - This is a 12 character name for the branch.
+++ **Country** - The country where the branch is located.
++
++Department Records (GL)
+++++++++++++++++++++++++
++Use this routine to create, amend and delete department records used in the `Quick Trading Results (GL)`_ and the `Preliminary Results (GL)`_ reports.
++
+++ **Department Code** - This is the code for the department.
+++ **Department Name** - This is a 12 character name for the department.
++
++Branch Departments (GL)
+++++++++++++++++++++++++
++Use this routine to create, amend and delete branch departments records used in the `Quick Trading Results (GL)`_ and the `Preliminary Results (GL)`_ reports.
++
+++ **Branch Code** - The branch code.
++
+++ **Dep** - The department code as created above.
+++ **Coy** - The company number of this department. Entering a zero wil enable you to delete an existing department.
++
+ Standard Journals (GL)
+ ++++++++++++++++++++++
+ Use this routine to create, amend and delete standard journals.
+@@ -520,7 +544,7 @@
+ 
+ Quick Trading Results (GL)
+ ++++++++++++++++++++++++++
+-Use this routine to produce quick trading results reporting.
++Use this routine to produce quick trading results reports.
+ 
+ + **Financial Period** - The financial period to report on.
+ + **Ending Period** - The last period to include in the report.
+@@ -556,6 +580,28 @@
+     + **Graphs** - Select whether to print graphs for the selections.
+ + **Exit** - Use this button to exit the financial period.
+ 
++Preliminary Results (GL)
++++++++++++++++++++++++++
++Use this routine to produce preliminary financial results reports.
++
++The following Buttons are available:
++
+++ **Accounts** - Use this button to enter account numbers relating to various groups e.g. Opening Stock, Purchases, Sales, Wages etc...
++    + **Group Code** - The code of the group to edit.
++    + **Description** - The description of the group.
++        + **Fr-AcNo** - The initial account number.
++        + **To-AcNo** - The last account number of a sequence.
+++ **Rates** - Use this button to enter gross profit targets and stock allowance percentages.
++    + **Branch Code** - The relevant branch code.
++        + **Dep** - The relevant department code.
++        + **Name** - The name of the department.
++        + **T-Rate** - The relevant target rate.
++        + **A-Rate** - The relevant allowance rate.
+++ **Print** - Use this button to generate and print the reports.
++    + **Financial Period** - The financial period to report on.
++    + **Ending Period** - The last period to include in the report.
+++ **Exit** - Use this button to exit.
++
+ Toolbox (GL)
+ ............
+ Change Account Numbers (GL)
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2016-09-03 14:07:52 +0000
++++ doc/MST.rst	2016-11-07 16:11:34 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.2.5
++:Version:   5.2.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2016-09-03 14:07:52 +0000
++++ doc/SEC.rst	2016-11-07 16:11:34 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.2.5
++:Version:   5.2.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'drs/dr3110.py'
+--- drs/dr3110.py	2016-02-27 13:18:41 +0000
++++ drs/dr3110.py	2016-10-04 08:47:46 +0000
+@@ -329,7 +329,7 @@
+                 "Acc-Num", "Name", "Rep", "Act", "Typ", self.mthhead))
+         self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head1)))
+         self.fpdf.setFont()
+-        self.pglin = 8
++        self.pglin = 10
+ 
+     def doTotals(self, ttype="G"):
+         if self.df.repprt[2] == "export":
+
+=== modified file 'gen/gl1030.py'
+--- gen/gl1030.py	2016-09-03 14:07:52 +0000
++++ gen/gl1030.py	2016-11-02 09:25:01 +0000
+@@ -343,7 +343,7 @@
+             "stype": "R",
+             "tables": ("ctlmst",),
+             "cols": (
+-                ("ctm_cono", "", 0, "Com"),
++                ("ctm_cono", "", 0, "Coy"),
+                 ("ctm_name", "", 0, "Name", "Y"))}
+         glr = {
+             "stype": "R",
+
+=== modified file 'gen/gl3120_rne.py'
+--- gen/gl3120_rne.py	2016-09-03 14:07:52 +0000
++++ gen/gl3120_rne.py	2016-11-04 11:38:16 +0000
+@@ -25,8 +25,8 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctlynd", "ctlgrp",
+-            "genqrb", "genqrc", "genqrd", "genqrt", "gentrn"], prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctlynd", "genqrb",
++            "genqrc", "genqrd", "genqrt", "gentrn"], prog=__name__)
+         if self.sql.error:
+             return
+         p = self.sql.getRec(tables="ctlynd", cols=["max(cye_period)"],
+@@ -51,16 +51,6 @@
+                 ("gqb_bcod", "", 0, "Cod"),
+                 ("gqb_name", "", 0, "Name")),
+             "order": "gqb_bcod"}
+-        self.grps = [
+-            (1, "Autocote"),
+-            (2, "RNE"),
+-            (3, "SPAR"),
+-            (4, "Spargs")]
+-        grp = {
+-            "stype": "C",
+-            "head": ("Cod", "Name"),
+-            "typs": (("UI",3), ("NA",30)),
+-            "data": self.grps}
+         dep = {
+             "stype": "R",
+             "tables": ("genqrc",),
+@@ -84,15 +74,12 @@
+                 self.finper,"Y",self.doFPer,fin,None,("efld",)),
+             (("T",0,1,0),"ID2",7,"Ending Period","",
+                 0,"N",self.doEPer,None,None,("efld",)),
+-            (("T",1,0,0),"IUI",3,"Group Code","",
++            (("T",1,0,0),"IUI",3,"Branch Code","",
+                 "","Y",self.doCode,bch,None,("efld",)),
+-            (("T",1,1,0),"INA",12,"Group Name", "",
++            (("T",1,1,0),"INA",12,"Branch Name", "",
+                 "","N",self.doName,None,self.doDelete,("notblank",)),
+             (("T",1,2,0),("IRB",r1s),0,"Country Code", "",
+                 "S","N",self.doCountry,None,None,None),
+-            (("T",1,3,0),"IUI",1,"Group Code", "",
+-                "","N",self.doGroup,grp,None,("notzero",)),
+-            (("T",1,3,0),"ONA",30,""),
+             (("C",1,0,0),"IUI",3,"Dep","",
+                 "","Y",self.doDepno,dep,None,("efld",)),
+             (("C",1,0,1),"INA",12,"Depart-Name", "",
+@@ -165,13 +152,6 @@
+             self.newbch = False
+             self.df.loadEntry(frt, pag, p+1, data=acc[1])
+             self.df.loadEntry(frt, pag, p+2, data=acc[2])
+-            self.df.loadEntry(frt, pag, p+3, data=acc[3])
+-            name = None
+-            for d in self.grps:
+-                if acc[3] == d[0]:
+-                    name = d[1]
+-                    self.df.loadEntry(frt, pag, p+4, data=name)
+-                    break
+ 
+     def doName(self, frt, pag, r, c, p, i, w):
+         self.bnam = w
+@@ -179,17 +159,6 @@
+     def doCountry(self, frt, pag, r, c, p, i, w):
+         self.country = w
+ 
+-    def doGroup(self, frt, pag, r, c, p, i, w):
+-        name = None
+-        for d in self.grps:
+-            if w == d[0]:
+-                name = d[1]
+-                self.df.loadEntry(frt, pag, p+1, data=name)
+-                break
+-        if not name:
+-            return "Invalid Group"
+-        self.group = w
+-
+     def doDepno(self, frt, pag, r, c, p, i, w):
+         dep = self.sql.getRec(tables="genqrc", where=[("gqc_dcod", "=", w)],
+             limit=1)
+@@ -249,11 +218,11 @@
+         elif self.df.frt == "T":
+             if self.newbch:
+                 self.sql.insRec("genqrb", data=[self.bcod, self.bnam,
+-                    self.country, self.group])
++                    self.country])
+             else:
+-                self.sql.updRec("genqrb", cols=["gqb_name", "gqb_ccod",
+-                    "gqb_gcod"], data=[self.bnam, self.country, self.group],
+-                    where=[("gqb_bcod", "=", self.bcod)])
++                self.sql.updRec("genqrb", cols=["gqb_name", "gqb_ccod"],
++                    data=[self.bnam, self.country], where=[("gqb_bcod",
++                    "=", self.bcod)])
+             self.loadCoys()
+         elif self.df.frt == "C":
+             if self.newdep:
+@@ -507,7 +476,7 @@
+             "T": [[0], {900: 0, 999: 0}],
+             "C": [[0], {900: 0, 999: 0}]}
+         for bch in self.bchs:
+-            self.bcod, self.bnam, self.ccod, self.gcod = bch
++            self.bcod, self.bnam, self.ccod = bch
+             coys = self.sql.getRec(tables=["genqrd", "ctlmst"],
+                 cols=["gqd_dcod", "ctm_cono", "ctm_name"],
+                 where=[("gqd_bcod", "=", self.bcod),
+@@ -798,8 +767,11 @@
+             txt=amt, ln=1, border="TLRB")
+         self.fpdf.drawText(w=(20 * cwth), h=5,
+             txt="Percentage", ln=0, border="TLRB", font=["B"], fill=1)
+-        amt = round(self.gt[self.conum][self.eper][0] * 100.0 /
+-            self.gt[self.conum][self.eper][1], 2)
++        if self.gt[self.conum][self.eper][1]:
++            amt = round(self.gt[self.conum][self.eper][0] * 100.0 /
++                self.gt[self.conum][self.eper][1], 2)
++        else:
++            amt = 0
+         self.fpdf.set_text_color(*rgb("#ff0000"))
+         self.fpdf.drawText(w=(15 * cwth), h=5, align="R",
+             txt="%10.2f%s" % (amt, "%"), ln=0, border="TLRB")
+
+=== added file 'gen/gl3130_rne.py'
+--- gen/gl3130_rne.py	1970-01-01 00:00:00 +0000
++++ gen/gl3130_rne.py	2016-11-06 09:08:16 +0000
+@@ -0,0 +1,1298 @@
++"""
++SYNOPSIS
++    Preliminary Trading Profit and Loss Account.
++
++    This file is part of Tartan Financial Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2015 Paul Malherbe.
++"""
++
++from operator import itemgetter
++from TartanClasses import ASD, CCD, MyFpdf, ProgressBar, Sql, TartanDialog
++from tartanFunctions import askQuestion, copyList, dateDiff, doPrinter
++from tartanFunctions import getModName, getPeriods, mthendDate, showError
++from tartanFunctions import simpleBarChart
++from tartanWork import mthnam
++
++class gl3130:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctlynd", "genqra",
++            "genqrb", "genqrc", "genqrd", "genqrg", "genqrp", "genmst",
++            "gentrn"], prog=__name__)
++        if self.sql.error:
++            return
++        p = self.sql.getRec(tables="ctlynd", cols=["max(cye_period)"],
++            where=[("cye_cono", "=", 1)])
++        self.cfin = int(p[0][0])
++        self.grps = [
++            [1, "Opening Stock"],
++            [2, "Purchases"],
++            [3, "Sales"],
++            [4, "Incentives"],
++            [5, "Advertising"],
++            [6, "Closing Stock"],
++            [7, "Wages"],
++            [8, "Settlement"]]
++        return True
++
++    def mainProcess(self):
++        tit = "Financial Reports"
++        fin = {
++            "stype": "R",
++            "tables": ("ctlynd",),
++            "cols": (
++                ("cye_period", "", 0, "Prd"),
++                ("cye_start", "", 0, "Start"),
++                ("cye_end", "", 0, "End")),
++            "where": [("cye_cono=1",)]}
++        fld = (
++            (("T",0,0,0),"IUI",3,"Financial Period","",
++                self.cfin,"Y",self.doFPer,fin,None,("efld",)),
++            (("T",0,1,0),"ID2",7,"Ending Period","",
++                0,"N",self.doEPer,None,None,("efld",)))
++        but = (
++            ("Accounts",None,self.doAccs,0,None,None,
++                "Use this button to enter or modify the General Ledger "\
++                "account numbers for the various account groups "\
++                "e.g. Opening Stock, Purchases, Sales etc."),
++            ("Rates",None,self.doTarg,0,None,None,
++                "Use this button to enter or modify the Department Target "\
++                "and Allowance Rates for the various branches."),
++            ("Print",None,self.doPrint,0,None,None),
++            ("Exit",None,self.doExit,0,None,None))
++        tnd = ((self.doEnd,"y"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
++            eflds=fld, butt=but, tend=tnd, txit=txt, view=("N","V"),
++            mail=("Y","N"), focus=False)
++        self.doButtons("normal")
++
++    def doFPer(self, frt, pag, r, c, p, i, w):
++        f = getPeriods(self.opts["mf"], 1, w, check=True)
++        if f == (None, None, None):
++            return "Invalid Financial Period"
++        self.cper = w
++        self.sper = f[0].work / 100
++        self.eper = f[1].work / 100
++        self.df.loadEntry(frt, pag, p+1, data=self.eper)
++
++    def doEPer(self, frt, pag, r, c, p, i, w):
++        if w < self.sper or w > self.eper:
++            return "Period Not In Financial Period"
++        self.rper = w
++        self.rperd = "%s %s" % (mthnam[w % 100][1], w / 100)
++
++    def doAccs(self):
++        self.doButtons("disabled", "hide")
++        tit = "Account Variables"
++        grp = {
++            "stype": "C",
++            "head": ("Grp", "Description"),
++            "typs": (("UI",3), ("NA",30)),
++            "data": self.grps}
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "Acc-Num"),
++                ("glm_desc", "", 0, "Description")),
++            "group": "glm_acno",
++            "order": "glm_acno"}
++        fld = (
++            (("T",0,0,0),"IUI",3,"Group Code","",
++                "","Y",self.doGroup,grp,None,("between",1,8)),
++            (("T",0,1,0),"INA",30,"Group Description", "",
++                "","N",self.doDesc,None,self.doAccDel,("notblank",)),
++            (("C",0,0,0),"IUI",7,"Fr-AcNo","From Account",
++                "","Y",self.doAcno,glm,None,("notzero",)),
++            (("C",0,0,1),"ONA",30,"Description"),
++            (("C",0,0,2),"IUI",7,"To-AcNo","To Account",
++                "","N",self.doAcno,glm,None,("efld",)),
++            (("C",0,0,3),"ONA",30,"Description"))
++        tnd = ((self.doAccEnd,"y"),)
++        txt = (self.doAccExit,)
++        cnd = ((self.doAccEnd,"y"),)
++        cxt = (self.doAccExit,)
++        but = (("Edit",None,self.doEdit,0,("T",0,0),None),)
++        self.ac = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
++            butt=but, tend=tnd, txit=txt, cend=cnd, cxit=cxt)
++        self.opts["mf"].startLoop()
++        self.doButtons("normal", "show")
++
++    def doGroup(self, frt, pag, r, c, p, i, w):
++        self.group = w
++        acc = self.sql.getRec(tables="genqrg", where=[("gqg_group", "=", w)],
++            limit=1)
++        if not acc:
++            self.newgrp = True
++            desc = self.grps[w - 1][1]
++        else:
++            self.newgrp = False
++            desc = acc[1]
++            chk = self.sql.getRec(tables="genqra", where=[("gqa_group", "=",
++                self.group)])
++            if chk:
++                self.newacc = False
++            else:
++                self.newacc = True
++        self.ac.loadEntry(frt, pag, p+1, data=desc)
++
++    def doDesc(self, frt, pag, r, c, p, i, w):
++        self.desc = w
++
++    def doEdit(self):
++        data = []
++        for line in self.ac.c_work[0]:
++            if line[0]:
++                data.append(line)
++        if data:
++            titl = "Account Numbers"
++            head = ("Fr-AcNo", "Description", "To-AcNo", "Description")
++            lin = {
++                "stype": "C",
++                "titl": titl,
++                "head": head,
++                "typs": [
++                    ("UI",7), ("NA",30), ("UI",7), ("NA",30)],
++                "data": data}
++            self.ac.disableButtonsTags(tags=False)
++            self.opts["mf"].updateStatus("Select a Line to Edit")
++            chg = self.ac.selChoice(lin)
++            if chg and chg.selection:
++                self.chg = chg.selection
++                self.doEditChanges()
++        self.ac.clearFrame("C", 0)
++        self.ac.clearFrame("T", 0)
++        self.ac.focusField("T", 0, 1)
++
++    def doEditChanges(self):
++        tit = ("Change Entry",)
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "Acc-Num"),
++                ("glm_desc", "", 0, "Description")),
++            "group": "glm_acno",
++            "order": "glm_acno"}
++        fld = (
++            (("T",0,0,0),"IUI",10,"Fr-AcNo","From Account",
++                0,"Y",self.doAcno,glm,None,("notzero",)),
++            (("T",0,0,0),"ONA",30,""),
++            (("T",0,1,0),"IUI",10,"Fr-AcNo","From Account",
++                0,"N",self.doAcno,glm,None,("efld",)),
++            (("T",0,1,0),"ONA",30,""))
++        but = [["Delete",None,self.doChgDel,1,None,None]]
++        self.cg = TartanDialog(self.opts["mf"], title=tit, tops=True,
++            eflds=fld, butt=but, tend=((self.doChgEnd,"n"),),
++            txit=(self.doChgExit,))
++        for x in range(4):
++            self.cg.loadEntry("T", 0, x, data=self.chg[x])
++        self.cg.focusField("T", 0, 1, clr=False)
++        self.opts["mf"].startLoop()
++        self.opts["mf"].dbm.commitDbase()
++
++    def doChgDel(self):
++        self.cg.closeProcess()
++        self.sql.delRec("genqra", where=[("gqa_group", "=", self.group),
++            ("gqa_facc", "=", self.chg[0]), ("gqa_tacc", "=", self.chg[2])])
++        self.loadAccs()
++        self.opts["mf"].closeLoop()
++
++    def doChgEnd(self):
++        self.cg.closeProcess()
++        facc = self.cg.t_work[0][0][0]
++        tacc = self.cg.t_work[0][0][2]
++        self.sql.delRec("genqra", where=[("gqa_group", "=", self.group),
++            ("gqa_facc", "=", self.chg[0]), ("gqa_tacc", "=", self.chg[2])])
++        self.sql.insRec("genqra", data=[self.group, facc, tacc])
++        self.loadAccs()
++        self.opts["mf"].closeLoop()
++
++    def doChgExit(self):
++        self.cg.closeProcess()
++        self.opts["mf"].closeLoop()
++
++    def loadAccs(self):
++        self.ac.clearFrame("C", 0)
++        self.ac.focusField("C", 0, 1)
++        accs = self.sql.getRec(tables="genqra", where=[("gqa_group",
++            "=", self.group)], order="gqa_facc")
++        if accs:
++            for num, acc in enumerate(accs):
++                pos = self.ac.pos
++                self.ac.loadEntry("C", 0, pos, acc[1])
++                des = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++                    where=[("glm_acno", "=", acc[1])], limit=1)
++                self.ac.loadEntry("C", 0, pos+1, data=des[0])
++                if acc[2]:
++                    des = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++                        where=[("glm_acno", "=", acc[2])], limit=1)
++                    self.ac.loadEntry("C", 0, pos+2, data=acc[2])
++                    self.ac.loadEntry("C", 0, pos+3, data=des[0])
++                self.ac.advanceLine(0)
++            self.ac.setWidget(self.ac.B0, state="normal")
++
++    def doAcno(self, frt, pag, r, c, p, i, w):
++        if not w:
++            self.tacc = 0
++            return "sk1"
++        acc = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++            where=[("glm_acno", "=", w)], limit=1)
++        if not acc:
++            return "Invalid Account Number"
++        elif frt == "C":
++            self.ac.loadEntry(frt, pag, p+1, data=acc[0])
++        else:
++            self.cg.loadEntry(frt, pag, p+1, data=acc[0])
++        if i == 0:
++            self.facc = w
++        else:
++            self.tacc = w
++
++    def doAccDel(self):
++        if self.newgrp:
++            return
++        self.sql.delRec("genqrg", where=[("gqg_group", "=", self.group)])
++        self.sql.delRec("genqra", where=[("gqa_group", "=", self.group)])
++        self.opts["mf"].dbm.commitDbase()
++        return ("T", 1, 1)
++
++    def doAccEnd(self):
++        if self.ac.frt == "T":
++            if self.newgrp:
++                self.sql.insRec("genqrg", data=[self.group, self.desc])
++            else:
++                self.sql.updRec("genqrg", cols=["gqg_desc"], data=[self.desc],
++                    where=[("gqg_group", "=", self.group)])
++                self.loadAccs()
++        else:
++            self.sql.insRec("genqra", data=[self.group, self.facc, self.tacc])
++            self.ac.advanceLine(0)
++
++    def doAccExit(self):
++        if self.ac.frt == "T":
++            self.ac.closeProcess()
++            self.opts["mf"].closeLoop()
++        else:
++            ok = askQuestion(self.opts["mf"].body, "Exit",
++                "Do You Want To Save All Entries?", default="yes")
++            if ok == "yes":
++                self.opts["mf"].dbm.commitDbase()
++            else:
++                self.opts["mf"].dbm.rollbackDbase()
++            self.ac.clearFrame("T", 0)
++            self.ac.clearFrame("C", 0)
++            self.ac.focusField("T", 0, 1)
++
++    def doTarg(self):
++        self.doButtons("disabled", "hide")
++        tit = "Department Targets"
++        bch = {
++            "stype": "R",
++            "tables": ("genqrb",),
++            "cols": (
++                ("gqb_bcod", "", 0, "Bch"),
++                ("gqb_name", "", 0, "Branch-Name")),
++            "order": "gqb_bcod"}
++        dep = {
++            "stype": "R",
++            "tables": ("genqrc",),
++            "cols": (
++                ("gqc_dcod", "", 0, "Dep"),
++                ("gqc_name", "", 0, "Depart-Name")),
++            "order": "gqc_dcod"}
++        fld = (
++            (("T",0,0,0),"IUI",3,"Branch Code","",
++                0,"Y",self.doTBch,bch,None,("efld",)),
++            (("T",0,0,0),"ONA",30,""),
++            (("C",0,0,0),"IUI",3,"Dep","Department Code",
++                0,"Y",self.doTDep,dep,None,("efld",)),
++            (("C",0,0,1),"INA",12,"Name","Department Name",
++                "","N",self.doTDes,None,None,("notblank",)),
++            (("C",0,0,2),"IUD",6.2,"T-Rate","Target Rate",
++                0,"N",self.doTRte,None,None,("notzero",)),
++            (("C",0,0,3),"IUD",6.2,"A-Rate","Allowance Rate",
++                1.5,"N",self.doARte,None,None,("notzero",)))
++        tnd = ((self.doTarEnd,"n"),)
++        txt = (self.doTarExit,)
++        cnd = ((self.doTarEnd,"y"),)
++        cxt = (self.doTarExit,)
++        self.tg = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
++            tend=tnd, txit=txt, cend=cnd, cxit=cxt)
++        self.opts["mf"].startLoop()
++        self.doButtons("normal", "show")
++
++    def doTBch(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec(tables="genqrb", cols=["gqb_name"],
++            where=[("gqb_bcod", "=", w)], limit=1)
++        if not acc:
++            return "Invalid Branch Code"
++        self.bcod = w
++        self.tg.loadEntry(frt, pag, p+1, data=acc[0])
++
++    def doTDep(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec(tables="genqrc", where=[("gqc_dcod", "=", w)],
++            limit=1)
++        if not acc:
++            ok = askQuestion(self.opts["mf"].body, "Department",
++                "Is This a New Department?", default="no")
++            if ok == "yes":
++                self.newdep = True
++            else:
++                return "Invalid Department"
++        else:
++            self.newdep = False
++            self.tg.loadEntry(frt, pag, p+1, data=acc[1])
++        self.dcod = w
++
++    def doTDes(self, frt, pag, r, c, p, i, w):
++        self.ddes = w
++        acc = self.sql.getRec(tables="genqrp", where=[("gqp_bcod", "=",
++            self.bcod), ("gqp_dcod", "=", self.dcod)], limit=1)
++        if not acc:
++            self.newper = True
++        else:
++            self.newper = False
++            self.tg.loadEntry(frt, pag, p+1, data=acc[2])
++            self.tg.loadEntry(frt, pag, p+2, data=acc[3])
++
++    def doTRte(self, frt, pag, r, c, p, i, w):
++        self.rate = w
++
++    def doARte(self, frt, pag, r, c, p, i, w):
++        self.allow = w
++
++    def doTarEnd(self):
++        if self.tg.frt == "C":
++            if self.newdep:
++                self.sql.insRec("genqrc", data=[self.dcod, self.ddes])
++            else:
++                self.sql.updRec("genqrc", cols=["gqc_name"], data=[self.ddes],
++                    where=[("gqc_dcod", "=", self.dcod)])
++            if self.newper:
++                self.sql.insRec("genqrp", data=[self.bcod, self.dcod,
++                    self.rate, self.allow])
++            else:
++                self.sql.updRec("genqrp", cols=["gqp_rate", "gqp_allow"],
++                    data=[self.rate, self.allow], where=[("gqp_bcod",
++                    "=", self.bcod), ("gqp_dcod", "=", self.dcod)])
++            self.opts["mf"].dbm.commitDbase()
++        self.doTLoad()
++
++    def doTLoad(self):
++        pers = self.sql.getRec(tables="genqrp", cols=["gqp_dcod", "gqp_rate",
++            "gqp_allow"], where=[("gqp_bcod", "=", self.bcod)],
++            order="gqp_dcod")
++        self.tg.focusField("C", 0, 1)
++        for num, per in enumerate(pers):
++            pos = num * 4
++            self.tg.loadEntry("C", 0, pos, data=per[0])
++            dep = self.sql.getRec(tables="genqrc", cols=["gqc_name"],
++                where=[("gqc_dcod", "=", per[0])], limit=1)
++            if dep:
++                self.tg.loadEntry("C", 0, pos+1, data=dep[0])
++            self.tg.loadEntry("C", 0, pos+2, data=per[1])
++            self.tg.loadEntry("C", 0, pos+3, data=per[2])
++            self.tg.advanceLine(0)
++
++    def doTarExit(self):
++        if self.tg.frt == "T":
++            self.tg.closeProcess()
++            self.opts["mf"].closeLoop()
++        else:
++            self.tg.focusField("T", 0, 1)
++
++    def doPrint(self):
++        chk = self.sql.getRec(tables="genqrp")
++        if not chk:
++            showError(self.opts["mf"].body, "Targets",
++                """There are No Target Percentages for Departments.
++
++No Reports or Charts can be Generated.
++
++Please Enter the Targets and then Retry.""")
++            return
++        self.df.focusField("T", 0, 1)
++
++    def doEnd(self):
++        self.df.closeProcess()
++        self.fpdf = MyFpdf(name=__name__, auto=True, foot=True)
++        self.fpdf.header = self.doHead
++        self.fpdf.set_fill_color(220)
++        self.doSalesReps()
++        self.doStockVal()
++        self.doStockRep()
++        self.doGProfits()
++        self.doNProfits()
++        pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
++            "all", ext="pdf")
++        self.fpdf.output(pdfnam, "F")
++        doPrinter(self.opts["mf"], pdfnam=pdfnam, repprt=self.df.repprt,
++            repeml=self.df.repeml)
++        self.opts["mf"].closeLoop()
++
++    def doSalesReps(self):
++        self.rtyp = "A"
++        tots = {}
++        # Branches
++        txt = "Generating Sales Reports"
++        exc = [("gqb_bcod", "<>", 999)]
++        bchs = self.sql.getRec(tables="genqrb", where=exc, order="gqb_bcod")
++        pb = ProgressBar(self.opts["mf"].body, mxs=len(bchs), typ=txt)
++        datas = {}
++        for num, bch in enumerate(bchs):
++            pb.displayProgress(num)
++            # Departments
++            dps = self.sql.getRec(tables=["genqrd", "genqrc"],
++                cols=["gqd_cono", "gqc_name"], where=[("gqd_bcod",
++                "=", bch[0]), ("gqc_dcod=gqd_dcod",)],
++                order="gqd_dcod")
++            deps = {}
++            self.deps = []
++            for dep in dps:
++                if not dep[1] in deps:
++                    deps[dep[1]] = []
++                    self.deps.append(dep[1])
++                deps[dep[1]].append(dep[0])
++            # Monthly increments
++            datas[bch[0]] = {}
++            sm = self.sper % 100
++            sy = (self.sper / 100) - 3
++            for x in range(12):
++                mth = mthnam[sm][0]
++                if not mth in datas[bch[0]]:
++                    datas[bch[0]][mth] = {}
++                    if not mth in tots:
++                        tots[mth] = {}
++                    # Annual increments
++                    for y in range(4):
++                        yr = sy + y
++                        curdt = (yr * 100) + sm
++                        if curdt > self.rper:
++                            continue
++                        datas[bch[0]][mth][yr] = {}
++                        if not yr in tots[mth]:
++                            tots[mth][yr] = {}
++                        tot = 0
++                        # Departments
++                        for dep in self.deps:
++                            amt = self.sql.getRec(tables="gentrn",
++                                cols=["sum(glt_tramt)"],
++                                where=[("glt_cono", "in", deps[dep]),
++                                ("glt_acno", "=", 101098),
++                                ("glt_curdt", "=", curdt)], limit=1)
++                            if amt[0]:
++                                amt = int(round(0 - amt[0], 0))
++                            else:
++                                amt = 0
++                            datas[bch[0]][mth][yr][dep] = amt
++                            if not dep in tots[mth][yr]:
++                                tots[mth][yr][dep] = amt
++                            else:
++                                tots[mth][yr][dep] += amt
++                            tot += amt
++                        datas[bch[0]][mth][yr]["Totals"] = tot
++                        if not "Totals" in tots[mth][yr]:
++                            tots[mth][yr]["Totals"] = tot
++                        else:
++                            tots[mth][yr]["Totals"] += tot
++                # Month increment
++                sm += 1
++                if sm > 12:
++                    sm = 1
++                    sy += 1
++            self.doPrintSales(bch, datas[bch[0]])
++        pb.closeProgress()
++        self.doPrintSales([0, "Totals"], tots)
++        self.doPrintSummary(datas)
++
++    def doPrintSales(self, bch, data):
++        # Group Name
++        self.name = bch[1]
++        # Departments
++        tab = ["genqrd", "genqrc"]
++        if bch[0]:
++            # Branch
++            dps = self.sql.getRec(tables=tab, cols=["gqc_name"],
++                where=[("gqd_bcod", "=", bch[0]), ("gqc_dcod=gqd_dcod",)],
++                group="gqd_dcod, gqc_name", order="gqc_name")
++        else:
++            # All Branches
++            dps = self.sql.getRec(tables=tab, cols=["gqc_name"],
++                where=[("gqc_dcod", "<>", 0), ("gqc_dcod=gqd_dcod",)],
++                group="gqd_dcod, gqc_name", order="gqc_name")
++        self.deps = []
++        for dep in dps:
++            self.deps.append(dep[0])
++        if not bch[0] and self.deps[0] == "Other":
++            self.deps.append(self.deps.pop(0))
++        self.deps.append("Totals")
++        # Fpdf
++        size = 11 + (len(self.deps) * 17)
++        self.fpdf.def_orientation = "L"
++        self.fpdf.setValues("gl3130", size, font="courier")
++        if self.fpdf.font[1] > 8:
++            self.fpdf.setFont("courier", "", 8, True)
++        self.line_width = self.fpdf.line_width
++        self.fpdf.add_page()
++        # Monthly increments
++        ln = 3
++        sm = self.sper % 100
++        sy = (self.sper / 100) - 2
++        for x in range(12):
++            mth = mthnam[sm][0]
++            xx = self.fpdf.get_x()
++            yy = self.fpdf.get_y()
++            # Annual increments
++            for y in range(3):
++                yr = sy + y
++                curdt = (yr * 100) + sm
++                if curdt > self.rper:
++                    ln = 2
++                    continue
++                if curdt == self.rper:
++                    f = True
++                else:
++                    f = False
++                self.fpdf.drawText(yr, x=xx+(5*self.fpdf.cwth),
++                    w=6*self.fpdf.cwth, h=4, border="TLRB",
++                    align="C", fill=f, ln=0)
++                # Departments
++                for dep in self.deps:
++                    amt = data[mth][yr][dep]
++                    txt = CCD(round(amt / 1000.0, 0), "CI", 9)
++                    self.fpdf.drawText(txt.disp, w=10*self.fpdf.cwth,
++                        h=4, border="TLRB", fill=f, ln=0)
++                    lyr = data[mth][yr - 1][dep]
++                    if amt and lyr:
++                        per = round(((amt - lyr) * 100.0) / lyr, 1)
++                    else:
++                        per = 0.0
++                    per = CCD(per, "SD", 5.1)
++                    if dep == "Totals":
++                        l = 1
++                    else:
++                        l = 0
++                    self.fpdf.drawText("%s%s" % (per.disp, "%"),
++                        w=7*self.fpdf.cwth, h=4, border="TLRB",
++                        fill=f, ln=l)
++            # Month label
++            self.fpdf.drawText(mth, x=xx, y=yy, w=5*self.fpdf.cwth, h=ln*4,
++                border="TLRB", ln=1)
++            self.fpdf.set_line_width(0.5)
++            w = ((len(self.deps) * 17) + 11) * self.fpdf.cwth
++            self.fpdf.drawText("", x=xx, y=yy, w=w, h=ln*4, font="B",
++                border="B", ln=1)
++            self.fpdf.set_line_width(self.line_width)
++            self.fpdf.setFont("")
++            # Month increment
++            sm += 1
++            if sm > 12:
++                sm = 1
++                sy += 1
++        # Year to Date
++        sm = self.sper % 100
++        sy = (self.sper / 100) - 2
++        cm = self.rper % 100
++        cy = self.rper / 100
++        self.fpdf.drawText()
++        for x in range(3):
++            txt = "YTD %s" % sy
++            self.fpdf.drawText(txt, w=11*self.fpdf.cwth, h=4,
++                align="C", border="TLRB", ln=0)
++            for dep in self.deps:
++                m1 = sm
++                y1 = sy
++                ly = 0
++                cy = 0
++                while True:
++                    ly += data[mthnam[m1][0]][y1 - 1][dep]
++                    cy += data[mthnam[m1][0]][y1][dep]
++                    if m1 == cm:
++                        break
++                    m1 += 1
++                    if m1 > 12:
++                        m1 = 1
++                        y1 += 1
++                txt = CCD(round(cy / 1000.0, 0), "CI", 9)
++                self.fpdf.drawText(txt.disp, w=10*self.fpdf.cwth, h=4,
++                    border="TLRB", ln=0)
++                if cy and ly:
++                    cp = round(((cy - ly) * 100.0) / ly, 1)
++                else:
++                    cp = 0
++                cp = CCD(cp, "SD", 5.1).disp
++                if dep == "Totals":
++                    l = 1
++                else:
++                    l = 0
++                self.fpdf.drawText("%s%s" % (cp, "%"), w=7*self.fpdf.cwth,
++                    h=4, border="TLRB", ln=l)
++            sy += 1
++
++    def doPrintSummary(self, datas):
++        self.rtyp = "B"
++        while len(self.deps) < 14:
++            self.deps.insert(len(self.deps) - 1, "")
++        exc = [("gqb_bcod", "<>", 999)]
++        bchs = self.sql.getRec(tables="genqrb", where=exc, order="gqb_bcod")
++        # Fpdf
++        size = 12 + (21 * 7)
++        self.fpdf.def_orientation = "L"
++        self.fpdf.setValues("gl3130", size, font="courier")
++        # Form
++        mth = mthnam[self.rper % 100][0]
++        yr = self.rper / 100
++        rnks = {}
++        for dep in self.deps:
++            rnks[dep] = {}
++            srt = []
++            for b in datas:
++                if dep in datas[b][mth][yr]:
++                    srt.append([b, datas[b][mth][yr][dep]])
++            srt = sorted(srt, key=itemgetter(1), reverse=True)
++            p = 1
++            for x in range(len(srt)):
++                rnks[dep][srt[x][0]] = p
++                p += 1
++        for x in range(2):
++            deps = []
++            tots = {}
++            if not x:
++                seq = 0
++                end = 7
++                self.head = True
++                self.fpdf.add_page()
++            else:
++                seq = 7
++                end = len(self.deps)
++                self.head = False
++                self.doHead()
++            for bch in bchs:
++                self.fpdf.drawText(bch[1], w=12*self.fpdf.cwth,
++                    h=4, font="B", border="TLRNB", ln=0)
++                self.fpdf.setFont("")
++                for num, dep in enumerate(self.deps[seq:end]):
++                    if not dep in deps:
++                        deps.append(dep)
++                    if num == 6:
++                        l = 1
++                    else:
++                        l = 0
++                    if dep == "":
++                        self.fpdf.drawText("", w=21*self.fpdf.cwth, h=4, ln=l)
++                    else:
++                        if not dep in tots:
++                            tots[dep] = [0, 0]
++                        if dep in datas[bch[0]][mth][yr]:
++                            rnk = CCD(rnks[dep][bch[0]], "UI", 2).disp
++                            lyr = datas[bch[0]][mth][yr - 1][dep]
++                            dat = datas[bch[0]][mth][yr][dep]
++                            sls = CCD(round(dat / 1000.0, 0), "CI", 9).disp
++                            tots[dep][0] += lyr
++                            tots[dep][1] += dat
++                            if dat and lyr:
++                                per = round(((dat - lyr) * 100.0) / lyr, 2)
++                                per = CCD(per, "SD", 6.2)
++                                if per.err:
++                                    per = ""
++                                else:
++                                    per = "%s%s" % (per.disp, "%")
++                            else:
++                                per = ""
++                        else:
++                            rnk = ""
++                            sls = ""
++                            per = ""
++                        self.fpdf.drawText(rnk, w=3*self.fpdf.cwth, h=4,
++                            align="C", border="TLRB", fill=True, ln=0)
++                        self.fpdf.drawText(sls, w=10*self.fpdf.cwth, h=4,
++                            align="C", border="TLRB", ln=0)
++                        self.fpdf.drawText(per, w=8*self.fpdf.cwth, h=4,
++                            align="C", border="TLRB", ln=l)
++            self.fpdf.drawText("")
++            self.fpdf.drawText("Totals", w=12*self.fpdf.cwth,
++                h=4, font="B", border="TLRNB", ln=0)
++            self.fpdf.setFont("")
++            for num, dep in enumerate(deps):
++                if num == 6:
++                    ln = 1
++                else:
++                    ln = 0
++                if dep == "":
++                    self.fpdf.drawText("", w=21*self.fpdf.cwth, h=4, ln=ln)
++                else:
++                    sls = CCD(round(tots[dep][1] / 1000.0, 0), "CI", 9).disp
++                    if tots[dep][0] and tots[dep][1]:
++                        per = round(((tots[dep][1] - tots[dep][0]) * 100.0)
++                            / tots[dep][0], 2)
++                        per = CCD(per, "SD", 6.2)
++                        if per.err:
++                            per = ""
++                        else:
++                            per = "%s%s" % (per.disp, "%")
++                    else:
++                        per = ""
++                    self.fpdf.drawText("", w=3*self.fpdf.cwth, h=4,
++                        align="C", ln=0)
++                    self.fpdf.drawText(sls, w=10*self.fpdf.cwth, h=4,
++                        align="C", border="TLRB", ln=0)
++                    self.fpdf.drawText(per, w=8*self.fpdf.cwth, h=4,
++                        align="C", border="TLRB", ln=ln)
++
++    def doStockVal(self):
++        self.dat1 = []
++        self.dat2 = {}
++        self.dat3 = {}
++        txt = "Generating Stock Values"
++        exc = [("gqb_bcod", "<>", 999)]
++        sdt = (self.sper * 100) + 1
++        edt = mthendDate((self.rper * 100) + 1)
++        mths = dateDiff(sdt, edt, "months") + 1
++        bchs = self.sql.getRec(tables="genqrb", where=exc, order="gqb_bcod")
++        pb = ProgressBar(self.opts["mf"].body, mxs=len(bchs), typ=txt)
++        for num, bch in enumerate(bchs):
++            pb.displayProgress(num)
++            bcd = bch[0]
++            bnm = bch[1]
++            self.dat2[bcd] = [bnm, {}]
++            self.dat3[bcd] = [bnm, {}]
++            qrd = self.sql.getRec(tables="genqrd", where=[("gqd_bcod",
++                "=", bcd)], order="gqd_dcod")
++            for q in qrd:
++                dep = q[1]
++                coy = q[2]
++                nam = self.sql.getRec(tables="ctlmst", cols=["ctm_name"],
++                    where=[("ctm_cono", "=", coy)], limit=1)[0]
++                # Get group values
++                ost,pur,sls,inc,adv,cst,wag,stt,npr = self.getVals(
++                    coy, (self.sper, self.rper))
++                # Calculate estimated closing stock
++                stk = ost
++                stk = float(ASD(stk) + ASD(pur))
++                avg = self.sql.getRec(tables="genqrp", cols=["gqp_rate",
++                    "gqp_allow"], where=[("gqp_bcod", "=", bcd),
++                    ("gqp_dcod", "=", dep)], limit=1)
++                slc = int(round(sls * (100 - avg[0]) / 100, 0))
++                stk = float(ASD(stk) - ASD(slc))
++                stk = float(ASD(stk) - ASD(inc))
++                stk = int(float(ASD(stk) - ASD(adv)))
++                alw = int(round(slc * avg[1] / mths, 0))
++                dif = int(alw - stk)
++                if not sls:
++                    per = 0
++                else:
++                    per = round((wag * 100.0) / sls, 2)
++                self.dat1.append([bcd, bnm, coy, nam, ost, pur, sls, slc, inc,
++                    adv, stk, cst, stt, alw, dif, wag, per])
++                if sls and cst and dep in (1, 2, 4, 5, 6, 7, 8, 9, 12):
++                    prf = sls + cst + inc + adv - ost - pur
++                    if prf <= sls:
++                        if not dep in self.dat2[bcd][1]:
++                            self.dat2[bcd][1][dep] = [prf, sls]
++                        else:
++                            self.dat2[bcd][1][dep][0] += prf
++                            self.dat2[bcd][1][dep][1] += sls
++                # Net Profit
++                if not cst:
++                    npr = float(ASD(npr) + ASD(stk))
++                if not dep in self.dat3[bcd][1]:
++                    self.dat3[bcd][1][dep] = [npr, sls]
++                else:
++                    self.dat3[bcd][1][dep][0] += npr
++                    self.dat3[bcd][1][dep][1] += sls
++        pb.closeProgress()
++
++    def getVals(self, coy, per):
++        val = []
++        tab = ["gentrn"]
++        col = ["round(sum(glt_tramt) / 1000, 0)"]
++        for grp in self.grps:
++            acc = []
++            acs = self.sql.getRec(tables="genqra", where=[("gqa_group",
++                "=", grp[0])], order="gqa_facc")
++            for ac in acs:
++                acc.append(ac[1])
++                if ac[2]:
++                    for x in range(ac[1] + 1, ac[2] + 1):
++                        acc.append(x)
++            whr = [("glt_cono", "=", coy)]
++            if len(acc) == 1:
++                whr.append(("glt_acno", "=", acc[0]))
++            else:
++                whr.append(("glt_acno", "in", acc))
++            if grp[0] == 8:
++                # Closing Stock
++                w = whr[:]
++                w.append(("glt_curdt", "=", self.rper))
++                chk = self.sql.getRec(tables=tab, where=w)
++                if not chk:
++                    val.append(0)
++                    continue
++            if grp[0] == 1:
++                whr.append(("glt_curdt", "=", per[0]))
++            else:
++                whr.append(("glt_curdt", "between", per[0], per[1]))
++            rec = self.sql.getRec(tables=tab, cols=col, where=whr, limit=1)
++            if rec[0] is None:
++                amt = 0
++            else:
++                amt = int(rec[0])
++            if grp[0] in (3, 4, 5, 6, 8):
++                amt = (0 - amt)
++            val.append(amt)
++        tab.append("genmst")
++        whr = [
++            ("glt_cono", "=", coy),
++            ("glm_type", "=", "P"),
++            ("glt_curdt", "between", per[0], per[1]),
++            ("glm_cono=glt_cono",),
++            ("glm_acno=glt_acno",)]
++        rec = self.sql.getRec(tables=tab, cols=col, where=whr, limit=1)
++        if rec[0] is None:
++            val.append(0)
++        else:
++            val.append(0 - int(rec[0]))
++        return val
++
++    def getNets(self, bch, dep):
++        return 0
++
++    def doStockRep(self):
++        self.rtyp = "C"
++        self.col2 = (
++            ("UI",   3, "Dcd"),
++            ("NA",  30, "Department"),
++            ("CI",   9, "Open-Stk"),
++            ("CI",   9, "Purchase"),
++            ("CI",   9, "Sls-Sell"),
++            ("CI",   9, "Sls-Cost"),
++            ("CI",   9, "Incent"),
++            ("CI",   9, "Advert"),
++            ("CI",   9, "Est-Stck"),
++            ("CI",   9, "St-Count"),
++            ("CI",   9, "Settlmts"),
++            ("CI",   9, "St-Allow"),
++            ("CI",   9, "St-Diff"),
++            ("CI",   9, "Tot-Wags"),
++            ("UD", 5.2, "%tage"))
++        lbch = None
++        tbch = ["", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++        self.fpdf.def_orientation = "L"
++        txt = "Generating Stock Report"
++        self.fpdf.setValues("gl3130", 160, font="courier")
++        pb = ProgressBar(self.opts["mf"].body, mxs=len(self.dat1), typ=txt)
++        for num, dat in enumerate(self.dat1):
++            pb.displayProgress(num)
++            if lbch is None or dat[0] != lbch[0]:
++                if lbch is None:
++                    self.fpdf.add_page()
++                else:
++                    self.doTotal(lbch)
++                    # Check if a new page is necessary
++                    dps = 3
++                    for tst in self.dat1:
++                        if tst[0] == dat[0]:
++                            dps += 1
++                    tst = self.fpdf.y + (self.fpdf.chgt * dps)
++                    if tst > self.fpdf.page_break_trigger:
++                        self.fpdf.add_page()
++                self.fpdf.drawText()
++                lbch = [dat[0], dat[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++            for n, f in enumerate(dat[2:]):
++                t = CCD(f, self.col2[n][0], self.col2[n][1]).disp
++                w = (self.col2[n][1] + 1) * self.fpdf.cwth
++                if n == len(dat[3:]):
++                    l = 1
++                else:
++                    l = 0
++                self.fpdf.drawText(t, w=w, ln=l)
++                if n > 1 and n < 14 and type(f) == int:
++                    lbch[n] += f
++                    tbch[n] += f
++        pb.closeProgress()
++        self.doTotal(lbch)
++        self.doTotal(tbch)
++
++    def doGProfits(self):
++        bchs = self.dat2.keys()
++        bchs.sort()
++        dpss = []
++        for bch in bchs:
++            for dep in self.dat2[bch][1].keys():
++                if not dep in dpss:
++                    dpss.append(dep)
++        dpss.sort()
++        tab = ["genqrp", "genqrc"]
++        col = ["gqp_dcod", "gqc_name", "gqp_rate"]
++        whr = [
++            ("gqp_bcod", "=", 1),
++            ("gqp_dcod", "in", dpss),
++            ("gqp_rate", "<>", 0),
++            ("gqc_dcod=gqp_dcod",)]
++        odr = "gqp_dcod"
++        deps = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
++        self.col4 = [["NA", 12, "Branch\nTarget%"]]
++        self.dat4 = {}
++        size = 12
++        for dep in deps:
++            dsc = CCD(dep[2], "SD", 6.2).disp
++            self.col4.append(["SD",12.2,"%s\n%s%s" % (dep[1], dsc, "%")])
++            self.dat4[dep[0]] = [dep[1], dep[2], {}]
++            size += 12
++        for self.rtyp in ("D", "E"):
++            self.fpdf.def_orientation = "L"
++            self.fpdf.setValues("gl3130", size, font="courier")
++            self.fpdf.add_page()
++            tots = {}
++            if self.rtyp == "D":
++                txt = "Generating Gross Profit Report"
++            else:
++                txt = "Generating Gross Profit Percentages Report"
++            pb = ProgressBar(self.opts["mf"].body, mxs=len(bchs), typ=txt)
++            for num, bch in enumerate(bchs):
++                pb.displayProgress(num)
++                prt = False
++                for dep in deps:
++                    if dep[0] in self.dat2[bch][1]:
++                        prt = True
++                if not prt:
++                    continue
++                b = CCD(self.dat2[bch][0], "NA", 12).disp
++                w = 12 * self.fpdf.cwth
++                self.fpdf.drawText(b, w=w, h=4, border="TLRB", ln=0)
++                for dep in deps:
++                    w = 12 * self.fpdf.cwth
++                    if dep == deps[-1]:
++                        l = 1
++                    else:
++                        l = 0
++                    if dep[0] in self.dat2[bch][1]:
++                        val = self.dat2[bch][1][dep[0]]
++                        if self.rtyp == "D":
++                            t = CCD(val[0], "SI", 12).disp
++                        else:
++                            if val[1]:
++                                gp = round(val[0] * 100.0 / val[1], 2)
++                            else:
++                                gp = 0
++                            t = CCD(gp, "SD", 6.2)
++                            if t.err:
++                                t = ""
++                            else:
++                                t = t.disp + "%"
++                            self.dat4[dep[0]][2][b.strip()] = gp
++                        if not dep[0] in tots:
++                            tots[dep[0]] = [0, 0]
++                        tots[dep[0]][0] += val[0]
++                        tots[dep[0]][1] += val[1]
++                    else:
++                        t = ""
++                    self.fpdf.drawText(t, w=w, h=4, align="C",
++                        border="TLRB", ln=l)
++            pb.closeProgress()
++            self.doTotal(tots)
++        self.doGPCht()
++
++    def doGPCht(self):
++        self.rtyp = "F"
++        self.fpdf.def_orientation = "L"
++        self.fpdf.setValues("gl3130", 150, font="courier")
++        txt = "Generating Gross Profit Charts"
++        pb = ProgressBar(self.opts["mf"].body, mxs=len(self.dat4), typ=txt)
++        for num, self.dep in enumerate(self.dat4):
++            pb.displayProgress(num)
++            xcol = []
++            vals = []
++            tgt = self.dat4[self.dep][1]
++            keys = self.dat4[self.dep][2].keys()
++            keys.sort()
++            for bch in keys:
++                xcol.append(bch)
++                vals.append(self.dat4[self.dep][2][bch])
++            self.fpdf.add_page()
++            simpleBarChart(self.fpdf, None, xcol, vals, tgt)
++        pb.closeProgress()
++
++    def doNProfits(self):
++        bchs = self.dat3.keys()
++        bchs.sort()
++        dpss = []
++        for bch in bchs:
++            for dep in self.dat3[bch][1].keys():
++                if not dep in dpss:
++                    dpss.append(dep)
++        tab = ["genqrc"]
++        col = ["gqc_dcod", "gqc_name"]
++        whr = [("gqc_dcod", "in", dpss)]
++        odr = "gqc_dcod"
++        deps = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
++        self.col5 = [["NA", 12, "Branch"]]
++        self.dat5 = {}
++        size = 12
++        for dep in deps:
++            self.col5.append(["SD",12.2,dep[1]])
++            self.dat5[dep[0]] = [dep[1], {}]
++            size += 12
++        for self.rtyp in ("G", "H"):
++            self.fpdf.def_orientation = "L"
++            self.fpdf.setValues("gl3130", size, font="courier")
++            self.fpdf.add_page()
++            tots = {}
++            if self.rtyp == "G":
++                txt = "Generating Net Profit Report"
++            else:
++                txt = "Generating Net Profit %tage Report"
++            pb = ProgressBar(self.opts["mf"].body, mxs=len(bchs), typ=txt)
++            for num, bch in enumerate(bchs):
++                pb.displayProgress(num)
++                prt = False
++                for dep in deps:
++                    if dep[0] in self.dat3[bch][1]:
++                        prt = True
++                if not prt:
++                    continue
++                b = CCD(self.dat3[bch][0], "NA", 12).disp
++                w = 12 * self.fpdf.cwth
++                self.fpdf.drawText(b, w=w, h=4, border="TLRB", ln=0)
++                for dep in deps:
++                    w = 12 * self.fpdf.cwth
++                    if dep == deps[-1]:
++                        l = 1
++                    else:
++                        l = 0
++                    if dep[0] in self.dat3[bch][1]:
++                        val = self.dat3[bch][1][dep[0]]
++                        if self.rtyp == "G":
++                            t = CCD(val[0], "SI", 12).disp
++                        else:
++                            if val[1]:
++                                gp = round(val[0] * 100.0 / val[1], 2)
++                            else:
++                                gp = 0
++                            t = CCD(gp, "SD", 6.2)
++                            if t.err:
++                                t = ""
++                            else:
++                                t = t.disp + "%"
++                            self.dat5[dep[0]][1][b.strip()] = gp
++                        if not dep[0] in tots:
++                            tots[dep[0]] = [0, 0]
++                        tots[dep[0]][0] += val[0]
++                        tots[dep[0]][1] += val[1]
++                    else:
++                        t = ""
++                    self.fpdf.drawText(t, w=w, h=4, align="C",
++                        border="TLRB", ln=l)
++            pb.closeProgress()
++            self.doTotal(tots)
++
++    def doHead(self):
++        font = copyList(self.fpdf.font)
++        if self.rtyp == "A":
++            if self.name == "Totals":
++                head = "Group Sales %s" % self.name
++            else:
++                head = "Sales for %s" % self.name
++            head += " as at %s (Thousands)" % self.rperd
++            self.fpdf.drawText(head, align="C", font=("B", 14))
++            self.fpdf.drawText()
++            self.fpdf.setFont(font[0], "B", font[1])
++            w = 5 * self.fpdf.cwth
++            self.fpdf.drawText("Mth", w=w, h=5, border="TLRB", ln=0, fill=True)
++            w = 6 * self.fpdf.cwth
++            self.fpdf.drawText("Year", w=w, h=5, border="TLRB", ln=0, fill=True)
++            w = 17 * self.fpdf.cwth
++            for dep in self.deps:
++                if dep == "Totals":
++                    l = 1
++                else:
++                    l = 0
++                self.fpdf.drawText(dep, w=w, h=5, align="C", border="TLRB",
++                    ln=l, fill=True)
++        elif self.rtyp == "B":
++            if self.head:
++                seq = 1
++                head = "Group Sales Summary as at %s (Thousands)" % self.rperd
++                self.fpdf.drawText(head, align="C", font=("B", 14))
++                self.fpdf.drawText()
++            else:
++                seq = 8
++                self.fpdf.drawText()
++                self.fpdf.drawText()
++                self.fpdf.drawText()
++            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.drawText("Branch", w=12*self.fpdf.cwth, h=5,
++                border="TLRB", fill=True, ln=0)
++            for x in range(7):
++                if x == 6:
++                    l = 1
++                else:
++                    l = 0
++                dep = self.deps[x + seq - 1]
++                if dep:
++                    b = "TLRB"
++                    f = True
++                else:
++                    b = None
++                    f = False
++                self.fpdf.drawText(dep, w=21*self.fpdf.cwth, h=5, align="C",
++                    border=b, fill=f, ln=l)
++        elif self.rtyp == "C":
++            head = "Stock Estimates as at %s (Thousands)" % self.rperd
++            self.fpdf.drawText(head, align="C", font=("B", 14))
++            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.drawText()
++            for num, col in enumerate(self.col2):
++                w = (int(col[1]) + 1) * self.fpdf.cwth
++                if col == self.col2[-1]:
++                    l = 1
++                else:
++                    l = 0
++                if num == 1:
++                    a = "L"
++                else:
++                    a = "R"
++                self.fpdf.drawText(col[2], w=w, h=5, ln=l, align=a,
++                    border="TLRB", fill=True)
++        elif self.rtyp in ("D", "E"):
++            if self.rtyp == "D":
++                head = "Departmental Gross Profit Report as at %s" % \
++                    self.rperd
++            else:
++                head = "Departmental Gross Profit %s Report as at %s" % \
++                    ("Percentages", self.rperd)
++            self.fpdf.drawText(head, align="C", font=("B", 14))
++            self.fpdf.drawText()
++            x = self.fpdf.get_x()
++            y = self.fpdf.get_y()
++            self.fpdf.setFont(font[0], "B", font[1])
++            for num, col in enumerate(self.col4):
++                w = int(col[1]) * self.fpdf.cwth
++                if col == self.col4[-1]:
++                    l = 1
++                else:
++                    l = 0
++                self.fpdf.drawText(col[2], x=x, y=y, w=w, h=5, align="C",
++                    border="TLRB", fill=True, ctyp="M")
++                x += w
++        elif self.rtyp == "F":
++            head = "%s Gross Profit %s as at %s" % (self.dat4[self.dep][0],
++                "Percentages", self.rperd)
++            self.fpdf.drawText(head, align="C", font=("B", 14))
++            self.fpdf.drawText()
++        elif self.rtyp in ("G", "H"):
++            if self.rtyp == "G":
++                head = "Departmental Net Profit Report as at %s" % self.rperd
++            else:
++                head = "Departmental Net Profit %s Report as at %s" % \
++                    ("Percentages", self.rperd)
++            self.fpdf.drawText(head, align="C", font=("B", 14))
++            self.fpdf.drawText()
++            x = self.fpdf.get_x()
++            y = self.fpdf.get_y()
++            self.fpdf.setFont(font[0], "B", font[1])
++            for num, col in enumerate(self.col5):
++                w = int(col[1]) * self.fpdf.cwth
++                if col == self.col5[-1]:
++                    l = 1
++                else:
++                    l = 0
++                self.fpdf.drawText(col[2], x=x, y=y, w=w, h=5, align="C",
++                    border="TLRB", fill=True)
++                x += w
++        self.fpdf.setFont(font[0], "", font[1])
++
++    def doTotal(self, data):
++        font = copyList(self.fpdf.font)
++        if self.rtyp == "C":
++            self.fpdf.underLine()
++            if not data[1]:
++                t = "Grand Totals"
++            else:
++                t = "Total %s" % data[1]
++            w = 35 * self.fpdf.cwth
++            self.fpdf.setFont(font[0], "B", font[1])
++            self.fpdf.drawText(t, w=w, ln=0)
++            for n, f in enumerate(data[2:]):
++                if n == 12:
++                    if not data[4]:
++                        f = 0
++                    else:
++                        f = round((data[11] * 100.0) / data[4], 2)
++                t = CCD(f, self.col2[n+2][0], self.col2[n+2][1]).disp
++                w = (self.col2[n+2][1] + 1) * self.fpdf.cwth
++                self.fpdf.drawText(t, w=w, ln=0)
++            if not data[4]:
++                per = 0
++            else:
++                per = round((data[13] * 100.0) / data[4], 2)
++            t = CCD(per, self.col2[14][0], self.col2[14][1]).disp
++            w = (self.col2[14][1] + 1) * self.fpdf.cwth
++            self.fpdf.drawText(t, w=w)
++        elif self.rtyp in ("D", "E"):
++            w = 12 * self.fpdf.cwth
++            b = "TLRB"
++            f = True
++            self.fpdf.setFont(font[0], "B", font[1])
++            if self.rtyp == "D":
++                txt = "Average Gross Profit "
++            else:
++                txt = "Average Gross Profit Percentages"
++            self.fpdf.drawText(txt, w=w, h=5, border=b, fill=f, ln=0)
++            for dep in data:
++                w = 12 * self.fpdf.cwth
++                if self.rtyp == "D":
++                    txt = CCD(data[dep][0], "SI", 12).disp
++                else:
++                    gp = CCD(round(data[dep][0] * 100.0 / data[dep][1], 2),
++                        "SD", 6.2).disp
++                    txt = "%s%s" % (gp, "%")
++                self.fpdf.drawText(txt, w=w, h=5, align="C", border=b, fill=f,
++                    ln=0)
++        elif self.rtyp in ("G", "H"):
++            w = 12 * self.fpdf.cwth
++            b = "TLRB"
++            f = True
++            self.fpdf.setFont(font[0], "B", font[1])
++            if self.rtyp == "G":
++                txt = "Average Net Profit"
++            else:
++                txt = "Average Net Profit %tage"
++            self.fpdf.drawText(txt, w=w, h=5, border=b, fill=f, ln=0)
++            for dep in data:
++                w = 12 * self.fpdf.cwth
++                if self.rtyp == "G":
++                    txt = CCD(data[dep][0], "SI", 12).disp
++                else:
++                    gp = CCD(round(data[dep][0] * 100.0 / data[dep][1], 2),
++                        "SD", 6.2).disp
++                    txt = "%s%s" % (gp, "%")
++                self.fpdf.drawText(txt, w=w, h=5, align="C", border=b, fill=f,
++                    ln=0)
++        self.fpdf.setFont(font[0], "", font[1])
++
++    def doButtons(self, state, frame=None):
++        self.df.setWidget(self.df.B0, state=state)
++        self.df.setWidget(self.df.B1, state=state)
++        self.df.setWidget(self.df.B2, state=state)
++        self.df.setWidget(self.df.B3, state=state)
++        if frame:
++            self.df.setWidget(self.df.mstFrame, state=frame)
++
++    def doExit(self):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'gen/gl6030.py'
+--- gen/gl6030.py	2016-05-21 12:42:32 +0000
++++ gen/gl6030.py	2016-09-20 11:53:46 +0000
+@@ -143,10 +143,7 @@
+         self.opts["period"] = w
+ 
+     def doEnd(self):
+-        self.doProcess()
+-        self.doExit()
+-
+-    def doProcess(self):
++        self.df.closeProcess()
+         if self.bkint == "Y":
+             self.gbk_bal = 0.0
+             o = self.sql.getRec(tables="genbal", cols=["glo_cyr"],
+@@ -447,9 +444,6 @@
+         else:
+             self.gsl_bal = 0.00
+             self.sln_bal = 0.00
+-        self.printReport()
+-
+-    def printReport(self):
+         head = ("%03u %-30s %2s %33s %3s %6s" % (self.opts["conum"],
+             self.opts["conam"], "", self.sysdttm, "", __name__))
+         self.fpdf = MyFpdf(name=__name__, head=head)
+@@ -534,7 +528,7 @@
+         doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+             head=self.tit, repprt=self.df.repprt,
+             repeml=self.df.repeml)
+-        self.doExit()
++        self.opts["mf"].closeLoop()
+ 
+     def pageHeading(self, desc=None):
+         self.fpdf.add_page()
+
+=== added file 'gen/glc310_rne.py'
+--- gen/glc310_rne.py	1970-01-01 00:00:00 +0000
++++ gen/glc310_rne.py	2016-11-03 07:38:53 +0000
+@@ -0,0 +1,97 @@
++#! /usr/bin/env python
++
++"""
++SYNOPSIS
++    Branch Records Maintenance.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2016 Paul Malherbe.
++"""
++
++from TartanClasses import Sql, TartanDialog
++
++class glc310:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.drawDialog()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["genqrb", "genqrd", "genqrp"],
++            prog=__name__)
++        if self.sql.error:
++            return
++        return True
++
++    def drawDialog(self):
++        tit = "Branch Records File Maintenance (%s)" % __name__
++        bch = {
++            "stype": "R",
++            "tables": ("genqrb",),
++            "cols": [
++                ("gqb_bcod", "", 0, "Code"),
++                ("gqb_name", "", 0, "Name"),
++                ("gqb_ccod", "", 0, "C")],
++            "order": "gqb_bcod"}
++        r1s = (("South Africa", "S"), ("Transkei", "T"))
++        self.fld = (
++            (("T",0,0,0),"I@gqb_bcod",0,"","",
++                "","N",self.doCode,bch,None,("efld",)),
++            (("T",0,1,0),"I@gqb_name",0,"","",
++                "","N",None,None,self.doDelete,("notblank",)),
++            (("T",0,2,0),("IRB",r1s),0,"Country","",
++                "","N",None,None,None,None))
++        but = (("Quit",None,self.doExit,1,None,None),)
++        tnd = ((self.doEnd,"Y"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
++            butt=but, tend=tnd, txit=txt)
++
++    def doCode(self, frt, pag, r, c, p, i, w):
++        self.bcod = w
++        acc = self.sql.getRec(tables="genqrb", where=[("gqb_bcod", "=",
++            self.bcod)], limit=1)
++        if not acc:
++            self.new = True
++        else:
++            self.new = False
++            nam = acc[self.sql.genqrb_col.index("gqb_name")]
++            ccc = acc[self.sql.genqrb_col.index("gqb_ccod")]
++            self.df.loadEntry(frt, pag, p+1, data=nam)
++            self.df.loadEntry(frt, pag, p+2, data=ccc)
++
++    def doDelete(self):
++        chk = self.sql.getRec(tables="genqrd",
++            where=[("gqd_bcod", "=", self.bcod)])
++        if not chk:
++            chk = self.sql.getRec(tables="genqrp",
++                where=[("gqp_bcod", "=", self.bcod)])
++        if chk:
++            return "Branch In Use, Not Deleted"
++        self.sql.delRec("genqrb", where=[("gqb_bcod", "=", self.bcod)])
++        self.opts["mf"].dbm.commitDbase()
++        self.df.focusField("T", 0, 1)
++
++    def doEnd(self):
++        data = []
++        for x in xrange(0, len(self.df.t_work[0][0])):
++            data.append(self.df.t_work[0][0][x])
++        if self.new:
++            self.sql.insRec("genqrb", data=data)
++        else:
++            self.sql.updRec("genqrb", data=data, where=[("gqb_bcod", "=",
++                self.bcod)])
++        self.opts["mf"].dbm.commitDbase()
++        self.df.focusField("T", 0, 1)
++
++    def doExit(self, widget=None):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== added file 'gen/glc410_rne.py'
+--- gen/glc410_rne.py	1970-01-01 00:00:00 +0000
++++ gen/glc410_rne.py	2016-11-03 07:39:07 +0000
+@@ -0,0 +1,95 @@
++#! /usr/bin/env python
++
++"""
++SYNOPSIS
++    Department Records Maintenance.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2016 Paul Malherbe.
++"""
++
++from TartanClasses import Sql, TartanDialog
++
++class glc410:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.drawDialog()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["genqrc", "genqrd", "genqrp"],
++            prog=__name__)
++        if self.sql.error:
++            return
++        return True
++
++    def drawDialog(self):
++        tit = "Department Records File Maintenance (%s)" % __name__
++        dep = {
++            "stype": "R",
++            "tables": ("genqrc",),
++            "cols": [
++                ("gqc_dcod", "", 0, "Code"),
++                ("gqc_name", "", 0, "Name")],
++            "order": "gqc_dcod"}
++        self.fld = (
++            (("T",0,0,0),"I@gqc_dcod",0,"","",
++                "","N",self.doCode,dep,None,("efld",)),
++            (("T",0,1,0),"I@gqc_name",0,"","",
++                "","N",None,None,self.doDelete,("notblank",)))
++        but = (("Quit",None,self.doExit,1,None,None),)
++        tnd = ((self.doEnd,"Y"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
++            butt=but, tend=tnd, txit=txt)
++
++    def doCode(self, frt, pag, r, c, p, i, w):
++        self.dcod = w
++        acc = self.sql.getRec(tables="genqrc", where=[("gqc_dcod", "=",
++            self.dcod)], limit=1)
++        if not acc:
++            chk = self.sql.getRec(tables="genqrc", cols=["count(*)"],
++                limit=1)
++            if chk[0] == 14:
++                return "Maximum Number Of Departments Exceeded"
++            self.new = True
++        else:
++            self.new = False
++            nam = acc[self.sql.genqrc_col.index("gqc_name")]
++            self.df.loadEntry(frt, pag, p+1, data=nam)
++
++    def doDelete(self):
++        chk = self.sql.getRec(tables="genqrd",
++            where=[("gqd_dcod", "=", self.dcod)])
++        if not chk:
++            chk = self.sql.getRec(tables="genqrp",
++                where=[("gqp_dcod", "=", self.dcod)])
++        if chk:
++            return "Department In Use, Not Deleted"
++        self.sql.delRec("genqrc", where=[("gqc_dcod", "=", self.dcod)])
++        self.opts["mf"].dbm.commitDbase()
++        self.df.focusField("T", 0, 1)
++
++    def doEnd(self):
++        data = []
++        for x in xrange(0, len(self.df.t_work[0][0])):
++            data.append(self.df.t_work[0][0][x])
++        if self.new:
++            self.sql.insRec("genqrc", data=data)
++        else:
++            self.sql.updRec("genqrc", data=data, where=[("gqc_dcod", "=",
++                self.dcod)])
++        self.opts["mf"].dbm.commitDbase()
++        self.df.focusField("T", 0, 1)
++
++    def doExit(self, widget=None):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== added file 'gen/glc510_rne.py'
+--- gen/glc510_rne.py	1970-01-01 00:00:00 +0000
++++ gen/glc510_rne.py	2016-11-03 09:34:48 +0000
+@@ -0,0 +1,148 @@
++#! /usr/bin/env python
++
++"""
++SYNOPSIS
++    Department Records Maintenance.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2016 Paul Malherbe.
++"""
++
++from TartanClasses import Sql, TartanDialog
++from tartanFunctions import askQuestion
++
++class glc510:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.drawDialog()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["genqrc", "genqrd", "genqrp"],
++            prog=__name__)
++        if self.sql.error:
++            return
++        return True
++
++    def drawDialog(self):
++        tit = "Branch Departments Maintenance (%s)" % __name__
++        bch = {
++            "stype": "R",
++            "tables": ("genqrb",),
++            "cols": [
++                ("gqb_bcod", "", 0, "Code"),
++                ("gqb_name", "", 0, "Name"),
++                ("gqb_ccod", "", 0, "C")],
++            "order": "gqb_bcod"}
++        dep = {
++            "stype": "R",
++            "tables": ("genqrc",),
++            "cols": [
++                ("gqc_dcod", "", 0, "Code"),
++                ("gqc_name", "", 0, "Name")],
++            "order": "gqc_dcod"}
++        ctm = {
++            "stype": "R",
++            "tables": ("ctlmst",),
++            "cols": (
++                ("ctm_cono", "", 0, "Coy"),
++                ("ctm_name", "", 0, "Name", "Y")),
++            "order": "ctm_cono"}
++        self.fld = (
++            (("T",0,0,0),"I@gqb_bcod",0,"","",
++                "","N",self.doBCod,bch,None,("efld",)),
++            (("T",0,0,0),"O@gqb_name",0,""),
++            (("C",0,0,0),"I@gqc_dcod",0,"","",
++                "","Y",self.doDCod,dep,None,("efld",)),
++            (("C",0,0,1),"O@gqc_name",0,""),
++            (("C",0,0,2),"I@gqd_cono",0,"","",
++                "","N",self.doCono,ctm,None,("efld",)),
++            (("C",0,0,3),"ONA",30,"Company Name"))
++        but = (
++            ("Quit",None,self.doQuit,0,("C",0,1),None,None),)
++        tnd = ((self.doEnd,"Y"),)
++        txt = (self.doExit,)
++        cnd = ((self.doEnd,"Y"),)
++        cxt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
++            butt=but, tend=tnd, txit=txt, cend=cnd, cxit=cxt)
++
++    def doBCod(self, frt, pag, r, c, p, i, w):
++        chk = self.sql.getRec(tables="genqrb", cols=["gqb_name"],
++            where=[("gqb_bcod", "=", w)], limit=1)
++        if not chk:
++            return "Invalid Branch Code"
++        self.bcod = w
++        self.df.loadEntry(frt, pag, p+1, data=chk[0])
++
++    def doDCod(self, frt, pag, r, c, p, i, w):
++        self.dcod = w
++        acc = self.sql.getRec(tables="genqrc", where=[("gqc_dcod", "=",
++            self.dcod)], limit=1)
++        if not acc:
++            return "Invalid Department Code"
++        nam = acc[self.sql.genqrc_col.index("gqc_name")]
++        self.df.loadEntry(frt, pag, p+1, data=nam)
++
++    def doCono(self, frt, pag, r, c, p, i, w):
++        if not w:
++            ok = askQuestion(self.opts["mf"].body, "Delete",
++                "Do You Wish to Delete this Department?")
++            if ok == "yes":
++                self.sql.delRec("genqrd", where=[("gqd_bcod", "=", self.bcod),
++                    ("gqd_dcod", "=", self.dcod)])
++                self.doLoadDeps()
++                return "nf"
++            return "rf"
++        else:
++            acc = self.sql.getRec(tables="ctlmst", cols=["ctm_name"],
++                where=[("ctm_cono", "=", w)], limit=1)
++            if not acc:
++                return "Invalid Comapny Number"
++            if self.sql.getRec(tables="genqrd", where=[("gqd_cono", "=", w)]):
++                return "Company Number Already Used"
++            self.cono = w
++            self.df.loadEntry(frt, pag, p+1, data=acc[0])
++
++    def doEnd(self):
++        if self.df.frt == "C":
++            chk = self.sql.getRec(tables="genqrd", where=[("gqd_bcod", "=",
++                self.bcod), ("gqd_dcod", "=", self.dcod), ("gqd_cono", "=",
++                self.cono)], limit=1)
++            if not chk:
++                data = [self.bcod, self.dcod, self.cono]
++                self.sql.insRec("genqrd", data=data)
++        self.doLoadDeps()
++
++    def doLoadDeps(self):
++        self.df.clearFrame("C", 0)
++        self.df.focusField("C", 0, 1)
++        deps = self.sql.getRec(tables=["genqrc", "genqrd", "ctlmst"],
++            cols=["gqd_dcod", "gqc_name", "gqd_cono", "ctm_name"],
++            where=[("gqd_bcod", "=", self.bcod), ("gqc_dcod=gqd_dcod",),
++            ("ctm_cono=gqd_cono",)], order="gqd_dcod")
++        for num, dep in enumerate(deps):
++            p = num * 4
++            for x in range(len(dep)):
++                self.df.loadEntry("C", 0, p+x, data=dep[x])
++            self.df.advanceLine(0)
++
++    def doExit(self, widget=None):
++        if self.df.frt == "T":
++            self.df.closeProcess()
++            self.opts["mf"].closeLoop()
++        else:
++            self.opts["mf"].dbm.commitDbase()
++            self.df.focusField("T", 0, 1)
++
++    def doQuit(self):
++        self.opts["mf"].dbm.rollbackDbase()
++        self.df.focusField("T", 0, 1)
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== added file 'img/bounce.png'
+Binary files img/bounce.png	1970-01-01 00:00:00 +0000 and img/bounce.png	2016-08-04 19:31:02 +0000 differ
+=== added file 'img/tcltk.png'
+Binary files img/tcltk.png	1970-01-01 00:00:00 +0000 and img/tcltk.png	2016-04-22 08:17:11 +0000 differ
+=== added file 'img/teams.png'
+Binary files img/teams.png	1970-01-01 00:00:00 +0000 and img/teams.png	2016-08-08 20:50:11 +0000 differ
+=== modified file 'lon/ln2030.py'
+--- lon/ln2030.py	2016-02-27 13:18:41 +0000
++++ lon/ln2030.py	2016-11-05 14:31:07 +0000
+@@ -15,7 +15,7 @@
+ 
+ import time
+ from TartanClasses import ASD, GetCtl, Sql, TartanDialog
+-from tartanFunctions import dateDiff
++from tartanFunctions import dateDiff, askQuestion
+ 
+ class ln2030:
+     def __init__(self, **opts):
+@@ -69,6 +69,18 @@
+                 ("lm2_desc", "", 0, "Description", "Y")),
+             "where": [("lm2_cono", "=", self.opts["conum"])],
+             "whera": [("C", "lm2_acno", 0, 0)]}
++        dte = {
++            "stype": "R",
++            "tables": ("lonrte",),
++            "cols": (
++                ("lrt_start", "", 0, "Start-Date"),
++                ("lrt_drte", "", 0, "DRte-%"),
++                ("lrt_crte", "", 0, "CRte-%")),
++            "where": [("lrt_cono", "=", self.opts["conum"])],
++            "whera": [
++                ("C", "lrt_acno", 0, 0),
++                ("C", "lrt_loan", 2, 0)],
++            "order": "lrt_start"}
+         r1s = (("Yes", "Y"), ("No", "N"))
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"All Current Rates","",
+@@ -90,12 +102,11 @@
+                 "","N",self.doLon,lm2,None,None),
+             (("C",0,0,3),"ONA",30,"Description"),
+             (("C",0,0,4),"ID1",10,"Date","",
+-                "","N",self.doSdate,None,None,("efld",)),
++                "","N",self.doSdate,dte,None,("efld",)),
+             (("C",0,0,5),"IUD",6.2,"DRte-%","Debit Rate",
+                 "","N",self.doDRte,None,None,None),
+             (("C",0,0,6),"IUD",6.2,"CRte-%","Credit Rate",
+-                "","N",self.doCRte,None,None,None),
+-            (("C",0,0,7),"OUD",12.2,"Repayment"))
++                "","N",self.doCRte,None,None,None))
+         tnd = ((self.endPage,"y"), )
+         txt = (self.exitPage, )
+         cnd = ((self.endPage,"y"), )
+@@ -128,15 +139,34 @@
+         desc = acc[self.sql.lonmf2_col.index("lm2_desc")]
+         self.start = acc[self.sql.lonmf2_col.index("lm2_start")]
+         self.pmths = acc[self.sql.lonmf2_col.index("lm2_pmths")]
++        if self.pmths:
++            return "Fixed Loan, Rate Change Not Allowed"
+         self.df.loadEntry("C", pag, p+1, data=desc)
+ 
+     def doSdate(self, frt, pag, r, c, p, i, w):
+-        if w < self.opts["period"][1][0] or w > self.opts["period"][2][0]:
+-            return "Invalid Date, Not in Financial Period"
+         if w <= self.lastd:
+             return "Invalid Date, Before Last Interest Raise Date"
+         self.sdate = w
+         self.curdt = w / 100
++        self.chgrte = False
++        if self.allrte == "N":
++            chk = self.sql.getRec(tables="lonrte", where=[("lrt_cono", "=",
++                self.opts["conum"]), ("lrt_acno", "=", self.acno), ("lrt_loan",
++                "=", self.loan), ("lrt_start", "=", w)], limit=1)
++            if chk:
++                self.df.loadEntry(frt, pag, p+1, data=chk[4])
++                self.df.loadEntry(frt, pag, p+2, data=chk[5])
++                ok = askQuestion(self.opts["mf"].body, "Exists",
++                """This Date "Already Exists.
++
++Debit Rate: %s  Credit Rate: %s
++
++Changing It Could Cause Problems.
++
++Would You Like to Continue?""" % (chk[4], chk[5]), default="no")
++                if ok == "no":
++                    return "rf"
++                self.chgrte = True
+ 
+     def doDRte(self, frt, pag, r, c, p, i, w):
+         if self.df.frt == "T" and p == 2:
+@@ -149,14 +179,6 @@
+             self.oldc = w
+         else:
+             self.newc = w
+-        if self.allrte == "Y":
+-            return
+-        if self.pmths:
+-            self.newp = self.getNewRepayment(self.acno, self.loan,
+-                self.start, self.pmths)
+-        else:
+-            self.newp = 0
+-        self.df.loadEntry(frt, pag, p+1, data=self.newp)
+ 
+     def endPage(self):
+         if self.df.frt == "T":
+@@ -178,58 +200,33 @@
+ 
+     def updateTables(self):
+         if self.allrte == "Y":
+-            self.sql.updRec("lonctl", cols=["cln_drte", "cln_crte"],
+-                data=[self.newd, self.newc], where=[("cln_cono", "=",
+-                self.opts["conum"])])
+-            recs = self.sql.getRec(tables="lonrte", cols=["lrt_acno",
+-                "lrt_loan"], where=[("lrt_cono", "=", self.opts["conum"]),
+-                ("lrt_drte", "=", self.oldd), ("lrt_crte", "=", self.oldc)])
++            if self.oldd == self.drate and self.oldc == self.crate:
++                self.sql.updRec("lonctl", cols=["cln_drte", "cln_crte"],
++                    data=[self.newd, self.newc], where=[("cln_cono", "=",
++                    self.opts["conum"])])
++            whr = [
++                ("lm2_cono", "=", self.opts["conum"]),
++                ("lrt_cono=lm2_cono",),
++                ("lrt_acno=lm2_acno",),
++                ("lrt_loan=lm2_loan",),
++                ("lrt_drte", "=", self.oldd),
++                ("lrt_crte", "=", self.oldc)]
++            recs = self.sql.getRec(tables=["lonmf2", "lonrte"],
++                cols=["lm2_acno", "lm2_loan", "lm2_pmths"], where=whr)
+         else:
+-            recs = [[self.acno, self.loan]]
++            recs = [[self.acno, self.loan, 0]]
+         for rec in recs:
++            if rec[2]:
++                # Fixed Period Loan, No Rate Changes Allowed
++                continue
+             # Loans Rate Record
+-            self.sql.insRec("lonrte", data=[self.opts["conum"], rec[0],
+-                rec[1], self.sdate, self.newd, self.newc])
+-            # Loans Masterfile
+-            if self.allrte == "N":
+-                newp = self.newp
++            if self.chgrte:
++                self.sql.updRec("lonrte", cols=["lrt_drte", "lrt_crte"],
++                    data=[self.newd, self.newc], where=[("lrt_cono", "=",
++                    self.opts["conum"]), ("lrt_acno", "=", rec[0]),
++                    ("lrt_loan", "=", rec[1]), ("lrt_start", "=", self.sdate)])
+             else:
+-                acc = self.sql.getRec(tables="lonmf2", where=[("lm2_cono",
+-                    "=", self.opts["conum"]), ("lm2_acno", "=", rec[0]),
+-                    ("lm2_loan", "=", rec[1])], limit=1)
+-                start = acc[self.sql.lonmf2_col.index("lm2_start")]
+-                pmths = acc[self.sql.lonmf2_col.index("lm2_pmths")]
+-                if pmths:
+-                    newp = self.getNewRepayment(rec[0], rec[1], start, pmths)
+-                else:
+-                    newp = 0
+-            self.sql.updRec("lonmf2", cols=["lm2_repay"], data=[newp],
+-                where=[("lm2_cono", "=", self.opts["conum"]), ("lm2_acno",
+-                "=", rec[0]), ("lm2_loan", "=", rec[1])])
+-
+-    def getNewRepayment(self, acno, loan, start, pmths):
+-        # New Loan Repayment Amount
+-        am1 = self.sql.getRec(tables="lontrn",
+-            cols=["round(sum(lnt_tramt), 2)"],
+-            where=[("lnt_cono", "=", self.opts["conum"]),
+-            ("lnt_acno", "=", acno),
+-            ("lnt_loan", "=", loan),
+-            ("lnt_type", "=", 2),
+-            ("lnt_trdt", "<=", self.sdate)], limit=1)
+-        cap = am1[0]
+-        am2 = self.sql.getRec(tables="lontrn",
+-            cols=["round(sum(lnt_cpamt), 2)"],
+-            where=[("lnt_cono", "=", self.opts["conum"]),
+-            ("lnt_acno", "=", acno),
+-            ("lnt_loan", "=", loan),
+-            ("lnt_type", "<>", 2),
+-            ("lnt_trdt", "<=", self.sdate)], limit=1)
+-        if am2[0]:
+-            cap = float(ASD(cap) - ASD(am2[0]))
+-        mths = pmths - dateDiff(start, self.sdate, "months")
+-        rte = (self.newd / 1200.0)
+-        newp = round(((cap * rte) * ((1 + rte) ** mths)) /
+-            (((1 + rte) ** mths) - 1), 2)
+-        return newp
++                self.sql.insRec("lonrte", data=[self.opts["conum"], rec[0],
++                    rec[1], self.sdate, self.newd, self.newc])
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2016-09-03 14:07:52 +0000
++++ men/rnemen.py	2016-11-02 11:34:18 +0000
+@@ -95,6 +95,9 @@
+     ["PYNY","gl_fm","gl1010",3,"Masterfile Records"],
+     ["PYNN","gl_fm","glc110",5,"Control Accounts"],
+     ["PYNN","gl_fm","glc210",5,"Inter Company Records"],
++    ["PNNY","gl_fm","glc310",3,"Branch Records"],
++    ["PNNY","gl_fm","glc410",3,"Department Records"],
++    ["PNNY","gl_fm","glc510",3,"Branch Departments"],
+     ["PYYN","gl_fm","gl1020",3,"Standard Journals"],
+     ["PYNN","gl_fm","gl1030",3,"Report Generator"],
+     ["PYYN","gl_fm","gl1040",3,"Detail Records"],
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2016-09-03 14:07:52 +0000
++++ mst/ms0000.py	2016-11-07 16:11:34 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 2, 5)
++    VERSION = (5, 2, 6)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'scp/sc2010.py'
+--- scp/sc2010.py	2016-02-27 13:18:41 +0000
++++ scp/sc2010.py	2016-09-16 12:21:41 +0000
+@@ -131,11 +131,6 @@
+             self.newcmp = True
+         else:
+             state = rec[self.sql.scpcmp_col.index("scp_state")]
+-            #rnd = self.sql.getRec(tables="scpgme", cols=["count(*)",
+-            #    "sum(scg_sfor)"],
+-            #    where=[("scg_cono", "=", self.opts["conum"]), ("scg_ccod",
+-            #    "=", self.ccod), ("scg_ocod", "<>", 0)], limit=1)
+-            #if rnd[0]:
+             if state > 1:
+                 return "This Competition Has Already Started"
+             if state == 1:
+
+=== modified file 'scp/sc2020.py'
+--- scp/sc2020.py	2016-05-21 12:42:32 +0000
++++ scp/sc2020.py	2016-09-16 12:40:08 +0000
+@@ -1685,23 +1685,24 @@
+                     (5, h, 0.8, "Club", True),
+                     (30, h, 0, ""))),
+                 (ox, oy+3, (
+-                    (5, h, 0.8, "RND", True),
+-                    (5, h, 0.8, "OPP", True),
+-                    (5, h, 0.8, "RNK", True),
+-                    (10, h, 0.8, "For", True),
+-                    (10, h, 0.8, "Agt", True),
+-                    (5, h, 0.8, "Pts", True)))]}
++                    (5, h, 0.8, "RND",  True),
++                    (5, h, 0.8, "OPP",  True),
++                    (5, h, 0.8, "RNK",  True),
++                    (7, h, 0.8, "For",  True),
++                    (7, h, 0.8, "Agt",  True),
++                    (6, h, 0.8, "Diff", True),
++                    (5, h, 0.8, "Pts",  True)))]}
+         x = ox
+         y = oy + 4.5
+-        w = [5, 5, 5, 10, 10, 5]
++        w = [5, 5, 5, 7, 7, 6, 5]
+         for z in xrange(1, self.rnds + 2):
+             row = [x, y, []]
+             if z == (self.rnds + 1):
+                 row[2].append((w[0]+w[1]+w[2], h, 0.8, "Totals", True))
+-                for l in xrange(3, 6):
++                for l in xrange(3, 7):
+                     row[2].append((w[l], h, 0, ""))
+             else:
+-                for l in xrange(6):
++                for l in xrange(7):
+                     row[2].append((w[l], h, 0, ""))
+             rr["rows"].append(row)
+             y += h
+@@ -1737,7 +1738,7 @@
+             x = ox
+             y = oy
+             for col in xrange(2):
+-                tot = [0, 0, 0.0]
++                tot = [0, 0, 0, 0.0]
+                 skp = nskp[sk]
+                 self.fpdf.set_font_size(20)
+                 cd = po[sk]
+@@ -1753,21 +1754,24 @@
+                     self.fpdf.drawText(cd, w=(cw*5), h=(ld*h),
+                         ln=0, align="C")
+                     if skp[0] > 900000 or skp[3][rnd][0] > 900000:
+-                        txt = ["Bye", "Bye", 0.0]
++                        txt = ["Bye", "Bye", "0 ", 0.0]
+                     elif self.scores:
+                         txt = [skp[3][rnd][3], skp[3][rnd][4], skp[3][rnd][5]]
+                         tot[0] += skp[3][rnd][3]
+                         tot[1] += skp[3][rnd][4]
+-                        tot[2] += skp[3][rnd][5]
++                        tot[2] += (skp[3][rnd][3] - skp[3][rnd][4])
++                        tot[3] += skp[3][rnd][5]
+                     else:
+-                        txt = ["", "", ""]
++                        txt = ["", "", "", ""]
+                     self.fpdf.drawText(skp[3][rnd][2], w=(cw*5), h=(ld*h),
+                         ln=0, align="C")
+-                    self.fpdf.drawText(txt[0], w=(cw*10), h=(ld*h),
+-                        ln=0, align="C")
+-                    self.fpdf.drawText(txt[1], w=(cw*10), h=(ld*h),
+-                        ln=0, align="C")
+-                    self.fpdf.drawText(txt[2], w=(cw*5), h=(ld*h),
++                    self.fpdf.drawText(txt[0], w=(cw*7), h=(ld*h),
++                        ln=0, align="C")
++                    self.fpdf.drawText(txt[1], w=(cw*7), h=(ld*h),
++                        ln=0, align="R")
++                    self.fpdf.drawText(txt[2], w=(cw*6), h=(ld*h),
++                        ln=0, align="C")
++                    self.fpdf.drawText(txt[3], w=(cw*5), h=(ld*h),
+                         align="C")
+                 if self.scores:
+                     self.fpdf.drawText("", x=x, w=(cw*15), h=(ld*h),
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2016-09-03 14:07:52 +0000
++++ std/TartanClasses.py	2016-11-05 13:00:38 +0000
+@@ -10936,12 +10936,14 @@
+             self.pmths = self.lonrec[self.sql.lonmf2_col.index("lm2_pmths")]
+             self.repay = self.lonrec[self.sql.lonmf2_col.index("lm2_repay")]
+             self.lcap = self.lonrec[self.sql.lonmf2_col.index("lm2_lcap")]
++            self.inttp = 4
+         else:
+             self.cono = self.lonrec[self.sql.waglmf_col.index("wlm_cono")]
+             self.acno = self.lonrec[self.sql.waglmf_col.index("wlm_empno")]
+             self.loan = self.lonrec[self.sql.waglmf_col.index("wlm_loan")]
+             self.start = self.lonrec[self.sql.waglmf_col.index("wlm_start")]
+             self.srate = self.lonrec[self.sql.waglmf_col.index("wlm_rate")]
++            self.inttp = 1
+             self.pmths = 0
+             self.repay = 0
+             self.lcap = 0
+@@ -10996,7 +10998,7 @@
+         if not self.refno == "Pending":
+             refs = self.sql.getRec(tables="lontrn", cols=["lnt_refno"],
+                 where=[("lnt_cono", "=", self.cono), ("lnt_batch", "=",
+-                self.batch), ("lnt_type", "=", 4)])
++                self.batch), ("lnt_type", "=", self.inttp)])
+             wrk = []
+             for ref in refs:
+                 try:
+@@ -11018,7 +11020,7 @@
+             where=[("lnt_cono", "=", self.cono),
+             ("lnt_acno", "=", self.acno),
+             ("lnt_loan", "=", self.loan),
+-            ("lnt_type", "<>", 4),
++            ("lnt_type", "<>", self.inttp),
+             ("lnt_trdt", "<=", self.tdate)],
+             limit=1)[0]
+         for mth in range(self.pmths):
+@@ -11042,7 +11044,7 @@
+                 break
+             trn = self.sql.getRec(tables="lontrn", where=[("lnt_cono",
+                 "=", self.cono), ("lnt_acno", "=", self.acno),
+-                ("lnt_loan", "=", self.loan), ("lnt_type", "=", 4),
++                ("lnt_loan", "=", self.loan), ("lnt_type", "=", self.inttp),
+                 ("lnt_trdt", "=", date)], limit=1)
+             if not trn:
+                 rte = self.sql.getRec(tables="lonrte", cols=["lrt_drte",
+@@ -11063,11 +11065,11 @@
+                         ita = float(ASD(ita) + ASD(chk))
+                 if self.update == "Y":
+                     cap = CCD(self.cap, "SD", 13.2)
+-                    desc = "%s @ %0.2f%s for 1 mth" % (cap.disp, "%", rte)
++                    desc = "%s @ %0.2f%s for 1 mth" % (cap.disp, rte, "%")
+                     # Loans Transaction
+                     self.sql.insRec("lontrn", data=[self.cono, self.acno,
+-                        self.loan, self.batch, 4, date, self.refno, ita,
+-                        date / 100, desc, "", self.capnm, self.sysdtw, 0])
++                        self.loan, self.batch, self.inttp, date, self.refno,
++                        ita, date / 100, desc, "", self.capnm, self.sysdtw, 0])
+                     if not self.refno == "Pending":
+                         self.refno += 1
+                     if self.glctl:
+@@ -11122,7 +11124,7 @@
+                 typ = trn[self.sql.lontrn_col.index("lnt_type")]
+                 dte = trn[self.sql.lontrn_col.index("lnt_trdt")]
+                 amt = trn[self.sql.lontrn_col.index("lnt_tramt")]
+-                if typ == 4 and dte > self.lcap:
++                if typ == self.inttp and dte > self.lcap:
+                     self.rin = float(ASD(self.rin) + ASD(amt))
+                 else:
+                     self.cap = float(ASD(self.cap) + ASD(amt))
+@@ -11134,7 +11136,7 @@
+                 typ = trn[self.sql.wagltf_col.index("wlt_type")]
+                 dte = trn[self.sql.wagltf_col.index("wlt_trdt")]
+                 amt = trn[self.sql.wagltf_col.index("wlt_amt")]
+-                if typ == 4 and dte > self.lcap:
++                if typ == self.inttp and dte > self.lcap:
+                     self.rin = float(ASD(self.rin) + ASD(amt))
+                 else:
+                     self.cap = float(ASD(self.cap) + ASD(amt))
+@@ -11168,7 +11170,7 @@
+             for trn in trns:
+                 if not trn[0] in bals:
+                     bals[trn[0]] = [0, 0]
+-                if trn[1] == 4:
++                if trn[1] == self.inttp:
+                     bals[trn[0]][1] = trn[2]
+                 else:
+                     bals[trn[0]][0] = trn[2]
+@@ -11221,7 +11223,7 @@
+                             break
+                     self.raiseInterest(start, endd, rate[1], rate[2])
+                     if usetrn:
+-                        if trn[1] == 4:
++                        if trn[1] == self.inttp:
+                             self.rin = float(ASD(self.rin) + ASD(trn[2]))
+                         else:
+                             self.cap = float(ASD(self.cap) + ASD(trn[2]))
+@@ -11240,7 +11242,7 @@
+                         self.rin = float(ASD(self.rin) + ASD(bals[curdt][1]))
+                     self.raiseInterest(start, endd, rate[1], rate[2])
+                     start = projectDate(endd, 1, typ="days")
+-        if self.update == "Y":
++        if self.sys == "L" and self.update == "Y":
+             self.sql.updRec("lonmf2", cols=["lm2_lcap"], data=[self.lcap],
+                 where=[("lm2_cono", "=", self.cono), ("lm2_acno", "=",
+                 self.acno), ("lm2_loan", "=", self.loan)])
+@@ -11281,14 +11283,14 @@
+         if rin and self.update == "Y":
+             # Loans Transaction
+             if self.sys == "L":
+-                data = [self.cono, self.acno, self.loan, self.batch, 4,
+-                    tdte, self.refno, rin, tdte / 100, desc, "",
+-                    self.capnm, self.sysdtw, 0]
++                data = [self.cono, self.acno, self.loan, self.batch,
++                    self.inttp, tdte, self.refno, rin, tdte / 100,
++                    desc, "", self.capnm, self.sysdtw, 0]
+                 self.sql.insRec("lontrn", data=data)
+             else:
+-                data = [self.cono, self.acno, self.loan, self.batch, 4,
+-                    tdte, self.refno, rin, tdte / 100, desc, "",
+-                    self.capnm, self.sysdtw, 0]
++                data = [self.cono, self.acno, self.loan, self.batch,
++                    self.inttp, tdte, self.refno, rin, cap.work, 0,
++                    rte, tdte / 100, desc, "", self.capnm, self.sysdtw, 0]
+                 self.sql.insRec("wagltf", data=data)
+             if not self.refno == "Pending":
+                 self.refno += 1
+@@ -11571,7 +11573,9 @@
+         if "letterhead" in self.form.tptp:
+             self.form.letterhead(cmc, ctm, "letterhead", None)
+         if "document_type" in self.form.tptp:
+-            if self.copy.lower() == "a":
++            if self.copy.lower() == "c":
++                typ = "CANCELLED"
++            elif self.copy.lower() == "a":
+                 typ = "AMENDED"
+             elif self.copy.lower() == "y":
+                 typ = "COPY"
+@@ -14180,32 +14184,33 @@
+     def pageHeading(self, htype=None):
+         if self.repprt[2] == "export":
+             return
++        self.pglin = 0
+         self.fpdf.add_page()
+         self.fpdf.setFont(style="B")
+         if self.head0:
+             self.fpdf.drawText(txt=self.head0)
+             self.fpdf.drawText()
++            self.pglin += 2
+         self.fpdf.setFont(style="B", size=self.fonts[0])
+         self.fpdf.drawText(txt=self.head1)
+-        self.pglin = 3
++        self.fpdf.drawText()
++        self.pglin += 2
+         if self.head2:
+-            self.fpdf.drawText()
+             self.fpdf.setFont(style="B", size=self.fonts[1])
+             self.fpdf.drawText(txt=self.head2)
++            self.fpdf.drawText()
+             self.pglin += 2
+         if self.head3:
+-            self.fpdf.drawText()
+             self.fpdf.setFont(style="B", size=self.fonts[2])
+             self.fpdf.drawText(txt=self.head3)
++            self.fpdf.drawText()
+             self.pglin += 2
+         if self.opts:
+-            self.fpdf.drawText()
+             self.fpdf.setFont(style="B")
+             self.fpdf.drawText(txt="%-10s%s" % ("Options:", self.opts))
++            self.fpdf.drawText()
+             self.pglin += 2
+         self.fpdf.setFont(style="B")
+-        self.fpdf.drawText()
+-        self.pglin += 1
+         if not htype:
+             self.fpdf.drawText(txt=self.head4)
+         elif self.head5[:20] == " " * 20:
+@@ -15012,7 +15017,7 @@
+                 shutil.rmtree(self.tmpdir)
+             os.makedirs(self.tmpdir)
+         except:
+-            showException(self.mf.window, self.mf.rcdic["wrkdir"],
++            showException(self.mf.body, self.mf.rcdic["wrkdir"],
+                 "Permission Error", dbm=self.mf.dbm)
+             return "Invalid Restore Directory"
+         cwd = os.getcwd()
+@@ -16441,6 +16446,8 @@
+             if t == "D":
+                 self.set_line_width(.5)
+             self.line(x + 1, y + (h / 2), x + w, y + (h / 2))
++            if t == "D":
++                self.set_line_width(0)
+             self.set_xy(x, y + h)
+ 
+     def footer(self):
+@@ -17137,19 +17144,24 @@
+     conf    - Whether or not to ask for confirmation
+     """
+     def __init__(self, parent=None, cols=None, butt=None, titl=None, conf=False):
+-        self.parent = parent
++        if not parent:
++            self.window = MkWindow(tk=True, remov=False).newwin
++        else:
++            self.window = parent
+         self.cols = cols
+         self.conf = conf
+         self.data = []
+         self.ents = {}
+-        self.sframe = MyFrame(self.parent, bg="black", borderwidth=2)
+-        if not self.parent:
++        self.sframe = MyFrame(self.window, bg="black", borderwidth=2)
++        if not parent:
++            style = ttk.Style()
++            style.theme_use("clam")
+             fonts = (
+-                ("TkDefaultFont", "Courier", 10, "normal"),
+-                ("TkTextFont", "Courier", 10, "normal"),
+-                ("TkFixedFont", "Courier", 10, "normal"),
+-                ("TkMenuFont", "Courier", 10, "normal"),
+-                ("TkHeadingFont", "Courier", 10, "normal"))
++                ("TkDefaultFont", "Courier", 12, "normal"),
++                ("TkTextFont", "Courier", 12, "normal"),
++                ("TkFixedFont", "Courier", 12, "normal"),
++                ("TkMenuFont", "Courier", 12, "normal"),
++                ("TkHeadingFont", "Courier", 12, "normal"))
+             for font in fonts:
+                 nf = tkfont.nametofont(font[0])
+                 if not len(font) == 4:
+@@ -17157,7 +17169,6 @@
+                 else:
+                     nf.configure(family=font[1], size=font[2], weight=font[3])
+                 self.sframe.option_add(font[0], nf)
+-            self.sframe.grid()
+         self.sframe.place(anchor="center", relx=0.5, rely=0.5)
+         if titl:
+             head = MyLabel(self.sframe, text=titl, color=True, borderwidth=2,
+@@ -17199,6 +17210,10 @@
+             bbox = MyButtonBox(self.sframe, row=1)
+             for but in butt:
+                 bbox.addButton(but[0], but[1])
++        if not parent:
++            self.window.update_idletasks()
++            geo = (self.sframe.winfo_reqwidth(), self.sframe.winfo_reqheight())
++            placeWindow(self.window, size=geo, expose=True)
+         self.fld = self.ents[self.cols[0][0]]
+         self.fld.focus_set()
+ 
+@@ -17292,9 +17307,6 @@
+                 dat = CCD(self.ents[col[0]].get(), typ, siz)
+             self.data.append(dat.work)
+         self.sframe.destroy()
+-        if self.parent:
+-            self.parent.quit()
+-        else:
+-            self.sframe.quit()
++        self.window.quit()
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2016-09-03 14:07:52 +0000
++++ std/tartanFunctions.py	2016-11-04 08:45:16 +0000
+@@ -483,6 +483,7 @@
+     from TartanClasses import Dbase, SplashScreen, Sql
+ 
+     # Email Document
++    sp = None
+     if repeml and repeml[1] == "Y" and repeml[2]:
+         ok = None
+         try:
+@@ -583,6 +584,8 @@
+         if repprt and (repprt[1].lower() == "v" or repprt[2] == "view"):
+             # Execute viewer command
+             exe, cmd = parsePrg(mf.rcdic["vwr"])
++            if not os.path.exists(cmd[0]):
++                raise Exception
+             cmd.append(pdfnam)
+             os.spawnv(os.P_WAIT, exe, tuple(cmd))
+         elif repprt and (repprt[2] and repprt[2].lower() != "none"):
+@@ -634,11 +637,11 @@
+             if splash:
+                 sp.closeSplash()
+     except:
+-        if splash:
++        if splash and sp:
+             sp.closeSplash()
+-        showException(mf.window, mf.rcdic["wrkdir"],
+-            "Output Error\nCnv: %s\nPrn: %s" %
+-            (mf.rcdic["cnv"], mf.rcdic["prn"]))
++        showException(mf.body, mf.rcdic["wrkdir"],
++            "Output Error\n\nVwr: %s\nCnv: %s\nPrn: %s" %
++            (mf.rcdic["vwr"], mf.rcdic["cnv"], mf.rcdic["prn"]))
+         return
+ 
+ def textFormat(text, width=30, blong=True):
+@@ -982,18 +985,18 @@
+ 
+     date1 = I(str(date1))
+     date2 = I(str(date2))
+-    days = D(date2, date1)
+-    if days <= 0:
+-        return 0
++    if ptype.lower() == "days":
++        days = D(date2, date1)
++        if days <= 0:
++            return 0
++        return days
+     months = M(date2) - M(date1)
++    if ptype.lower() == "months":
++        return months
+     if ptype.lower() == "years":
+         if date2.day < date1.day:
+             months -= 1
+         return months / 12
+-    if ptype.lower() == "months":
+-        return months
+-    if ptype.lower() == "days":
+-        return days
+ 
+ def getUnderline(widget=None, blist=None, text=None):
+     """
+@@ -2279,13 +2282,13 @@
+         print "Only a maximum of 3 lines allowed"
+         return
+     # Minimum and Maximum Values
+-    mins = 999999999
+-    maxs = 0
++    mins = None
++    maxs = None
+     for val in vals:
+         for v in val:
+-            if v < mins:
++            if mins is None or v < mins:
+                 mins = v
+-            if v > maxs:
++            if maxs is None or v > maxs:
+                 maxs = v
+     uu = len(str(int(maxs - mins)))
+     if uu == 3:
+@@ -2298,19 +2301,23 @@
+     maxs = ((int(maxs) / vi) + 1) * vi
+     # Heading
+     lm = 20                                 # Left margin
+-    cw = int(fpdf.fw * .90) - lm            # Chart width
++    cw = int(fpdf.w * .90) - lm             # Chart width
+     fpdf.drawText()
+     fpdf.setFont("Courier", "B", 12)
+     if head:
+         fpdf.drawText(head, x=lm, w=cw, align="C")
+         fpdf.drawText()
+-    if maxs > 999:
++    if maxs > 99:
+         txt = "{:,}'s".format(vi)
+         fpdf.drawText(txt, align="C")
+         fpdf.drawText()
+     # Chart Variables
++    if fpdf.cur_orientation == "P":
++        mx = .80
++    else:
++        mx = .75
+     sy = int(fpdf.get_y()) + 1              # Initial y value
+-    ch = (fpdf.fh * .80) - sy               # Chart height
++    ch = (fpdf.h * mx) - sy                 # Chart height
+     vb = (maxs - mins) / vi                 # Vertical blocks
+     vd = ch / vb                            # Depth of blocks
+     ly = sy + ch                            # Last y value
+@@ -2359,7 +2366,6 @@
+     if len(vals) > 1 and ycol:
+         fpdf.drawText()
+         x1 = cw
+-        #for col, val in enumerate(vals):
+         for x in range(len(vals) - 1, -1, -1):
+             txt = "     %s" % ycol[x]
+             wth = (len(txt) + 1) * fpdf.cwth
+@@ -2371,6 +2377,99 @@
+             fpdf.set_line_width(0)
+             fpdf.set_draw_color(0)
+ 
++def simpleBarChart(fpdf, head="", xcol=[], vals=[], tgt=0):
++    from TartanClasses import rgb
++    if not vals:
++        return
++    # Minimum and Maximum Values
++    mins = None
++    maxs = None
++    for val in vals:
++        if mins is None or val < mins:
++            mins = val
++        if maxs is None or val > maxs:
++            maxs = val
++    if mins > 0:
++        mins = 0
++    vi = 1
++    while True:
++        if maxs / vi <= 20:
++            break
++        vi = vi * 10
++    mins = (int(mins) / vi) * vi
++    maxs = ((int(maxs) / vi) + 1) * vi
++    # Heading
++    lm = 30                                 # Left margin
++    cw = int(fpdf.w * .95) - lm             # Chart width
++    fpdf.drawText()
++    if head:
++        fpdf.setFont("Courier", "B", 12)
++        fpdf.drawText(head, x=lm, w=cw, align="C")
++        fpdf.drawText()
++    # Chart Variables
++    if fpdf.cur_orientation == "P":
++        mx = .80
++    else:
++        mx = .75
++    sy = int(fpdf.get_y()) + 1              # Initial y value
++    ch = (fpdf.h * mx) - sy                 # Chart height
++    vb = (maxs - mins) / vi                 # Vertical blocks
++    vd = ch / vb                            # Depth of blocks
++    ly = sy + ch                            # Last y value
++    cl = ["#ff0000", "#0000ff", "#000000"]  # Line colours (red/blue/black)
++    # Horizontal Lines
++    ny = sy
++    for z in range(vb + 1):
++        num = maxs - (z * vi)
++        if num:
++            fpdf.set_line_width(0)
++        else:
++            fpdf.set_line_width(1)
++        if not tgt or tgt and not num == tgt:
++            fpdf.drawText(num, x=lm-8, y=ny-2, w=3, align="R")
++        fpdf.line(lm-3, ny, lm+cw+2, ny)
++        if not num:
++            zy = ny
++        ny += vd
++    # Vertical Lines
++    fpdf.set_line_width(1)
++    fpdf.line(lm, sy, lm, ly)
++    if len(vals) > 10:
++        lt = 8
++    else:
++        lt = 10
++    fpdf.set_line_width(lt)
++    fpdf.set_draw_color(*rgb(cl[1]))
++    hw = int(cw / len(xcol))
++    hh = ch / (maxs - mins)
++    for num, tab in enumerate(xcol):
++        txt = "%12s" % tab
++        if vals[num] < 0:
++            y1 = zy + (lt / 2)
++            y2 = 0 - vals[num]
++            y2 = y1 + (hh * y2) - (lt / 2)
++        else:
++            y1 = vals[num]
++            y1 = zy - (hh * y1) + (lt / 2)
++            y2 = zy - (lt / 2)
++        fpdf.line(lm+10+(num*hw), y1, lm+10+(num*hw), y2)
++        fpdf.rotate(50, x=lm+(num*hw)-5, y=ly+fpdf.get_string_width(txt))
++        fpdf.drawText(txt=txt, x=lm+(num*hw)-5, y=ly+fpdf.get_string_width(txt))
++        fpdf.rotate(0)
++    # Target Line
++    if tgt:
++        w = fpdf.cwth * 8
++        fpdf.set_line_width(1)
++        fpdf.set_text_color(*rgb(cl[0]))
++        fpdf.set_draw_color(*rgb(cl[0]))
++        y1 = zy - (hh * tgt)
++        fpdf.drawText("Target", x=lm-w, y=y1-2, w=w, align="L")
++        fpdf.drawText("%s%s" % (tgt, "%"), x=lm-w, y=y1+2, w=w, align="C")
++        fpdf.line(lm, y1, lm+cw, y1)
++        fpdf.set_text_color(*rgb(cl[2]))
++        fpdf.set_draw_color(*rgb(cl[2]))
++        fpdf.set_line_width(.2)
++
+ def luhnFunc(number):
+     def digits_of(n):
+         return [int(d) for d in str(n)]
+
+=== modified file 'str/st1010.py'
+--- str/st1010.py	2016-09-03 14:07:52 +0000
++++ str/st1010.py	2016-10-04 06:54:51 +0000
+@@ -173,7 +173,6 @@
+             (("C",3,0,3),"IUD",11.2,"Quantity","",
+                 "","N",self.doRecQty,None,self.doDelRec,("notzero",))]
+         but = (
+-            #("Valid Locations",loc,None,0,("T",0,3),("T",0,0)),
+             ("Edit",None,self.doEditor,0,("C",3,1),None),
+             ("Accept",None,self.doAccept,0,("T",0,0),("T",0,1)),
+             ("Cancel",None,self.doCancel,0,("T",0,0),("T",0,1)),
+@@ -423,9 +422,9 @@
+             where=[("st1_cono", "=", self.opts["conum"]), ("st1_group", "=",
+             self.rgroup), ("st1_code", "=",  w)], limit=1)
+         if not acc:
+-            return "Invalid Code (1)"
++            return "Invalid Code"
+         if acc[0] == "R":
+-            return "Invalid Type (R)"
++            return "Invalid Type (Recipe)"
+         self.df.loadEntry(frt, pag, p+1, data=acc[1])
+         acc = self.sql.getRec(tables="strmf2", cols=["st2_bin"],
+             where=[("st2_cono", "=", self.opts["conum"]), ("st2_group", "=",
+
+=== modified file 'str/st2010.py'
+--- str/st2010.py	2016-05-21 12:42:32 +0000
++++ str/st2010.py	2016-10-13 11:59:03 +0000
+@@ -278,6 +278,8 @@
+         if not strpom:
+             return "Invalid Document"
+         if strpom[self.sql.strpom_col.index("pom_delno")] == "cancel":
++            if self.acttyp == "C":
++                return "Already Cancelled"
+             ok = askQuestion(self.opts["mf"].body, "Cancelled",
+                 "This order was Cancelled.\n\nDo you want to Reinstate It?",
+                 default="no")
+@@ -287,7 +289,7 @@
+                 where=[("pom_cono", "=", self.opts["conum"]),
+                 ("pom_ordno", "=", w)])
+             strpom[self.sql.strpom_col.index("pom_delno")] = ""
+-        if strpom[self.sql.strpom_col.index("pom_delno")]:
++        elif strpom[self.sql.strpom_col.index("pom_delno")]:
+             return "Order Already Received"
+         self.ordno = CCD(w, "UI", 9.0).work
+         self.othno = CCD(w, "Na", 9.0).work
+@@ -365,11 +367,22 @@
+             # Clear Totals
+             self.doClearTots()
+         elif self.acttyp == "C":
+-            # Update Deletetion
+-            self.sql.updRec("strpom", cols=["pom_delno"], data=["cancel"],
+-                where=[("pom_cono", "=", self.opts["conum"]), ("pom_ordno",
+-                "=", self.ordno)])
+-            self.opts["mf"].dbm.commitDbase()
++            self.doReadLoadStr()
++            ok = askQuestion(self.opts["mf"].body, "Cancel",
++                "Are You Sure This Order Must be Cancelled?", default="no")
++            if ok == "yes":
++                # Print Cancellation
++                self.df.setWidget(self.df.mstFrame, state="hide")
++                PrintOrder(self.opts["mf"], self.opts["conum"],
++                    self.opts["conam"], self.ordno, tname=self.tname,
++                    repprt=self.pr.repprt, repeml=self.pr.repeml,
++                    copy=self.acttyp.lower())
++                self.df.setWidget(self.df.mstFrame, state="show")
++                # Update Deletetion
++                self.sql.updRec("strpom", cols=["pom_delno"], data=["cancel"],
++                    where=[("pom_cono", "=", self.opts["conum"]), ("pom_ordno",
++                    "=", self.ordno)])
++                self.opts["mf"].dbm.commitDbase()
+             # Clear totals and focus
+             self.doClearTots()
+             self.df.focusField("T", 0, 1)
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2016-09-03 14:07:52 +0000
++++ uty/pkgprg.py	2016-11-02 14:52:58 +0000
+@@ -126,7 +126,7 @@
+               "cr2030", "cr3030", "cr3070", "cr3310", "cr3320", "cr3330",
+               "cr3340", "cr3350", "cr3360", "cr3370", "cr3380", "cr4010",
+               "cr6010", "gl3100", "gl3110", "gl3120", "gl3130", "gl6060",
+-              "ln2020", "ms1010", "tartanWork"]]
++              "glc310", "glc410", "glc510", "ln2020", "ms1010", "tartanWork"]]
+     exclude = ["cr3080", "dr1020", "dr2030", "dr6030", "drc210", "drc220",
+                "drc310", "drc320", "drc510", "drc520", "drc610", "drc620",
+                "drc710", "drc810", "msy020", "si2020", "si3010", "si3070",
+@@ -654,10 +654,10 @@
+             "admin@amadlelo.co.za",
+             "admin@blueberry.co.za",
+             "chris@resinsolutions.co.za",
++            "deonk@spargs.co.za",
+             "frikkie@lando.co.za",
+             "galloway@awe.co.za",
+             "jane@acsconsulting.co.za",
+-            "johnv@wpcc.co.za",
+             "keith@barrowdale.co.za",
+             "lawrence@hawcweb.co.za",
+             "liezel@acsconsulting.co.za",
+@@ -667,23 +667,26 @@
+             "mcbagro@gmail.com",
+             "mel@acsaccounting.co.za",
+             "mike@annettelaing.co.za",
+-            "neil@cpms.co.za",
+-            "nmacdonald@telkomsa.net",
+             "no2pigstash@hotmail.com",
+             "paul@tartan.co.za",
+             "paulabergh@mweb.co.za",
+             "rob@itennis.co.za",
+-            "rsatchl@iafrica.com",
+             "rene@agfin.co.za",
+             "ruthmiles52@gmail.com",
+             "tyron@i-volt.net",
+             "yolande@acsaccounting.co.za"]
+             #"avanhasselt@jadeworld.com"
+             #"brt@volmoed.co.za",
+-            #"deonk@spargs.co.za",
++            #"johnv@wpcc.co.za",
+             #"knorton@xsinet.co.za"
+             #"mjredman@bigpond.net.au"
++            #"neil@cpms.co.za",
++            #"nmacdonald@telkomsa.net",
++            #"rsatchl@iafrica.com",
+         for addr in addrs:
+-            sendMail(serv, mfrm, addr, subj, mess=(text, html))
++            if addr == "deonk@spargs.co.za":
++                sendMail(serv, mfrm, addr, subj)
++            else:
++                sendMail(serv, mfrm, addr, subj, mess=(text, html))
+ print "DONE"
+ # END
+
+=== modified file 'uty/pw1010.py'
+--- uty/pw1010.py	2016-02-27 13:18:41 +0000
++++ uty/pw1010.py	2016-09-16 06:26:34 +0000
+@@ -52,6 +52,7 @@
+                         "0123456789./"
+         self.server = self.opts["mf"].rcdic["dbhost"]
+         self.client = None
++        random.seed()
+ 
+     def mainProcess(self):
+         tit = ("User Administration",)
+
+=== modified file 'wag/sl3030.py'
+--- wag/sl3030.py	2016-02-27 13:18:41 +0000
++++ wag/sl3030.py	2016-09-27 13:33:42 +0000
+@@ -25,7 +25,8 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["waglmf", "wagltf"], prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["wagmst", "waglmf", "wagltf"],
++            prog=__name__)
+         if self.sql.error:
+             return
+         t = time.localtime()
+

@@ -1,0 +1,27 @@
+removed:
+  doc/Manual.rst
+  img/check.png
+  img/uncheck.png
+  scp/scc110.py
+added:
+  doc/MB.rst
+  img/check.gif
+  img/uncheck.gif
+  mst/ms1010_oth.py
+modified:
+  bwl/bc1010.py
+  bwl/bcc110.py
+  crs/cr4010_rne.py
+  csv/bwlclb.sys
+  doc/BC.rst
+  doc/Downloads.rst
+  doc/MD.rst
+  men/bwlmen.py
+  men/scpmen.py
+  mst/ms0000.py
+  mst/ms1010.py
+  mst/msc000.py
+  mst/msc110.py
+  std/TartanClasses.py
+  std/tartanWork.py
+  wag/sl2020.py

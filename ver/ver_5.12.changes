@@ -1,0 +1,29 @@
+Tartan Systems Upgrade (Lockdown)
+---------------------------------
+ 1) Improved the database Export and Merge routines. Greatly increased the
+    speed of the Merge routine. Please Note that any unmerged exported
+    databases MUST be merged, before upgrading to this version, otherwise
+    the old exported databases will NOT be able to be merged.
+ 2) Improved the speed of most database handling routines.
+ 3) Improved and standardised the stores pricing system.
+ 4) Added a routine, Masterfile Changes, to the Control --> Reporting menu.
+ 5) Added a routine, Standard Cost Prices to the Store's Ledger --> File
+    Maintenance menu.
+ 6) Changed the stores cost and selling price routines to cater for standard
+    cost prices.
+ 7) Added a built-in document viewer which will be used if no external program
+    has been set up in the Preferences e.g. evince or SumatraPDF.exe.
+ 8) Added a built-in print routine which will be used if no external program
+    has been set up in the Preferences e.g. lp or SumatraPDF.exe.
+ 9) Dropped support for Firebird and MySQL databases.
+10) Dropped pychart in favour of pygal for charting.
+11) Many other minor changes, fixes and enhancements.
+
+NB:
+--
+As there is now a built-in pdf viewer SumatraPDF is no longer packaged with the
+Windows version of Tartan.  Should you wish to still use SumtraPDF you will have
+to download it and set the path to the executable in Tartan Preferences.
+
+You can only upgrade to this version if your current version is 5.4 or later.
+If you have an older version than 5.4 please contact me for assistance.

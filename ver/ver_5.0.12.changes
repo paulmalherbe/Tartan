@@ -1,0 +1,7 @@
+1) Packaged pared down version of bowls system excluding all financial systems.
+2) The manual has some further updates.
+3) Some small bug fixes including adding missing image files and rcfdir error.
+
+Note:
+-----
+You can only upgrade to this version if your current version is 4.1.10 or later.

@@ -1,0 +1,5 @@
+1) Fixed a bug preventing creation of a new database.
+
+Notes:
+------
+You can only upgrade to this version if your current version is 4.1.10 or later.

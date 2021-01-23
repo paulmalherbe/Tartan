@@ -1,0 +1,10 @@
+1) Added the facility to add notes to the bowls competition format report.
+2) Changed the method automatic ageing is done in creditors and debtors.
+3) Changed the extended rental system to incorporate basic charges.
+4) Changed the system upgrade method to use http instead of ftp.
+5) Fixed a bug in general ledger interrogation - financials.
+6) Numerous other minor bug fixes and improvements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

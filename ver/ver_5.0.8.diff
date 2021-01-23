@@ -1,0 +1,547 @@
+=== modified file 'bkm/bk1020.py'
+--- bkm/bk1020.py	2015-03-04 16:05:59 +0000
++++ bkm/bk1020.py	2015-03-06 11:47:52 +0000
+@@ -1161,7 +1161,7 @@
+         if not rec or not rec[0]:
+             num = 1
+         else:
+-            num = int(rec[0][-2:]) + 1
++            num = (int(rec[0]) % 100) + 1
+         return "%7s%02i" % (self.number, num)
+ 
+     def doTrans(self):
+@@ -1350,6 +1350,8 @@
+     def doTEnd(self):
+         self.trans = True
+         if self.ttype in (4, 5):
++            tdte = self.sysdtw
++            cdte = tdte / 100
+             if self.ttype == 4:
+                 desc = "Query Cancellation"
+                 amt = 0
+@@ -1359,8 +1361,8 @@
+                 amt = 0
+                 self.state = "Q"
+             self.sql.insRec("bkmtrn", data=[self.opts["conum"], self.number,
+-                1, self.getRef(), self.batno, self.tdte, amt, 0, self.cdte,
+-                desc, "", "", self.opts["capnm"], self.sysdtw, 0])
++                1, self.getRef(), self.batno, tdte, amt, 0, cdte, desc, "",
++                "", self.opts["capnm"], self.sysdtw, 0])
+             self.sql.updRec("bkmmst", cols=["bkm_state"], data=[self.state],
+                 where=[("bkm_cono", "=", self.opts["conum"]), ("bkm_number",
+                 "=", self.number)])
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-02-25 16:45:19 +0000
++++ doc/Downloads.rst	2015-03-06 19:01:13 +0000
+@@ -11,16 +11,16 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.7 and was released on the 25th February, 2015.
++The latest version of Tartan is 5.0.8 and was released on the 6th March, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.7.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.8.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.7.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.8.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-02-25 16:45:19 +0000
++++ doc/MD.rst	2015-03-06 19:01:13 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.7
++:Version:   5.0.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl3100_rne.py'
+--- gen/gl3100_rne.py	2015-02-22 09:42:02 +0000
++++ gen/gl3100_rne.py	2015-03-06 07:25:35 +0000
+@@ -181,7 +181,8 @@
+                     coyd = str(self.seqdic[x][0])
+                 else:
+                     coyd = "%s, %s" % (coyd, str(self.seqdic[x][0]))
+-            self.doTrialBalance(coys, coyd)
++            if coys:
++                self.doTrialBalance(coys, coyd)
+         self.opts["mf"].closeLoop()
+ 
+     def doTrialBalance(self, coys, coyd):
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-02-25 16:45:19 +0000
++++ mst/ms0000.py	2015-03-06 19:01:13 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 7)
++    VERSION = (5, 0, 8)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms3010.py'
+--- mst/ms3010.py	2015-02-07 06:31:11 +0000
++++ mst/ms3010.py	2015-03-05 10:11:28 +0000
+@@ -104,6 +104,19 @@
+                 ("vtm_desc", "", 0, "Description", "Y"),
+                 ("vtm_cat",  "", 0, "C")),
+             "where": [("vtm_cono", "=", self.opts["conum"])]}
++        sys = {
++            "stype": "C",
++            "titl": "Systems",
++            "head": ("S", "Description"),
++            "data": (
++                ("", "All Systems"),
++                ("A", "Asset's Register"),
++                ("B", "Booking's Manager"),
++                ("C", "Creditor's Ledger"),
++                ("D", "Debtor's Ledger"),
++                ("G", "General Ledger"),
++                ("M", "Member's Ledger"),
++                ("R", "Rental's Ledger"))}
+         pdt = {
+             "stype": "C",
+             "titl": "Payment Date",
+@@ -122,7 +135,7 @@
+             (("T",0,3,0),"IUA",1,"Vat Code","",
+                 "","Y",self.doCode,vtm,None,("efld",)),
+             (("T",0,4,0),"IUA",1,"System","Originating System",
+-                "","Y",self.doSystem,None,None,None),
++                "","Y",self.doSystem,sys,None,None),
+             (("T",0,5,0),("IRB",r1s),0,"Totals Only","",
+                 "Y","Y",self.doTotsOnly,None,None,None),
+             (("T",0,6,0),("IRB",r2s),0,"Flag Items as Paid",
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2015-03-04 16:05:59 +0000
++++ mst/msc000.py	2015-03-06 07:18:26 +0000
+@@ -819,14 +819,14 @@
+                 else:
+                     name = self.user["name"]
+                 logd = [getpass.getuser(), name, prg[0], rtn]
+-                if self.conum:
+-                    logd.append(self.conum)
+-                else:
+-                    logd.append(0)
+-                if self.finper is None:
+-                    logd.append(0)
+-                else:
+-                    logd.append(self.finper)
++                if "conum" in popt:
++                    logd.append(popt["conum"])
++                else:
++                    logd.append(0)
++                if "period" in popt:
++                    logd.append(popt["period"][0])
++                else:
++                    logd.append(0)
+                 logd.append(long(
+                     "%04i%02i%02i%02i%02i%02i"%time.localtime()[:-3]))
+                 sql.insRec("ctllog", data=logd, excp=False)
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-03-04 16:05:59 +0000
++++ std/TartanClasses.py	2015-03-06 04:32:12 +0000
+@@ -11727,8 +11727,11 @@
+         if "letterhead" in self.form.tptp:
+             self.form.letterhead(cmc, ctm, "letterhead", None)
+         if "document_type" in self.form.tptp:
++            print self.runtp
+             if self.runtp.lower() == "c":
+                 typ = "COPY PAYSLIP"
++            elif self.runtp.lower() == "p":
++                typ = "PREVIEW PAYSLIP"
+             else:
+                 typ = "PAYSLIP"
+             self.form.tptp["document_type"][1] = typ
+
+=== modified file 'uty/bm1010.py'
+--- uty/bm1010.py	2015-03-04 16:05:59 +0000
++++ uty/bm1010.py	2015-03-06 06:45:24 +0000
+@@ -664,10 +664,10 @@
+         o = os.path.join(self.opts["mf"].rcdic["wrkdir"],
+             b.replace(".%s" % e, ""))
+         f = o + "_%03i.jpg"
+-        args = [
+-            "-q", "-dNOPAUSE", "-dJPEGQ=100", "-r300x300",
+-            "-sstdout=/dev/null", "-sDEVICE=jpeg",
+-            "-sOutputFile=" + f, fnam, "-c", "quit"]
++        args = ["-q", "-dNOPAUSE", "-dJPEGQ=100", "-r300x300",
++                "-sstdout=/dev/null", "-sstderr=/dev/null",
++                "-sDEVICE=jpeg", "-sOutputFile=" + f, fnam,
++                "-c", "quit"]
+         GHS.Ghostscript(*args)
+         fls = glob.glob(o + "*.jpg")
+         fls = sorted(fls, reverse=True)
+
+=== modified file 'uty/ss1010.py'
+--- uty/ss1010.py	2014-12-30 15:37:38 +0000
++++ uty/ss1010.py	2015-03-06 10:11:38 +0000
+@@ -308,20 +308,20 @@
+         state = self.df.disableButtonsTags()
+         ss = SChoice(self.mf, titl=titl, data=data)
+         if ss.selection:
+-            self.df.mstAlw.hide()
++            self.df.setWidget(self.df.mstFrame, state="hide")
+             whr = [("skp_cono", "=", self.cono)]
+             if ss.selection[0] == "A":
+                 recs = self.sql.getRec(tables="stkpag",
+                 cols=["skp_cono", "skp_page"], where=whr)
+             else:
+                 recs = getSingleRecords(self.mf, "stkpag", ("skp_page",),
+-                where=whr)
++                    where=whr)
+             if recs:
+                 pag = []
+                 for rec in recs:
+                     pag.append(rec[1])
+                 self.doPrintPages(pag)
+-            self.df.mstAlw.show()
++            self.df.setWidget(self.df.mstFrame, state="show")
+         self.df.enableButtonsTags(state=state)
+         self.mf.updateStatus("")
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+
+=== modified file 'wag/sl1010.py'
+--- wag/sl1010.py	2014-12-30 15:37:38 +0000
++++ wag/sl1010.py	2015-03-05 14:25:20 +0000
+@@ -38,7 +38,8 @@
+             "tables": ("wagmst",),
+             "cols": (
+                 ("wgm_empno", "", 0, "EmpNo"),
+-                ("wgm_sname", "", 0, "Surname", "Y")),
++                ("wgm_sname", "", 0, "Surname", "Y"),
++                ("wgm_fname", "", 0, "Names")),
+             "where": [("wgm_cono", "=", self.opts["conum"])]}
+         lnm = {
+             "stype": "R",
+
+=== modified file 'wag/sl2020.py'
+--- wag/sl2020.py	2015-02-07 06:31:11 +0000
++++ wag/sl2020.py	2015-03-05 14:23:36 +0000
+@@ -69,7 +69,8 @@
+             "tables": ("wagmst",),
+             "cols": (
+                 ("wgm_empno", "", 0, "EmpNo"),
+-                ("wgm_sname", "", 0, "Surname", "Y")),
++                ("wgm_sname", "", 0, "Surname", "Y"),
++                ("wgm_fname", "", 0, "Names")),
+             "where": [("wgm_cono", "=", self.opts["conum"])]}
+         lnm = {
+             "stype": "R",
+@@ -103,7 +104,7 @@
+             (("C",1,0,0),"IUI",5,"EmpNo","Employee Number",
+                 "","N",self.doEmp,wgm,None,None),
+             (("C",1,0,1),"ONA",10,"Name"),
+-            (("C",1,0,2),"IUI",3,"Lon","Loan Number",
++            (("C",1,0,2),"IUI",2,"Ln","Loan Number",
+                 "","N",self.doLoan,lnm,None,("notzero",)),
+             (("C",1,0,3),"ONA",10,"Descript","Description",
+                 "","N",None,None,None,None),
+
+=== modified file 'wag/sl4010.py'
+--- wag/sl4010.py	2014-12-30 15:37:38 +0000
++++ wag/sl4010.py	2015-03-05 14:21:33 +0000
+@@ -51,7 +51,8 @@
+             "tables": ("waglmf", "wagmst"),
+             "cols": (
+                 ("wlm_empno", "", 0, "EmpNo"),
+-                ("wgm_sname", "", 0, "Surname", "Y")),
++                ("wgm_sname", "", 0, "Surname", "Y"),
++                ("wgm_fname", "", 0, "Names")),
+             "where": [
+                 ("wlm_cono", "=", self.opts["conum"]),
+                 ("wgm_cono=wlm_cono",),
+@@ -75,24 +76,23 @@
+         fld = (
+             (("T",0,0,0),"IUI",5,"Emp-Num","Employee Number",
+                 "","N",self.doEmp,wgm,None,("notzero",)),
+-            (("T",0,0,0),"ONA",20,"Surname"),
+-            (("T",0,0,0),"IUI",5,"Loan-Num","Loan Number",
++            (("T",0,0,0),"ONA",40,"Name"),
++            (("T",0,1,0),"IUI",5,"Loan-Num","Loan Number",
+                 "","N",self.doLoan,lnm,None,("notzero",)),
+-            (("T",0,0,0),"ONA",20,"Desc"),
+-            (("T",1,0,0),"ONA",30,"Description"),
+-            (("T",1,1,0),"OUI",3,"Deduction Code"),
+-            (("T",1,2,0),"OUD",6.2,"Interest Percentage"),
+-            (("T",1,3,0),"OD1",10,"Start Date"),
+-            (("T",1,4,0),"OSD",10.2,"Deduction Amount"),
+-            (("T",1,5,0),"OSD",10.2,"Total Advances"),
+-            (("T",1,6,0),"OSD",10.2,"Total Interest"),
+-            (("T",1,7,0),"OSD",10.2,"Total Repayments"),
+-            (("T",1,8,0),"OSD",10.2,"Total Adjustments"),
+-            (("T",1,9,0),"OSD",10.2,"Balance"),
+-            (("T",1,10,0),"Od1",10,"Last Interest Raised"),
+-            (("T",1,11,0),"Od1",10,"Last Payment Received"),
+-            (("T",1,12,0),"OSD",10.2,"Capital"),
+-            (("T",1,13,0),"OSD",10.2,"Int-Due"),
++            (("T",0,1,0),"ONA",40,"Desc"),
++            (("T",1,0,0),"OUI",3,"Deduction Code"),
++            (("T",1,1,0),"OUD",6.2,"Interest Percentage"),
++            (("T",1,2,0),"OD1",10,"Start Date"),
++            (("T",1,3,0),"OSD",10.2,"Deduction Amount"),
++            (("T",1,4,0),"OSD",10.2,"Total Advances"),
++            (("T",1,5,0),"OSD",10.2,"Total Interest"),
++            (("T",1,6,0),"OSD",10.2,"Total Repayments"),
++            (("T",1,7,0),"OSD",10.2,"Total Adjustments"),
++            (("T",1,8,0),"OSD",10.2,"Balance"),
++            (("T",1,9,0),"Od1",10,"Last Interest Raised"),
++            (("T",1,10,0),"Od1",10,"Last Payment Received"),
++            (("T",1,11,0),"OSD",10.2,"Capital"),
++            (("T",1,12,0),"OSD",10.2,"Int-Due"),
+             (("T",2,0,0),("IRB",r1s),0,"History","",
+                 "Y","Y",self.doTrans2,None,None,None))
+         tnd = ((self.doEndTop,"N"), None, None)
+@@ -113,10 +113,9 @@
+         if not acc:
+             return "Invalid Employee Number"
+         self.empno = w
+-        self.sname = acc[0]
+-        self.fname = acc[1]
++        self.name = "%s, %s" % (acc[0], acc[1])
+         self.history = "Y"
+-        self.df.loadEntry("T", pag, p+1, data=self.sname)
++        self.df.loadEntry("T", pag, p+1, data=self.name)
+ 
+     def doLoan(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables="waglmf", cols=["wlm_desc",
+@@ -128,10 +127,10 @@
+         self.loan = w
+         self.desc = acc[0]
+         self.df.loadEntry("T", pag, p+1, data=self.desc)
+-        d = 0
+-        for i in xrange(0, 5):
++        d = 1
++        for i in xrange(4):
+             self.df.loadEntry("T", 1, i, data=acc[d])
+-            d = d + 1
++            d += 1
+         self.lon = 0.0
+         self.imt = 0.0
+         self.pay = 0.0
+@@ -142,8 +141,8 @@
+         self.cap = 0.0
+         self.due = 0
+         self.loadBalances()
+-        rate = self.df.t_work[1][0][2]
+-        start = self.df.t_work[1][0][3]
++        rate = self.df.t_work[1][0][1]
++        start = self.df.t_work[1][0][2]
+         lint = LoanInterest(self.opts["mf"], self.opts["period"],
+             self.opts["conum"], self.empno, self.loan, rate, start,
+             self.sysdtw, "Pending", (self.sysdtw/100), self.opts["capnm"],
+@@ -151,15 +150,15 @@
+         self.bal = float(ASD(self.bal) + ASD(lint.imt))
+         self.imt = float(ASD(self.imt) + ASD(lint.imt))
+         self.due = float(ASD(self.due) + ASD(lint.imt))
+-        self.df.loadEntry("T", 1, 5, data=self.lon)
+-        self.df.loadEntry("T", 1, 6, data=self.imt)
+-        self.df.loadEntry("T", 1, 7, data=self.pay)
+-        self.df.loadEntry("T", 1, 8, data=self.adj)
+-        self.df.loadEntry("T", 1, 9, data=self.bal)
+-        self.df.loadEntry("T", 1, 10, data=self.idt)
+-        self.df.loadEntry("T", 1, 11, data=self.pdt)
+-        self.df.loadEntry("T", 1, 12, data=self.cap)
+-        self.df.loadEntry("T", 1, 13, data=self.due)
++        self.df.loadEntry("T", 1, 4, data=self.lon)
++        self.df.loadEntry("T", 1, 5, data=self.imt)
++        self.df.loadEntry("T", 1, 6, data=self.pay)
++        self.df.loadEntry("T", 1, 7, data=self.adj)
++        self.df.loadEntry("T", 1, 8, data=self.bal)
++        self.df.loadEntry("T", 1, 9, data=self.idt)
++        self.df.loadEntry("T", 1, 10, data=self.pdt)
++        self.df.loadEntry("T", 1, 11, data=self.cap)
++        self.df.loadEntry("T", 1, 12, data=self.due)
+         self.opts["mf"].updateStatus("")
+ 
+     def doHist(self, frt, pag, r, c, p, i, w):
+@@ -207,7 +206,7 @@
+     def doTrans2(self, frt, pag, r, c, p, i, w):
+         self.history = w
+         tit = "Transactions for Loan: %s %s - %s" % \
+-            (self.empno, self.sname, self.desc)
++            (self.empno, self.name, self.desc)
+         tab = ["wagltf"]
+         col = (("wlt_trdt", "", 0, "   Date"),
+                 ("wlt_batch", "", 0, "Batch"),
+
+=== modified file 'wag/wg2020.py'
+--- wag/wg2020.py	2015-02-22 09:42:02 +0000
++++ wag/wg2020.py	2015-03-05 13:50:08 +0000
+@@ -57,6 +57,12 @@
+         self.sql = Sql(self.opts["mf"].dbm, tables=tabs, prog=__name__)
+         if self.sql.error:
+             return
++        accs = self.sql.getRec(tables="waglmf", cols=["wlm_ded_code"],
++            where=[("wlm_cono", "=", self.opts["conum"])],
++            group="wlm_ded_code")
++        self.lonacc = []
++        for acc in accs:
++            self.lonacc.append(acc[0])
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.sysdtd = CCD(self.sysdtw, "d1", 10).disp
+@@ -305,6 +311,7 @@
+             self.totern = 0
+             self.totded = 0
+             self.pgnum += 1
++            self.loan = True
+             self.doEarnings()
+             self.doDeductions()
+             dat = (self.opts["conum"], self.empno, self.pgnum, self.rundt,
+@@ -315,7 +322,8 @@
+                 self.drbal, self.opts["capnm"], self.sysdtw, 0)
+             self.sql.insRec("wagtf1", data=dat)
+             self.doPAYE()
+-            self.doStaffLoans()
++            if self.loan:
++                self.doStaffLoans()
+ 
+     def doRates(self, rate):
+         if self.freq == "M":
+@@ -443,10 +451,12 @@
+                 # Invalid wgexp0 conversion/imported from old system
+                 eamt = 1
+             tax = ced[self.sql.wagedc_col.index("ced_taxcode")]
+-            taxportion = ced[self.sql.wagedc_col.index("ced_taxportion")]
++            taxp = ced[self.sql.wagedc_col.index("ced_taxportion")]
+             earnt = ced[self.sql.wagedc_col.index("ced_earntype")]
+             eglco = long(ced[self.sql.wagedc_col.index("ced_eglco")])
+             eglno = long(ced[self.sql.wagedc_col.index("ced_eglno")])
++            if eglno and not eglco:
++                eglco = self.opts["conum"]
+             uifportion = ced[self.sql.wagedc_col.index("ced_uifportion")]
+             sdlportion = ced[self.sql.wagedc_col.index("ced_sdlportion")]
+             if eind == "F" and not self.ern[cod][0]:
+@@ -502,8 +512,8 @@
+                     emt = eamt
+             if tax == "N":
+                 self.notax = float(ASD(self.notax) + ASD(emt))
+-            elif taxportion:
+-                amt = round((emt * taxportion / 100), 2)
++            elif taxp:
++                amt = round((emt * taxp / 100), 2)
+                 self.notax = float(ASD(self.notax) + ASD(emt) - ASD(amt))
+                 self.taxbl = float(ASD(self.taxbl) + ASD(amt))
+             if tax == "R":
+@@ -522,9 +532,19 @@
+                 self.sdlpay = float(ASD(self.sdlpay) + ASD(amt))
+             # Write Transaction Detail
+             wagtf2 = [self.opts["conum"], self.empno, self.pgnum, self.rundt,
+-                "E", cod, hrs, emt, 0, tax, taxportion, earnt, eglco, eglno,
+-                0, 0]
++                "E", cod, hrs, emt, 0, tax, taxp, earnt, eglco, eglno, 0, 0]
+             self.doWriteWagtf2(wagtf2)
++            if cod in self.lonacc:
++                # Get Latest Loan
++                lon = self.sql.getRec(tables="waglmf", cols=["max(wlm_loan)"],
++                    where=[("wlm_cono", "=", self.opts["conum"]),
++                    ("wlm_empno", "=", self.empno)], limit=1)[0]
++                # Write Loan Transaction
++                dat = [self.opts["conum"], self.empno, lon, "Payslip", 4,
++                    self.rundt, self.pgnum, emt, 0, 0, 0, self.curdt,
++                    "Salary Earning", "N", self.opts["capnm"], self.sysdtw, 0]
++                self.sql.insRec("wagltf", data=dat)
++                self.loan = False
+ 
+     def doDeductions(self):
+         if self.freq == "W":
+@@ -551,14 +571,14 @@
+             rlim = ced[self.sql.wagedc_col.index("ced_rlimit")]
+             must = ced[self.sql.wagedc_col.index("ced_must")]
+             tax = ced[self.sql.wagedc_col.index("ced_taxcode")]
+-            taxportion = ced[self.sql.wagedc_col.index("ced_taxportion")]
++            taxp = ced[self.sql.wagedc_col.index("ced_taxportion")]
+             hlim = ced[self.sql.wagedc_col.index("ced_hr_limit")]
+             mthly = ced[self.sql.wagedc_col.index("ced_monthly")]
+             balno = ced[self.sql.wagedc_col.index("ced_balno")]
+             earnt = ced[self.sql.wagedc_col.index("ced_earntype")]
+             eglco = long(ced[self.sql.wagedc_col.index("ced_eglco")])
+             eglno = long(ced[self.sql.wagedc_col.index("ced_eglno")])
+-            if not eglco and eglno:
++            if eglno and not eglco:
+                 eglco = self.opts["conum"]
+             rglco = long(ced[self.sql.wagedc_col.index("ced_rglco")])
+             rglno = long(ced[self.sql.wagedc_col.index("ced_rglno")])
+@@ -617,8 +637,8 @@
+                 self.psded = float(ASD(self.psded) + ASD(emt))
+             else:
+                 self.totded = float(ASD(self.totded) + ASD(emt))
+-            if tax != "N" and taxportion:
+-                amt = round((emt * taxportion / 100), 2)
++            if tax != "N" and taxp:
++                amt = round((emt * taxp / 100), 2)
+                 self.taxbl = float(ASD(self.taxbl) - ASD(amt))
+             # Update Balance Records
+             if bal:
+@@ -664,9 +684,21 @@
+                 rmt = rlim
+             # Write Transaction Detail
+             wagtf2 = [self.opts["conum"], self.empno, self.pgnum, self.rundt,
+-                "D", cod, 0, emt, rmt, tax, taxportion, earnt, eglco, eglno,
+-                rglco, rglno]
++                "D", cod, 0, emt, rmt, tax, taxp, earnt, eglco, eglno, rglco,
++                rglno]
+             self.doWriteWagtf2(wagtf2)
++            if cod in self.lonacc:
++                # Get Latest Loan
++                lon = self.sql.getRec(tables="waglmf", cols=["max(wlm_loan)"],
++                    where=[("wlm_cono", "=", self.opts["conum"]),
++                    ("wlm_empno", "=", self.empno)], limit=1)[0]
++                # Write Loan Transaction
++                emt = float(ASD(0) - ASD(emt))
++                dat = [self.opts["conum"], self.empno, lon, "Payslip", 4,
++                    self.rundt, self.pgnum, emt, 0, 0, 0, self.curdt,
++                    "Salary Deduction", "N", self.opts["capnm"], self.sysdtw, 0]
++                self.sql.insRec("wagltf", data=dat)
++                self.loan = False
+ 
+     def doPAYE(self):
+         if self.paye == "N":
+@@ -698,9 +730,9 @@
+         if not ced:
+             return
+         eglco = long(ced[self.sql.wagedc_col.index("ced_eglco")])
+-        if not eglco:
++        eglno = long(ced[self.sql.wagedc_col.index("ced_eglno")])
++        if eglno and not eglco:
+             eglco = self.opts["conum"]
+-        eglno = long(ced[self.sql.wagedc_col.index("ced_eglno")])
+         self.totded = float(ASD(self.totded) + ASD(self.taxamt))
+         # Write PAYE Transaction Detail
+         wagtf2 = [self.opts["conum"], self.empno, self.pgnum, self.rundt, "D",
+@@ -830,13 +862,13 @@
+                 self.opts["conum"]), ("ced_type", "=", "D"), ("ced_code", "=",
+                 dcode)], limit=1)
+             if not ced:
+-                return  # Create Loan wagedc
++                return  # Missing Loan wagedc record
+             mthly = ced[self.sql.wagedc_col.index("ced_monthly")]
+             earnt = ced[self.sql.wagedc_col.index("ced_earntype")]
+             eglco = long(ced[self.sql.wagedc_col.index("ced_eglco")])
+-            if not eglco:
++            eglno = long(ced[self.sql.wagedc_col.index("ced_eglno")])
++            if eglno and not eglco:
+                 eglco = self.opts["conum"]
+-            eglno = long(ced[self.sql.wagedc_col.index("ced_eglno")])
+             if mthly == "Y" and self.mthly == "N":
+                 return
+             if self.preview == "Y":
+

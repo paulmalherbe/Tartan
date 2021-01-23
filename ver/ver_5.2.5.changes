@@ -1,0 +1,24 @@
+1) Sales Invoicing - Added the facility to convert a Quotation into a Sales
+   Order.
+2) Bowls System - Improved strength v strength Tabs-Inn draws as follows:
+     a) The strongest skips are paired with the strongest thirds etc ...
+     b) The strongest team is paired with the next strongest team etc ...
+     c) The pairs of teams are balanced e.g. the strongest skip might not end
+        up with the strongest lead etc ...
+     Note: Where positions are employed and a player is elevated 10% per
+           elevation is deducted from their rating e.g. A lead rated as
+           15 could become a second rated 14 or a third rated 12 etc ...
+3) Bowls System - Added the facility to enter teams in tabs-inn to cater for
+     occasions like Snowball.
+4) Bowls System - Included the facility to convert a visitor's tab to a member.
+5) Made some other minor enhancements and bug fixes.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.
+
+NNB:
+----
+If you require some modifications to Tartan which you think would be beneficial
+please let me know and if feasible I will try and incorporate them with the next
+ elease.

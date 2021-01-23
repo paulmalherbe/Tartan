@@ -1,0 +1,9 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Fixed a problem with ofx bank statement importing.
+ 2) Fixed a problem with stores interrogation.
+ 3) Some other minor changes requested by clients.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

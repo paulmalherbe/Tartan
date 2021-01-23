@@ -1,0 +1,841 @@
+=== modified file 'bkm/bk1010.py'
+--- bkm/bk1010.py	2015-03-21 07:40:04 +0000
++++ bkm/bk1010.py	2015-04-19 07:43:22 +0000
+@@ -191,7 +191,7 @@
+             "chgt": 2, "labs": labs, "tags": tags, "cols": cols,
+             "data": data, "font": (self.opts["mf"].rcdic["mft"],
+             self.opts["mf"].rcdic["dfs"]), "butt": butt, "cmds": cmds,
+-            "loop": False, "mess": mess, "minc": 14})
++            "loop": False, "minc": 14})
+         self.opts["mf"].startLoop()
+         if self.tt:
+             self.tt.hideTip()
+@@ -225,7 +225,7 @@
+             ("sname", "Surname", 20, "TX", "Y"),
+             ("names", "Names", 20, "TX", "F"),
+             ("group", "Group", 30, "TX", "F"),
+-            ("arrive", "Arrival-Dt", 10, "d1")]
++            ("arrive", "Arrival-Dt", 10, "d1", "F")]
+         data = self.sql.getRec(
+             tables=["bkmmst", "bkmcon"],
+             cols=[
+
+=== modified file 'csv/slsiv1_fld.csv'
+--- csv/slsiv1_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/slsiv1_fld.csv	2015-04-21 07:12:49 +0000
+@@ -17,7 +17,7 @@
+ 16,"si1_vatno","NA","10.0","VAT Number","VAT-Number"
+ 17,"si1_rep","Na","3.0","Rep Number","Rep"
+ 18,"si1_inex","UA","1.0","In/Exclusive Prices","V"
+-19,"si1_mess","NA","150.0","Message","Message"
++19,"si1_mess","TX","150.0","Message","Message"
+ 20,"si1_invno","Na","9.0","Invoice Number","Inv-Num"
+ 21,"si1_capnm","TX","20.0","Capture Name","Capture-Name"
+ 22,"si1_capdt","d1","10.0","Capture Date","Capture-Dt"
+
+=== modified file 'doc/Contact.rst'
+--- doc/Contact.rst	2014-03-28 07:32:49 +0000
++++ doc/Contact.rst	2015-04-15 08:47:12 +0000
+@@ -1,20 +1,19 @@
+ Street Address
+ ==============
+-| 1, Waterford Green  
+-| 43, Main Street  
+-| Newlands  
+-| Cape Town  
++| 292 5th Street
++| Voelklip
++| Hermanus
+ | South Africa
+ 
+ Postal Address
+ ==============
+-| P O Box 136  
+-| Rondebosch  
++| P O Box 60
++| Hermanus
+ | South Africa  
+-| 7701
++| 7200
+ 
+ Other
+ =====
+-| Telephone: 27-21-6711866  
+-| Facsimile: 27-21-6711866  
++| Telephone: 27-28-3140092
++| Facsimile: 27-86-2621838
+ | E-Mail: info@tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-04-10 10:19:18 +0000
++++ doc/Downloads.rst	2015-04-24 13:45:04 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.12 and was released on the 10th April, 2015.
++The latest version of Tartan is 5.0.13 and was released on the 24th April, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.12.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.13.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.12.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.13.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.12.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.12.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.12.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.12.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.13.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.13.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.13.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.13.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2015-04-10 10:19:18 +0000
++++ doc/MB.rst	2015-04-24 13:45:04 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ===============================
+ 
+-:Version:   5.0.12
++:Version:   5.0.13
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-04-10 10:19:18 +0000
++++ doc/MD.rst	2015-04-24 13:45:04 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.12
++:Version:   5.0.13
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2015-04-02 19:32:07 +0000
++++ gen/gl2030.py	2015-04-21 09:46:41 +0000
+@@ -1914,7 +1914,10 @@
+             return "Invalid Booking Number (1)"
+         self.bkmnum = w
+         self.bkmval = acc[0]
+-        name = "%s, %s" % (acc[1], acc[2].split()[0])
++        if acc[2]:
++            name = "%s, %s" % (acc[1], acc[2].split()[0])
++        else:
++            name = acc[1]
+         self.df.loadEntry(frt, pag, p+1, data=name)
+ 
+     def doBkmAmt(self, frt, pag, r, c, p, i, w):
+
+=== modified file 'gen/gl2040.py'
+--- gen/gl2040.py	2015-04-02 19:32:07 +0000
++++ gen/gl2040.py	2015-04-24 12:29:26 +0000
+@@ -670,8 +670,8 @@
+             if self.vatamt:
+                 data = (self.allcoy, self.convat, self.curdt, self.trndat,
+                     self.opts["rtn"], self.trnref, self.bh.batno, self.vatamt,
+-                    0.00, self.trndet, self.vatcod, "", 0, self.opts["capnm"],
+-                    self.sysdtw, 0)
++                    0.00, self.trndet, self.vatcod, self.batind, 0,
++                    self.opts["capnm"], self.sysdtw, 0)
+                 self.sql.insRec("gentrn", data=data)
+             if amt < 0:
+                 vtyp = "O"
+
+=== modified file 'gen/gl3040.py'
+--- gen/gl3040.py	2015-02-07 06:31:11 +0000
++++ gen/gl3040.py	2015-04-17 13:43:54 +0000
+@@ -120,20 +120,20 @@
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+         expnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"])
+-        self.expheads = [self.head % self.sysdttm]
++        expheads = [self.head % self.sysdttm]
+         if self.opebal == "Y":
+             date = CCD(self.opts["period"][1][0], "D1", 10)
+-            self.expheads.append("General Ledger Opening Balances as at %s" % \
++            expheads.append("General Ledger Opening Balances as at %s" % \
+                 date.disp)
+         else:
+             sdate = CCD(self.start, "D2", 7)
+             edate = CCD(self.end, "D2", 7)
+-            self.expheads.append("General Ledger Trial Balance for Period %s "\
++            expheads.append("General Ledger Trial Balance for Period %s "\
+                 "to %s" % (sdate.disp, edate.disp))
+-            self.expheads.append("(Options: Opening Balances Included %s)" % \
++            expheads.append("(Options: Opening Balances Included %s)" % \
+                 self.incope)
+-        self.expcolsh = [self.colsh]
+-        self.expforms = self.forms
++        expcolsh = [self.colsh]
++        expforms = self.forms
+         self.expdatas = []
+         for num, dat in enumerate(recs):
+             p.displayProgress(num)
+@@ -148,7 +148,7 @@
+         p.closeProgress()
+         self.grandTotal()
+         doWriteExport(xtype=self.repprt[0][1], name=expnam,
+-            heads=self.expheads, colsh=self.expcolsh, forms=self.expforms,
++            heads=expheads, colsh=expcolsh, forms=expforms,
+             datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
+ 
+     def printReport(self, recs):
+
+=== modified file 'gen/gl3050.py'
+--- gen/gl3050.py	2015-02-25 16:45:19 +0000
++++ gen/gl3050.py	2015-04-24 10:55:33 +0000
+@@ -273,9 +273,9 @@
+     def doIgnore(self, frt, pag, r, c, p, i, w):
+         self.zer = w
+         if self.typ == "C":
+-            self.df.topf[0][10][5] = "N"
++            self.df.topf[0][11][5] = "N"
+         else:
+-            self.df.topf[0][10][5] = "Y"
++            self.df.topf[0][11][5] = "Y"
+ 
+     def doOptions(self, frt, pag, r, c, p, i, w):
+         self.opt = w
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-04-10 10:19:18 +0000
++++ mst/ms0000.py	2015-04-24 13:45:04 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 12)
++    VERSION = (5, 0, 13)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms3030.py'
+--- mst/ms3030.py	2014-12-30 15:37:38 +0000
++++ mst/ms3030.py	2015-04-15 11:26:01 +0000
+@@ -29,6 +29,11 @@
+ 
+     def mainProcess(self):
+         tit = ("Email Log Report",)
++        eml = {
++            "stype": "R",
++            "tables": ("emllog",),
++            "cols": (("eml_too", "", 0, "E-Mail Address", "F"),),
++            "group": "eml_too"}
+         r1s = (("Ascending", "A"), ("Descending","D"))
+         fld = (
+             (("T",0,0,0),"Id1",10,"Date From","",
+@@ -36,7 +41,7 @@
+             (("T",0,1,0),"ID1",10,"Date To","",
+                 self.sysdtw,"N",self.doDate,None,None,("efld",)),
+             (("T",0,2,0),"INA",50,"Recipient","",
+-                "","N",self.doRecpt,None,None,("efld",)),
++                "","N",self.doRecpt,eml,None,("efld",)),
+             (("T",0,3,0),("IRB",r1s),0,"Date Order","",
+                 "A","N",self.doOrder,None,None,None))
+         tnd = ((self.doEnd,"y"),)
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2015-04-11 07:29:58 +0000
++++ mst/msc000.py	2015-04-24 13:32:38 +0000
+@@ -33,7 +33,7 @@
+             ("rcfile", None),
+             ("script", None),
+             ("sysfle", "tartan"),
+-            ("tcode", None),
++            ("tcode", 0),
+             ("user", {}),
+             ("version", False),
+             ("xdisplay", True),
+@@ -626,6 +626,8 @@
+                     if typ[2] in ("L", "Y"):
+                         if self.program and self.conum:
+                             self.conoCheck(self.conum)
++                            if self.conum and typ[2] == "L":
++                                self.getLastPeriod()
+                         else:
+                             self.getCompany(typ[2])
+                         if not self.conum:
+@@ -1122,7 +1124,6 @@
+             ftype = [("Upgrade Files", "%s_*.exe" % self.upgsys)]
+         else:
+             ftype = [("Upgrade Files", "%s_*.tgz" % self.upgsys)]
+-        print self.upgsys
+         dialog = FileDialog(**{"title": "Select Upgrade File",
+             "initd": self.rcdic["upgdir"], "ftype": ftype})
+         self.updfle = dialog.askopenfilename()
+
+=== modified file 'sls/si2010.py'
+--- sls/si2010.py	2015-02-11 16:45:23 +0000
++++ sls/si2010.py	2015-04-21 06:56:08 +0000
+@@ -251,6 +251,7 @@
+             ("Invoice","I"),
+             ("Credit Note","C"),
+             ("Sales Order","O"),
++            ("Works Order","W"),
+             ("Quotation","Q"))
+         r2s = (("Account","A"),("Cash","C"))
+         fld = [
+@@ -368,7 +369,7 @@
+         self.actxit = False
+         self.acttyp = None
+         # Action
+-        if self.typs in ("O", "Q"):
++        if self.typs in ("O", "W", "Q"):
+             self.doAction()
+             if self.actxit:
+                 # Refocus on type field
+@@ -606,7 +607,7 @@
+         self.name = self.drsmst[self.sql.drsmst_col.index("drm_name")]
+         self.dadd = self.drsmst[self.sql.drsmst_col.index("drm_delivery")]
+         self.dmes = self.drsmst[self.sql.drsmst_col.index("drm_invmes")]
+-        if self.typs in ("O", "Q") and self.acttyp in ("A", "D"):
++        if self.typs in ("O", "W", "Q") and self.acttyp in ("A", "D"):
+             return
+         self.drsdel = self.sql.getRec(tables="drsdel",
+             where=[("del_code", "=", self.dadd)], limit=1)
+@@ -811,7 +812,7 @@
+             self.doRecipe(atype="S", lineno=self.newline)
+         else:
+             self.doCalSell()
+-            if self.typs in ("C", "O", "Q"):
++            if self.typs in ("C", "O", "W", "Q"):
+                 pass
+             else:
+                 # Check for quantity on hand
+@@ -1334,6 +1335,7 @@
+             ("Inv","I"),
+             ("C-N","C"),
+             ("S-O","O"),
++            ("W-O","W"),
+             ("Qte","Q"))
+         r3s = (("Yes", "Y"), ("No", "N"))
+         fld = [
+@@ -1422,7 +1424,7 @@
+         if self.df.col == 1:
+             self.doCancel()
+             return
+-        if self.typs in ("O", "Q") and self.acttyp == "D" and \
++        if self.typs in ("O", "W", "Q") and self.acttyp == "D" and \
+                                             self.doChkItems():
+             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+             return
+@@ -1438,7 +1440,7 @@
+         if self.acttyp == "A" and not self.amend:
+             pass
+         else:
+-            if self.typs == "O":
++            if self.typs in ("O", "W"):
+                 email = "N"
+             else:
+                 email = self.email
+@@ -1543,8 +1545,8 @@
+             for x in xrange(5):
+                 self.tx.loadEntry("T", 0, x, data=self.ribbon[x])
+         pos = 1
+-        if self.typs in ("O", "Q"):
+-            if self.typs == "O" or self.acttyp == "D":
++        if self.typs in ("O", "W", "Q"):
++            if self.typs in ("O", "W") or self.acttyp == "D":
+                 self.tx.loadEntry("T", 0, 0, data="")
+                 self.tx.skip[0] = [1]
+                 pos = 2
+@@ -1590,7 +1592,7 @@
+                 "si1_jobno", "si1_contact", "si1_vatno"],
+                 data=[self.ribbon[0], self.ribbon[1], self.ribbon[2],
+                 self.ribbon[3], self.ribbon[4]], where=whr)
+-            if self.mode == "A" and self.typs in ("I", "O") and not \
++            if self.mode == "A" and self.typs in ("I", "O", "W") and not \
+                                         self.vatn and self.ribbon[4]:
+                 self.sql.updRec("drsmst", cols=["drm_vatno"],
+                     data=[self.ribbon[4]], where=[("drm_cono", "=",
+@@ -1604,10 +1606,10 @@
+         if self.message:
+             self.sql.updRec("slsiv1", cols=["si1_mess"], data=[self.message],
+                 where=whr)
+-        if self.typs in ("O", "Q") and self.acttyp in ("A", "N"):
++        if self.typs in ("O", "W", "Q") and self.acttyp in ("A", "N"):
+             return
+         # Dispatch of order or quotation - change slsiv1, slsiv2 and slsiv3
+-        if self.typs in ("O", "Q") and self.acttyp == "D":
++        if self.typs in ("O", "W", "Q") and self.acttyp == "D":
+             actdoc = self.docno
+             self.doGetDocno("I")
+             data = self.sql.getRec(tables="slsiv1", where=[("si1_cono", "=",
+
+=== modified file 'sls/si3010.py'
+--- sls/si3010.py	2015-02-07 06:31:11 +0000
++++ sls/si3010.py	2015-04-20 09:14:22 +0000
+@@ -53,35 +53,41 @@
+                 ("si1_date", "", 0, "Order-Date")),
+             "where": [
+                 ("si1_cono", "=", self.opts["conum"]),
+-                ("si1_rtn", "=", "O"),
+-                ("si1_invno", "=", "")]}
+-        r1s = (("List", "L"), ("Detail", "D"))
+-        r2s = (("Rep's Name", "R"), ("Delivery Address", "D"))
++                ("si1_invno", "=", "")],
++            "whera": [("T", "si1_rtn", 0)]}
++        r1s = (("Sales", "O"), ("Works", "W"))
++        r2s = (("List", "L"), ("Detail", "D"))
++        r3s = (("Rep's Name", "R"), ("Delivery Address", "D"))
+         fld = (
+-            (("T",0,0,0),("IRB",r1s),0,"Report Type","",
+-                "L","Y",self.doType,None,None,None),
+-            (("T",0,1,0),("IRB",r2s),0,"Content","",
++            (("T",0,0,0),("IRB",r1s),0,"Order Type","",
++                "O","Y",self.doOrdTyp,None,None,None),
++            (("T",0,1,0),("IRB",r2s),0,"Report Type","",
++                "L","Y",self.doRepTyp,None,None,None),
++            (("T",0,2,0),("IRB",r3s),0,"Content","",
+                 "R","Y",self.doContent,None,None,None),
+-            (("T",0,2,0),"IUI",9,"From Order Number","",
++            (("T",0,3,0),"IUI",9,"From Order Number","",
+                 "","Y",self.doOrd1,si1,None,None),
+-            (("T",0,3,0),"IUI",9,"To   Order Number","",
++            (("T",0,4,0),"IUI",9,"To   Order Number","",
+                 "","Y",self.doOrd2,si1,None,None))
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
+ 
+-    def doType(self, frt, pag, r, c, p, i, w):
++    def doOrdTyp(self, frt, pag, r, c, p, i, w):
++        self.otype = w
++
++    def doRepTyp(self, frt, pag, r, c, p, i, w):
+         self.rtype = w
+         if self.rtype == "L":
+             self.ord1 = 0
+             self.ord2 = 999999999
+-            self.df.setWidget(self.df.topEntry[0][4][2][0], state="show")
+-            self.df.setWidget(self.df.topEntry[0][4][3][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][5][2][0], state="show")
++            self.df.setWidget(self.df.topEntry[0][5][3][0], state="show")
+         else:
+             self.df.loadEntry(frt, pag, p+1, data="")
+-            self.df.setWidget(self.df.topEntry[0][4][2][0], state="hide")
+-            self.df.setWidget(self.df.topEntry[0][4][3][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][5][2][0], state="hide")
++            self.df.setWidget(self.df.topEntry[0][5][3][0], state="hide")
+             return "sk1"
+ 
+     def doContent(self, frt, pag, r, c, p, i, w):
+@@ -91,7 +97,7 @@
+     def doOrd1(self, frt, pag, r, c, p, i, w):
+         if w:
+             acc = self.sql.getRec(tables="slsiv1", where=[("si1_cono", "=",
+-                self.opts["conum"]), ("si1_rtn", "=", "O"), ("si1_docno", "=",
++                self.opts["conum"]), ("si1_rtn", "=", self.otype), ("si1_docno", "=",
+                 w), ("si1_invno", "=", "")], limit=1)
+             if not acc:
+                 return "This is Not an Outstanding Order"
+@@ -102,7 +108,7 @@
+             if w < self.ord1:
+                 return "Invalid Last Order < First Order"
+             acc = self.sql.getRec(tables="slsiv1", where=[("si1_cono", "=",
+-                self.opts["conum"]), ("si1_rtn", "=", "O"), ("si1_docno", "=",
++                self.opts["conum"]), ("si1_rtn", "=", self.otype), ("si1_docno", "=",
+                 w), ("si1_invno", "=", "")], limit=1)
+             if not acc:
+                 return "This is Not an Outstanding Order"
+@@ -114,9 +120,10 @@
+         self.df.closeProcess()
+         whr = (
+             ("si1_cono", "=", self.opts["conum"]),
+-            ("si1_rtn", "=", "O"),
++            ("si1_rtn", "=", self.otype),
+             ("si1_docno", "between", self.ord1, self.ord2),
+             ("si1_invno", "=", ""))
++        print whr
+         recs = self.sql.getRec(tables="slsiv1", where=whr)
+         if not recs:
+             showError(self.opts["mf"].body, "Selection Error",
+@@ -204,7 +211,7 @@
+         col = self.sql.slsiv1_col
+         self.odr = CCD(data[col.index("si1_docno")], "Na", 9)
+         self.si2 = self.sql.getRec(tables="slsiv2", where=[("si2_cono",
+-            "=", self.opts["conum"]), ("si2_rtn", "=", "O"), ("si2_docno", "=",
++            "=", self.opts["conum"]), ("si2_rtn", "=", self.otype), ("si2_docno", "=",
+             self.odr.work)], order="si2_seq")
+         if not self.si2:
+             return
+@@ -252,7 +259,7 @@
+                 (self.odr.disp, self.dte.disp, self.rep.disp, self.context)
+             self.fpdf.drawText(text)
+             self.fpdf.drawText()
+-            text = "Account Details: %-3s %-7s %-30s" % (self.chn.disp,
++            text = "Chain: %-3s  Acc-Num: %-7s  Name: %-30s" % (self.chn.disp,
+                 self.drs.disp, self.drsnam)
+             self.fpdf.drawText(text)
+             self.fpdf.drawText()
+
+=== modified file 'sls/si3080.py'
+--- sls/si3080.py	2014-12-30 15:37:38 +0000
++++ sls/si3080.py	2015-04-20 09:20:07 +0000
+@@ -70,6 +70,7 @@
+             ("Inv","I"),
+             ("C-N","C"),
+             ("S-O","O"),
++            ("W-O","W"),
+             ("Qte","Q"))
+         r3s = (("Range","R"),("Singles", "S"))
+         fld = (
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-04-11 07:29:58 +0000
++++ std/TartanClasses.py	2015-04-24 12:25:06 +0000
+@@ -983,7 +983,6 @@
+         cmds = A list of bind commands
+         font = (family, size)
+         loop = Mainloop, True or False
+-        mess = The SplashScreen message
+         minc = Minimum columns to show
+         """
+         def __init__(self, **opts):
+@@ -996,11 +995,12 @@
+             self.opts = opts
+             self.drawGrid()
+             if self.opts["loop"]:
+-                self.opts["mf"].startLoop(self.__name__)
++                if "mf" in self.opts:
++                    self.opts["mf"].startLoop()
++                else:
++                    self.window.mainloop()
+ 
+         def drawGrid(self):
+-            if "mess" in self.opts:
+-                self.sp = SplashScreen(None, self.opts["mess"])
+             # Draw main window
+             self.window = MkWindow(icon=self.opts["icon"], modal=True,
+                 remov=True).newwin
+@@ -1243,8 +1243,6 @@
+             if close:
+                 box.addButton("Close", self._quit)
+                 self.window.bind("<Escape>", self._quit)
+-            if "mess" in self.opts:
+-                self.sp.closeSplash()
+             # Pack frame
+             self.cframe.pack(fill="both", expand="yes")
+             self.cframe.update_idletasks()
+@@ -1297,7 +1295,10 @@
+         def _quit(self, *args):
+             self.window.destroy()
+             if self.opts["loop"]:
+-                self.opts["mf"].closeLoop()
++                if "mf" in self.opts:
++                    self.opts["mf"].closeLoop()
++                else:
++                    self.window.quit()
+ 
+     class ScrollWindow(MyFrame):
+         """
+@@ -1933,7 +1934,6 @@
+         if not self.scrn:
+             self.window = MkWindow(decor=False, remov=False).newwin
+             self.frame = MyFrame(self.window, bg="black", borderwidth=5)
+-            self.window.deiconify()
+         else:
+             self.scrn = scrn
+             self.frame = MyFrame(self.scrn, bg="black", borderwidth=5)
+@@ -1950,7 +1950,7 @@
+             self.frame.place(anchor="center", relx=0.5, rely=0.5)
+         else:
+             self.frame.pack()
+-        self.frame.update_idletasks()
++        self.frame.update()
+         if not scrn:
+             sw = int(self.window.winfo_screenwidth())
+             sh = int(self.window.winfo_screenheight())
+@@ -1959,6 +1959,7 @@
+             x = sw/2 - rootsize[0]/2
+             y = sh/2 - rootsize[1]/2
+             self.window.geometry("%dx%d+%d+%d" % (rootsize + (x, y)))
++            self.window.deiconify()
+         self.refreshSplash()
+ 
+     def refreshSplash(self, text=None):
+@@ -7316,7 +7317,7 @@
+         for dat in olddata:
+             matches = []
+             for col in fcol:
+-                exec "matches.append(flt%s.match(str(dat[col[1]])))" % col[0]
++                exec "matches.append(flt%s.search(str(dat[col[1]])))" % col[0]
+             if not None in matches:
+                 newdata.append(dat)
+         if not newdata:
+@@ -8948,7 +8949,7 @@
+         # Orders by Customers
+         whr = [
+             ("si1_cono", "=", self.conum),
+-            ("si1_rtn", "=", "O"),
++            ("si1_rtn", "in", ("O", "W")),
+             ("si1_date", "<=", mthendDate(self.curdt * 100)),
+             ("si1_invno", "=", ""),
+             ("si2_cono=si1_cono",),
+@@ -9363,8 +9364,10 @@
+                 whr.append(("glt_type", "in", (2, 4, 6)))
+             else:
+                 whr.append(("glt_type", "=", self.rtn))
+-            whr.extend([("glt_batch", "=", self.batno), ("glt_curdt", "between",
+-                self.s_per, self.e_per), ("glt_batind", "=", "N")])
++            whr.extend([("glt_batch", "=", self.batno), ("glt_curdt",
++                "between", self.s_per, self.e_per)])
++            if not self.rtn == 4:
++                whr.append(("glt_batind", "=", "N"))
+         elif self.sys == "MEM":
+             tab = "memtrn"
+             col = ["count(*)", "round(sum(mlt_tramt), 2)"]
+@@ -11185,6 +11188,8 @@
+             pfx = "InvCrn"
+         elif self.dtype == "O":
+             pfx = "SlsOrd"
++        elif self.dtype == "W":
++            pfx = "WrkOrd"
+         elif self.dtype == "Q":
+             pfx = "SlsQte"
+         if self.email.lower() == "y" and not self.emadd:
+@@ -11199,6 +11204,8 @@
+             head = "Credit Note"
+         elif self.dtype == "O":
+             head = "Sales Order"
++        elif self.dtype == "W":
++            head = "Works Order"
+         elif self.dtype == "Q":
+             head = "Quotation"
+         if self.email.lower() == "y" and not self.emadd:
+@@ -11246,6 +11253,8 @@
+                 self.form.tptp["document_type"][1] = "%s CREDIT NOTE" % typ
+             elif self.dtype == "O":
+                 self.form.tptp["document_type"][1] = "%s SALES ORDER" % typ
++            elif self.dtype == "W":
++                self.form.tptp["document_type"][1] = "%s WORKS ORDER" % typ
+             elif self.dtype == "Q":
+                 self.form.tptp["document_type"][1] = "%s QUOTATION" % typ
+         self.form.bank_details(cmc, ctm, 0)
+
+=== modified file 'str/st3030.py'
+--- str/st3030.py	2015-02-07 06:31:11 +0000
++++ str/st3030.py	2015-04-17 13:13:55 +0000
+@@ -42,8 +42,6 @@
+         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
+         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
+             t[1], t[2], t[3], t[4], __name__)
+-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
+-            self.opts["conam"], "%s"))
+         self.stot = [0] * 6
+         self.gtot = [0] * 6
+         self.pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+@@ -175,7 +173,8 @@
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+         expnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"])
+-        expheads = [self.head % self.sysdttm]
++        expheads = ["%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
++            self.sysdttm)]
+         if self.rtype == "S":
+             expheads.append("Selling Price List as at %s" % self.sysdtd)
+             mess = "Options:- Ignore Out of Stock: %s  VAT Inclusive: %s  "\
+@@ -232,8 +231,8 @@
+             spc = " " * 72
+         else:
+             spc = " " * 51
+-        self.head = ("%03u %-30s %s %40s" % \
+-            (self.opts["conum"], self.opts["conam"], spc, self.sysdttm))
++        self.head = ("%03u %-30s %s %40s" % (self.opts["conum"],
++            self.opts["conam"], spc, self.sysdttm))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         old_grp = ""
+         self.pgnum = 0
+@@ -276,8 +275,8 @@
+ 
+     def printCost(self, recs):
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+-        self.head = ("%03u %-30s %20s %40s" % \
+-            (self.opts["conum"], self.opts["conam"], "", self.sysdttm))
++        self.head = ("%03u %-30s %20s %40s" % (self.opts["conum"],
++            self.opts["conam"], "", self.sysdttm))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         old_grp = ""
+         self.pgnum = 0
+
+=== modified file 'str/st3040.py'
+--- str/st3040.py	2015-02-07 06:31:11 +0000
++++ str/st3040.py	2015-04-17 14:02:05 +0000
+@@ -15,7 +15,7 @@
+ 
+ import time
+ from TartanClasses import CCD, MyFpdf, ProgressBar, Sql, TartanDialog
+-from tartanFunctions import getModName, doPrinter, showError
++from tartanFunctions import doPrinter, doWriteExport, getModName, showError
+ 
+ class st3040:
+     def __init__(self, **opts):
+@@ -34,6 +34,10 @@
+         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
+         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
+             (t[0], t[1], t[2], t[3], t[4])
++        self.colsh = ["Grp", "Product-Code", "T", "Description",
++            "Unit-of-Issue", "Unit-Description"]
++        self.forms = [("UA", 3), ("NA", 20), ("UA", 1), ("UA", 30),
++            ("NA", 10), ("NA", 30)]
+         return True
+ 
+     def mainProcess(self):
+@@ -55,7 +59,7 @@
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+-            tend=tnd, txit=txt, view=("N","V"), mail=("Y","N"))
++            tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
+ 
+     def doGroup(self, frt, pag, r, c, p, i, w):
+         if not w:
+@@ -92,10 +96,37 @@
+         if not recs:
+             showError(self.opts["mf"].body, "Processing Error",
+             "No Records Selected")
++        elif self.df.repprt[0][2] == "export":
++            self.exportReport(recs)
+         else:
+             self.printReport(recs)
+         self.closeProcess()
+ 
++    def exportReport(self, recs):
++        p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
++        expnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
++            self.opts["conum"])
++        expheads = ["%03u %-30s %s %6s" % (self.opts["conum"],
++            self.opts["conam"], self.sysdttm, __name__)]
++        expheads.append("Stores Master Code List as at %s" % self.sysdtd)
++        expcolsh = [self.colsh]
++        expforms = self.forms
++        expdatas = []
++        for num, dat in enumerate(recs):
++            p.displayProgress(num)
++            if p.quit:
++                p.closeProgress()
++                return
++            vals = self.getValues(dat)
++            if not vals:
++                continue
++            expdatas.append(["BODY", [vals[0].work, vals[1].work,
++                vals[2].work, vals[3].work, vals[4].work, vals[5].work]])
++        p.closeProgress()
++        doWriteExport(xtype=self.df.repprt[0][1], name=expnam,
++            heads=expheads, colsh=expcolsh, forms=expforms,
++            datas=expdatas, rcdic=self.opts["mf"].rcdic)
++
+     def printReport(self, recs):
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+         self.head = ("%03u %-30s %8s %33s %8s %6s" % (self.opts["conum"],
+@@ -108,13 +139,8 @@
+             p.displayProgress(num)
+             if p.quit:
+                 break
+-            grp = CCD(dat[0], "UA", 3)
++            grp, code, itype, desc, uoi, umd = self.getValues(dat)
+             self.groupd = grp.disp
+-            code = CCD(dat[1], "NA", 20)
+-            itype = CCD(dat[2], "UA", 1)
+-            desc = CCD(dat[3], "UA", 30)
+-            uoi = CCD(dat[4], "NA", 10)
+-            umd = CCD(dat[5], "NA", 30)
+             if old_grp and old_grp != grp.work:
+                 self.pglin = 999
+             if self.pglin > self.fpdf.lpp:
+@@ -132,6 +158,15 @@
+                 head=self.tit, view=self.df.repprt[0][1],
+                 prtnam=self.df.repprt[0][2], mail=self.df.repprt[1][2])
+ 
++    def getValues(self, data):
++        grp = CCD(data[0], "UA", 3)
++        code = CCD(data[1], "NA", 20)
++        itype = CCD(data[2], "UA", 1)
++        desc = CCD(data[3], "UA", 30)
++        uoi = CCD(data[4], "NA", 10)
++        umd = CCD(data[5], "NA", 30)
++        return (grp, code, itype, desc, uoi, umd)
++
+     def pageHeading(self):
+         self.fpdf.add_page()
+         self.fpdf.setFont(style="B")
+@@ -144,7 +179,7 @@
+         self.fpdf.drawText("%-5s %3s" % ("Group", self.groupd))
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-20s %-1s %-30s %-39s" % \
+-            ("Product-Code", "T", "Description", "Unit of Issue"))
++            ("Product-Code", "T", "Description", "Unit-of-Issue"))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+         self.pglin = 8
+
+=== modified file 'wag/wg3070.py'
+--- wag/wg3070.py	2015-02-07 06:31:11 +0000
++++ wag/wg3070.py	2015-04-16 06:54:54 +0000
+@@ -25,8 +25,8 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["tplmst", "wagctl", "wagmst"],
+-            prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["tplmst", "wagctl", "wagmst",
++            "wagtf1"], prog=__name__)
+         if self.sql.error:
+             return
+         gc = GetCtl(self.opts["mf"])
+@@ -59,10 +59,11 @@
+             "stype": "R",
+             "tables": ("wagtf1",),
+             "cols": [
+-                ("wt1_date", "",  0, "Date")],
++                ("wt1_date", "",  0, "Date"),
++                ("wt1_freq", "",  0, "F")],
+             "where": [("wt1_cono", "=", self.opts["conum"])],
+-            "group": "wt1_date",
+-            "order": "wt1_date"}
++            "group": "wt1_date, wt1_freq",
++            "order": "wt1_date, wt1_freq"}
+         r1s = (("Weekly","W"),("Fortnightly","F"),("Monthly","M"))
+         r2s = (("Yes","Y"),("No","N"))
+         fld = (
+@@ -90,15 +91,13 @@
+ 
+     def doRunDate(self, frt, pag, r, c, p, i, w):
+         self.rundt = w
+-        self.curdt = w / 100
+-        y = w / 10000
+-        m = (w % 10000) / 100
+-        if m < 3:
+-            self.sdate = ((y - 1) * 10000) + 301
+-        else:
+-            self.sdate = (y * 10000) + 301
+ 
+     def doFreq(self, frt, pag, r, c, p, i, w):
++        chk = self.sql.getRec(tables="wagtf1", where=[("wt1_cono", "=",
++            self.opts["conum"]), ("wt1_date", "=", self.rundt),
++            ("wt1_freq", "=", w)])
++        if not chk:
++            return "No Payslips for this Date and Frequency"
+         self.freq = w
+ 
+     def doWhole(self, frt, pag, r, c, p, i, w):
+

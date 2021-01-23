@@ -1,0 +1,18 @@
+1) Updated the personal tax records as per the 2018 budget.
+2) Some minor bug fixes and improvements.
+
+New V.A.T. Rate
+---------------
+In order to apply the new rate of 15% please do the following:
+
+1) On the Tartan Menu select Control and then V.A.T Records Maintenance
+2) For each relevant V.A.T. Code e.g. I and C do the following:
+
+    a) Enter the code
+    b) Enter the Start Date as 20180401
+    c) Enter the Rate as 15.00
+    d) Confirm the Entry Y
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

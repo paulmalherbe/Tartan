@@ -1,0 +1,2383 @@
+=== modified file '.bzrignore'
+--- .bzrignore	2015-03-21 07:40:04 +0000
++++ .bzrignore	2015-04-01 15:49:05 +0000
+@@ -1,14 +1,39 @@
++.idea
+ .komodotools/
++Tartan-5.pidaproject
+ Tartan.komodoproject
+ bwl/bc2010.try
+ bwl/clr2.py
+ changes.txt
+ csv/all_data_types.py
+ csv/test.py
++doc/bankserv.txt
++doc/bkmdoc.py
+ doc/Bowls.pdf
+-doc/Manual.html
++doc/Bowls.rst
++doc/Bwlclb.rst
++doc/Changes.rst
++doc/Contact.rst
++doc/Downloads.rst
++doc/gnugpl.rst
++doc/gnugpl.txt
++doc/manual.css
+ doc/Manual.pdf
++doc/Manual.rst
++doc/mystylesheet
++doc/nfs_setup.rst
++doc/nut_ups.odt
++doc/QuickStart.pdf
++doc/Rnehol.rst
++doc/Rsync.rst
++doc/stylesheet
++doc/Support.rst
+ doc/tarlic.pdf
++doc/tarlic.rst
++doc/Tartan.rst
++doc/vnc_setup.rst
++doc/volmoed_client.sh
++doc/WinPkg.txt
+ mem/chk.py
+ mst/csv
+ mst/doc
+@@ -18,7 +43,6 @@
+ scp/pop.py
+ scp/states
+ sdy/
+-std/pymagic.py
+ std/Tktable.py
+ std/adodbapi.py
+ std/fcrypt.py
+@@ -26,13 +50,17 @@
+ std/fpdf/
+ std/ghostscript/
+ std/magic.py
++std/nmb
+ std/odf/
+ std/paramiko/
+ std/profilehooks.py
+ std/progressbar/
++std/pyasn1
+ std/pychart/
++std/pymagic.py
+ std/scp.py
+ std/simpleodspy/
++std/smb
+ std/tarchg.py
+ std/tarmod.py
+ std/usb/
+@@ -40,6 +68,7 @@
+ std/xlwt/
+ sve/
+ tmp/
++uty/SumatraPDF-settings.txt
+ uty/SumatraPDF.exe
+ uty/gzip.exe
+ uty/pdfp.exe
+@@ -54,17 +83,4 @@
+ wag/wg3030.new
+ wag/wg3030.old
+ web
+-uty/SumatraPDF-settings.txt
+-doc/bkmdoc.py
+-std/nmb
+-std/smb
+-std/pyasn1
+-doc/QuickStart.pdf
+-doc/bankserv.txt
+-doc/mystylesheet
+-doc/nfs_setup.rst
+-doc/nut_ups.odt
+-doc/vnc_setup.rst
+-doc/volmoed_client.sh
+-.idea
+-Tartan-5.pidaproject
++uty/chksms.py
+
+=== modified file 'bkm/bk1020.py'
+--- bkm/bk1020.py	2015-03-06 19:01:14 +0000
++++ bkm/bk1020.py	2015-04-01 15:46:09 +0000
+@@ -432,7 +432,7 @@
+                         del self.aunits[cod]
+             if whole:
+                 self.aunits["A-ALL"] = {"desc": whole[0], "qty": whole[1],
+-                    "rms": {}}
++                    "rms": {1: True}}
+             quant = 0
+             units = copy.deepcopy(self.aunits)
+             for unit in units:
+
+=== modified file 'bkm/bk3010.py'
+--- bkm/bk3010.py	2015-02-22 09:42:02 +0000
++++ bkm/bk3010.py	2015-03-30 08:14:28 +0000
+@@ -139,7 +139,10 @@
+                 self.opts["conum"]), ("bkc_ccode", "=", rec[2])], limit=1)
+             snam = con[self.sql.bkmcon_col.index("bkc_sname")]
+             fnam = con[self.sql.bkmcon_col.index("bkc_names")]
+-            c = "%s %s" % (fnam.split()[0], snam)
++            if fnam:
++                c = "%s %s" % (fnam.split()[0], snam)
++            else:
++                c = snam
+             l = 8
+             if rec[1]:
+                 c = "%s\n%s" % (c, rec[1])
+
+=== modified file 'bkm/bk3030.py'
+--- bkm/bk3030.py	2015-02-22 09:42:02 +0000
++++ bkm/bk3030.py	2015-03-30 07:38:54 +0000
+@@ -243,7 +243,10 @@
+                 self.opts["conum"]), ("bkc_ccode", "=", ccode)], limit=1)
+             sname = con[self.sql.bkmcon_col.index("bkc_sname")]
+             names = con[self.sql.bkmcon_col.index("bkc_names")]
+-            name = "%s %s" % (names.split()[0], sname)
++            if names:
++                name = "%s %s" % (names.split()[0], sname)
++            else:
++                name = sname
+             #if group:
+             #    name = "%-25s %s" % (name, group)
+             bal = self.sql.getRec(tables="bkmtrn", cols=["sum(bkt_tramt)"],
+@@ -340,8 +343,10 @@
+                 btype = bk[1]
+                 if bk[2]:
+                     name = bk[2]
+-                else:
++                elif bk[4]:
+                     name = "%s %s" % (bk[4].split()[0], bk[3])
++                else:
++                    name = bk[3]
+                 arrive = bk[5]
+                 depart = bk[6]
+                 if btype == "A":
+
+=== modified file 'bwl/bc1010.py'
+--- bwl/bc1010.py	2015-02-25 16:45:19 +0000
++++ bwl/bc1010.py	2015-04-01 09:04:39 +0000
+@@ -32,7 +32,7 @@
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["bwlent", "bwlgme", "bwltab",
+-            "bwldrt", "bwlflt", "memmst", "memkon"],
++            "bwldrt", "bwlflm", "bwlflt", "memmst", "memkon"],
+             prog=__name__, errs=False)
+         if self.sql.error:
+             return
+@@ -158,7 +158,13 @@
+             else:
+                 self.newtab = False
+                 for num, fld in enumerate(rec[1:]):
+-                    if num in (13, 15):
++                    if num == 2:
++                        self.snam = fld
++                    elif num == 3:
++                        self.fnam = fld
++                    elif num == 4:
++                        self.gender = fld
++                    elif num in (13, 15):
+                         fld = str(fld)
+                         if num == 13:
+                             self.pos1 = fld
+@@ -206,10 +212,12 @@
+             self.opts["conum"]), ("mlm_memno", "=", memno)], limit=1)
+         if not acc:
+             return
++        self.snam = acc[0]
++        self.fnam = acc[1]
++        self.gender = acc[2]
+         self.df.loadEntry("T", 0, 1, data=memno)
+-        self.df.loadEntry("T", 0, 2, data=acc[0])
+-        self.df.loadEntry("T", 0, 3, data=acc[1])
+-        self.gender = acc[2]
++        self.df.loadEntry("T", 0, 2, data=snam)
++        self.df.loadEntry("T", 0, 3, data=fnam)
+         self.df.loadEntry("T", 0, 4, data=self.gender)
+         for typ in ("A", "P"):
+             ad = self.sql.getRec(tables="memadd", cols=["mla_add1", "mla_add2",
+@@ -235,10 +243,22 @@
+         self.sname = w
+ 
+     def doNames(self, frt, pag, r, c, p, i, w):
+-        if self.newtab and self.sql.getRec(tables="bwltab", where=[("btb_cono",
+-                "=", self.opts["conum"]), ("btb_surname", "ilike", self.sname,
+-                "and", "btb_names", "ilike", w)]):
+-            return "A Member with this Name Already Exists"
++        if self.newtab:
++            chk = self.sql.getRec(tables="bwltab", where=[("btb_cono", "=",
++                self.opts["conum"]), ("btb_surname", "ilike", self.sname,
++                "and", "btb_names", "ilike", w)])
++            if chk:
++                return "A Tab with this Name Already Exists"
++            return
++        self.tabchg = False
++        if not self.sname == self.snam or not w == self.fnam:
++            ok = askQuestion(self.opts["mf"].body, "Name Change",
++                "Is This a Re-Issue of the Tab?", default="no")
++            if ok == "no":
++                return "ff3"
++            self.tabchg = True
++            for x in range(1, 15):
++                self.df.clearEntry(frt, pag, c + x)
+ 
+     def doGender(self, frt, pag, r, c, p, i, w):
+         self.gender = w
+@@ -397,7 +417,7 @@
+                     cols.append(["name", "NA", 30, "Name"])
+                 elif col == "address":
+                     cols.append(["address", "NA", 120, "Address"])
+-                elif col == self.colsd[num][2] == "ratings":
++                elif col == "ratings":
+                     if self.dbase == "P":
+                         cols.append(["btb_pos1", dic["btb_pos1"][2],
+                             dic["btb_pos1"][3], dic["btb_pos1"][5]])
+@@ -429,12 +449,13 @@
+             recs = self.sql.getRec(tables="bwltab", where=whr,
+                 order="btb_surname, btb_names")
+             data = []
++            btc = self.sql.bwltab_col
+             for rec in recs:
+                 dat = []
+                 for col in self.cols:
+                     if col == "name":
+-                        snam = rec[self.sql.bwltab_col.index("btb_surname")]
+-                        fnam = rec[self.sql.bwltab_col.index("btb_names")]
++                        snam = rec[btc.index("btb_surname")]
++                        fnam = rec[btc.index("btb_names")]
+                         fnam = fnam.split()
+                         for num, nam in enumerate(fnam):
+                             if not num:
+@@ -443,19 +464,31 @@
+                                 init = "%s, %s" % (init, nam[0].capitalize())
+                         dat.append("%s, %s" % (snam, init))
+                     elif col == "address":
+-                        txt = rec[self.sql.bwltab_col.index("btb_add1")]
+-                        adr = rec[self.sql.bwltab_col.index("btb_add2")]
+-                        if adr:
+-                            txt = "%s, %s" % (txt, adr)
+-                        adr = rec[self.sql.bwltab_col.index("btb_add3")]
+-                        if adr:
+-                            txt = "%s, %s" % (txt, adr)
+-                        adr = rec[self.sql.bwltab_col.index("btb_pcod")]
++                        txt = rec[btc.index("btb_add1")]
++                        adr = rec[btc.index("btb_add2")]
++                        if adr:
++                            txt = "%s, %s" % (txt, adr)
++                        adr = rec[btc.index("btb_add3")]
++                        if adr:
++                            txt = "%s, %s" % (txt, adr)
++                        adr = rec[btc.index("btb_pcod")]
+                         if adr:
+                             txt = "%s, %s" % (txt, adr)
+                         dat.append(CCD(txt, "NA", 120).work)
++                    elif col == "ratings":
++                        if self.dbase == "P":
++                            dat.append(rec[btc.index("btb_pos1")])
++                            dat.append(rec[btc.index("btb_pos2")])
++                        elif self.dbase == "R":
++                            dat.append(rec[btc.index("btb_rate1")])
++                            dat.append(rec[btc.index("btb_rate2")])
++                        else:
++                            dat.append(rec[btc.index("btb_pos1")])
++                            dat.append(rec[btc.index("btb_rate1")])
++                            dat.append(rec[btc.index("btb_pos2")])
++                            dat.append(rec[btc.index("btb_rate2")])
+                     else:
+-                        dat.append(rec[self.sql.bwltab_col.index(col)])
++                        dat.append(rec[btc.index(col)])
+                 data.append(dat)
+             tit = "Tabs Lising for"
+             if self.cgroup == "A":
+@@ -519,6 +552,8 @@
+         tabdat = [self.opts["conum"]] + self.df.t_work[0][0]
+         if self.newtab:
+             self.sql.insRec("bwltab", data=tabdat)
++        elif self.tabchg:
++            self.doTabChg(tabdat)
+         else:
+             self.sql.updRec("bwltab", data=tabdat, where=[("btb_cono", "=",
+                 self.opts["conum"]), ("btb_tab", "=", self.tab)])
+@@ -528,6 +563,24 @@
+         else:
+             self.df.focusField("T", 0, 1)
+ 
++    def doTabChg(self, tabdat):
++        code = getNextCode(self.sql, "bwltab", "btb_tab",
++            where=[("btb_cono", "=", self.opts["conum"])],
++            start=self.nstart, last=900000)
++        tables = (
++            ("bwldrt","bdt_cono","bdt_tab","bdt_team1","bdt_team2","bdt_team3"),
++            ("bwlent","bce_cono","bce_scod"),
++            ("bwlflm","bfm_cono","bfm_captain"),
++            ("bwlflt","bft_cono","bft_skip","bft_player"),
++            ("bwlgme","bcg_cono","bcg_scod","bcg_ocod"),
++            ("bwltab","btb_cono","btb_tab"))
++        for tab in tables:
++            for col in tab[2:]:
++                self.sql.updRec(tab[0], cols=[col], data=[code],
++                    where=[(tab[1], "=", self.opts["conum"]),
++                    (col, "=", self.tab)])
++        self.sql.insRec("bwltab", data=tabdat)
++
+     def doImport(self, widget=None):
+         state = self.df.disableButtonsTags()
+         self.df.setWidget(self.df.mstFrame, state="hide")
+@@ -555,13 +608,18 @@
+             if not chk:
+                 err = "%s %s Does Not Exist" % (fi.impcol[0][0], line[0])
+                 break
++            if self.dbase == "P":
++                tmp = ["btb_pos1", "btb_pos2"]
++            elif self.dbase == "R":
++                tmp = ["btb_rate1", "btb_rate2"]
++            else:
++                tmp = ["btb_pos1", "btb_rate1", "btb_pos2", "btb_rate2"]
+             if self.impdet == "R":
+-                cols = ["btb_pos1", "btb_rate1", "btb_pos2", "btb_rate2"]
++                cols = tmp
+             else:
+                 cols = ["btb_surname", "btb_names", "btb_gender", "btb_add1",
+-                    "btb_add2", "btb_add3", "btb_pcod", "btb_home",
+-                    "btb_work", "btb_cell", "btb_mail", "btb_pos1",
+-                    "btb_rate1", "btb_pos2", "btb_rate2", "btb_bsano"]
++                    "btb_add2", "btb_add3", "btb_pcod", "btb_home", "btb_work",
++                    "btb_cell", "btb_mail"] + tmp + ["btb_bsano"]
+             self.sql.updRec("bwltab", cols=cols, data=line[1:],
+                 where=[("btb_cono", "=", self.opts["conum"]),
+                 ("btb_tab", "=", line[0])])
+@@ -583,6 +641,10 @@
+ 
+     def doImpEnd(self):
+         self.impskp = ["btb_cono", "btb_memno"]
++        if self.dbase == "P":
++            self.impskp.extend(["btb_rate1", "btb_rate2"])
++        elif self.dbase == "R":
++            self.impskp.extend(["btb_pos1", "btb_pos2"])
+         if self.impdet == "R":
+             self.impskp.extend(["btb_surname", "btb_names", "btb_gender",
+                 "btb_add1", "btb_add2", "btb_add3", "btb_pcod", "btb_home",
+
+=== modified file 'bwl/bc2010.py'
+--- bwl/bc2010.py	2015-03-21 07:40:04 +0000
++++ bwl/bc2010.py	2015-03-30 08:26:12 +0000
+@@ -155,7 +155,7 @@
+             "order": "btb_surname, btb_names"}
+         r1s = (("Morning", "M"), ("Afternoon", "A"))
+         r2s = (("Yes", "Y"), ("No", "N"))
+-        r3s = (("Position", "P"), ("Rate", "R"), ("Combined", "C"))
++        r3s = (("Position", "P"), ("Rating", "R"), ("Combination", "C"))
+         r4s = (("Male", "M"), ("Female", "F"))
+         r5s = (("Skip", "4"), ("Third", "3"), ("Second", "2"), ("Lead", "1"))
+         tag = (("Tabs",None,None,None),)
+@@ -170,7 +170,7 @@
+                 "Y","N",self.doRating,None,None,None),
+             (("T",0,4,0),("IRB",r3s),0,"Draw By","",
+                 self.dbase,"N",self.doDrawBase,None,None,None),
+-            (("T",0,5,0),"IUD",5.2,"Rates - Member R","",
++            (("T",0,5,0),"IUD",5.2,"Fees - Member R","",
+                 self.ratem.work,"Y",self.doRate,None,None,("efld",)),
+             (("T",0,5,0),"IUD",5.2," Visitor R","",
+                 self.ratev.work,"N",self.doRate,None,None,("efld",)),
+@@ -479,10 +479,7 @@
+                 self.tab = getNextCode(self.sql, "bwltab", "btb_tab",
+                     where=[("btb_cono", "=", self.opts["conum"])],
+                     start=self.nstart, last=900000)
+-                if frt == "T":
+-                    self.df.loadEntry(frt, pag, p, data=self.tab)
+-                else:
+-                    self.ag.loadEntry(frt, pag, p, data=self.tab)
++                self.df.loadEntry(frt, pag, p, data=self.tab)
+             else:
+                 return "rf"
+         elif not self.doLoadTab(w, frt):
+
+=== modified file 'bwl/bc3020.py'
+--- bwl/bc3020.py	2015-02-07 06:31:11 +0000
++++ bwl/bc3020.py	2015-04-01 10:22:40 +0000
+@@ -38,7 +38,7 @@
+         self.sysdt = time.strftime("%d %B %Y %H:%M:%S", t)
+         self.curdt = time.strftime("%Y-%m", t)
+         self.image = os.path.join(self.opts["mf"].rcdic["prgdir"], "img",
+-            "bowls.jpg")
++            "bowls.png")
+         return True
+ 
+     def mainProcess(self):
+
+=== modified file 'bwl/bc3070.py'
+--- bwl/bc3070.py	2014-12-30 15:37:38 +0000
++++ bwl/bc3070.py	2015-04-01 10:23:34 +0000
+@@ -30,7 +30,7 @@
+         t = time.localtime()
+         self.sysdt = time.strftime("%d %B %Y %H:%M:%S", t)
+         self.image = os.path.join(self.opts["mf"].rcdic["prgdir"], "img",
+-            "bowls.jpg")
++            "bowls.png")
+ 
+     def mainProcess(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+
+=== modified file 'bwl/bc3080.py'
+--- bwl/bc3080.py	2014-12-30 15:37:38 +0000
++++ bwl/bc3080.py	2015-04-01 10:24:10 +0000
+@@ -31,7 +31,7 @@
+             prog=__name__)
+         t = time.localtime()
+         self.sysdt = time.strftime("%d %B %Y %H:%M:%S", t)
+-        self.image = os.path.join(self.mf.rcdic["prgdir"], "img", "bowls.jpg")
++        self.image = os.path.join(self.mf.rcdic["prgdir"], "img", "bowls.png")
+         if not os.path.isfile(self.image):
+             self.image = None
+         self.card = True
+
+=== modified file 'bwl/bc3110.py'
+--- bwl/bc3110.py	2014-12-30 15:37:38 +0000
++++ bwl/bc3110.py	2015-04-01 12:02:02 +0000
+@@ -322,13 +322,13 @@
+                     self.fpdf.add_page()
+                     self.fpdf.image(
+                         os.path.join(self.opts["mf"].rcdic["prgdir"], "img",
+-                        "bowl.png"), 90, 10, w=10)
++                        "bowls.png"), 90, 10, w=10)
+                     self.fpdf.image(
+                         os.path.join(self.opts["mf"].rcdic["prgdir"], "img",
+-                        "bowl.png"), 100, 10, w=10)
++                        "bowls.png"), 100, 10, w=10)
+                     self.fpdf.image(os.path.join(
+                         self.opts["mf"].rcdic["prgdir"], "img",
+-                        "bowl.png"), 110, 10, w=10)
++                        "bowls.png"), 110, 10, w=10)
+                     self.fpdf.setFont(style="B", size=24)
+                     self.fpdf.drawText(self.cdes, y=30, h=10, align="C")
+                     self.fpdf.drawText()
+
+=== modified file 'bwl/bc6010.py'
+--- bwl/bc6010.py	2014-12-30 15:37:38 +0000
++++ bwl/bc6010.py	2015-04-01 09:09:06 +0000
+@@ -25,13 +25,12 @@
+ 
+     def setVariables(self):
+         self.tables = (
+-            ("bwldrt", "bdt_cono", "bdt_tab", "bdt_team1", "bdt_team2",
+-                "bdt_team3"),
+-            ("bwlent", "bce_cono", "bce_scod"),
+-            ("bwlflm", "bfm_cono", "bfm_captain"),
+-            ("bwlflt", "bft_cono", "bft_skip", "bft_player"),
+-            ("bwlgme", "bcg_cono", "bcg_scod", "bcg_ocod"),
+-            ("bwltab", "btb_cono", "btb_tab"))
++            ("bwldrt","bdt_cono","bdt_tab","bdt_team1","bdt_team2","bdt_team3"),
++            ("bwlent","bce_cono","bce_scod"),
++            ("bwlflm","bfm_cono","bfm_captain"),
++            ("bwlflt","bft_cono","bft_skip","bft_player"),
++            ("bwlgme","bcg_cono","bcg_scod","bcg_ocod"),
++            ("bwltab","btb_cono","btb_tab"))
+         tabs = []
+         for tab in self.tables:
+             if tab[0] not in tabs:
+
+=== modified file 'bwl/bc6020.py'
+--- bwl/bc6020.py	2014-12-30 15:37:38 +0000
++++ bwl/bc6020.py	2015-04-01 08:57:59 +0000
+@@ -33,7 +33,7 @@
+             "Clear Selection History (%s)" % __name__)
+         r1s = (("Yes","Y"), ("No","N"))
+         fld = ((("T",0,1,0),("IRB",r1s),0,"Clear Opponents","",
+-                "Y","N",self.doOpps,None,None,None),)
++                "N","N",self.doOpps,None,None,None),)
+         tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+         self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
+
+=== modified file 'crs/cr2010_rne.py'
+--- crs/cr2010_rne.py	2015-02-11 16:45:23 +0000
++++ crs/cr2010_rne.py	2015-03-23 07:20:23 +0000
+@@ -14,8 +14,16 @@
+ """
+ 
+ import glob, os, time, xml.parsers.expat
+-from scp import SCPClient
+-from paramiko import AutoAddPolicy, SSHClient
++try:
++    from paramiko import AutoAddPolicy, SSHClient
++    from scp import SCPClient
++    SERVER = "172.16.10.10"
++    PORT = 22
++    USER = "vodacom"
++    PASSWORD = "Vodacom3di"
++    CRYPT = True
++except:
++    CRYPT = False
+ from TartanClasses import AgeAll, ASD, Batches, CCD, GetCtl, Sql, TartanDialog
+ from tartanFunctions import askQuestion, callModule, getVatRate, paymentDate
+ from tartanFunctions import showError
+@@ -333,16 +341,15 @@
+             self.opts["conam"]), period=None, user=self.opts["capnm"])
+ 
+     def importInv(self, widget=None):
++        # Check to CRYPT
++        if not CRYPT:
++            return
+         # Download Files
+         try:
+-            server = "172.16.10.10"
+-            port = 22
+-            user = "vodacom"
+-            password = "Vodacom3di"
+             ssh = SSHClient()
+             ssh.load_system_host_keys()
+             ssh.set_missing_host_key_policy(AutoAddPolicy())
+-            ssh.connect(server, port, user, password)
++            ssh.connect(SERVER, PORT, USER, PASSWORD)
+             scp = SCPClient(ssh.get_transport())
+             scp.get("*.xml", self.opts["mf"].rcdic["wrkdir"])
+         except:
+
+=== modified file 'doc/BC.rst'
+--- doc/BC.rst	2014-12-30 15:37:38 +0000
++++ doc/BC.rst	2015-03-31 09:20:26 +0000
+@@ -49,9 +49,10 @@
+ + **Rating - Mixed** - The person's rating in mixed bowls.
+ + **Association Number** - The person's number with the bowling association.
+ 
+-In addition there is the following button.
++In addition there are the following buttons.
+ 
+ + **Import** - Use this button to import, only tab ratings for existing tabs or all tab details for existing and new members, from an excel (xls) or comma separated (csv) file.
+++ **Print** - Use this button to print a listing of member's details.
+ 
+ League Formats
+ ++++++++++++++
+
+=== added file 'doc/CR_rne.rst'
+--- doc/CR_rne.rst	1970-01-01 00:00:00 +0000
++++ doc/CR_rne.rst	2015-03-23 20:27:25 +0000
+@@ -0,0 +1,215 @@
++
++Creditor's Ledger
++~~~~~~~~~~~~~~~~~
++File Maintenance (CR)
++.....................
++Control Record (CR)
+++++++++++++++++++++
++Use this routine to create and amend the creditor's control record.
++
+++ **G/L Integration** - Whether or not to integrate with the general ledger.
+++ **G/L Input Method** - Whether allocations to general ledger accounts are entered inclusive or exclusive of V.A.T.
+++ **Best Account Code** - The Standard Bank account code.
+++ **Best Account Type** - The Standard Bank account type.
+++ **Bank Account Code** - The Standard bank account code.
+++ **Remittance Template** - The remittance advice template.
++
++Masterfile Records (CR)
+++++++++++++++++++++++++
++Use this routine to create or amend creditor's ledger account records. You can import records by selecting the `Import` button in which case the file to be imported must be in `csv` or `xls` format and must contain all the fields as listed below. If the `Account Number` field is left blank an account number will be generated using the `Name` field.
++
+++ **Acc-Num** - The account number.
+++ **Name** - The account name.
+++ **Address Line 1** - The first line of the postal address.
+++ **Address Line 2** - The second line of the postal address.
+++ **Address Line 3** - The second line of the postal address.
+++ **Postal Code** - The postal code.
+++ **Telephone Number** - The telephone number.
+++ **Fax Number** - The facsimile number.
+++ **Manager's Name** - The manager's name.
+++ **Manager's Email** - The manager's email address.
+++ **Account's Contact** - The account's contact name.
+++ **Account's E-mail** - The account's contact email address.
+++ **Order's Contact** - The order's contact name.
+++ **Order's E-mail** - The order's contact email address.
+++ **Date Account Opened** - The date the account was opened.
+++ **V.A.T. Number** - The creditor's V.A.T. number.
+++ **Terms Base** - The terms base, Monthly or Daily.
+++ **Statement Day** - The day the creditor closes their month.
+++ **Terms** - The number of days the creditor allows us.
+++ **Credit Limit** - Our credit limit with the creditor.
+++ **Trade Discount** - Out normal trade discount.
+++ **Settlement Discount** - Out normal settlement discount.
+++ **Payment Indicator** - Whether or not the creditors must be paid.
+++ **Bank Name** - The creditor's bank.
+++ **Bank Branch** - The creditor's bank branch code.
+++ **Bank Account** - The creditor's bank account number.
+++ **G/L Account Number** - The default general ledger account for purchases.
+++ **Advert Discount** - The advertising discount rate if applicable.
+++ **Incent Discount** - The incentive discount rate if applicable.
+++ **Incentive From** - The starting rate if applicable.
+++ **Incentive To** - The ending rate if applicable.
+++ **Rebate Period** - The rebate period code, Blank, Q, B or A.
+++ **Rebate Rate** - The rebate rate if applicable.
+++ **Targeted** - Target details if applicable.
+++ **Advert Period** - The advertising period code, Blank, Q, B or A.
+++ **Advert Rate** - The advertising rate if applicable.
+++ **ADHOC Amount** - The ADHOC amount if applicable.
+++ **SWELL Rate** - The SWELL rate if applicable.
+++ **Period Start** - The SWELL starting period if applicable.
+++ **Period End**- The SWELL ending period if applicable.
++
++
++Data Capture (CR)
++.................
++Purchases, Journals and Credit Notes (CR)
+++++++++++++++++++++++++++++++++++++++++++
++These data capture routines are similar in operation and therefore I will handle them together.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following applies.
++
+++ **Acc-Num** - The creditor's account number.
+++ **Ref-No1** - The transaction reference number.
+++ **Date** - The date of the transaction.
+++ **Amount** - The total amount of the transaction.
+++ **V** - The V.A.T. code.
+++ **V.A.T.** - The V.A.T. amount.
+++ **Bch** - The branch code.
++
++Receipts (CR)
+++++++++++++++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screen and fields apply:
++
+++ **Acc-Num** - The creditor's account number.
+++ **Ref-No1** - The transaction reference number.
+++ **Date** - The date of the transaction.
+++ **Amount** - The total amount of the transaction.
+++ **Details** - The details of the transaction.
++
++Payments (CR)
+++++++++++++++
++Use this routine to pay creditors and produce remittance advices.
++
+++ **Template Name** - The name of the template to use.
+++ **Whole File** - Select the accounts to print.
+++ **From Account** - If Range was selected enter the starting account code.
+++ **To   Account** - If Range was selected enter the ending account code.
+++ **Sort Order** - Select the sorting order.
+++ **Monthly or Daily** - Select either monthly or daily terms base.
+++ **Process Exceptions** - Select Yes to enter exceptions i.e. add, edit or exclude various transactions.
+++ **Payment Date** - The date the payment is to be made.
+++ **Leeway Days** - The number of days leeway to apply.
+++ **First Cheque No.** - The first cheque number to allocate.
+++ **First CATS No.** - The first electronic payment number to allocate.
++
++In the case of Exceptions:
++
+++ **Account Number** - The relevant creditor's account number.
+++ **TT** - The transaction type.
+++ **Reference** - The transaction's reference number.
+++ **P** - Y to pay the transaction else N.
+++ **Pay-Date** - The date the transaction becomes payable.
+++ **Pay-Amount** - The amount to be paid.
+++ **Dis-%** - The discount percentage to apply to the payment.
++
++Reporting (CR)
++..............
++Batch Error Listing (CR)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (CR)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Due For Payment Listing (CR)
++++++++++++++++++++++++++++++
++Use this routine to produce a listing of creditor's due to be paid at a specific cut off date,
++
++Outstanding Transactions (CR)
+++++++++++++++++++++++++++++++
++Use this routine to produce a report of outstanding transactions by creditor.
++
++Age Analysis (CR)
+++++++++++++++++++
++Use this routine to produce a creditor's age analysis.
++
++Master Listing (CR)
+++++++++++++++++++++
++Use this routine to produce a creditor's master listing.
++
++Reconciliation Statements (CR)
++++++++++++++++++++++++++++++++
++Use this routine to produce creditor's reconciliation statements. These statements are useful in reconciling with creditor's statements.
++
++Name and Address Labels (CR)
++++++++++++++++++++++++++++++
++Use this routine to produce creditor's name and address labels.
++
++Notes Listing (CR)
++++++++++++++++++++
++Use this routine to print any notes on the creditor's ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Purchase History (CR)
+++++++++++++++++++++++
++Use this routine to produce a purchase history report by creditor.
++
++Terms Listing (CR)
++++++++++++++++++++
++Use this routine to produce a terms listing history report by creditor.
++
++Purchase Journal (CR)
+++++++++++++++++++++++
++Use this routine to produce a purchase journal report by creditor.
++
++Branch Purchases (CR)
+++++++++++++++++++++++
++Use this routine to produce a purchases by branch report.
++
++Purchases by Branch by Supplier (CR)
++++++++++++++++++++++++++++++++++++++
++Use this routine to produce a purchases by branch by supplier report.
++
++Purchases by Supplier by Branch (CR)
++++++++++++++++++++++++++++++++++++++
++Use this routine to produce a purchases by supplier by branch report.
++
++Remittance Advice Reprint (CR)
++++++++++++++++++++++++++++++++
++Use this routine to produce reprints of remittance advices.
++
++Advertising/Incentive Invoices (CR)
+++++++++++++++++++++++++++++++++++++
++Use this routine to produce a invoices for advertising and/or incentive discounts.
++
++Toolbox (CR)
++............
++Change Account Numbers (CR)
+++++++++++++++++++++++++++++
++Use this routine to change account numbers.
++
++Transaction Reallocations (CR)
++++++++++++++++++++++++++++++++
++Use this routine to reallocate and age transactions.
++
++Interrogation (CR)
++..................
++This routine is for querying individual creditor's ledger accounts.
+
+=== modified file 'doc/DR.rst'
+--- doc/DR.rst	2014-03-28 07:32:49 +0000
++++ doc/DR.rst	2015-04-02 14:31:24 +0000
+@@ -159,6 +159,7 @@
+ + **Frequency** - The frequency of the charges to be raised.
+ + **All Charges** - Whether or not all charges for the selected frequency must be raised.
+ + **2nd Reference** - A second reference number for the charges.
+++ **Invoices** - Whether or not to produce invoices for the charges.
+ 
+ If you selected `No` to `All Charges` a list of available charges will be displayed and you will able to mark the ones to raise.
+ 
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-03-21 07:40:04 +0000
++++ doc/Downloads.rst	2015-04-02 19:31:55 +0000
+@@ -11,16 +11,16 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.10 and was released on the 21st March, 2015.
++The latest version of Tartan is 5.0.11 and was released on the 2nd April, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.10.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.11.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.10.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.11.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+
+=== modified file 'doc/GL.rst'
+--- doc/GL.rst	2015-03-21 07:40:04 +0000
++++ doc/GL.rst	2015-03-25 13:19:23 +0000
+@@ -45,19 +45,24 @@
+ ++++++++++++++++++++++
+ Use this routine to create, amend and delete standard journals.
+ 
+-The following fields need more explanation:
+-
+-+ **Freq** - This is the frequency with which this journal is raised:
+-
+++ **Number** - This is the journals reference number.
+++ **Description** - This is the description of the journal.
+++ **Frequency** - This is the frequency with which this journal is raised:
+     + **M** - Monthly
+     + **3** - Quarterly
+     + **6** - Biannually
+     + **Y** - Annually
+-
+-+ **Start** - The first period this journal is to be raised, (CCYYMM)
+-+ **End** - The last period this journal is to be raised, (CCYYMM)
+-
+-Please note that you will not be able to end this routine until the debits equal the credits. Credits are entered as minus amounts.
+++ **Starting Period** - The first period this journal is to be raised, (CCYYMM)
+++ **Ending Period** - The last period this journal is to be raised, (CCYYMM)
++
++Now all the journal lines must be entered as follows:
++
+++ **Seq** - The line number.
+++ **Acc-Num** - The general ledger account number.
+++ **V** - The VAT code.
+++ **Value** - The value of the transaction. Enter credits as minus values.
++
++Please note that you will not be able to end this routine until the debits equal the credits.
+ 
+ Report Generator (GL)
+ +++++++++++++++++++++
+@@ -229,7 +234,7 @@
+ + **Bank Account** - The G/L account number for the bank.
+ + **Memo Code** - This is a 5 digit sequential number of the record. Entering a zero will automatically allocated the next number.
+ + **Memo Desc Contains** - This together with the next two fields are used to correctly identify the transaction using the description appearing on the bank statement.
+-+ **Transaction Type** - Payment or deposit.
+++ **Transaction Type** - Payment or Deposit.
+ + **Allocation Company** - The company number to be debited or credited.
+ + **Allocation Account** - The account number to be debited or credited.
+ + **Chn** - The chain store code if the account number is the debtor's control account.
+@@ -255,6 +260,21 @@
+ * **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+ * **Budget** - The budget value.
+ 
++*Auto Populate*
++
++If the auto populate button is used the following screen will appear:
++
+++ **Use Previous Year's** - Actual or Budgets.
+++ **Standard Rate (+-)** - The rate to be used to increase or decrease the previous year's amounts.
+++ **Rounding to Nearest** - Select the rounding requirement.
++
++You are now able to enter exclusions to the above parameters as follows:
++
+++ **Acc-Num** - The generals ledger account number.
+++ **Rate** - The rate to apply to this account.
++
++On exiting the the screen with the <Esc> key the budgets will be populated.
++
+ Sales, Payments, Petty Cash, Purchases and Receipts (GL)
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ These data capture routines are similar in operation and therefore I will handle them together. Please note that if subsidiary books are integrated i.e. creditors and debtors, purchases and sales will not be available and an error message will be displayed if you attempt to access them.
+@@ -262,6 +282,7 @@
+ As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
+ 
+ + **Transaction**
++    + **T** - The transaction type (Petty Cash Only), (P)ayment or (R)eceipt.
+     + **Reference** - The document's reference number.
+     + **Date** - The date of the document.
+     + **Amount** - The total inclusive value of the document.
+@@ -301,7 +322,7 @@
+     + **Intr-%** - The new interest rate to apply to the loan.
+     + **Ded-Amt** - The new amount to be deducted from earnings to repay the loan.
+ 
+-If you have allocated the transaction to a creditor's or debtor's account you might be required to age the amount as described in `Ageing Transactions`_ above.
++If you have allocated the transaction to a creditor's, debtor's or member's account you might be required to age the amount as described in `Ageing Transactions`_ above.
+ 
+ Manual Journal Entries (GL)
+ +++++++++++++++++++++++++++
+@@ -355,7 +376,7 @@
+ 
+ + **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocated these using the `Process Bank Data` routine, before continuing.
+ 
+-    + **T** - Enter the transaction type i.e. (P)ayment, (D)eposit or (J)ournal.
++    + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+     + **Ref-Num** - Enter the reference number. If the transaction already exists on your database it will be flagged as either paid or received i.e. will not appear on the bank reconciliation statement. If the transaction does not already exist you can capture it by entering the following fields:
+ 
+     + **Date** - Enter the transaction date.
+@@ -492,8 +513,8 @@
+ 
+ Now capture all the outstanding transactions as at the `Last Period`.
+ 
+-* **T** - The transaction type.
+-* **Ref-Num** - The transaction reference number.
+++ **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+++ **Ref-Num** - Enter the transaction reference number.
+ 
+ Interrogation (GL)
+ ..................
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-03-21 07:40:04 +0000
++++ doc/MD.rst	2015-04-02 19:31:55 +0000
+@@ -2,12 +2,12 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.10
++:Version:   5.0.11
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+ :Copyright: Paul Malherbe (C) 2004-2015.
+-:Licence:   Free use of this software and all it's modules is granted under the terms of the License.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the Licence.
+ 
+ :Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
+ 
+
+=== modified file 'doc/Rnehol.rst'
+--- doc/Rnehol.rst	2015-03-21 07:40:04 +0000
++++ doc/Rnehol.rst	2015-03-30 11:57:16 +0000
+@@ -2,12 +2,12 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.9
++:Version:   5.0.10
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+ :Copyright: Paul Malherbe (C) 2004-2015.
+-:Licence:   Free use of this software and all it's modules is granted under the terms of the License.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the Licence.
+ 
+ :Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
+ 
+@@ -511,19 +511,24 @@
+ ++++++++++++++++++++++
+ Use this routine to create, amend and delete standard journals.
+ 
+-The following fields need more explanation:
+-
+-+ **Freq** - This is the frequency with which this journal is raised:
+-
+++ **Number** - This is the journals reference number.
+++ **Description** - This is the description of the journal.
+++ **Frequency** - This is the frequency with which this journal is raised:
+     + **M** - Monthly
+     + **3** - Quarterly
+     + **6** - Biannually
+     + **Y** - Annually
+-
+-+ **Start** - The first period this journal is to be raised, (CCYYMM)
+-+ **End** - The last period this journal is to be raised, (CCYYMM)
+-
+-Please note that you will not be able to end this routine until the debits equal the credits. Credits are entered as minus amounts.
+++ **Starting Period** - The first period this journal is to be raised, (CCYYMM)
+++ **Ending Period** - The last period this journal is to be raised, (CCYYMM)
++
++Now all the journal lines must be entered as follows:
++
+++ **Seq** - The line number.
+++ **Acc-Num** - The general ledger account number.
+++ **V** - The VAT code.
+++ **Value** - The value of the transaction. Enter credits as minus values.
++
++Please note that you will not be able to end this routine until the debits equal the credits.
+ 
+ Report Generator (GL)
+ +++++++++++++++++++++
+@@ -695,7 +700,7 @@
+ + **Bank Account** - The G/L account number for the bank.
+ + **Memo Code** - This is a 5 digit sequential number of the record. Entering a zero will automatically allocated the next number.
+ + **Memo Desc Contains** - This together with the next two fields are used to correctly identify the transaction using the description appearing on the bank statement.
+-+ **Transaction Type** - Payment or deposit.
+++ **Transaction Type** - Payment or Deposit.
+ + **Allocation Company** - The company number to be debited or credited.
+ + **Allocation Account** - The account number to be debited or credited.
+ + **Chn** - The chain store code if the account number is the debtor's control account.
+@@ -721,6 +726,21 @@
+ * **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+ * **Budget** - The budget value.
+ 
++*Auto Populate*
++
++If the auto populate button is used the following screen will appear:
++
+++ **Use Previous Year's** - Actual or Budgets.
+++ **Standard Rate (+-)** - The rate to be used to increase or decrease the previous year's amounts.
+++ **Rounding to Nearest** - Select the rounding requirement.
++
++You are now able to enter exclusions to the above parameters as follows:
++
+++ **Acc-Num** - The generals ledger account number.
+++ **Rate** - The rate to apply to this account.
++
++On exiting the the screen with the <Esc> key the budgets will be populated.
++
+ Sales, Payments, Petty Cash, Purchases and Receipts (GL)
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ These data capture routines are similar in operation and therefore I will handle them together. Please note that if subsidiary books are integrated i.e. creditors and debtors, purchases and sales will not be available and an error message will be displayed if you attempt to access them.
+@@ -728,6 +748,7 @@
+ As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
+ 
+ + **Transaction**
++    + **T** - The transaction type (Petty Cash Only), (P)ayment or (R)eceipt.
+     + **Reference** - The document's reference number.
+     + **Date** - The date of the document.
+     + **Amount** - The total inclusive value of the document.
+@@ -767,7 +788,7 @@
+     + **Intr-%** - The new interest rate to apply to the loan.
+     + **Ded-Amt** - The new amount to be deducted from earnings to repay the loan.
+ 
+-If you have allocated the transaction to a creditor's or debtor's account you might be required to age the amount as described in `Ageing Transactions`_ above.
++If you have allocated the transaction to a creditor's, debtor's or member's account you might be required to age the amount as described in `Ageing Transactions`_ above.
+ 
+ Manual Journal Entries (GL)
+ +++++++++++++++++++++++++++
+@@ -821,7 +842,7 @@
+ 
+ + **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocated these using the `Process Bank Data` routine, before continuing.
+ 
+-    + **T** - Enter the transaction type i.e. (P)ayment, (D)eposit or (J)ournal.
++    + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+     + **Ref-Num** - Enter the reference number. If the transaction already exists on your database it will be flagged as either paid or received i.e. will not appear on the bank reconciliation statement. If the transaction does not already exist you can capture it by entering the following fields:
+ 
+     + **Date** - Enter the transaction date.
+@@ -958,8 +979,8 @@
+ 
+ Now capture all the outstanding transactions as at the `Last Period`.
+ 
+-* **T** - The transaction type.
+-* **Ref-Num** - The transaction reference number.
+++ **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+++ **Ref-Num** - Enter the transaction reference number.
+ 
+ Interrogation (GL)
+ ..................
+@@ -1100,6 +1121,7 @@
+ 
+     PageBreak
+ 
++
+ Creditor's Ledger
+ ~~~~~~~~~~~~~~~~~
+ File Maintenance (CR)
+@@ -1146,6 +1168,20 @@
+ + **Bank Branch** - The creditor's bank branch code.
+ + **Bank Account** - The creditor's bank account number.
+ + **G/L Account Number** - The default general ledger account for purchases.
+++ **Advert Discount** - The advertising discount rate if applicable.
+++ **Incent Discount** - The incentive discount rate if applicable.
+++ **Incentive From** - The starting rate if applicable.
+++ **Incentive To** - The ending rate if applicable.
+++ **Rebate Period** - The rebate period code, Blank, Q, B or A.
+++ **Rebate Rate** - The rebate rate if applicable.
+++ **Targeted** - Target details if applicable.
+++ **Advert Period** - The advertising period code, Blank, Q, B or A.
+++ **Advert Rate** - The advertising rate if applicable.
+++ **ADHOC Amount** - The ADHOC amount if applicable.
+++ **SWELL Rate** - The SWELL rate if applicable.
+++ **Period Start** - The SWELL starting period if applicable.
+++ **Period End**- The SWELL ending period if applicable.
++
+ 
+ Data Capture (CR)
+ .................
+@@ -1153,45 +1189,51 @@
+ +++++++++++++++++++++++++++++++++++++++++
+ These data capture routines are similar in operation and therefore I will handle them together.
+ 
+-As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
+-
+-+ **Transaction**
+-    + **Acc-Num** - The creditor's account number.
+-    + **Reference** - The transaction reference number.
+-    + **Date** - The date of the transaction.
+-    + **Amount** - The total amount of the transaction.
+-    + **Details** - The details of the transaction.
+-    + You might now be required to age the transaction using `Ageing Transactions`_.
+-+ **Allocation** - This screen only applies if integrated with the G/L.
+-    + **Coy** - The company number.
+-    + **Acc-Num** - The G/L account number.
+-    + **V** - The V.A.T. code.
+-    + **Exc-Amount** - The exclusive amount of the allocation.
+-    + **V.A.T.** - The V.A.T. amount of the allocation.
+-    + **Details** - The details of the allocation.
+-    + Continue allocating the transaction until fully allocated.
+-+ **Loans** - This screen only applies if Salaries and Wages are integrated with the G/L and the loans control account has been entered in the `Allocation` screen.
+-    + **EmpNo** - The employees number.
+-    + **Ln** - The loan number.
+-    + **Amount** - The loan amount allocated to this employee.
+-    + **Cde** - The new deduction record to be associated with this loan.
+-    + **Intr-%** - The new interest rate to apply to this loan.
+-    + **Ded-Amt** - The new total amount to be deducted from earnings to settle this loan.
+-
+-Receipts and Payments (CR)
+-++++++++++++++++++++++++++
+-These data capture routines are similar in operation and therefore I will handle them together.
+-
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following applies.
++
+++ **Acc-Num** - The creditor's account number.
+++ **Ref-No1** - The transaction reference number.
+++ **Date** - The date of the transaction.
+++ **Amount** - The total amount of the transaction.
+++ **V** - The V.A.T. code.
+++ **V.A.T.** - The V.A.T. amount.
+++ **Bch** - The branch code.
++
++Receipts (CR)
+++++++++++++++
+ As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screen and fields apply:
+ 
+-+ **Transaction**
+-    + **Acc-Num** - The creditor's account number.
+-    + **Reference** - The transaction reference number.
+-    + **Date** - The date of the transaction.
+-    + **Amount** - The total amount of the transaction.
+-    + **Discount** - Any settlement discount.
+-    + **Details** - The details of the transaction.
+-    + You might now be required to age the transaction using `Ageing Transactions`_.
+++ **Acc-Num** - The creditor's account number.
+++ **Ref-No1** - The transaction reference number.
+++ **Date** - The date of the transaction.
+++ **Amount** - The total amount of the transaction.
+++ **Details** - The details of the transaction.
++
++Payments (CR)
+++++++++++++++
++Use this routine to pay creditors and produce remittance advices.
++
+++ **Template Name** - The name of the template to use.
+++ **Whole File** - Select the accounts to print.
+++ **From Account** - If Range was selected enter the starting account code.
+++ **To   Account** - If Range was selected enter the ending account code.
+++ **Sort Order** - Select the sorting order.
+++ **Monthly or Daily** - Select either monthly or daily terms base.
+++ **Process Exceptions** - Select Yes to enter exceptions i.e. add, edit or exclude various transactions.
+++ **Payment Date** - The date the payment is to be made.
+++ **Leeway Days** - The number of days leeway to apply.
+++ **First Cheque No.** - The first cheque number to allocate.
+++ **First CATS No.** - The first electronic payment number to allocate.
++
++In the case of Exceptions:
++
+++ **Account Number** - The relevant creditor's account number.
+++ **TT** - The transaction type.
+++ **Reference** - The transaction's reference number.
+++ **P** - Y to pay the transaction else N.
+++ **Pay-Date** - The date the transaction becomes payable.
+++ **Pay-Amount** - The amount to be paid.
+++ **Dis-%** - The discount percentage to apply to the payment.
+ 
+ Reporting (CR)
+ ..............
+@@ -1235,29 +1277,6 @@
+ ++++++++++++++++++++++++++++++
+ Use this routine to produce creditor's reconciliation statements. These statements are useful in reconciling with creditor's statements.
+ 
+-Remittance Advices (CR)
+-+++++++++++++++++++++++
+-Use this routine to produce creditor's remittance advices.
+-
+-+ **Template Name** - The name of the template to use.
+-+ **Whole File** - Select the accounts to print.
+-+ **From Account** - If Range was selected enter the starting account code.
+-+ **To   Account** - If Range was selected enter the ending account code.
+-+ **Sort Order** - Select the sorting order.
+-+ **Terms Base** - Select either monthly or daily terms base.
+-+ **Exceptions** - Select Yes to enter exceptions i.e. add, edit or exclude various transactions.
+-+ **Due Date** - The due date to be used for the cut-off.
+-+ **Payment Date** - The date the payment is to be made.
+-
+-In the case of Exceptions:
+-
+-+ **Account Number** - The relevant creditor's account number.
+-+ **TT** - The transaction type.
+-+ **Reference** - The transaction's reference number.
+-+ **P** - Y to pay the transaction else N.
+-+ **Pay-Date** - The date the transaction becomes payable.
+-+ **Pay-Amount** - The amount to be paid.
+-
+ Name and Address Labels (CR)
+ ++++++++++++++++++++++++++++
+ Use this routine to produce creditor's name and address labels.
+@@ -1276,6 +1295,34 @@
+ +++++++++++++++++++++
+ Use this routine to produce a purchase history report by creditor.
+ 
++Terms Listing (CR)
++++++++++++++++++++
++Use this routine to produce a terms listing history report by creditor.
++
++Purchase Journal (CR)
+++++++++++++++++++++++
++Use this routine to produce a purchase journal report by creditor.
++
++Branch Purchases (CR)
+++++++++++++++++++++++
++Use this routine to produce a purchases by branch report.
++
++Purchases by Branch by Supplier (CR)
++++++++++++++++++++++++++++++++++++++
++Use this routine to produce a purchases by branch by supplier report.
++
++Purchases by Supplier by Branch (CR)
++++++++++++++++++++++++++++++++++++++
++Use this routine to produce a purchases by supplier by branch report.
++
++Remittance Advice Reprint (CR)
++++++++++++++++++++++++++++++++
++Use this routine to produce reprints of remittance advices.
++
++Advertising/Incentive Invoices (CR)
+++++++++++++++++++++++++++++++++++++
++Use this routine to produce a invoices for advertising and/or incentive discounts.
++
+ Toolbox (CR)
+ ............
+ Change Account Numbers (CR)
+
+=== modified file 'doc/Tartan.rst'
+--- doc/Tartan.rst	2015-03-21 07:40:04 +0000
++++ doc/Tartan.rst	2015-04-01 16:10:36 +0000
+@@ -2,12 +2,12 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.9
++:Version:   5.0.10
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+ :Copyright: Paul Malherbe (C) 2004-2015.
+-:Licence:   Free use of this software and all it's modules is granted under the terms of the License.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the Licence.
+ 
+ :Note: This document is not intended as an accounting manual. It is primarily a manual for people with some accounting expertise to learn how to use Tartan as an accounting tool.
+ 
+@@ -511,19 +511,24 @@
+ ++++++++++++++++++++++
+ Use this routine to create, amend and delete standard journals.
+ 
+-The following fields need more explanation:
+-
+-+ **Freq** - This is the frequency with which this journal is raised:
+-
+++ **Number** - This is the journals reference number.
+++ **Description** - This is the description of the journal.
+++ **Frequency** - This is the frequency with which this journal is raised:
+     + **M** - Monthly
+     + **3** - Quarterly
+     + **6** - Biannually
+     + **Y** - Annually
+-
+-+ **Start** - The first period this journal is to be raised, (CCYYMM)
+-+ **End** - The last period this journal is to be raised, (CCYYMM)
+-
+-Please note that you will not be able to end this routine until the debits equal the credits. Credits are entered as minus amounts.
+++ **Starting Period** - The first period this journal is to be raised, (CCYYMM)
+++ **Ending Period** - The last period this journal is to be raised, (CCYYMM)
++
++Now all the journal lines must be entered as follows:
++
+++ **Seq** - The line number.
+++ **Acc-Num** - The general ledger account number.
+++ **V** - The VAT code.
+++ **Value** - The value of the transaction. Enter credits as minus values.
++
++Please note that you will not be able to end this routine until the debits equal the credits.
+ 
+ Report Generator (GL)
+ +++++++++++++++++++++
+@@ -695,7 +700,7 @@
+ + **Bank Account** - The G/L account number for the bank.
+ + **Memo Code** - This is a 5 digit sequential number of the record. Entering a zero will automatically allocated the next number.
+ + **Memo Desc Contains** - This together with the next two fields are used to correctly identify the transaction using the description appearing on the bank statement.
+-+ **Transaction Type** - Payment or deposit.
+++ **Transaction Type** - Payment or Deposit.
+ + **Allocation Company** - The company number to be debited or credited.
+ + **Allocation Account** - The account number to be debited or credited.
+ + **Chn** - The chain store code if the account number is the debtor's control account.
+@@ -721,6 +726,21 @@
+ * **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+ * **Budget** - The budget value.
+ 
++*Auto Populate*
++
++If the auto populate button is used the following screen will appear:
++
+++ **Use Previous Year's** - Actual or Budgets.
+++ **Standard Rate (+-)** - The rate to be used to increase or decrease the previous year's amounts.
+++ **Rounding to Nearest** - Select the rounding requirement.
++
++You are now able to enter exclusions to the above parameters as follows:
++
+++ **Acc-Num** - The generals ledger account number.
+++ **Rate** - The rate to apply to this account.
++
++On exiting the the screen with the <Esc> key the budgets will be populated.
++
+ Sales, Payments, Petty Cash, Purchases and Receipts (GL)
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ These data capture routines are similar in operation and therefore I will handle them together. Please note that if subsidiary books are integrated i.e. creditors and debtors, purchases and sales will not be available and an error message will be displayed if you attempt to access them.
+@@ -728,6 +748,7 @@
+ As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
+ 
+ + **Transaction**
++    + **T** - The transaction type (Petty Cash Only), (P)ayment or (R)eceipt.
+     + **Reference** - The document's reference number.
+     + **Date** - The date of the document.
+     + **Amount** - The total inclusive value of the document.
+@@ -767,7 +788,7 @@
+     + **Intr-%** - The new interest rate to apply to the loan.
+     + **Ded-Amt** - The new amount to be deducted from earnings to repay the loan.
+ 
+-If you have allocated the transaction to a creditor's or debtor's account you might be required to age the amount as described in `Ageing Transactions`_ above.
++If you have allocated the transaction to a creditor's, debtor's or member's account you might be required to age the amount as described in `Ageing Transactions`_ above.
+ 
+ Manual Journal Entries (GL)
+ +++++++++++++++++++++++++++
+@@ -821,7 +842,7 @@
+ 
+ + **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocated these using the `Process Bank Data` routine, before continuing.
+ 
+-    + **T** - Enter the transaction type i.e. (P)ayment, (D)eposit or (J)ournal.
++    + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+     + **Ref-Num** - Enter the reference number. If the transaction already exists on your database it will be flagged as either paid or received i.e. will not appear on the bank reconciliation statement. If the transaction does not already exist you can capture it by entering the following fields:
+ 
+     + **Date** - Enter the transaction date.
+@@ -958,8 +979,8 @@
+ 
+ Now capture all the outstanding transactions as at the `Last Period`.
+ 
+-* **T** - The transaction type.
+-* **Ref-Num** - The transaction reference number.
+++ **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+++ **Ref-Num** - Enter the transaction reference number.
+ 
+ Interrogation (GL)
+ ..................
+@@ -1376,9 +1397,10 @@
+ + **Rating - Mixed** - The person's rating in mixed bowls.
+ + **Association Number** - The person's number with the bowling association.
+ 
+-In addition there is the following button.
++In addition there are the following buttons.
+ 
+ + **Import** - Use this button to import, only tab ratings for existing tabs or all tab details for existing and new members, from an excel (xls) or comma separated (csv) file.
+++ **Print** - Use this button to print a listing of member's details.
+ 
+ League Formats
+ ++++++++++++++
+
+=== modified file 'doc/WinPkg.txt'
+--- doc/WinPkg.txt	2014-08-27 09:27:53 +0000
++++ doc/WinPkg.txt	2015-03-23 07:50:05 +0000
+@@ -6,7 +6,6 @@
+     psycopg2-2.4.win32-py2.7-pg9.0.3-release.exe
+     py2exe-0.6.9.win32-py2.7.exe
+     pycrypto-2.6.win32-py2.7.exe
+-    pysqlite-2.6.3.win32-py2.7.exe
+     pywin32-216.win32-py2.7.exe
+     ispack-5.4.2.exe
+ 
+
+=== modified file 'doc/tarlic.rst'
+--- doc/tarlic.rst	2014-05-08 17:02:33 +0000
++++ doc/tarlic.rst	2015-03-23 10:09:34 +0000
+@@ -39,11 +39,11 @@
+ 
+ 3.1.2 the Software conforms to specifications and functionality as specified in Documentation;
+ 
+-3.1.3 to the best of the Licensor’s knowledge, the Software does not infringe upon or violate any intellectual property right of any third party;
++3.1.3 to the best of the Licensor's knowledge, the Software does not infringe upon or violate any intellectual property right of any third party;
+ 
+ 3.1.4 the Software does not contain any routine, intentionally designed by the Licensor to disable a computer program, or computer instructions that may alter, destroy or inhibit the processing environment.
+ 
+-3.2 Except those warranties specified in section 4.1 above, the Software is being delivered to the Licensee “AS IS” and the Licensor makes no warranty as to its use or performance.
++3.2 Except those warranties specified in section 3.1 above, the Software is being delivered to the Licensee “AS IS” and the Licensor makes no warranty as to its use or performance.
+ 
+ The Licensor does not and cannot warrant the performance or results the Licensee may obtain by using the Software. The entire risk arising out of use or performance of the Software remains with the Licensee.
+ 
+
+=== modified file 'drs/dr2030.py'
+--- drs/dr2030.py	2014-12-30 15:37:38 +0000
++++ drs/dr2030.py	2015-04-02 19:17:30 +0000
+@@ -13,8 +13,9 @@
+     Copyright (C) 2004-2015 Paul Malherbe.
+ """
+ 
+-import time
+-from TartanClasses import ASD, Batches, GetCtl, Sql, TartanDialog
++import os, time
++from TartanClasses import ASD, Batches, CCD, GetCtl, MyFpdf, Sql, TartanDialog
++from tartanFunctions import doDrawTable, doPrinter, getModName
+ from tartanFunctions import getSingleRecords, getVatRate, mthendDate
+ 
+ class dr2030:
+@@ -25,8 +26,9 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlvrf", "ctlvtf", "drsmst",
+-            "drstrn", "drsrcm", "drsrct", "genmst", "gentrn"], prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctlvrf", "ctlvtf",
++            "drsmst", "drstrn", "drsrcm", "drsrct", "genmst", "gentrn"],
++            prog=__name__)
+         if self.sql.error:
+             return
+         self.gc = GetCtl(self.opts["mf"])
+@@ -42,11 +44,23 @@
+                 return
+             self.drsctl = ctlctl["drs_ctl"]
+             self.vatctl = ctlctl["vat_ctl"]
++        ctl = self.sql.getRec(tables="ctlmst",
++            where=[("ctm_cono", "=", self.opts["conum"])], limit=1)
++        for col in ("ctm_name", "ctm_add1", "ctm_add2", "ctm_add3",
++                    "ctm_pcode", "ctm_regno", "ctm_taxno", "ctm_tel",
++                    "ctm_fax", "ctm_b_name", "ctm_b_ibt", "ctm_b_acno",
++                    "ctm_logo"):
++            exec "self.%s = ctl[self.sql.ctlmst_col.index('%s')]" % (col, col)
++        if "LETTERHEAD" in os.environ:
++            self.ctm_logo = os.environ["LETTERHEAD"]
++        if not self.ctm_logo or not os.path.exists(self.ctm_logo):
++            self.ctm_logo = None
+         self.batchHeader()
+         if not self.bh.batno:
+             return
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
++        self.reprint = False
+         return True
+ 
+     def batchHeader(self):
+@@ -72,11 +86,13 @@
+             (("T",0,1,0),("IRB",r2s),1,"All Charges","",
+                 "N","N",self.doAll,None,None,None),
+             (("T",0,2,0),"INA",9,"2nd Reference","",
+-                "","N",self.doRef2,None,None,None))
+-        tnd = ((self.endPage,"y"),)
++                "","N",self.doRef2,None,None,None),
++            (("T",0,3,0),("IRB",r2s),1,"Invoices","",
++                "N","N",self.doInv,None,None,None))
++        tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
+-            tend=tnd, txit=txt)
++            tend=tnd, txit=txt, view=("N","P"), mail=("N","Y"))
+ 
+     def doFreq(self, frt, pag, r, c, p, i, w):
+         self.freq = w
+@@ -95,14 +111,23 @@
+             self.mths = 12
+ 
+     def doAll(self, frt, pag, r, c, p, i, w):
+-        self.all = w
++        self.allc = w
+ 
+     def doRef2(self, frt, pag, r, c, p, i, w):
+         self.ref2 = w
+ 
+-    def endPage(self):
++    def doInv(self, frt, pag, r, c, p, i, w):
++        self.inv = w
++        if self.inv == "N":
++            self.df.loadEntry(frt, pag, p+2, data="")
++            return "nd"
++
++    def doEml(self, frt, pag, r, c, p, i, w):
++        self.eml = w
++
++    def doEnd(self):
+         self.df.closeProcess()
+-        if self.all == "N":
++        if self.allc == "N":
+             recs = getSingleRecords(self.opts["mf"], "drsrcm", ("dcm_num",
+                 "dcm_desc"), where=self.wher)
+         else:
+@@ -113,11 +138,12 @@
+                 desc = dcm[self.sql.drsrcm_col.index("dcm_desc")]
+                 day = dcm[self.sql.drsrcm_col.index("dcm_day")]
+                 if day == 30:
+-                    trdt = mthendDate((self.bh.curdt * 100) + 1)
++                    self.trdt = mthendDate((self.bh.curdt * 100) + 1)
+                 else:
+-                    trdt = (self.bh.curdt * 100) + day
++                    self.trdt = (self.bh.curdt * 100) + day
+                 vat = dcm[self.sql.drsrcm_col.index("dcm_vat")]
+-                rte = getVatRate(self.sql, self.opts["conum"], vat, trdt)[0]
++                self.rte = getVatRate(self.sql, self.opts["conum"],
++                    vat, self.trdt)[0]
+                 glac = dcm[self.sql.drsrcm_col.index("dcm_glac")]
+                 nxt = self.sql.getRec(tables="drstrn", cols=["max(drt_ref1)"],
+                     where=[("drt_cono", "=", self.opts["conum"]), ("drt_ref1",
+@@ -149,49 +175,53 @@
+                     if not charge:
+                         continue
+                     # Create Transactions
+-                    chain = dct[self.sql.drsrct_col.index("dct_chain")]
+-                    acno = dct[self.sql.drsrct_col.index("dct_acno")]
++                    self.chain = dct[self.sql.drsrct_col.index("dct_chain")]
++                    self.acno = dct[self.sql.drsrct_col.index("dct_acno")]
+                     nxt += 1
+-                    ref = "RC%03i%04i" % (num, nxt)
+-                    detail = dct[self.sql.drsrct_col.index("dct_detail")]
+-                    amnt = dct[self.sql.drsrct_col.index("dct_amnt")]
+-                    vmnt = round(amnt * rte / 100, 2)
+-                    tmnt = float(ASD(amnt) + ASD(vmnt))
+-                    tot_val = float(ASD(tot_val) + ASD(amnt))
+-                    tot_vat = float(ASD(tot_vat) + ASD(vmnt))
++                    self.ref = "RC%03i%04i" % (num, nxt)
++                    self.detail = dct[self.sql.drsrct_col.index("dct_detail")]
++                    self.amnt = dct[self.sql.drsrct_col.index("dct_amnt")]
++                    self.vmnt = round(self.amnt * self.rte / 100, 2)
++                    self.tmnt = float(ASD(self.amnt) + ASD(self.vmnt))
++                    tot_val = float(ASD(tot_val) + ASD(self.amnt))
++                    tot_vat = float(ASD(tot_vat) + ASD(self.vmnt))
+                     # Debtors (drstrn)
+-                    self.sql.insRec("drstrn", data=[self.opts["conum"], chain,
+-                        acno, 1, ref, self.bh.batno, trdt, self.ref2, tmnt,
+-                        vmnt, self.bh.curdt, detail, vat, "Y",
++                    self.sql.insRec("drstrn", data=[self.opts["conum"],
++                        self.chain, self.acno, 1, self.ref, self.bh.batno,
++                        self.trdt, self.ref2, self.tmnt, self.vmnt,
++                        self.bh.curdt, self.detail, vat, "Y",
+                         self.opts["capnm"], self.sysdtw, 0])
++                    if self.inv == "Y":
++                        # Create Invoice
++                        self.doInvoice()
+                     # VAT (ctlvtf)
+-                    amnt = float(ASD(0) - ASD(amnt))
+-                    vmnt = float(ASD(0) - ASD(vmnt))
+-                    data = [self.opts["conum"], vat, "O", self.bh.curdt, "D",
+-                        1, self.bh.batno, ref, trdt, acno, detail, amnt, vmnt,
+-                        0, self.opts["capnm"], self.sysdtw, 0]
++                    amnt = float(ASD(0) - ASD(self.amnt))
++                    vmnt = float(ASD(0) - ASD(self.vmnt))
++                    data = [self.opts["conum"], vat, "O", self.bh.curdt,
++                        "D", 1, self.bh.batno, self.ref, self.trdt, self.acno,
++                        self.detail, amnt, vmnt, 0, self.opts["capnm"],
++                        self.sysdtw, 0]
+                     self.sql.insRec("ctlvtf", data=data)
+                 if self.glint == "Y":
+                     ref = "RC%07i" % num
+                     # Update Debtors Control
+                     amnt = float(ASD(tot_val) + ASD(tot_vat))
+                     data = (self.opts["conum"], self.drsctl, self.bh.curdt,
+-                        trdt, 1, ref, self.bh.batno, amnt, 0, desc, "", "",
+-                        0, self.opts["capnm"], self.sysdtw, 0)
++                        self.trdt, 1, ref, self.bh.batno, amnt, 0, desc,
++                        "", "", 0, self.opts["capnm"], self.sysdtw, 0)
+                     self.sql.insRec("gentrn", data=data)
+                     # Update Sales Account
+                     amnt = float(ASD(0) - ASD(tot_val))
+-                    data = (self.opts["conum"], glac, self.bh.curdt, trdt, 1,
+-                        ref,
+-                        self.bh.batno, amnt, 0, desc, "", "", 0,
++                    data = (self.opts["conum"], glac, self.bh.curdt, self.trdt,
++                        1, ref, self.bh.batno, amnt, 0, desc, "", "", 0,
+                         self.opts["capnm"], self.sysdtw, 0)
+                     self.sql.insRec("gentrn", data=data)
+                     amnt = float(ASD(0) - ASD(tot_vat))
+                     if amnt:
+                         # Update VAT Control
+                         data = (self.opts["conum"], self.vatctl, self.bh.curdt,
+-                            trdt, 1, ref, self.bh.batno, amnt, 0, desc, "", "",
+-                            0, self.opts["capnm"], self.sysdtw, 0)
++                            self.trdt, 1, ref, self.bh.batno, amnt, 0, desc,
++                            "", "", 0, self.opts["capnm"], self.sysdtw, 0)
+                         self.sql.insRec("gentrn", data=data)
+                 # Update Recurring Charge (drsrcm)
+                 self.sql.updRec("drsrcm", cols=["dcm_last"],
+@@ -201,6 +231,118 @@
+             self.opts["mf"].dbm.commitDbase()
+         self.opts["mf"].closeLoop()
+ 
++    def doInvoice(self):
++        pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
++            "%s_%s" % (self.opts["conum"], self.acno), ext="pdf")
++        self.fpdf = MyFpdf(orientation="L", fmat="A4", name=__name__, head=128)
++        cw = self.fpdf.get_string_width("X")            # character width
++        ld = self.fpdf.font[2]
++        ica = CCD(self.tmnt, "SD", 13.2)
++        iva = CCD(float(ASD(self.tmnt) - ASD(self.amnt)), "SD", 13.2)
++        ivr = CCD(self.rte, "UD", 5.2)
++        self.drawInvoice(cw, ld)
++        self.fpdf.drawText(x=22.2*cw, y=21*ld, txt=self.detail)
++        self.fpdf.drawText(x=97*cw, y=21*ld, txt=ivr.disp)
++        self.fpdf.drawText(x=103*cw, y=21*ld, txt=ica.disp)
++        self.printTotals(cw, ld, ica, iva)
++        self.fpdf.output(pdfnam, "F")
++        if self.df.repprt[0][2] == "view":
++            view = "Y"
++        else:
++            view = "N"
++        if self.df.repprt[1][1] == "N" or not self.emadd.work:
++            mail = "N"
++        else:
++            mail = self.emadd.work
++        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], rep=pdfnam,
++            head="Invoice %s" % 1, view=view, prtnam=self.df.repprt[0][2],
++            mail=mail, printm=self.df.repprt[1][3])
++
++    def drawInvoice(self, cw, ld):
++        self.fpdf.add_page()
++        self.fpdf.setFont("courier", "B", 16)
++        self.fpdf.drawText(x=22*cw, y=1*ld, txt=self.ctm_name)
++        self.fpdf.setFont("courier", "B", 14)
++        if self.reprint:
++            txt = "Copy Tax Invoice"
++        else:
++            txt = "Tax Invoice"
++        self.fpdf.drawText(x=108*cw, y=2*ld, w=16, align="R", txt=txt)
++        self.fpdf.setFont("courier", "B", self.fpdf.font[1])
++        if self.ctm_logo:
++            self.fpdf.image(self.ctm_logo, 45, 3, 138, 28)
++        else:
++            self.fpdf.drawText(x=22*cw, y=2.5*ld, txt=self.ctm_add1)
++            self.fpdf.drawText(x=22*cw, y=3.5*ld, txt=self.ctm_add2)
++            self.fpdf.drawText(x=22*cw, y=4.5*ld, txt=self.ctm_add3)
++            self.fpdf.drawText(x=22*cw, y=5.5*ld, txt=self.ctm_pcode)
++            self.fpdf.drawText(x=54*cw, y=2.5*ld,
++                txt="RegNo: %s" % self.ctm_regno)
++            self.fpdf.drawText(x=54*cw, y=3.5*ld,
++                txt="TaxNo: %s" % self.ctm_taxno)
++            self.fpdf.drawText(x=54*cw, y=4.5*ld,
++                txt="TelNo: %s" % self.ctm_tel)
++            self.fpdf.drawText(x=54*cw, y=5.5*ld,
++                txt="FaxNo: %s" % self.ctm_fax)
++        drm = self.sql.getRec(tables="drsmst", where=[("drm_cono", "=",
++            self.opts["conum"]), ("drm_chain", "=", self.chain), ("drm_acno",
++            "=", self.acno)], limit=1)
++        col = self.sql.drsmst_col
++        self.fpdf.drawText(x=22.5*cw, y=10.5*ld, txt=drm[col.index("drm_name")])
++        self.fpdf.drawText(x=22.5*cw, y=11.5*ld, txt=drm[col.index("drm_add1")])
++        self.fpdf.drawText(x=22.5*cw, y=12.5*ld, txt=drm[col.index("drm_add2")])
++        self.fpdf.drawText(x=22.5*cw, y=13.5*ld, txt=drm[col.index("drm_add3")])
++        self.fpdf.drawText(x=22.5*cw, y=14.5*ld, txt=drm[col.index("drm_pcod")])
++        self.emadd = CCD(drm[col.index("drm_acc_email")], "TX")
++        # Tables
++        r1 = {
++            "margins": ((22.5, 53), (8, 9)),
++            "repeat": (1, 1),
++            "rows": [
++                [22, 8.5, [[32, 1.5, .8, "Charge To:", False]]],
++                [22, 10, [[32, 5.5]]],
++                [22, 16, [
++                    [9, 1.5, .8, "Acc-Num", True],
++                    [20, 1.5, .8, "V.A.T. Number", True],
++                    [42, 1.5, .8, "Contact Person", True],
++                    [12, 1.5, .8, "Date", True],
++                    [11, 1.5, .8, "Inv-Number", True]]],
++                [22, 17.5, [
++                    [9, 1.5, 0, self.acno, True],
++                    [20, 1.5, 0, drm[col.index("drm_vatno")], True],
++                    [42, 1.5, 0, drm[col.index("drm_sls")]],
++                    [12, 1.5, 0, CCD(self.trdt, "D1", 10).disp, True],
++                    [11, 1.5, 0, "%10s" % self.ref]]],
++                [22, 19, [
++                    [74, 1.5, .8, "Description", False],
++                    [7, 1.5, .8, "Tax-%", True],
++                    [13, 1.5, .8, "Value", True]]],
++                [22, 20.5, [
++                    [74, 12.5],
++                    [7, 12.5],
++                    [13, 12.5]]],
++                [22, 33, [
++                    [11, 1.5, .8, "Taxable"],
++                    [12, 1.5],
++                    [12, 1.5, .8, "Non-Taxable"],
++                    [12, 1.5],
++                    [11, 1.5, .8, "Total Tax"],
++                    [11, 1.5],
++                    [12, 1.5, .8, "Total Value"],
++                    [13, 1.5]]]]}
++        doDrawTable(self.fpdf, r1, cw=cw, ld=ld, font=False)
++
++    def printTotals(self, cw, ld, ica, iva):
++        tot = [0, 0, iva.work, ica.work]
++        if iva.work:
++            tot[0] = float(ASD(ica.work) - ASD(iva.work))
++        else:
++            tot[1] = ica.work
++        self.fpdf.drawText(x=32*cw, y=33.2*ld, txt=CCD(tot[0],"SD",13.2).disp)
++        self.fpdf.drawText(x=56*cw, y=33.2*ld, txt=CCD(tot[1],"SD",13.2).disp)
++        self.fpdf.drawText(x=78*cw, y=33.2*ld, txt=CCD(tot[2],"SD",13.2).disp)
++        self.fpdf.drawText(x=103*cw, y=33.2*ld, txt=CCD(tot[3],"SD",13.2).disp)
++
+     def doExit(self):
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2015-03-21 07:40:04 +0000
++++ gen/gl2030.py	2015-03-25 13:16:36 +0000
+@@ -145,6 +145,8 @@
+                 return
+         # Create SQL Object
+         self.sql = Sql(self.opts["mf"].dbm, tab, prog=__name__)
++        if self.sql.error:
++            return
+         if not self.incoac:
+             if self.doChkLoadCtls():
+                 return
+@@ -176,16 +178,18 @@
+         self.page4 = False
+         self.page5 = False
+         # Bank Import Codes
++        self.pcash = False
++        self.dorec = False
+         self.rctimp = False
+-        if self.opts["rtn"] == 7:
++        if self.opts["rtn"] == 3:
++            self.pcash = True
++        elif self.opts["rtn"] == 7:
+             imp = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
+                 self.opts["conum"]), ("ctl_code", "=", self.bh.ctl)], limit=1)
+             self.bankac = imp[self.sql.ctlctl_col.index("ctl_bankac")]
+             self.impfmt = imp[self.sql.ctlctl_col.index("ctl_impfmt")]
+             self.dtefmt = imp[self.sql.ctlctl_col.index("ctl_dtefmt")]
+             self.dorec = True
+-        else:
+-            self.dorec = False
+         self.cancel = False
+         self.agecan = False
+         self.batupd = False
+@@ -419,6 +423,8 @@
+                 "","N",self.doLonInt,None,None,None],
+             [["C",8,0,8],"IUD",12.2,"Ded-Amt","Deduction Amount",
+                 "","N",self.doLonDed,None,None,("efld",)]]
++        if self.pcash:
++            fld[2][10] = None
+         if not self.incoac:
+             fld[7][1] = "OUI"
+         cnd = [
+@@ -441,7 +447,7 @@
+             self.exitPage6,
+             self.exitPage7,
+             self.exitPage8]
+-        if self.opts["rtn"] in (2, 6) or self.dorec:
++        if self.opts["rtn"] in (2, 6) or self.pcash or self.dorec:
+             self.but = [
+                 ["Age _Normal",None,self.doAgeNormal,0,None,None,
+                     "Only Show Unallocated Transactions"],
+@@ -453,37 +459,40 @@
+                 ["Age _Current",None,self.doAgeCurrent,0,None,None,
+                     "Leave the Transaction Unallocated"]]
+         else:
+-            if self.opts["rtn"] == 3:
+-                fld[2][10] = None
+             self.but = []
+-        if self.dorec:
+-            sel = {
+-                "stype": "M",
+-                "func": self.doSelections}
+-            self.glt = {
+-                "stype": "R",
+-                "tables": ("gentrn",),
+-                "cols": (
+-                    ("glt_trdt", "", 0, "Date"),
+-                    ("glt_type", ("XX", gltrtp), 3, "Typ"),
+-                    ("glt_refno", "", 0, "Reference", "Y"),
+-                    ("glt_seq", "", 0, "Sequence"),
+-                    ("glt_tramt", "", 0, "Amount"),
+-                    ("glt_desc", "", 0, "Details")),
+-                "where": [
+-                    ("glt_cono", "=", self.opts["conum"]),
+-                    ("glt_acno", "=", self.bh.acc),
+-                    ("glt_recon", "=", 0)],
+-                "order": "glt_trdt, glt_type, glt_refno",
+-                "index": 2,
+-                "zero": "0"}
+-            fld.insert(2, [("C",1,0,0),"IUA",1,"T","Reference Type (P/D)",
+-                "P","Y",self.doTrnTyp,sel,None,("in", ("P","D"))])
++        if self.pcash or self.dorec:
++            if self.pcash:
++                sel = None
++                self.glt = None
++            else:
++                sel = {
++                    "stype": "M",
++                    "func": self.doSelections}
++                self.glt = {
++                    "stype": "R",
++                    "tables": ("gentrn",),
++                    "cols": (
++                        ("glt_trdt", "", 0, "Date"),
++                        ("glt_type", ("XX", gltrtp), 3, "Typ"),
++                        ("glt_refno", "", 0, "Reference", "Y"),
++                        ("glt_seq", "", 0, "Sequence"),
++                        ("glt_tramt", "", 0, "Amount"),
++                        ("glt_desc", "", 0, "Details")),
++                    "where": [
++                        ("glt_cono", "=", self.opts["conum"]),
++                        ("glt_acno", "=", self.bh.acc),
++                        ("glt_recon", "=", 0)],
++                    "order": "glt_trdt, glt_type, glt_refno",
++                    "index": 2,
++                    "zero": "0"}
++            fld.insert(2, [("C",1,0,0),"IUA",1,"T","Reference Type (P/R)",
++                "P","Y",self.doTrnTyp,sel,None,("in", ("P","R"))])
+             fld[3][0][3] = 1
+             fld[3][8] = self.glt
+             fld[4][0][3] = 2
+             fld[5][0][3] = 3
+             fld[6][0][3] = 4
++        if self.dorec:
+             self.but.insert(0, ("Exit",None,self.exitPage1,0,
+                 ("C",1,1),(("C",1,2),("C",1,5))))
+             self.but.insert(1, ("Import Bank File",None,self.doImpBank,0,
+@@ -657,12 +666,10 @@
+                 pay = line[self.sql.genrct_col.index("grt_payee")][:20]
+                 amt = line[self.sql.genrct_col.index("grt_amount")]
+                 lines.append([dte, mem, ref, pay, amt])
+-            #state = self.df.disableButtonsTags()
+             but = [("Create Import Record", self.doImpRec, True)]
+             sc = SChoice(self.opts["mf"], scrn=self.opts["mf"].body,
+                 titl=titl, head=head, data=lines, typs=types, retn="I",
+                 mode="S", butt=but)
+-            #self.df.enableButtonsTags(state=state)
+             if sc.selection is None:
+                 break
+             index = sc.selection
+@@ -674,7 +681,7 @@
+                 self.opts["rtn"] = 2
+                 self.trnamt = float(ASD(0) - ASD(amount))
+             else:
+-                self.typ = "D"
++                self.typ = "R"
+                 self.opts["rtn"] = 6
+                 self.trnamt = amount
+             p = self.df.pos
+@@ -887,24 +894,26 @@
+ 
+     def doTrnTyp(self, frt, pag, r, c, p, i, w):
+         self.typ = w
+-        if not self.dorec:
++        if not self.pcash and not self.dorec:
+             return "ok"
+-        chk = self.doCheckRecords()
+-        if chk:
+-            return chk
++        if self.dorec:
++            chk = self.doCheckRecords()
++            if chk:
++                return chk
+         if self.typ == "P":
+             self.opts["rtn"] = 2
+-        elif self.typ == "D":
++        else:
+             self.opts["rtn"] = 6
+-        self.df.colf[1][1][8]["where"] = [
+-            ("glt_cono", "=", self.opts["conum"]),
+-            ("glt_acno", "=", self.bh.acc),
+-            ("glt_type", "=", self.opts["rtn"]),
+-            ("glt_recon", "=", 0)]
+-        try:
+-            self.df.rs.selection = None
+-        except:
+-            pass
++        if self.dorec:
++            self.df.colf[1][1][8]["where"] = [
++                ("glt_cono", "=", self.opts["conum"]),
++                ("glt_acno", "=", self.bh.acc),
++                ("glt_type", "=", self.opts["rtn"]),
++                ("glt_recon", "=", 0)]
++            try:
++                self.df.rs.selection = None
++            except:
++                pass
+ 
+     def doCheckRecords(self):
+         data = self.doReadRct()
+@@ -917,7 +926,7 @@
+             return "rf"
+ 
+     def doTrnRef(self, frt, pag, r, c, p, i, w):
+-        if self.opts["rtn"] == 3 and not w:
++        if self.pcash and not w:
+             a = self.sql.getRec(tables="gentrn", cols=["glt_refno"],
+                 where=[("glt_cono", "=", self.opts["conum"]), ("glt_acno", "=",
+                 self.conacc),("glt_refno", "like", "PC_______")],
+@@ -1074,7 +1083,7 @@
+         if not self.ctlctl:
+             return "rf"
+         ctls = ["vat_ctl"]
+-        if self.opts["rtn"] in (2, 6, 7):
++        if self.opts["rtn"] in (2, 3, 6, 7):
+             if self.ass_gl == "Y":
+                 ctls.append("ass_sls")
+             if self.bkm_gl == "Y":
+@@ -1117,7 +1126,7 @@
+         self.othtot = 0
+         self.vattot = 0
+         dic = self.sql.genmst_dic
+-        if self.opts["rtn"] in (2, 6) or self.dorec:
++        if self.opts["rtn"] in (2, 6):
+             if self.ass_gl == "Y" and w in self.assctl:
+                 self.others = "ass"
+             elif self.bkm_gl == "Y" and w == self.ctlctl["bkm_ctl"]:
+@@ -1376,38 +1385,42 @@
+             self.curdt = self.trndat / 100
+         else:
+             self.curdt = self.bh.curdt
++        if self.pcash:
++            self.glrtn = 3
++        else:
++            self.glrtn = self.opts["rtn"]
+         if self.opts["rtn"] == 1:                          # Sales
+             self.rflag = 0
+             self.vtyp = "O"
+             self.debit(pag)
+         elif self.opts["rtn"] == 2:                        # Payments
+-            self.conacc = self.bh.acc
+-            if self.dorec:
+-                self.rflag = self.bh.curdt
+-            elif not self.trnamt:
+-                self.rflag = self.curdt
++            if self.pcash:
++                self.rflag = 0
+             else:
+-                self.rflag = 0
+-            self.vtyp = "I"
+-            self.credit(pag)
+-        elif self.opts["rtn"] == 3:                        # Petty Cash
+-            self.rflag = 0
+-            self.vtyp = "I"
+-            self.credit(pag)
+-        elif self.opts["rtn"] == 4:                        # Journal Entries
+-            pass
++                self.conacc = self.bh.acc
++                if self.dorec:
++                    self.rflag = self.bh.curdt
++                elif not self.trnamt:
++                    self.rflag = self.curdt
++                else:
++                    self.rflag = 0
++            self.vtyp = "I"
++            self.credit(pag)
+         elif self.opts["rtn"] == 5:                        # Purchases
+             self.rflag = 0
+             self.vtyp = "I"
+             self.credit(pag)
+         elif self.opts["rtn"] == 6:                        # Receipts
+-            self.conacc = self.bh.acc
+-            if self.dorec:
+-                self.rflag = self.bh.curdt
+-            elif not self.trnamt:
+-                self.rflag = self.curdt
++            if self.pcash:
++                self.rflag = 0
+             else:
+-                self.rflag = 0
++                self.conacc = self.bh.acc
++                if self.dorec:
++                    self.rflag = self.bh.curdt
++                elif not self.trnamt:
++                    self.rflag = self.curdt
++                else:
++                    self.rflag = 0
+             self.vtyp = "O"
+             self.debit(pag)
+ 
+@@ -1415,7 +1428,7 @@
+         if pag == 1:
+             amt = self.trnamt
+             data = (self.opts["conum"], self.conacc, self.curdt, self.trndat,
+-                self.opts["rtn"], self.trnref, self.bh.batno, amt, 0.00,
++                self.glrtn, self.trnref, self.bh.batno, amt, 0.00,
+                 self.trndet, "", "N", self.rflag, self.opts["capnm"],
+                 self.sysdtw, 0)
+             self.sql.insRec("gentrn", data=data)
+@@ -1428,7 +1441,7 @@
+         if pag == 1:
+             amt = float(ASD(0) - ASD(self.trnamt))
+             data = (self.opts["conum"], self.conacc, self.curdt, self.trndat,
+-                self.opts["rtn"], self.trnref, self.bh.batno, amt, 0.00,
++                self.glrtn, self.trnref, self.bh.batno, amt, 0.00,
+                 self.trndet, "", "N", self.rflag, self.opts["capnm"],
+                 self.sysdtw, 0)
+             self.sql.insRec("gentrn", data=data)
+@@ -1439,7 +1452,7 @@
+ 
+     def restDebitCredit(self, amt, vat):
+         data = (self.allcoy, self.accnum, self.curdt, self.trndat,
+-            self.opts["rtn"], self.trnref, self.bh.batno, amt, vat,
++            self.glrtn, self.trnref, self.bh.batno, amt, vat,
+             self.alldet, self.vatcod, "", 0, self.opts["capnm"],
+             self.sysdtw, 0)
+         self.sql.insRec("gentrn", data=data)
+@@ -1449,7 +1462,7 @@
+                 self.allcoy)], limit=1)[0]
+             val = float(ASD(amt) + ASD(vat))
+             data = (self.opts["conum"], acc, self.curdt, self.trndat,
+-                self.opts["rtn"], self.trnref, self.bh.batno, val, 0.00,
++                self.glrtn, self.trnref, self.bh.batno, val, 0.00,
+                 self.alldet, self.vatcod, "", 0, self.opts["capnm"],
+                 self.sysdtw, 0)
+             self.sql.insRec("gentrn", data=data)
+@@ -1458,19 +1471,19 @@
+                 self.opts["conum"])], limit=1)[0]
+             val = float(ASD(0) - ASD(amt) - ASD(vat))
+             data = (self.allcoy, acc, self.curdt, self.trndat,
+-                self.opts["rtn"], self.trnref, self.bh.batno, val, 0.00,
++                self.glrtn, self.trnref, self.bh.batno, val, 0.00,
+                 self.alldet, self.vatcod, "", 0, self.opts["capnm"],
+                 self.sysdtw, 0)
+             self.sql.insRec("gentrn", data=data)
+         if self.vatcod:
+             if vat:
+                 data = (self.allcoy, self.convat, self.curdt, self.trndat,
+-                    self.opts["rtn"], self.trnref, self.bh.batno, vat, 0.00,
++                    self.glrtn, self.trnref, self.bh.batno, vat, 0.00,
+                     self.alldet, self.vatcod, "", 0, self.opts["capnm"],
+                     self.sysdtw, 0)
+                 self.sql.insRec("gentrn", data=data)
+             data = (self.allcoy, self.vatcod, self.vtyp, self.curdt, "G",
+-                self.opts["rtn"], self.bh.batno, self.trnref, self.trndat,
++                self.glrtn, self.bh.batno, self.trnref, self.trndat,
+                 self.accnum, self.alldet, amt, vat, 0,self.opts["capnm"],
+                 self.sysdtw, 0)
+             self.sql.insRec("ctlvtf", data=data)
+@@ -1841,7 +1854,7 @@
+                 self.assgrp), ("ast_code", "=", self.asscod)], limit=1)
+             if amt[0]:
+                 data = [self.opts["conum"], self.ctlctl["ass_sls"], self.curdt,
+-                    self.trndat, self.opts["rtn"], self.trnref, self.bh.batno,
++                    self.trndat, self.glrtn, self.trnref, self.bh.batno,
+                     amt[0], 0, self.alldet, "N", "", 0, self.opts["capnm"],
+                     self.sysdtw, 0]
+                 self.sql.insRec("gentrn", data=data)
+
+=== modified file 'gen/gl2040.py'
+--- gen/gl2040.py	2015-03-04 16:05:59 +0000
++++ gen/gl2040.py	2015-03-21 11:53:02 +0000
+@@ -402,6 +402,14 @@
+         else:
+             self.drs_gl = "N"
+             self.drs_ch = "N"
++        # Load Lon Integration
++        if mod.count("SL"):
++            ctl = self.gc.getCtl("wagctl", self.allcoy)
++            if not ctl:
++                return "rf"
++            self.lon_gl = ctl["ctw_glint"]
++        else:
++            self.lon_gl = "N"
+         # Load Mem Integration
+         if mod.count("ML"):
+             ctl = self.gc.getCtl("memctl", self.allcoy)
+@@ -429,6 +437,8 @@
+             ctls.append("crs_ctl")
+         if self.drs_gl == "Y":
+             ctls.append("drs_ctl")
++        if self.lon_gl == "Y":
++            ctls.append("wag_slc")
+         if self.mem_gl == "Y":
+             ctls.append("mem_ctl")
+         if self.gc.chkRec(self.allcoy, self.ctlctl, ctls):
+@@ -469,6 +479,8 @@
+             ctl = True
+         elif self.drs_gl == "Y" and w == self.ctlctl["drs_ctl"]:
+             ctl = True
++        elif self.lon_gl == "Y" and w == self.ctlctl["wag_slc"]:
++            ctl = True
+         elif self.mem_gl == "Y" and w == self.ctlctl["mem_ctl"]:
+             ctl = True
+         elif self.rtl_gl == "Y" and w in self.rtlctl:
+@@ -476,8 +488,8 @@
+         else:
+             ctl = False
+         if ctl:
+-            cf = PwdConfirm(self.opts["mf"], conum=self.allcoy, system="GEN",
+-                code="CtlAcc")
++            cf = PwdConfirm(self.opts["mf"], conum=self.allcoy,
++                system="GEN", code="CtlAcc")
+             if not cf.pwd or cf.flag == "no":
+                 return "This Is An Integrated Control Account"
+         elif acc[dic["glm_ind"][1]] == "N":
+
+=== removed file 'img/bowl.png'
+Binary files img/bowl.png	2014-03-28 07:32:49 +0000 and img/bowl.png	1970-01-01 00:00:00 +0000 differ
+=== removed file 'img/bowls.jpg'
+Binary files img/bowls.jpg	2014-03-28 07:32:49 +0000 and img/bowls.jpg	1970-01-01 00:00:00 +0000 differ
+=== added file 'img/bowls.png'
+Binary files img/bowls.png	1970-01-01 00:00:00 +0000 and img/bowls.png	2015-04-01 10:13:06 +0000 differ
+=== removed file 'img/check.gif'
+Binary files img/check.gif	2014-03-28 07:32:49 +0000 and img/check.gif	1970-01-01 00:00:00 +0000 differ
+=== added file 'img/check.png'
+Binary files img/check.png	1970-01-01 00:00:00 +0000 and img/check.png	2015-04-01 10:31:25 +0000 differ
+=== removed file 'img/properties.png'
+Binary files img/properties.png	2015-02-25 16:45:19 +0000 and img/properties.png	1970-01-01 00:00:00 +0000 differ
+=== removed file 'img/tartan.gif'
+Binary files img/tartan.gif	2014-03-28 07:32:49 +0000 and img/tartan.gif	1970-01-01 00:00:00 +0000 differ
+=== added file 'img/tartan.png'
+Binary files img/tartan.png	1970-01-01 00:00:00 +0000 and img/tartan.png	2015-04-01 10:26:13 +0000 differ
+=== removed file 'img/uncheck.gif'
+Binary files img/uncheck.gif	2014-03-28 07:32:49 +0000 and img/uncheck.gif	1970-01-01 00:00:00 +0000 differ
+=== added file 'img/uncheck.png'
+Binary files img/uncheck.png	1970-01-01 00:00:00 +0000 and img/uncheck.png	2015-04-01 10:31:30 +0000 differ
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2015-02-22 09:42:02 +0000
++++ men/rnemen.py	2015-03-23 20:11:34 +0000
+@@ -77,7 +77,8 @@
+     ["PNNN","mm_uy","pw1010",5,"Server User Maintenance"],
+     ["PNNN","mm_uy","ss1010",1,"Stock Sheets"],
+     ["PNNN","mm_uy","tp1010",5,"Template Manager"],
+-    ["F","mm_hp","doAbout",0,"About"]]
++    ["F","mm_hp","doAbout",0,"About"],
++    ["F","mm_hp","doManual",0,"Reference Manual"]]
+ 
+ # General Ledger Routines
+ glmen = [
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-03-21 07:40:04 +0000
++++ mst/ms0000.py	2015-04-02 19:31:54 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 10)
++    VERSION = (5, 0, 11)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2015-03-21 07:40:04 +0000
++++ mst/msc000.py	2015-04-01 10:53:27 +0000
+@@ -359,7 +359,7 @@
+         else:
+             self.image = False
+         if self.image:
+-            image = os.path.join(self.rcdic["prgdir"], "img", "tartan.gif")
++            image = os.path.join(self.rcdic["prgdir"], "img", "tartan.png")
+         else:
+             image = None
+         self.tarmen = TartanMenu(mf=self.mf, usr=self.user["name"],
+
+=== modified file 'scp/sc3010.py'
+--- scp/sc3010.py	2014-12-30 15:37:38 +0000
++++ scp/sc3010.py	2015-04-01 10:24:57 +0000
+@@ -29,7 +29,7 @@
+         t = time.localtime()
+         self.sysdt = time.strftime("%d %B %Y %H:%M:%S", t)
+         self.image = os.path.join(self.opts["mf"].rcdic["prgdir"], "img",
+-            "bowls.jpg")
++            "bowls.png")
+ 
+     def mainProcess(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-03-21 07:40:04 +0000
++++ std/TartanClasses.py	2015-04-01 14:09:17 +0000
+@@ -463,8 +463,7 @@
+             bar.pack(side="top", fill="x", padx=2, pady=2)
+             lbtn = ArrowButton(bar, direction="left", command=self._prev_month)
+             rbtn = ArrowButton(bar, direction="right", command=self._next_month)
+-            self._header = MyLabel(bar, anchor="center", text="",
+-                font=self._font)
++            self._header = MyLabel(bar, anchor="c", text="", font=self._font)
+             lbtn.grid(row=0, column=0, sticky="w")
+             self._header.grid(row=0, column=1, padx=6)
+             rbtn.grid(row=0, column=2, sticky="w")
+@@ -781,8 +780,7 @@
+                 self.frame.place(anchor="center", relx=0.5, rely=0.5)
+             # Save and clear toplevel bindings
+             self.topbinds = unbindAllWidgets(self.frame)
+-            tit = MyLabel(self.frame, text=title, anchor="center",
+-                relief="raised")
++            tit = MyLabel(self.frame, text=title, anchor="c", relief="raised")
+             tit.pack(fill="x", expand="yes", ipadx=2, ipady=5)
+             try:
+                 image = Image.open(os.path.join(getPrgPath(), "img",
+@@ -971,6 +969,7 @@
+ 
+         mf   = Mainframe
+         titl = "Title Description" or ["aaaaaa", "bbbbbb"]
++        icon = The icon to use for the window
+         chgt = The number of rows per cell, default = 1
+         tags = [(name, color), (name, color)]
+         labs = [(text, width), (text, width), (text, width)]
+@@ -988,6 +987,8 @@
+         minc = Minimum columns to show
+         """
+         def __init__(self, **opts):
++            if not "icon" in opts:
++                opts["icon"] = None
+             if not "chgt" in opts:
+                 opts["chgt"] = 1
+             if not "loop" in opts:
+@@ -1001,7 +1002,8 @@
+             if "mess" in self.opts:
+                 self.sp = SplashScreen(None, self.opts["mess"])
+             # Draw main window
+-            self.window = MkWindow(modal=True, remov=True).newwin
++            self.window = MkWindow(icon=self.opts["icon"], modal=True,
++                remov=True).newwin
+             ww = int(self.window.winfo_screenwidth())
+             wh = int(self.window.winfo_screenheight())
+             self.window.maxsize(width=ww, height=wh)
+@@ -1375,13 +1377,9 @@
+                     sys.exit()
+                 if not title:
+                     title = "Tartan Systems - (%s P Malherbe)" % u"\u00A9"
+-                self.window = MkWindow(tk=True, title=title, resiz=False).newwin
+-                try:
+-                    self.window.tk.call("wm", "iconphoto", self.window._w,
+-                        tk.PhotoImage(file=os.path.join(self.rcdic["prgdir"],
+-                        "img", "tartan.gif")))
+-                except:
+-                    pass
++                icon = os.path.join(self.rcdic["prgdir"], "img", "tartan.png")
++                self.window = MkWindow(tk=True, title=title, icon=icon,
++                        resiz=False).newwin
+                 self.setThemeFont()
+                 self.createChildren()
+             else:
+@@ -1539,6 +1537,7 @@
+     Valid Arguments:
+         tk      True = Use Tk() else Toplevel()
+         title   The title of the window
++        icon    The icon to use for the window
+         size    The size of the window
+         resiz   Whether the window is resizable
+         trans   The window which this window is transient to
+@@ -1548,8 +1547,8 @@
+         remov   Whether this window is removable
+     """
+     def __init__(self, **args):
+-        for arg in ("tk", "title", "size", "resiz", "trans", "decor", "frame",
+-                "modal", "remov"):
++        for arg in ("tk", "title", "icon", "size", "resiz", "trans",
++                "decor", "frame", "modal", "remov"):
+             if arg in args:
+                 setattr(self, arg, args[arg])
+             elif arg == "decor":
+@@ -1582,6 +1581,12 @@
+                 self.newwin = tk.Toplevel(self.trans.winfo_toplevel())
+         else:
+             self.newwin = tk.Toplevel()
++        if self.icon:
++            try:
++                self.newwin.tk.call("wm", "iconphoto", self.newwin._w,
++                    "-default", ImageTk.PhotoImage(Image.open(self.icon)))
++            except:
++                pass
+         self.newwin.protocol("WM_DELETE_WINDOW", self.doDestroyYes)
+         self.newwin.bind_all("<Tab>", lambda event: "break")
+         if self.size:
+@@ -6842,7 +6847,7 @@
+     font   - Font to use.
+     addh   - Additional height.
+     """
+-    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, loop=True, cmnd=None, butt=[], neww=True, deco=True, live=True, posn=0, fltr=False, scrl=True, font="TkHeadingFont", addh=0):
++    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, loop=True, cmnd=None, butt=[], neww=True, deco=True, live=True, posn=0, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", addh=0):
+         self.scrn = scrn
+         self.ocol = cols
+         if titl:
+@@ -6894,6 +6899,7 @@
+         self.posn = posn
+         self.fltr = fltr
+         self.scrl = scrl
++        self.styl = styl
+         self.font = tkFont.Font(font=font)
+         if self.font.cget("size") < 12:
+             self.font.configure(size=12)
+@@ -6917,8 +6923,15 @@
+         if self.neww:
+             if self.scrn:
+                 self.scrn.winfo_toplevel().config(cursor="watch")
+-            self.window = MkWindow(decor=self.deco, modal=True,
+-                title=self.titl, remov=False, resize=True).newwin
++            mkw = MkWindow(trans=self.scrn, decor=self.deco, modal=self.deco,
++                title=self.titl, remov=False, resize=True)
++            if not self.deco:
++                mkw.newwin.configure(bg="black", bd=3)
++                mkw.newwin.attributes("-topmost", False)
++                if self.titl:
++                    titl = MyLabel(mkw.newwin, text=self.titl, anchor="c")
++                    titl.pack(fill="x", expand="yes")
++            self.window = mkw.newwin
+             self.mstFrame = MyFrame(self.window)
+             self.mstFrame.pack(fill="both", expand="yes")
+         else:
+@@ -6944,8 +6957,7 @@
+         for num, col in enumerate(self.cols):
+             nams.append("%s%s" % (col, num))
+         style = ttk.Style()
+-        style.configure("Treeview",
+-            font=self.font,
++        style.configure(self.styl, font=self.font,
+             rowheight=int(round(chgt * 1.5, 0)))
+         self.tree = ttk.Treeview(self.mstFrame, columns=nams,
+             height=self.lines, show=show, selectmode=self.mode)
+@@ -6998,9 +7010,9 @@
+         if self.chek:
+             try:
+                 self.unchek = tk.PhotoImage(file=os.path.join(getPrgPath(),
+-                    "img", "uncheck.gif"))
++                    "img", "uncheck.png"))
+                 self.dochek = tk.PhotoImage(file=os.path.join(getPrgPath(),
+-                    "img", "check.gif"))
++                    "img", "check.png"))
+                 self.tree.heading("#0",image=self.unchek, anchor="e",
+                     command=functools.partial(self.doToggle, "all"))
+                 self.tree.column("#0", anchor="e", width=43, minwidth=43,
+@@ -7008,7 +7020,7 @@
+             except:
+                 if self.neww:
+                     placeWindow(self.window, parent=self.scrn, expose=True)
+-                showError(self.window, "Image", "Missing uncheck and check gif")
++                showError(self.window, "Image", "Missing uncheck and check png")
+                 return
+         for num, col in enumerate(self.cols):
+             if not col:
+@@ -7535,7 +7547,7 @@
+                 self.pbframe.place(anchor="center", relx=0.5, rely=0.5)
+             else:
+                 self.pbframe.pack(pady=10)
+-        self.txtlab = MyLabel(self.pbframe,text=text,anchor="center",width=60)
++        self.txtlab = MyLabel(self.pbframe, text=text, anchor="c", width=60)
+         self.txtlab.pack(anchor="n", fill="x", expand="yes")
+         self.pbar = ttk.Progressbar(self.pbframe, mode=mode,
+             length=self.txtlab.winfo_width())
+@@ -8497,8 +8509,8 @@
+     def doAllocate(self):
+         # Scrolled Selection
+         self.lb = SelectChoice(self.mf.window, "Available Transactions",
+-            self.cols, self.work, sort=False, loop=False, cmnd=self.enterAll,
+-            posn=self.posn, addh=80)
++            self.cols, self.work, deco=False, sort=False, loop=False,
++            cmnd=self.enterAll, posn=self.posn, addh=80)
+         # Allocation Fields
+         hbox = MyFrame(self.lb.window)
+         hbox.pack(fill="x", expand="yes")
+@@ -15762,8 +15774,8 @@
+         self.tipwindow = None
+         self.x = self.y = 0
+         self.widget.bind("<Enter>", self.showTip)
++        self.widget.bind("<Leave>", self.hideTip)
+         self.widget.bind("<FocusIn>", self.showTip)
+-        self.widget.bind("<Leave>", self.hideTip)
+         self.widget.bind("<FocusOut>", self.hideTip)
+ 
+     def showTip(self, event=None):
+
+=== modified file 'wag/wg2020.py'
+--- wag/wg2020.py	2015-03-21 07:40:04 +0000
++++ wag/wg2020.py	2015-04-01 18:59:49 +0000
+@@ -245,10 +245,9 @@
+             else:
+                 pb = ProgressBar(self.opts["mf"].body, mxs=len(recs))
+             for num, emp in enumerate(recs):
+-                if self.preview == "Y":
+-                    pb.displayProgress(num)
+-                    if self.preview == "Y" and pb.quit:
+-                        break
++                pb.displayProgress(num)
++                if self.preview == "Y" and pb.quit:
++                    break
+                 self.doProcess(emp)
+             pb.closeProgress()
+             if self.preview == "Y" and pb.quit:
+

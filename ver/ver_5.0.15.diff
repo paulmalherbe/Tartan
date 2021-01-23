@@ -1,0 +1,2449 @@
+=== modified file '.bzrignore'
+--- .bzrignore	2015-04-02 19:32:07 +0000
++++ .bzrignore	2015-05-01 12:02:23 +0000
+@@ -31,6 +31,7 @@
+ doc/tarlic.pdf
+ doc/tarlic.rst
+ doc/Tartan.rst
++doc/postfix_vacation.txt
+ doc/vnc_setup.rst
+ doc/volmoed_client.sh
+ doc/WinPkg.txt
+
+=== modified file 'ass/ar2020.py'
+--- ass/ar2020.py	2015-02-07 06:31:11 +0000
++++ ass/ar2020.py	2015-05-20 09:05:57 +0000
+@@ -152,7 +152,7 @@
+                 "","N",self.doRorAmt,None,None,None),
+             (("C",1,0,8),"IUA",1,"V","V.A.T Code",
+                 "C","N",self.doVatCod,vtm,None,("notblank",)),
+-            (("C",1,0,9),"ISD",11.2,"V.A.T","V.A.T Amount",
++            (("C",1,0,9),"ISD",13.2,"V.A.T","V.A.T Amount",
+                 "","N",self.doVatAmt,None,None,None),
+             (("C",1,0,10),"INA",(13,30),"Details","Transaction Details",
+                 "","N",self.doTrnDet,None,None,None)]
+
+=== modified file 'ass/ar4010.py'
+--- ass/ar4010.py	2015-02-11 16:45:23 +0000
++++ ass/ar4010.py	2015-05-20 09:06:13 +0000
+@@ -188,8 +188,8 @@
+             ("ast_type", "Typ", 3, ("XX", artrtp), "N"),
+             ("ast_mtyp", "Mov", 3, ("XX", armvtp), "N"),
+             ("ast_refno", "Reference", 9, "Na", "Y"),
+-            ("ast_amt1", "  Amount-1", 11.2, "SD", "N"),
+-            ("ast_amt2", "  Amount-2", 11.2, "SD", "N"),
++            ("ast_amt1", "  Amount-1", 13.2, "SD", "N"),
++            ("ast_amt2", "  Amount-2", 13.2, "SD", "N"),
+             ("ast_desc", "Details", 30, "NA", "N"),
+             ("ast_seq", "Sequence", 8, "UI", "N"))
+         whr = [
+
+=== modified file 'bkm/bk1010.py'
+--- bkm/bk1010.py	2015-04-24 13:45:12 +0000
++++ bkm/bk1010.py	2015-05-20 09:13:48 +0000
+@@ -225,12 +225,13 @@
+             ("sname", "Surname", 20, "TX", "Y"),
+             ("names", "Names", 20, "TX", "F"),
+             ("group", "Group", 30, "TX", "F"),
+-            ("arrive", "Arrival-Dt", 10, "d1", "F")]
++            ("arrive", "Arrival-Dt", 10, "d1", "F"),
++            ("state", "S", 1, "UA", "F")]
+         data = self.sql.getRec(
+             tables=["bkmmst", "bkmcon"],
+             cols=[
+                 "bkm_number", "bkc_sname", "bkc_names",
+-                "bkm_group", "bkm_arrive"],
++                "bkm_group", "bkm_arrive", "bkm_state"],
+             where=[
+                 ("bkm_cono", "=", self.opts["conum"]),
+                 ("bkc_cono=bkm_cono",),
+@@ -268,10 +269,10 @@
+         if data[2]:
+             text = "%s\n%-10s %s" % (text, "Group:", data[2])
+         text = "%s\n%-10s %s" % (text, "Guests:", data[3])
+-        val = CCD(data[5], "SD", 11.2).disp
++        val = CCD(data[5], "SD", 13.2).disp
+         text = "%s\n\n%-10s R%s" % (text, "Value:", val)
+         if data[4] == "Q":
+-            dep = CCD(data[6], "SD", 11.2).disp
++            dep = CCD(data[6], "SD", 13.2).disp
+             text = "%s\n%-10s R%s" % (text, "Deposit:", dep)
+         else:
+             bal = self.sql.getRec(tables="bkmtrn",
+@@ -280,13 +281,13 @@
+                 ("bkt_type", "<>", 1)], limit=1)
+             if bal[0] is None:
+                 if data[4] == "C":
+-                    bal = CCD(data[5], "SD", 11.2).disp
++                    bal = CCD(data[5], "SD", 13.2).disp
+                 else:
+-                    bal = CCD(0, "SD", 11.2).disp
++                    bal = CCD(0, "SD", 13.2).disp
+             elif not bal[0] and data[4] == "C":
+-                bal = CCD(data[5], "SD", 11.2).disp
++                bal = CCD(data[5], "SD", 13.2).disp
+             else:
+-                bal = CCD(bal[0], "SD", 11.2).disp
++                bal = CCD(bal[0], "SD", 13.2).disp
+             text = "%s\n%-10s R%s" % (text, "Balance:", bal)
+             if data[7]:
+                 text = "%s\n\n%s" % (text, data[7])
+
+=== modified file 'bkm/bk1020.py'
+--- bkm/bk1020.py	2015-04-02 19:32:07 +0000
++++ bkm/bk1020.py	2015-05-20 09:17:11 +0000
+@@ -147,16 +147,16 @@
+             (("T",1,6,0),("IRB",r2s),0,"Units","",
+                 "C","N",self.doUnits,None,None,None),
+             (("T",1,6,0),"OTv",45,""),
+-            (("T",1,7,0),"OSD",11.2,"Value"),
+-            (("T",1,8,0),"ISD",11.2,"Initial Deposit","",
++            (("T",1,7,0),"OSD",13.2,"Value"),
++            (("T",1,8,0),"ISD",13.2,"Initial Deposit","",
+                 0,"N",self.doDeposit,None,None,None),
+             (("T",1,9,0),"ID1",10,"Initial Dep Due","",
+                 0,"N",self.doDepdate,None,None,None),
+-            (("T",1,10,0),"ISD",11.2,"Additional Deposit","",
++            (("T",1,10,0),"ISD",13.2,"Additional Deposit","",
+                 0,"N",self.doDeposit,None,None,None),
+             (("T",1,11,0),"Id1",10,"Additional Dep Due","",
+                 0,"N",self.doDepdate,None,None,None),
+-            (("T",1,12,0),"OSD",11.2,"Account Balance"),
++            (("T",1,12,0),"OSD",13.2,"Account Balance"),
+             (("T",1,13,0),"ITX",65,"Remarks","",
+                 "","N",self.doRemarks,None,None,None),
+             (("T",1,14,0),("ORB",r3s),0,"Booking Status"),
+@@ -1193,9 +1193,9 @@
+         else:
+             dft = "1"
+         fld = [
+-            (("T",0,0,0),"OSD",11.2,"S-Deposit"),
+-            (("T",0,0,0),"OSD",11.2,"G-Deposit"),
+-            (("T",0,0,0),"OSD",11.2,"Balance"),
++            (("T",0,0,0),"OSD",13.2,"S-Deposit"),
++            (("T",0,0,0),"OSD",13.2,"G-Deposit"),
++            (("T",0,0,0),"OSD",13.2,"Balance"),
+             (("T",0,1,0),("IRB",r1s),0,"Type","",
+                 "1","Y",self.doTType,None,None,None),
+             (("T",0,2,0),("IRB",r2s),0,"Method","",
+@@ -1203,7 +1203,7 @@
+             (("T",0,3,0),"ID1",10,"Date","",
+                 self.sysdtw,"N",self.doTDate,None,None,("efld",)),
+             (("T",0,4,0),"ONa",9,"Reference"),
+-            (("T",0,5,0),"ISD",11.2,"Amount","",
++            (("T",0,5,0),"ISD",13.2,"Amount","",
+                 0,"N",self.doTAmount,None,None,("notzero",)),
+             (("T",0,6,0),"ITX",30,"Details","",
+                 "","N",self.doTDesc,None,None,None)]
+@@ -1218,7 +1218,7 @@
+         fld.extend([
+             (("T",0,idx,0),"IUA",1,"VAT Code","",
+                 0,"N",self.doTVcod,None,None,None),
+-            (("T",0,idx+1,0),"ISD",11.2,"VAT Amount","",
++            (("T",0,idx+1,0),"ISD",13.2,"VAT Amount","",
+                 0,"N",self.doTVamt,None,None,("efld",))])
+         state = self.df.disableButtonsTags()
+         widget = self.df.getWidget(self.df.frt, self.df.pag, self.df.pos)
+@@ -1485,7 +1485,7 @@
+                 ("bkt_batch", "Batch", 7, "Na", "N"),
+                 ("bkt_type", "Typ", 3, ("XX", bktrtp), "N"),
+                 ("bkt_refno", "Reference", 9, "Na", "Y"),
+-                ("bkt_tramt", "    Amount", 11.2, "SD", "N"),
++                ("bkt_tramt", "    Amount", 13.2, "SD", "N"),
+                 ("bkt_desc", "Details", 30, "NA", "N"))
+             state = self.df.disableButtonsTags()
+             self.mprint = False
+@@ -1767,19 +1767,19 @@
+             nd["%s_T%02i" % (t, s)][tc.index("tpd_x2")] = 200
+             return
+         if self.inv:
+-            rc = CCD(float(ASD(bl.work) - ASD(self.value)), "SD", 11.2)
++            rc = CCD(float(ASD(bl.work) - ASD(self.value)), "SD", 13.2)
+         else:
+             rc = bl
+-            bl = CCD(float(ASD(self.value) + ASD(rc.work)), "SD", 11.2)
++            bl = CCD(float(ASD(self.value) + ASD(rc.work)), "SD", 13.2)
+         if self.state == "Q":
+-            od = CCD(float(ASD(bw[9]) + ASD(bw[11])), "SD", 11.2)
+-            da = CCD(float(ASD(self.value) - ASD(od.work)), "SD", 11.2)
++            od = CCD(float(ASD(bw[9]) + ASD(bw[11])), "SD", 13.2)
++            da = CCD(float(ASD(self.value) - ASD(od.work)), "SD", 13.2)
+         elif self.state == "C" and bw[11]:
+-            od = CCD(float(ASD(bw[9]) + ASD(bw[11]) + ASD(rc.work)), "SD", 11.2)
+-            da = CCD(float(ASD(self.value) + ASD(rc.work)), "SD", 11.2)
++            od = CCD(float(ASD(bw[9]) + ASD(bw[11]) + ASD(rc.work)), "SD", 13.2)
++            da = CCD(float(ASD(self.value) + ASD(rc.work)), "SD", 13.2)
+         else:
+-            od = CCD(0, "SD", 11.2)
+-            da = CCD(float(ASD(self.value) + ASD(rc.work)), "SD", 11.2)
++            od = CCD(0, "SD", 13.2)
++            da = CCD(float(ASD(self.value) + ASD(rc.work)), "SD", 13.2)
+         s += 1
+         if self.state == "Q":
+             if bw[11]:
+@@ -1800,7 +1800,7 @@
+             nd["%s_C%02i" % (t, s)][tc.index("tpd_text")] = txt
+         elif bl.work:
+             txt = "Receipts:"
+-            dp = CCD(float(ASD(self.value) - ASD(bl.work)), "SD", 11.2)
++            dp = CCD(float(ASD(self.value) - ASD(bl.work)), "SD", 13.2)
+             nd["%s_T%02i" % (t, s)][tc.index("tpd_text")] = txt
+             nd["%s_C%02i" % (t, s)][tc.index("tpd_text")] = "R" + dp.disp
+         s += 1
+@@ -1855,9 +1855,9 @@
+             where=[("bkt_cono", "=", self.opts["conum"]), ("bkt_number",
+             "=", self.number), ("bkt_type", "<>", 1)], limit=1)
+         if not bal[0]:
+-            return CCD(0, "SD", 11.2)
++            return CCD(0, "SD", 13.2)
+         else:
+-            return CCD(bal[0], "SD", 11.2)
++            return CCD(bal[0], "SD", 13.2)
+ 
+     def setStatus(self, bal):
+         if self.state == "X":
+
+=== modified file 'bkm/bk3030.py'
+--- bkm/bk3030.py	2015-04-02 19:32:07 +0000
++++ bkm/bk3030.py	2015-05-20 09:24:44 +0000
+@@ -307,9 +307,9 @@
+                 else:
+                     dep = "-->"
+                 if not last == number and bal[0]:
+-                    amt = CCD(bal[0], "SD", 11.2).disp
++                    amt = CCD(bal[0], "SD", 13.2).disp
+                 else:
+-                    amt = CCD(0, "SD", 11.2).disp
++                    amt = CCD(0, "SD", 13.2).disp
+                 self.printLine(name, unit[0], unit[1], arr, dep, amt, hh)
+                 last = number
+         self.opts["mf"].dbm.commitDbase()
+@@ -401,7 +401,7 @@
+                 qty = CCD(quant, "UI", 3).disp
+                 arr = CCD(arrive, "NA", 3).disp
+                 dep = CCD(depart, "NA", 3).disp
+-                amt = CCD(bal[0], "SD", 11.2).disp
++                amt = CCD(bal[0], "SD", 13.2).disp
+                 lines.append([name, qty, arr, dep, amt, hh[:]])
+             if not self.fpdf.page or self.fpdf.get_y() + (totq * 8) > 280:
+                 self.fpdf.add_page()
+@@ -536,12 +536,12 @@
+             self.fpdf.drawText(font=["courier", "B", 12])
+             self.printLine("%-25s" % "Name or Group",
+                 "%-25s" % "Unit Description", "Qty", "Arr",
+-                "Dep", "   Balance ", (8, 8, 8), fill=1)
++                "Dep", "     Balance ", (8, 8, 8), fill=1)
+         else:
+             self.fpdf.drawText(font=["courier", "B", 12])
+             self.printLine("%-25s" % "Unit Description",
+                 "%-25s" % "Name or Group", "Qty", "Arr",
+-                "Dep", "   Balance ", (8, 8, 8), fill=1)
++                "Dep", "     Balance ", (8, 8, 8), fill=1)
+ 
+     def getDate(self, date):
+         if type(date) == str:
+@@ -603,7 +603,7 @@
+                 self.fpdf.drawText(e, x=x, y=y, w=w, h=hh[2], border=bdr,
+                     fill=fill, ctyp=ctyp, font=ft)
+             x += w
+-            w = self.fpdf.get_string_width("X"*12)
++            w = self.fpdf.get_string_width("X"*14)
+             if self.rtyp == "A":
+                 self.fpdf.drawText(f, x=x, y=y, w=w, h=hh[2], border="TLRB",
+                     fill=fill, font=ft)
+
+=== modified file 'crs/cr1010_rne.py'
+--- crs/cr1010_rne.py	2014-12-30 15:37:38 +0000
++++ crs/cr1010_rne.py	2015-05-18 12:00:55 +0000
+@@ -126,7 +126,9 @@
+             (("T",3,11,0),"Id2",7,"Period Start","",
+                 0,"N",None,None,None,("efld",)),
+             (("T",3,12,0),"Id2",7,"Period End","",
+-                0,"N",None,None,None,("efld",)))
++                0,"N",None,None,None,("efld",)),
++            (("T",3,13,0),"INA",10,"EFT Reference","",
++                "","N",None,None,None,("efld",)))
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,2),("T",3,0)),
+             ("Print",None,self.doPrint,0,("T",0,2),("T",3,0)),
+@@ -171,7 +173,7 @@
+                 limit=1)
+             if not self.ol2:
+                 self.ol2 = [self.opts["conum"], self.acno, 0, 0, 0, 0, "", 0,
+-                    "", "", 0, 0, 0, 0, 0]
++                    "", "", 0, 0, 0, 0, 0, ""]
+             for x in xrange(0, self.df.topq[3]):
+                 self.df.loadEntry("T", 3, x, data=self.ol2[x+2])
+ 
+
+=== modified file 'crs/cr2010.py'
+--- crs/cr2010.py	2015-03-21 07:40:04 +0000
++++ crs/cr2010.py	2015-05-15 11:55:54 +0000
+@@ -214,7 +214,7 @@
+                     "","N",self.doVatCode2,vtm,None,("notblank",)),
+                 (("C",2,0,4),"ISD",13.2,tx1,tx2,
+                     "","N",self.doAllAmt,None,None,("efld",)),
+-                (("C",2,0,5),"ISD",11.2,"V.A.T","V.A.T Amount",
++                (("C",2,0,5),"ISD",13.2,"V.A.T","V.A.T Amount",
+                     "","N",self.doAllVat,None,None,None),
+                 (("C",2,0,6),"INA",(26,30),"Details","",
+                     "","N",self.doAllDet,None,None,("notblank",))])
+@@ -237,14 +237,14 @@
+                     (("C",3,0,6),"ONA",20,"Description"),
+                     (("C",3,0,7),"IUD",6.2,"Intr-%","Interest Rate",
+                         "","N",self.doLonInt,None,None,None),
+-                    (("C",3,0,8),"IUD",12.2,"Ded-Amt","Deduction Amount",
++                    (("C",3,0,8),"IUD",13.2,"Ded-Amt","Deduction Amount",
+                         "","N",self.doLonDed,None,None,("efld",))])
+         else:
+             fld[3][2] = 20
+             fld.extend([
+                 (("C",1,0,5),"IUA",1,"V","V.A.T Code",
+                     self.taxdf,"N",self.doVatCode1,vtm,None,("notblank",)),
+-                (("C",1,0,6),"ISD",11.2,"V.A.T","V.A.T Amount",
++                (("C",1,0,6),"ISD",13.2,"V.A.T","V.A.T Amount",
+                     "","N",self.doVatAmt,None,None,None),
+                 (("C",1,0,7),"IUD",6.2,"Disc-%","Discount Percent",
+                     "","N",self.doDisAmt,None,None,None),
+
+=== modified file 'crs/cr2010_rne.py'
+--- crs/cr2010_rne.py	2015-04-02 19:32:07 +0000
++++ crs/cr2010_rne.py	2015-05-15 11:56:18 +0000
+@@ -137,7 +137,7 @@
+             fld.extend([
+                 (("C",0,0,5),"IUA",1,"V","V.A.T Code",
+                     self.taxdf,"N",self.doVatCode,vtm,None,("notblank",)),
+-                (("C",0,0,6),"ISD",11.2,"V.A.T","V.A.T Amount",
++                (("C",0,0,6),"ISD",13.2,"V.A.T","V.A.T Amount",
+                     "","N",self.doVatAmt,None,None,None),
+                 [("C",0,0,7),"IUI",3,"Bch","Branch Code",
+                     "","N",self.doTrnBch,bch,None,("notzero",)]])
+
+=== modified file 'crs/cr2020_rne.py'
+--- crs/cr2020_rne.py	2015-02-07 06:31:11 +0000
++++ crs/cr2020_rne.py	2015-05-15 12:03:35 +0000
+@@ -256,8 +256,8 @@
+                 ("crt_type", ("XX", crtrtp), 3, "Typ"),
+                 ("crt_trdt", "", 0, "   Date"),
+                 ("crt_tramt", "", 0, "    Amount"),
+-                ("crt_paid", "SD", 11.2, "      Paid"),
+-                ("crt_balance", "SD", 11.2, "   Balance"),
++                ("crt_paid", "SD", 13.2, "      Paid"),
++                ("crt_balance", "SD", 13.2, "   Balance"),
+                 ("crt_paydt", "", 0, "Paymt-Date"),
+                 ("crt_payind", "", 0, "I"),
+                 ("crt_payamt", "", 0, "  Pay-Amnt")),
+@@ -414,6 +414,7 @@
+             return
+         self.incper = CCD(rmf[rmc.index("rmf_icdis")], "UD", 5.2)
+         self.advper = CCD(rmf[rmc.index("rmf_avdis")], "UD", 5.2)
++        self.eftref = rmf[rmc.index("rmf_eftref")]
+         for col in rmc:
+             d = "%s_C00" % col
+             if d in self.form.newdic:
+@@ -456,9 +457,9 @@
+             types = CCD(tr[ctc.index("crt_type")], "UI", 1)
+             ref1 = CCD(tr[ctc.index("crt_ref1")], "Na", 9)
+             #trdt = CCD(tr[ctc.index("crt_trdt")], "D1", 10)
+-            tramt = CCD(tr[ctc.index("crt_tramt")], "SD", 11.2)
+-            trbal = CCD(tr[ctc.index("balance")], "SD", 11.2)
+-            taxmt = CCD(tr[ctc.index("crt_taxamt")], "SD", 11.2)
++            tramt = CCD(tr[ctc.index("crt_tramt")], "SD", 13.2)
++            trbal = CCD(tr[ctc.index("balance")], "SD", 13.2)
++            taxmt = CCD(tr[ctc.index("crt_taxamt")], "SD", 13.2)
+             disper = CCD(tr[ctc.index("crt_disper")], "UD", 5.2)
+             payamt = tr[ctc.index("crt_payamt")]
+             if trbal.work > 0 and payamt > trbal.work:
+@@ -726,7 +727,7 @@
+         if self.elec and self.total_payment:
+             # Create an Electronic Payment Record
+             data = [self.paydt.work, self.acno.work, self.name, self.refno,
+-                self.total_payment, "N"]
++                self.eftref, self.total_payment, "N"]
+             self.sql.insRec("crspay", data=data)
+         return True
+ 
+
+=== modified file 'crs/cr2030_rne.py'
+--- crs/cr2030_rne.py	2014-12-30 15:37:38 +0000
++++ crs/cr2030_rne.py	2015-05-19 06:50:53 +0000
+@@ -96,12 +96,16 @@
+                     self.doContra()
+                     self.doTrailer()
+                     self.doHeader(rec[0])
+-                amnt = int(round(rec[4] * 100, 0))
++                iref = int(rec[3][3:])
++                if not rec[4]:
++                    eref = "RNE Holdings - %s" % rec[3]
++                else:
++                    eref = rec[4]
++                amnt = int(round(rec[5] * 100, 0))
+                 if self.ptyp == "C":
+                     self.efle.write("%2s%03i%010i%1s%06i%013i%-30s%-16s%015i"\
+-                        "%-30s%1s%16s\n" % ("SD", 1, int(rec[3][3:]), "C", 0,
+-                        0, rec[2], rec[1], amnt, "%s - %s" % ("RNE Holdings",
+-                        rec[3]), "", ""))
++                            "%-30s%1s%16s\n" % ("SD", 1, int(rec[3][3:]), "C",
++                            0, 0, rec[2], rec[1], amnt, eref, "", ""))
+                 else:
+                     acc = self.sql.getRec(tables="crsmst", cols=["crm_bibt",
+                         "crm_bacc"], where=[("crm_cono", "=",
+@@ -115,8 +119,7 @@
+                         "%06i%02i%01i%03i%-30s%-30s%020i%16s%02i%12s\n" % (10,
+                         50021, 81135823, 390, self.seq, int(str(acc[0])[:6]),
+                         int(acc[1]), 1, amnt, self.actdte % 1000000, 81, 0, 0,
+-                        "RNE       %s %s" % (rec[3], rec[1]), rec[2], 0,"",
+-                        0, ""))
++                        "%s - %s" % (eref, rec[1]), rec[2], 0,"", 0, ""))
+                 self.qty_d += 1
+                 self.val_d = self.val_d + amnt
+             self.doContra()
+
+=== modified file 'crs/cr3080.py'
+--- crs/cr3080.py	2015-03-21 07:40:04 +0000
++++ crs/cr3080.py	2015-05-15 12:08:29 +0000
+@@ -251,8 +251,8 @@
+                 ("crt_type", ("XX", crtrtp), 3, "Typ"),
+                 ("crt_trdt", "", 0, "Date"),
+                 ("crt_tramt", "", 0, "    Amount"),
+-                ("paid", "SD", 11.2, "      Paid"),
+-                ("balance", "SD", 11.2, "   Balance"),
++                ("paid", "SD", 13.2, "      Paid"),
++                ("balance", "SD", 13.2, "   Balance"),
+                 ("crt_paydt", "", 0, "Pay-Date"),
+                 ("crt_payind", "", 0, "I"),
+                 ("crt_payamt", "", 0, "  Pay-Amnt")),
+
+=== modified file 'crs/cr3090.py'
+--- crs/cr3090.py	2015-02-07 06:31:11 +0000
++++ crs/cr3090.py	2015-05-20 10:33:21 +0000
+@@ -37,7 +37,6 @@
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
+             (t[0], t[1], t[2], t[3], t[4])
+-        self.labels = {"L7159": (3, 8, 32)}
+         return True
+ 
+     def mainProcess(self):
+
+=== modified file 'crs/cr3320_rne.py'
+--- crs/cr3320_rne.py	2015-02-07 06:31:11 +0000
++++ crs/cr3320_rne.py	2015-05-15 12:08:48 +0000
+@@ -203,14 +203,14 @@
+             if not acc:
+                 continue
+             trdt = CCD(acc[0], "D1", 10)
+-            tramt = CCD(acc[1], "SD", 11.2)
+-            taxamt = CCD(acc[2], "SD", 11.2)
++            tramt = CCD(acc[1], "SD", 13.2)
++            taxamt = CCD(acc[2], "SD", 13.2)
+             disper = CCD(acc[3], "SD", 6.2)
+             if disper.work:
+                 disamt = CCD(round(
+-                (tramt.work * disper.work / 100), 2), "SD", 11.2)
++                (tramt.work * disper.work / 100), 2), "SD", 13.2)
+             else:
+-                disamt = CCD(0, "SD", 11.2)
++                disamt = CCD(0, "SD", 13.2)
+             acc = self.sql.getRec(tables="crsrmf", cols=["rmf_icdis",
+                 "rmf_avdis"], where=[("rmf_cono", "=", self.opts["conum"]),
+                 ("rmf_acno", "=", acno.work)], limit=1)
+@@ -219,7 +219,7 @@
+             incper = CCD(acc[0], "UD", 6.2)
+             advper = CCD(acc[1], "UD", 6.2)
+             net = float(ASD(tramt.work) - ASD(taxamt.work))
+-            net = CCD(net, "SD", 11.2)
++            net = CCD(net, "SD", 13.2)
+             if depno.work != self.depno:
+                 if self.depno:
+                     self.branchTotal()
+@@ -289,10 +289,10 @@
+         self.pglin = 13
+ 
+     def branchTotal(self, fullpg=False):
+-        totamt = CCD(self.totamt, "SD", 11.2)
+-        totvat = CCD(self.totvat, "SD", 11.2)
+-        totnet = CCD(self.totnet, "SD", 11.2)
+-        totdis = CCD(self.totdis, "SD", 11.2)
++        totamt = CCD(self.totamt, "SD", 13.2)
++        totvat = CCD(self.totvat, "SD", 13.2)
++        totnet = CCD(self.totnet, "SD", 13.2)
++        totdis = CCD(self.totdis, "SD", 13.2)
+         self.fpdf.drawText(self.fpdf.suc * len(self.head))
+         self.fpdf.drawText("%7s %-55s %13s %13s %13s %13s" % ("", "Totals",
+             totamt.disp, totvat.disp, totnet.disp, totdis.disp))
+
+=== modified file 'crs/cr4010.py'
+--- crs/cr4010.py	2014-12-30 15:37:38 +0000
++++ crs/cr4010.py	2015-05-15 13:19:58 +0000
+@@ -93,12 +93,12 @@
+             (("T",2,10,0),"OUI",7,"G/L Account"),
+             (("T",3,0,0),"Od1",10,"Date Last Purchased"),
+             (("T",3,1,0),"Od1",10,"Date Last Paid"),
+-            (("T",3,2,0),"OSD",12.2,"Total Balance"),
+-            (("T",3,3,0),"OSD",12.2,"Current"),
+-            (("T",3,4,0),"OSD",12.2,"30 Days"),
+-            (("T",3,5,0),"OSD",12.2,"60 Days"),
+-            (("T",3,6,0),"OSD",12.2,"90 Days"),
+-            (("T",3,7,0),"OSD",12.2,"120 Days"),
++            (("T",3,2,0),"OSD",13.2,"Total Balance"),
++            (("T",3,3,0),"OSD",13.2,"Current"),
++            (("T",3,4,0),"OSD",13.2,"30 Days"),
++            (("T",3,5,0),"OSD",13.2,"60 Days"),
++            (("T",3,6,0),"OSD",13.2,"90 Days"),
++            (("T",3,7,0),"OSD",13.2,"120 Days"),
+             (("C",4,0,0),"OSD",13.2,"Purchases","","","N",
+                 None,None,None,None,("Months",13)),
+             (("C",4,0,1),"OSD",13.2,"Payments"),
+@@ -227,14 +227,14 @@
+                     dat[col.index("crt_desc")]])
+             tit = "Transactions for Account: %s - %s" % (self.acno, self.name)
+             col = (
+-                ("crt_trdt", "   Date", 10, "D1", "N"),
++                ("crt_trdt", "Date", 10, "D1", "N"),
+                 ("crt_curdt", "Curr-Dt", 7, "D2", "N"),
+                 ("crt_batch", "Batch", 7, "Na", "N"),
+                 ("crt_type", "Typ", 3, ("XX", crtrtp), "N"),
+                 ("crt_ref1", "Reference", 9, "Na", "Y"),
+-                ("crt_tramt", "    Amount", 11.2, "SD", "N"),
+-                ("alloc", " Allocated", 11.2, "SD", "N"),
+-                ("balan", "   Balance", 11.2, "SD", "N"),
++                ("crt_tramt", "Amount", 13.2, "SD", "N"),
++                ("alloc", "Allocated", 13.2, "SD", "N"),
++                ("balan", "Balance", 13.2, "SD", "N"),
+                 ("crt_desc", "Details", 30, "NA", "N"))
+             state = self.df.disableButtonsTags()
+             while True:
+@@ -312,9 +312,9 @@
+                             "crt_tramt", "paid", "balance", "crt_desc"]:
+                         if not num:
+                             if nam == "paid":
+-                                cols.append(["paid", "SD", 11.2, "Paid"])
++                                cols.append(["paid", "SD", 13.2, "Paid"])
+                             elif nam == "balance":
+-                                cols.append(["balance", "SD", 11.2, "Balance"])
++                                cols.append(["balance", "SD", 13.2, "Balance"])
+                             else:
+                                 cols.append([nam, dic[nam][2], dic[nam][3],
+                                     dic[nam][5]])
+
+=== modified file 'crs/cr4010_rne.py'
+--- crs/cr4010_rne.py	2015-04-10 10:19:18 +0000
++++ crs/cr4010_rne.py	2015-05-15 11:51:50 +0000
+@@ -109,12 +109,12 @@
+             (("T",3,12,0),"Od2",7,"Period End"),
+             (("T",4,0,0),"Od1",10,"Date Last Purchased"),
+             (("T",4,1,0),"Od1",10,"Date Last Paid"),
+-            (("T",4,2,0),"OSD",12.2,"Total Balance"),
+-            (("T",4,3,0),"OSD",12.2,"Current"),
+-            (("T",4,4,0),"OSD",12.2,"30 Days"),
+-            (("T",4,5,0),"OSD",12.2,"60 Days"),
+-            (("T",4,6,0),"OSD",12.2,"90 Days"),
+-            (("T",4,7,0),"OSD",12.2,"120 Days"),
++            (("T",4,2,0),"OSD",13.2,"Total Balance"),
++            (("T",4,3,0),"OSD",13.2,"Current"),
++            (("T",4,4,0),"OSD",13.2,"30 Days"),
++            (("T",4,5,0),"OSD",13.2,"60 Days"),
++            (("T",4,6,0),"OSD",13.2,"90 Days"),
++            (("T",4,7,0),"OSD",13.2,"120 Days"),
+             (("C",5,0,0),"OSD",13.2,"Purchases","","","N",
+                 None,None,None,None,("Months",13)),
+             (("C",5,0,1),"OSD",13.2,"Payments"),
+@@ -302,12 +302,12 @@
+                 ("crt_taxamt", "    V.A.T.", 13.2, "SD", "N"),
+                 ("paid", "      Paid", 13.2, "SD", "N"),
+                 ("balance", "   Balance", 13.2, "SD", "N"),
+-                ("rtf_disamt", "Dis-Amount", 11.2, "SD", "N"),
+-                ("rtf_incamt", "Inc-Discnt", 11.2, "SD", "N"),
+-                ("rtf_advamt", "Adv-Discnt", 11.2, "SD", "N"))
+-                #("rtf_distax", "Dis-V.A.T.", 11.2, "SD", "N"),
+-                #("rtf_inctax", "Inc-V.A.T.", 11.2, "SD", "N"),
+-                #("rtf_advtax", "Adv-V.A.T.", 11.2, "SD", "N"))
++                ("rtf_disamt", "Dis-Amount", 13.2, "SD", "N"),
++                ("rtf_incamt", "Inc-Discnt", 13.2, "SD", "N"),
++                ("rtf_advamt", "Adv-Discnt", 13.2, "SD", "N"))
++                #("rtf_distax", "Dis-V.A.T.", 13.2, "SD", "N"),
++                #("rtf_inctax", "Inc-V.A.T.", 13.2, "SD", "N"),
++                #("rtf_advtax", "Adv-V.A.T.", 13.2, "SD", "N"))
+             state = self.df.disableButtonsTags()
+             while True:
+                 rec = SelectChoice(self.df.nb.Page4, tit, col, data)
+@@ -400,9 +400,9 @@
+                             #"rtf_inctax", "rtf_advamt", "rtf_advtax"]:
+                         if not num:
+                             if nam == "paid":
+-                                cols.append(["paid", "SD", 11.2, "Paid"])
++                                cols.append(["paid", "SD", 13.2, "Paid"])
+                             elif nam == "balance":
+-                                cols.append(["balance", "SD", 11.2, "Balance"])
++                                cols.append(["balance", "SD", 13.2, "Balance"])
+                             elif nam[:3] == "crt":
+                                 cols.append([nam, dc1[nam][2], dc1[nam][3],
+                                     dc1[nam][5]])
+
+=== modified file 'csv/asstrn_fld.csv'
+--- csv/asstrn_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/asstrn_fld.csv	2015-05-20 09:05:03 +0000
+@@ -6,9 +6,9 @@
+ 5,"ast_batch","Na","7.0","Batch Number","BatchNo"
+ 6,"ast_date","D1","10.0","Transaction Date","Trans-Date"
+ 7,"ast_mtyp","UI","1.0","Movement Type","M"
+-8,"ast_amt1","SD","11.2","Transaction Amount 1","Trn-Amount"
+-9,"ast_amt2","SD","11.2","Transaction Amount 2","Trn-Amount"
+-10,"ast_vat","SD","11.2","VAT Amount","VAT-Amount"
++8,"ast_amt1","SD","13.2","Transaction Amount 1","Trn-Amount"
++9,"ast_amt2","SD","13.2","Transaction Amount 2","Trn-Amount"
++10,"ast_vat","SD","13.2","VAT Amount","VAT-Amount"
+ 11,"ast_curdt","D2","7.0","Current Date","Curr-Dt"
+ 12,"ast_desc","NA","30.0","Description","Description"
+ 13,"ast_taxind","UA","1.0","Tax Indicator","V"
+
+=== modified file 'csv/bkmtrn_fld.csv'
+--- csv/bkmtrn_fld.csv	2014-08-06 15:44:15 +0000
++++ csv/bkmtrn_fld.csv	2015-05-20 09:12:48 +0000
+@@ -4,8 +4,8 @@
+ 3,"bkt_refno","Na","9.0","Reference Number","Reference"
+ 4,"bkt_batch","Na","7.0","Batch Number","BatchNo"
+ 5,"bkt_date","D1","10.0","Transaction Date","Trans-Date"
+-6,"bkt_tramt","SD","11.2","Transaction Amount","Trn-Amount"
+-7,"bkt_taxamt","SD","11.2","VAT Amount","VAT-Amount"
++6,"bkt_tramt","SD","13.2","Transaction Amount","Trn-Amount"
++7,"bkt_taxamt","SD","13.2","VAT Amount","VAT-Amount"
+ 8,"bkt_curdt","D2","7.0","Current Date","Curr-Dt"
+ 9,"bkt_desc","TX","30.0","Description","Description"
+ 10,"bkt_taxind","UA","1.0","Tax Indicator","V"
+
+=== modified file 'csv/crsage_fld.csv'
+--- csv/crsage_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/crsage_fld.csv	2015-05-15 11:48:48 +0000
+@@ -5,5 +5,5 @@
+ 4,"cra_curdt","D2","7.0","Aged Date","Aged-Dt"
+ 5,"cra_atyp","UI","2.0","Allocation Type","AT"
+ 6,"cra_aref","Na","9.0","Allocation Number","Alloc-Ref"
+-7,"cra_amnt","SD","11.2","Allocation Amount","Alloc-Amnt"
++7,"cra_amnt","SD","13.2","Allocation Amount","Alloc-Amnt"
+ 8,"cra_seq","US","10.0","Sequence","Sequence"
+
+=== modified file 'csv/crspay_fld.csv'
+--- csv/crspay_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/crspay_fld.csv	2015-05-15 12:07:43 +0000
+@@ -2,5 +2,6 @@
+ 1,"cpt_acno","NA","7.0","Account Number","Acc-Num"
+ 2,"cpt_name","NA","30.0","Account Name","Account-Name"
+ 3,"cpt_ref1","Na","9.0","Reference Number","Reference"
+-4,"cpt_amnt","SD","11.2","Payment Amount","Pay-Amount"
+-5,"cpt_flag","UA","1.0","Paid Flag","P"
++4,"cpt_eftr","UI","10.0","EFT Reference","EFT-RefNum"
++5,"cpt_amnt","SD","13.2","Payment Amount","Pay-Amount"
++6,"cpt_flag","UA","1.0","Paid Flag","P"
+
+=== modified file 'csv/crsrmf_fld.csv'
+--- csv/crsrmf_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/crsrmf_fld.csv	2015-05-18 12:00:26 +0000
+@@ -13,3 +13,4 @@
+ 12,"rmf_swell","UD","5.2","SWELL Rate","SWELL"
+ 13,"rmf_start","d2","7.0","Period Start","P-Start"
+ 14,"rmf_end","d2","7.0","Period End","P-Finis"
++15,"rmf_eftref","NA","10.0","EFT Reference End","EFT-RefNum"
+
+=== modified file 'csv/crsrtf_fld.csv'
+--- csv/crsrtf_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/crsrtf_fld.csv	2015-05-15 11:49:27 +0000
+@@ -4,12 +4,12 @@
+ 3,"rtf_ref1","Na","9.0","Reference Number","Reference"
+ 4,"rtf_depno","UI","3.0","Department Number","Dep"
+ 5,"rtf_pjno","UI","4.0","PJ Number","PJNum"
+-6,"rtf_disamt","SD","11.2","Discount Amount","Dis-Amount"
+-7,"rtf_distax","SD","11.2","Discount Tax","Dis-Tax"
+-8,"rtf_incamt","SD","11.2","Incentive Amount","Inc-Amount"
+-9,"rtf_inctax","SD","11.2","Incentive Tax","Inc-Tax"
+-10,"rtf_advamt","SD","11.2","Advertising Amount","Adv-Amount"
+-11,"rtf_advtax","SD","11.2","Advertising Tax","Adv-Tax"
++6,"rtf_disamt","SD","13.2","Discount Amount","Dis-Amount"
++7,"rtf_distax","SD","13.2","Discount Tax","Dis-Tax"
++8,"rtf_incamt","SD","13.2","Incentive Amount","Inc-Amount"
++9,"rtf_inctax","SD","13.2","Incentive Tax","Inc-Tax"
++10,"rtf_advamt","SD","13.2","Advertising Amount","Adv-Amount"
++11,"rtf_advtax","SD","13.2","Advertising Tax","Adv-Tax"
+ 12,"rtf_prtdte","D1","10.0","Date Printed","Print-Date"
+ 13,"rtf_iinvnum","UI","9.0","Inc Invoice Number","I-Inv-Num"
+ 14,"rtf_iinvdte","D1","10.0","Inc Invoice Date","I-Inv-Date"
+
+=== modified file 'csv/crstrn_fld.csv'
+--- csv/crstrn_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/crstrn_fld.csv	2015-05-15 11:49:38 +0000
+@@ -5,13 +5,13 @@
+ 4,"crt_batch","Na","7.0","Batch Number","BatchNo"
+ 5,"crt_trdt","D1","10.0","Transaction Date","Trans-Date"
+ 6,"crt_ref2","Na","9.0","Reference 2","Ref-Num-2"
+-7,"crt_tramt","SD","11.2","Transaction Amount","Trn-Amount"
+-8,"crt_taxamt","SD","11.2","Tax Amount","Tax-Amount"
++7,"crt_tramt","SD","13.2","Transaction Amount","Trn-Amount"
++8,"crt_taxamt","SD","13.2","Tax Amount","Tax-Amount"
+ 9,"crt_disper","UD","5.2","Discount %","Dis-%"
+ 10,"crt_curdt","D2","7.0","Current Date","Curr-Dt"
+ 11,"crt_paydt","d1","10.0","Payment Date","Pay-Date"
+ 12,"crt_payind","UA","1.0","Payment Indicator","P"
+-13,"crt_payamt","SD","11.2","Payment Amount","Pay-Amount"
++13,"crt_payamt","SD","13.2","Payment Amount","Pay-Amount"
+ 14,"crt_desc","NA","30.0","Description","Description"
+ 15,"crt_taxind","UA","1.0","Tax Indicator","V"
+ 16,"crt_batind","UA","1.0","Batch Indicator","B"
+
+=== modified file 'csv/drsage_fld.csv'
+--- csv/drsage_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/drsage_fld.csv	2015-05-19 09:44:58 +0000
+@@ -6,5 +6,5 @@
+ 5,"dra_curdt","D2","7.0","Aged Date","Aged-Dt"
+ 6,"dra_atyp","UI","2.0","Allocation Type","AT"
+ 7,"dra_aref","Na","9.0","Allocation Number","Alloc-Ref"
+-8,"dra_amnt","SD","11.2","Allocation Amount","Alloc-Amnt"
++8,"dra_amnt","SD","13.2","Allocation Amount","Alloc-Amnt"
+ 9,"dra_seq","US","10.0","Sequence","Sequence"
+
+=== modified file 'csv/drsrct_fld.csv'
+--- csv/drsrct_fld.csv	2015-04-04 09:29:12 +0000
++++ csv/drsrct_fld.csv	2015-05-19 09:45:11 +0000
+@@ -4,6 +4,6 @@
+ 3,"dct_chain","UI","3.0","Chain Store","Chn"
+ 4,"dct_acno","NA","7.0","Account Number","Acc-Num"
+ 5,"dct_detail","TX","30.0","Charge Details","Charge-Details"
+-6,"dct_amnt","SD","11.2","Amount","Amount"
++6,"dct_amnt","SD","13.2","Amount","Amount"
+ 7,"dct_start","d2","7.0","Starting Period","Start"
+ 8,"dct_end","d2","7.0","Ending Period","Ending"
+
+=== modified file 'csv/drstrn_fld.csv'
+--- csv/drstrn_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/drstrn_fld.csv	2015-05-19 09:45:26 +0000
+@@ -6,8 +6,8 @@
+ 5,"drt_batch","Na","7.0","Batch Number","BatchNo"
+ 6,"drt_trdt","D1","10.0","Transaction Date","Trans-Date"
+ 7,"drt_ref2","Na","9.0","Reference 2","Ref-Num-2"
+-8,"drt_tramt","SD","11.2","Transaction Amount","Trn-Amount"
+-9,"drt_taxamt","SD","11.2","Tax Amount","Tax-Amount"
++8,"drt_tramt","SD","13.2","Transaction Amount","Trn-Amount"
++9,"drt_taxamt","SD","13.2","Tax Amount","Tax-Amount"
+ 10,"drt_curdt","D2","7.0","Current Date","Curr-Dt"
+ 11,"drt_desc","NA","30.0","Description","Description"
+ 12,"drt_taxind","UA","1.0","Tax Indicator","V"
+
+=== modified file 'csv/genjlt_fld.csv'
+--- csv/genjlt_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/genjlt_fld.csv	2015-05-20 09:00:10 +0000
+@@ -3,4 +3,4 @@
+ 2,"gjt_seq","UI","3.0","Sequence","seq"
+ 3,"gjt_acno","UI","7.0","Account Number","Acc-Num"
+ 4,"gjt_vatc","UA","1.0","V.A.T. Indicator","V"
+-5,"gjt_amnt","SD","11.2","Amount","Amount"
++5,"gjt_amnt","SD","13.2","Amount","Amount"
+
+=== modified file 'csv/memtrn_fld.csv'
+--- csv/memtrn_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/memtrn_fld.csv	2015-05-20 09:08:39 +0000
+@@ -4,8 +4,8 @@
+ 3,"mlt_refno","Na","9.0","Reference Number","Reference"
+ 4,"mlt_batch","Na","7.0","Batch Number","BatchNo"
+ 5,"mlt_trdt","D1","10.0","Transaction Date","Trans-Date"
+-6,"mlt_tramt","SD","11.2","Transaction Amount","Trn-Amount"
+-7,"mlt_taxamt","SD","11.2","Tax Amount","Tax-Amount"
++6,"mlt_tramt","SD","13.2","Transaction Amount","Trn-Amount"
++7,"mlt_taxamt","SD","13.2","Tax Amount","Tax-Amount"
+ 8,"mlt_curdt","D2","7.0","Current Date","Curr-Dt"
+ 9,"mlt_ctyp","UA","1.0","Category Type","T"
+ 10,"mlt_ccod","UI","2.0","Category Code","Cd"
+
+=== modified file 'doc/Contact.rst'
+--- doc/Contact.rst	2015-04-24 13:45:12 +0000
++++ doc/Contact.rst	2015-05-02 10:17:40 +0000
+@@ -16,4 +16,4 @@
+ =====
+ | Telephone: 27-28-3140092
+ | Facsimile: 27-86-2621838
+-| E-Mail: info@tartan.co.za
++| E-Mail: paul@tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-04-30 10:16:15 +0000
++++ doc/Downloads.rst	2015-05-20 16:02:46 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.14 and was released on the 30th April, 2015.
++The latest version of Tartan is 5.0.15 and was released on the 20th May, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.14.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.15.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.14.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.15.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.14.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.14.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.14.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.14.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.15.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.15.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.15.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.15.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2015-04-30 10:16:15 +0000
++++ doc/MB.rst	2015-05-20 16:02:46 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ===============================
+ 
+-:Version:   5.0.14
++:Version:   5.0.15
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-04-30 10:16:15 +0000
++++ doc/MD.rst	2015-05-20 16:02:46 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.14
++:Version:   5.0.15
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -55,10 +55,12 @@
+ Ensure that the following dependencies are installed on your system:
+ 
+ + python >= 2.7.5 and < 3.0.0
+-+ python-tk >= 2.7.5 and < 3.0.0
+-+ python-imaging >= 2.3.0
+-+ python-pil >= 2.3.0
+-+ python-pil.imagetk >= 2.3.0
+++ pillow >= 2.3.0
+++ fpdf >= 1.7.0
++
++Windows also requires the following:
++
+++ pywin32 >= build 217
+ 
+ Additionally, the following dependencies should also be installed using pip:
+ 
+@@ -70,19 +72,19 @@
+ 
+ And, depending on your database needs, one of:
+ 
+-+ Pysqlite >= 2.6.3
+-
+-or one of:
+-
+-+ Postgresql >= 8.4.0
+-+ Psycopg2 >= 2.0.4
+-
+-or one of:
+-
+-+ Mysql >= 5.0.1
+-+ Mysql-python >= 1.2.0
+-
+-Download the following file from ftp://ftp.tartan.co.za
+++ pysqlite >= 2.6.3
++
++or
++
+++ postgresql >= 8.4.0
+++ psycopg2 >= 2.0.4
++
++or
++
+++ mysql >= 5.0.1
+++ MySql-python >= 1.2.0
++
++Then download the following file from ftp://ftp.tartan.co.za
+ 
+ + Tartan_5.x.x.tar.gz
+ 
+
+=== modified file 'drs/dr2010.py'
+--- drs/dr2010.py	2015-02-07 06:31:11 +0000
++++ drs/dr2010.py	2015-05-19 09:48:06 +0000
+@@ -199,7 +199,7 @@
+                     self.taxdf,"N",self.doVatCode2,vtm,None,("notblank",)),
+                 (("C",2,0,4),"ISD",13.2,tx1,tx2,
+                     "","N",self.doAllAmt,None,None,("efld",)),
+-                (("C",2,0,5),"ISD",11.2,"V.A.T","V.A.T Amount",
++                (("C",2,0,5),"ISD",13.2,"V.A.T","V.A.T Amount",
+                     "","N",self.doAllVat,None,None,None),
+                 [("C",2,0,6),"INA",(26,30),"Details","",
+                     "","N",self.doAllDet,None,None,("notblank",)]])
+@@ -210,7 +210,7 @@
+             fld.extend([
+                 (("C",1,0,6),"IUA",1,"V","V.A.T Code",
+                     self.taxdf,"N",self.doVatCode1,vtm,None,("notblank",)),
+-                (("C",1,0,7),"ISD",11.2,"V.A.T","V.A.T Amount",
++                (("C",1,0,7),"ISD",13.2,"V.A.T","V.A.T Amount",
+                     "","N",self.doVatAmt,None,None,None),
+                 [["C",1,0,8],"INA",(20,30),"Details","Transaction Details",
+                     "","N",self.doTrnDet,None,None,None]])
+
+=== modified file 'drs/dr3120.py'
+--- drs/dr3120.py	2015-02-07 06:31:11 +0000
++++ drs/dr3120.py	2015-05-19 09:51:45 +0000
+@@ -92,7 +92,7 @@
+             acno = CCD(dat[self.col.index("drm_acno")], "NA", 7)
+             name = CCD(dat[self.col.index("drm_name")], "NA", 30)
+             rft = CCD(dat[self.col.index("drm_rfterms")], "UI", 3)
+-            per = CCD(dat[self.col.index("drm_int_per")], "UD", 11.2)
++            per = CCD(dat[self.col.index("drm_int_per")], "UD", 5.2)
+             if not per.work:
+                 continue
+             bals = Balances(self.opts["mf"], "DRS", self.opts["conum"],
+
+=== modified file 'drs/dr4010.py'
+--- drs/dr4010.py	2014-12-30 15:37:38 +0000
++++ drs/dr4010.py	2015-05-19 09:48:51 +0000
+@@ -348,9 +348,9 @@
+                 ("drt_type", "Typ", 3, ("XX", drtrtp), "N"),
+                 ("drt_ref1", "Reference", 9, "Na", "Y"),
+                 ("drt_ref2", "Ref-Num-2", 9, "Na", "Y"),
+-                ("drt_tramt", "    Amount", 11.2, "SD", "N"),
+-                ("alloc", " Allocated", 11.2, "SD", "N"),
+-                ("balan", "   Balance", 11.2, "SD", "N"),
++                ("drt_tramt", "    Amount", 13.2, "SD", "N"),
++                ("alloc", " Allocated", 13.2, "SD", "N"),
++                ("balan", "   Balance", 13.2, "SD", "N"),
+                 ("drt_desc", "Details", 30, "NA", "N"))
+             state = self.df.disableButtonsTags()
+             while True:
+@@ -452,9 +452,9 @@
+                             "drt_tramt", "paid", "balance", "drt_desc"]:
+                         if not num:
+                             if nam == "paid":
+-                                cols.append(["paid", "SD", 11.2, "Paid"])
++                                cols.append(["paid", "SD", 13.2, "Paid"])
+                             elif nam == "balance":
+-                                cols.append(["balance", "SD", 11.2, "Balance"])
++                                cols.append(["balance", "SD", 13.2, "Balance"])
+                             else:
+                                 cols.append([nam, dic[nam][2], dic[nam][3],
+                                 dic[nam][5]])
+
+=== modified file 'gen/gl1060.py'
+--- gen/gl1060.py	2014-12-30 15:37:38 +0000
++++ gen/gl1060.py	2015-05-19 10:44:27 +0000
+@@ -134,7 +134,7 @@
+                 ("vtm_code", "", 0, "Acc-Num"),
+                 ("vtm_desc", "", 0, "Description", "Y")),
+             "whera": [["T", "vtm_cono", 7]]}
+-        r1s = (("Payment","P"), ("Deposit","D"))
++        r1s = (("Payment","P"), ("Receipt","R"))
+         r2s = (("Oldest","O"), ("Current","C"))
+         fld = [
+             [("T",0,0,0),"IUI",7,"Bank Account","",
+@@ -294,7 +294,7 @@
+                 if self.opts["args"][1][-1] < 0:
+                     self.opts["rtn"] = "P"
+                 else:
+-                    self.opts["rtn"] = "D"
++                    self.opts["rtn"] = "R"
+                 self.df.loadEntry(frt, pag, p+2, data=self.opts["rtn"])
+                 return "sk2"
+             return "sk1"
+@@ -305,7 +305,7 @@
+             if self.opts["args"][1][-1] < 0:
+                 self.opts["rtn"] = "P"
+             else:
+-                self.opts["rtn"] = "D"
++                self.opts["rtn"] = "R"
+             self.df.loadEntry(frt, pag, p+1, data=self.opts["rtn"])
+             return "sk1"
+ 
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2015-04-30 10:16:15 +0000
++++ gen/gl2030.py	2015-05-19 10:45:05 +0000
+@@ -422,7 +422,7 @@
+             [["C",8,0,6],"ONA",20,"Description"],
+             [["C",8,0,7],"IUD",6.2,"Intr-%","Interest Rate",
+                 "","N",self.doLonInt,None,None,None],
+-            [["C",8,0,8],"IUD",12.2,"Ded-Amt","Deduction Amount",
++            [["C",8,0,8],"IUD",13.2,"Ded-Amt","Deduction Amount",
+                 "","N",self.doLonDed,None,None,("efld",)]]
+         if self.pcash:
+             fld[2][10] = None
+@@ -1942,9 +1942,9 @@
+             where=[("bkt_cono", "=", self.opts["conum"]), ("bkt_number",
+             "=", self.bkmnum), ("bkt_type", "<>", 1)], limit=1)
+         if not trn[0]:
+-            bal = CCD(0, "SD", 11.2).work
++            bal = CCD(0, "SD", 13.2).work
+         else:
+-            bal = CCD(trn[0], "SD", 11.2).work
++            bal = CCD(trn[0], "SD", 13.2).work
+         if not bal or bal == float(ASD(0) - ASD(self.bkmval)):
+             state = "S"
+         elif bal == self.bkmval:
+
+=== modified file 'gen/gl2040.py'
+--- gen/gl2040.py	2015-04-24 13:45:12 +0000
++++ gen/gl2040.py	2015-05-19 09:25:29 +0000
+@@ -58,7 +58,7 @@
+                 self.incoac = False
+         # Create SQL Object
+         tab = ["ctlctl", "ctlmst", "ctlvmf", "ctlvrf", "ctlvtf", "genint",
+-            "genjlm", "genmst", "gentrn", "genrcc", "genrct"]
++            "genjlm", "genmst", "gentrn"]
+         self.sql = Sql(self.opts["mf"].dbm, tab, prog=__name__)
+         if self.sql.error:
+             return
+
+=== modified file 'gen/gl3100_rne.py'
+--- gen/gl3100_rne.py	2015-03-06 19:01:14 +0000
++++ gen/gl3100_rne.py	2015-05-01 11:43:10 +0000
+@@ -246,7 +246,12 @@
+                 if amt.work:
+                     zero = False
+             if not zero:
+-                dat.extend([tot, lyr])
++                if not tot or not lyr:
++                    lyv = 0
++                else:
++                    lyv = float(ASD(lyr) - ASD(tot))
++                    lyv = round(lyv * 100.0 / float(ASD(0) - ASD(tot)), 2)
++                dat.extend([tot, lyr, lyv])
+                 data.append(dat)
+         cols = [
+             ("acno", "UI", 7, "Acc-Num", "y"),
+@@ -258,6 +263,7 @@
+             gtot.append("c%s" % coy[0])
+         cols.append(("total", "SD", 14.2, "Tot-Balance", "y"))
+         cols.append(("lyear", "SD", 14.2, "LYR-Balance", "y"))
++        cols.append(("lyvar", "SD", 7.2, "LY-VAR", "y"))
+         gtot.append("total")
+         gtot.append("lyear")
+         view, pnam = self.df.repprt[0][1:3]
+
+=== modified file 'gen/gl3110_rne.py'
+--- gen/gl3110_rne.py	2015-02-22 09:42:02 +0000
++++ gen/gl3110_rne.py	2015-05-01 11:04:53 +0000
+@@ -209,7 +209,7 @@
+             for coy in coys:
+                 callModule(self.opts["mf"], None, "gl3050", coy=(coy[0],
+                     coy[1]), period=self.c_per, args=(self.ep, self.rt,
+-                    self.rn, self.rv, self.iz, "P", self.df.repprt, self.fpdf))
++                    self.rn, self.rv, "P", self.iz, self.df.repprt, self.fpdf))
+             self.fpdf.output(pdfnam, "F")
+             doPrinter(mf=self.opts["mf"], rep=pdfnam, head=tit,
+                 view=self.df.repprt[0][1], prtnam=self.df.repprt[0][2],
+
+=== modified file 'gen/gl6010.py'
+--- gen/gl6010.py	2015-02-07 06:31:11 +0000
++++ gen/gl6010.py	2015-05-11 13:02:58 +0000
+@@ -13,7 +13,7 @@
+     Copyright (C) 2004-2015 Paul Malherbe.
+ """
+ 
+-from TartanClasses import CCD, TartanDialog, Sql
++from TartanClasses import CCD, FileImport, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import askQuestion
+ 
+ class gl6010:
+@@ -88,16 +88,52 @@
+                 ("glm_acno", "", 0, "Acc-Num"),
+                 ("glm_desc", "", 0, "Description", "Y")),
+             "where": [("glm_cono", "=", self.opts["conum"])]}
+-        fld = (
+-            (("T",0,0,0),"I@glm_acno",0,"Old Number","Old Account Number",
++        self.fld = (
++            (("T",0,0,0),"IUI",7,"Old Number","Old Account Number",
+                 "","Y",self.doOldAcc,glm,None,("notzero",)),
+-            (("T",0,0,0),"O@glm_desc",0,""),
+-            (("T",0,1,0),"I@glm_acno",0,"New Number","New Account Number",
++            (("T",0,0,0),"ONA",30,""),
++            (("T",0,1,0),"IUI",7,"New Number","New Account Number",
+                 "","Y",self.doNewAcc,None,None,("notzero",)))
++        but = (
++            ("Import File",None,self.doImport,0,("T",0,1),("T",0,2),
++            "Import a CSV or XLS File with the Correct Format i.e. "\
++            "Old Code, New Code. If the New Code is left Blank the "\
++            "Old Code will be Retained."),)
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+-        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld, tend=tnd,
+-            txit=txt)
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
++            butt=but, tend=tnd, txit=txt)
++
++    def doImport(self, widget=None):
++        self.df.closeProcess()
++        impcol = []
++        pos = 0
++        for num, fld in enumerate(self.fld):
++            if num == 1:
++                continue
++            if type(fld[2]) in (tuple, list):
++                size = fld[2][1]
++            else:
++                size = fld[2]
++            impcol.append([fld[4], pos, fld[1][1:], size])
++            pos += 1
++        fi = FileImport(self.opts["mf"], impcol=impcol)
++        if fi.impdat:
++            p = ProgressBar(self.opts["mf"].body, typ="Importing Changes",
++                mxs=len(fi.impdat))
++            for num, line in enumerate(fi.impdat):
++                p.displayProgress(num)
++                self.oldacc = line[0]
++                if line[1]:
++                    self.newacc = line[1]
++                else:
++                    self.newacc = self.oldacc
++                self.oldnot = str(self.oldacc)
++                self.newnot = str(self.newacc)
++                self.doChange()
++            p.closeProgress()
++            self.opts["mf"].dbm.commitDbase(ask=True)
++        self.opts["mf"].closeLoop()
+ 
+     def doOldAcc(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables="genmst", where=[("glm_cono", "=",
+@@ -120,6 +156,10 @@
+         genrpt = askQuestion(self.opts["mf"].body, head="Report Generator",
+             mess="Apply this Change to the Report Generator as well?",
+             default="no")
++        self.doChange(genrpt)
++        self.df.focusField("T", 0, 1)
++
++    def doChange(self, genrpt="yes"):
+         for tab in self.tables:
+             if tab[0] == "ctlnot":
+                 whr = [("not_cono", "=", self.opts["conum"]),
+@@ -148,7 +188,6 @@
+                 dat = [self.newacc]
+                 col = [tab[2]]
+             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
+-        self.df.focusField("T", 0, 1)
+ 
+     def doExit(self):
+         self.df.closeProcess()
+
+=== modified file 'mem/ml1010.py'
+--- mem/ml1010.py	2015-02-07 06:31:11 +0000
++++ mem/ml1010.py	2015-05-20 09:08:17 +0000
+@@ -670,8 +670,8 @@
+                 acc.append(l[0])
+         for memno in acc:
+             if self.ynd:
+-                data = doChkCatChg(self.opts["mf"], self.opts["conum"], memno,
+-                    self.opts["period"][2][0], self.nxtdt)
++                data = doChkCatChg(self.opts["mf"], self.opts["conum"],
++                    memno, self.nxtdt)
+                 if data:
+                     if not data[3]:
+                         self.doRaiseCharge(memno, "B", data[0], data[1],
+@@ -1390,9 +1390,9 @@
+                 ("mlt_batch", "Batch", 7, "Na", "N"),
+                 ("mlt_type", "Typ", 3, ("XX", mltrtp), "N"),
+                 ("mlt_refno", "Reference", 9, "Na", "Y"),
+-                ("mlt_tramt", "    Amount", 11.2, "SD", "N"),
+-                ("alloc", "      Paid", 11.2, "SD", "N"),
+-                ("balan", "   Balance", 11.2, "SD", "N"),
++                ("mlt_tramt", "    Amount", 13.2, "SD", "N"),
++                ("alloc", "      Paid", 13.2, "SD", "N"),
++                ("balan", "   Balance", 13.2, "SD", "N"),
+                 ("mlt_ctyp", "T", 1, "UA", "N"),
+                 ("mlt_ccod", "Cd", 2, "UI", "N"),
+                 ("mlt_desc", "Details", 30, "NA", "N"))
+@@ -1456,7 +1456,7 @@
+                 ("mst_trdt", "   Date", 10, "D1", "N"),
+                 ("mst_type", "Typ", 3, ("XX", mltrtp), "N"),
+                 ("mst_refno", "Reference", 9, "Na", "N"),
+-                ("mst_tramt", "    Amount", 11.2, "SD", "N"),
++                ("mst_tramt", "    Amount", 13.2, "SD", "N"),
+                 ("mst_ctyp", "T", 1, "UA", "N"),
+                 ("mst_ccod", "Cd", 2, "UI", "N"),
+                 ("mst_desc", "Details", 30, "NA", "Y"))
+@@ -1555,9 +1555,9 @@
+                             "mlt_tramt", "paid", "balance", "mlt_desc"]:
+                         if not num:
+                             if nam == "paid":
+-                                cols.append(["paid", "SD", 11.2, "Paid"])
++                                cols.append(["paid", "SD", 13.2, "Paid"])
+                             elif nam == "balance":
+-                                cols.append(["balance", "SD", 11.2, "Balance"])
++                                cols.append(["balance", "SD", 13.2, "Balance"])
+                             else:
+                                 cols.append([nam, dic[nam][2], dic[nam][3],
+                                     dic[nam][5]])
+
+=== modified file 'mem/ml2010.py'
+--- mem/ml2010.py	2015-02-07 06:31:11 +0000
++++ mem/ml2010.py	2015-05-20 09:08:26 +0000
+@@ -136,7 +136,7 @@
+                     self.taxdf,"N",self.doVatCode2,vtm,None,("notblank",)),
+                 (("C",2,0,3),"ISD",13.2,"All-Amt","Allocation Amount",
+                     "","N",self.doAllAmt,None,None,("efld",)),
+-                (("C",2,0,4),"ISD",11.2,"V.A.T","V.A.T Amount",
++                (("C",2,0,4),"ISD",13.2,"V.A.T","V.A.T Amount",
+                     "","N",self.doAllVat,None,None,None),
+                 (("C",2,0,5),"INA",(26,30),"Details","",
+                     "","N",self.doAllDet,None,None,("notblank",))])
+@@ -145,7 +145,7 @@
+             fld.extend([
+                 (("C",1,0,6),"IUA",1,"V","V.A.T Code",
+                     self.taxdf,"N",self.doVatCode1,vtm,None,("notblank",)),
+-                (("C",1,0,7),"ISD",11.2,"V.A.T","V.A.T Amount",
++                (("C",1,0,7),"ISD",13.2,"V.A.T","V.A.T Amount",
+                     "","N",self.doVatAmt,None,None,None),
+                 (("C",1,0,8),"INA",(20,30),"Details","Transaction Details",
+                     "","N",self.doTrnDet,None,None,None)])
+
+=== modified file 'mem/ml3040.py'
+--- mem/ml3040.py	2015-02-07 06:31:11 +0000
++++ mem/ml3040.py	2015-05-11 09:08:55 +0000
+@@ -354,8 +354,8 @@
+                 acc.append(l[0])
+         for memno in acc:
+             if self.ynd:
+-                data = doChkCatChg(self.opts["mf"], self.opts["conum"], memno,
+-                    self.opts["period"][2][0], self.datew)
++                data = doChkCatChg(self.opts["mf"], self.opts["conum"],
++                    memno, self.datew)
+                 if data:
+                     if not data[3]:
+                         self.doRaiseCharge(memno, "B", data[0], data[1],
+
+=== modified file 'mem/ml3060.py'
+--- mem/ml3060.py	2015-02-07 06:31:11 +0000
++++ mem/ml3060.py	2015-05-11 09:10:17 +0000
+@@ -161,8 +161,8 @@
+                 where=[("mlm_cono", "=", self.opts["conum"]),
+                 ("mlm_state", "=", "A")])
+             for rec in recs:
+-                data = doChkCatChg(self.opts["mf"], self.opts["conum"], rec[0],
+-                    self.end.work, self.start.work)
++                data = doChkCatChg(self.opts["mf"], self.opts["conum"],
++                    rec[0], self.start.work)
+                 if data:
+                     self.dte = long("%08i000000" % self.start.work)
+                     self.sql.insRec("chglog", data=["memcat", "D",
+
+=== modified file 'mem/ml3070.py'
+--- mem/ml3070.py	2015-02-11 16:45:23 +0000
++++ mem/ml3070.py	2015-05-11 09:10:46 +0000
+@@ -755,8 +755,8 @@
+         self.nxtdt = (yy * 10000) + (mm * 100) + 1
+         self.refno = 0
+         if self.ynd:
+-            data = doChkCatChg(self.opts["mf"], self.opts["conum"], self.memno,
+-                self.opts["period"][2][0], self.nxtdt)
++            data = doChkCatChg(self.opts["mf"], self.opts["conum"],
++                self.memno, self.nxtdt)
+             if data:
+                 self.doRaiseCharge("B", data[0], data[1], data[3], data[4],
+                     data[5], skip=True)
+
+=== modified file 'mem/mlm010.py'
+--- mem/mlm010.py	2015-02-07 06:31:11 +0000
++++ mem/mlm010.py	2015-05-11 09:07:59 +0000
+@@ -187,7 +187,7 @@
+                 p.displayProgress(num)
+                 self.memno = acc[0]
+                 data = doChkCatChg(self.opts["mf"], self.opts["conum"],
+-                    self.memno, self.opts["period"][2][0], self.nxtdt)
++                    self.memno, self.nxtdt)
+                 if data:
+                     if not data[3]:
+                         self.doRaiseCharge("B", data[0], data[1], data[2],
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-04-30 10:16:15 +0000
++++ mst/ms0000.py	2015-05-20 16:02:46 +0000
+@@ -27,7 +27,7 @@
+             key = _winreg.CreateKey(_winreg.HKEY_CURRENT_USER, "Environment")
+             _winreg.SetValueEx(key, "PATH", 0, _winreg.REG_EXPAND_SZ, envpath)
+         except:
+-            print "Error"
++            print("Error")
+             sys.exit()
+ # Ubuntu Unity uses the Global Menu which breaks Tartan's Menu
+ if sys.platform == "linux2":
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 14)
++    VERSION = (5, 0, 15)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2015-04-24 13:45:12 +0000
++++ mst/msc000.py	2015-05-19 08:13:15 +0000
+@@ -128,7 +128,7 @@
+             __import__(self.script)
+             self.doExit(dbm=False)
+         if self.help:
+-            print """
++            print("""
+ Usage:      python ms0000.py [options]
+ 
+ Options:
+@@ -155,51 +155,51 @@
+             -v, --version           Display Version Details
+             -x, --xdisplay          Do not have a mainframe with -ptarBck
+             -z, --zerobar           Do not have a progressbar
+-"""
++""")
+             self.doExit(dbm=False)
+         if not self.xdisplay:
+             nodisp = ("tarBck", "tarUpd", "ml6030")
+             if not self.query and not self.program in nodisp:
+-                print "xdisplay False but program not in %s" % str(nodisp)
++                print("xdisplay False but program not in %s" % str(nodisp))
+                 self.doExit(dbm=False)
+             elif not self.user:
+-                print "xdisplay False but no User Name"
++                print("xdisplay False but no User Name")
+                 self.doExit(dbm=False)
+         if self.xdisplay and not GUI:
+-            print "Tkinter/ttk not Available or Installed"
++            print("Tkinter/ttk not Available or Installed")
+             self.doExit(dbm=False)
+         if self.version:
+-            print "Tartan   Version: %s" % self.current[1]
+-            print "Python   Version: %s" % platform.python_version()
++            print("Tartan   Version: %s" % self.current[1])
++            print("Python   Version: %s" % platform.python_version())
+             if self.xdisplay:
+-                print "Tcl/Tk   Version: %s" % tk.Tcl().eval("info patchlevel")
++                print("Tcl/Tk   Version: %s" % tk.Tcl().eval("info patchlevel"))
+             try:
+                 import fdb
+-                print "FDB      Version: %s" % fdb.__version__
++                print("FDB      Version: %s" % fdb.__version__)
+             except:
+                 pass
+             try:
+                 import MySQLdb
+-                print "MySQLdb  Version: %s" % MySQLdb.__version__
++                print("MySQLdb  Version: %s" % MySQLdb.__version__)
+             except:
+                 pass
+             try:
+                 import psycopg2
+-                print "Psycopg2 Version: %s" % psycopg2.__version__
++                print("Psycopg2 Version: %s" % psycopg2.__version__)
+             except:
+                 pass
+             try:
+                 import sqlite3
+-                print "Pysqlite Version: %s" % sqlite3.version
+-                print "Sqlite3  Version: %s" % sqlite3.sqlite_version
++                print("Pysqlite Version: %s" % sqlite3.version)
++                print("Sqlite3  Version: %s" % sqlite3.sqlite_version)
+             except:
+                 pass
+-            print "Xpdf     Version: %s" % fpdf.__version__
++            print("Fpdf     Version: %s" % fpdf.__version__)
+             if XLRD:
+-                print "Xlrd     Version: %s" % xlrd.info.__VERSION__
++                print("Xlrd     Version: %s" % xlrd.info.__VERSION__)
+             if PYCHART:
+                 from pychart import version as pyver
+-                print "Pychart  Version: %s" % pyver.version
++                print("Pychart  Version: %s" % pyver.version)
+             self.doExit(dbm=False)
+         if self.debug:  # Set trace mode
+             import trace
+@@ -326,7 +326,7 @@
+                     showError(self.mf.body, "Data Base Error",
+                         "\nDbCommand Error: %s\n" % err)
+                 else:
+-                    print "Data Base Error", "DbCommand Error: %s\n" % err
++                    print("Data Base Error", "DbCommand Error: %s\n" % err)
+             self.doExit()
+         if self.program:
+             mods = self.usrmod[:]
+@@ -1461,12 +1461,12 @@
+                         if self.xdisplay:
+                             ScrollText(title="Trace Output", mess=mess)
+                         else:
+-                            print "Trace Output: ", mess
++                            print("Trace Output: ", mess)
+                     else:
+                         if self.xdisplay:
+                             ScrollText(title="Standard Output", mess=mess)
+                         else:
+-                            print "Standard Output: ", mess
++                            print("Standard Output: ", mess)
+                 # Housekeeping
+                 for pid in xrange(1000):
+                     try:
+@@ -1579,7 +1579,7 @@
+                             self.mf.head.configure(text="SQL Query")
+                             ScrollText(scrn=self.mf.body, mess=mess)
+                         else:
+-                            print mess
++                            print(mess)
+                     else:
+                         sq.sqlRec(line)
+             except:
+
+=== modified file 'mst/msy010.py'
+--- mst/msy010.py	2015-03-04 16:05:59 +0000
++++ mst/msy010.py	2015-05-19 08:16:21 +0000
+@@ -550,9 +550,9 @@
+     try:
+         opts, args = getopt.getopt(sys.argv[1:],"c:p:f:r:")
+     except:
+-        print
+-        print "Usage: -c conum -p period -f final -r rcfile"
+-        print
++        print("")
++        print("Usage: -c conum -p period -f final -r rcfile")
++        print("")
+         sys.exit()
+     commit = True
+     coy = 1
+@@ -580,7 +580,7 @@
+             ex = msy010(**{"mf": mf, "conum": coy, "period": per,
+                 "args": (fin, commit)})
+         else:
+-            print "Invalid Period %s for Company %s" % (num, coy)
++            print("Invalid Period %s for Company %s" % (num, coy))
+         mf.dbm.closeDbase()
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== added file 'mst/msy010_rne.py'
+--- mst/msy010_rne.py	1970-01-01 00:00:00 +0000
++++ mst/msy010_rne.py	2015-05-12 07:44:20 +0000
+@@ -0,0 +1,534 @@
++#! /usr/bin/python
++
++"""
++SYNOPSIS
++    Financial Year End routine.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2015 Paul Malherbe.
++"""
++
++import time
++from TartanClasses import ASD, CCD, GetCtl, ProgressBar, PwdConfirm, Sql
++from TartanClasses import TartanDialog
++from tartanFunctions import getPeriods, mthendDate, showError
++
++class msy010:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.drawScreen()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlsys", "ctlynd", "ftable",
++            "genbal", "genmst", "gentrn"], prog=__name__)
++        if self.sql.error:
++            return
++        gc = GetCtl(self.opts["mf"])
++        ctlsys = gc.getCtl("ctlsys", self.opts["conum"])
++        if not ctlsys:
++            return
++        self.years = ctlsys["sys_years"]
++        if self.years and self.years < 5:
++            showError(self.opts["mf"].body, "History",
++                """At least 5 years of history should be retained.
++
++Please select Control --> System Record Maintenance and change the Years to Keep field""")
++            return
++        ctlmst = gc.getCtl("ctlmst", self.opts["conum"])
++        if not ctlmst:
++            return
++        mod = []
++        for x in xrange(0, len(ctlmst["ctm_modules"].rstrip()), 2):
++            mod.append(ctlmst["ctm_modules"][x:x+2])
++        if mod.count("GL"):
++            self.genleg = True
++            ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++            if not ctlctl:
++                return
++            if gc.chkRec(self.opts["conum"], ctlctl, ["ret_inc"]):
++                return
++            self.ri_acc = ctlctl["ret_inc"]
++        else:
++            self.genleg = False
++        t = time.localtime()
++        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
++        self.c_per = int(self.opts["period"][0])
++        self.start = self.opts["period"][1][0]
++        self.end = self.opts["period"][2][0]
++        self.l_per = self.sql.getRec(tables="ctlynd", cols=["max(cye_period)"],
++            where=[("cye_cono", "=", self.opts["conum"])], limit=1)[0]
++        self.last, self.oldf = self.sql.getRec(tables="ctlynd",
++            cols=["cye_last", "cye_final"], where=[("cye_cono", "=",
++            self.opts["conum"]), ("cye_period", "=", self.opts["period"][0])],
++            limit=1)[:2]
++        if self.oldf == "Y":
++            cf = PwdConfirm(self.opts["mf"], conum=0, system="MST",
++                code="YearEnd")
++            if cf.pwd and cf.flag == "ok":
++                return True
++            if not cf.pwd:
++                showError(self.opts["mf"].body, "Year-End Error",
++                    "This Financial Period Has Already Been Finalised!!!")
++            return
++        return True
++
++    def drawScreen(self):
++        tit = ("%-3d %s" % (self.opts["conum"], self.opts["conam"]),
++            "Financial Year End")
++        r1s = (("Yes", "Y"), ("No", "N"))
++        fld = [
++            (("T",0,0,0),"OD1",10,"Starting Date","",
++                self.start,"N",None,None,None,None,("efld",)),
++            [("T",0,1,0),"ID1",10,"Ending Date ","Ending Date",
++                self.end,"N",self.doEnd,None,None,None,("efld",)],
++            (("T",0,2,0),("IRB",r1s),0,"Finalise","",
++                self.oldf,"N",self.doFinal,None,None,None,None,"""Finalising a financial period prevents any further data capture for that period as well as any previous periods i.e. if you finalise a period all previous financial periods are also automatically finalised.""")]
++        if self.last:
++            fld[1][1] = "OD1"
++        but = (
++            ("Apply",None,self.doProcess,1,("T",0,0),("T",0,1)),
++            ("Cancel",None,self.doExit,1,("T",0,2),("T",0,1)))
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
++            tend=(None,), txit=(self.doExit,), butt=but)
++
++    def doEnd(self, frt, pag, r, c, p, i, w):
++        self.end = w
++        if self.end <= self.start:
++            return "Invalid Year End Date"
++
++    def doFinal(self, frt, pag, r, c, p, i, w):
++        self.final = w
++
++    def doProcess(self, widget=None):
++        self.df.closeProcess()
++        pb = ProgressBar(self.opts["mf"].body, typ="Processing Periods",
++            mxs=self.c_per + 1)
++        for per in xrange(0, self.c_per + 1):
++            pb.displayProgress(per)
++            chk = self.sql.getRec(tables="ctlynd", cols=["cye_final"],
++                where=[("cye_cono", "=", self.opts["conum"]), ("cye_period",
++                "=", per)], limit=1)
++            if self.oldf == "Y" or chk[0] == "N":
++                self.retinc = 0
++                self.doYearEnd(per)
++        pb.closeProgress()
++        if self.years:
++            self.doDropYears()
++        self.opts["mf"].dbm.commitDbase()
++        self.opts["mf"].closeLoop()
++
++    def doYearEnd(self, per):
++        self.sql.updRec("ctlynd", cols=["cye_last", "cye_final"],
++            data=[self.sysdtw, self.final], where=[("cye_cono", "=",
++            self.opts["conum"]), ("cye_period", "=", per)])
++        if per == self.c_per:
++            start_c = self.start
++            end_c = self.end
++            if (per + 1) > self.l_per:
++                newy = end_c / 10000
++                newm = ((end_c / 100) % 100) + 1
++                if newm > 12:
++                    newy += 1
++                    newm -= 12
++                news = (newy * 10000) + (newm * 100) + 1
++                newy = (end_c / 10000) + 1
++                newm = (end_c / 100) % 100
++                newe = (newy * 10000) + (newm * 100) + 1
++                newe = mthendDate(newe)
++                self.sql.insRec("ctlynd", data=[self.opts["conum"], (per + 1),
++                    news, newe, 0, "N"])
++        else:
++            s, e, f = getPeriods(self.opts["mf"], self.opts["conum"], per)
++            if s is None or e is None:
++                return
++            start_c = s.work
++            end_c = e.work
++        sp = start_c / 100
++        ep = end_c / 100
++        s, e, f = getPeriods(self.opts["mf"], self.opts["conum"], (per + 1))
++        start_n = s.work
++        if not self.genleg:
++            return
++        self.sql.delRec("genbal", where=[("glo_cono", "=", self.opts["conum"]),
++            ("glo_trdt", "=", start_n)])
++        gm = self.sql.getRec(tables="genmst", cols=["glm_acno, glm_type"],
++            where=[("glm_cono", "=", self.opts["conum"])])
++        if gm:
++            for ac in gm:
++                ov = self.sql.getRec(tables="genbal", cols=["glo_cyr"],
++                    where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno",
++                    "=", ac[0]), ("glo_trdt", "=", start_c)], limit=1)
++                if not ov:
++                    ov = CCD(0, "SD", 13.2)
++                else:
++                    ov = CCD(ov[0], "SD", 13.2)
++                cy = self.sql.getRec(tables="gentrn",
++                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono",
++                    "=", self.opts["conum"]), ("glt_acno", "=", ac[0]),
++                    ("glt_curdt", "between", sp, ep)], limit=1)
++                if not cy[0]:
++                    cy = CCD(0, "SD", 13.2)
++                else:
++                    cy = CCD(cy[0], "SD", 13.2)
++                bal = float(ASD(ov.work) + ASD(cy.work))
++                if ac[1] == "P":
++                    self.retinc = float(ASD(self.retinc) + ASD(bal))
++                    bal = 0.00
++                self.sql.insRec("genbal", data=[self.opts["conum"], ac[0],
++                    start_n,bal])
++            ri_bal = self.sql.getRec(tables="genbal", cols=["glo_cyr"],
++                where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
++                self.ri_acc), ("glo_trdt", "=", start_n)], limit=1)
++            if not ri_bal:
++                self.sql.insRec("genbal", data=[self.opts["conum"],
++                    self.ri_acc, start_n, self.retinc])
++            else:
++                bal = float(ASD(ri_bal[0]) + ASD(self.retinc))
++                self.sql.updRec("genbal", cols=["glo_cyr"], data=[bal],
++                    where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno",
++                    "=", self.ri_acc), ("glo_trdt", "=", start_n)])
++
++    def doDropYears(self):
++        TABLES = [
++            ["asstrn", "ast_curdt", ["ast_amt1", "ast_amt2"], "assmst"],
++            ["chglog"],
++            ["crspay", "cpt_date", []],
++            ["crsrbm", "rbm_curdt", []],
++            ["crsrdm", "rdm_curdt", []],
++            ["crstrn", "crt_curdt", ["crt_tramt"], "crsmst"],
++            ["ctlbat", "btm_curdt", []],
++            ["ctllog"],
++            ["ctlnot"],
++            ["ctlvtf", "vtt_curdt", []],
++            ["drsrcm", "dcm_last", []],
++            ["drstrn", "drt_curdt", ["drt_tramt"], "drsmst"],
++            ["emllog"],
++            ["genbal", "glo_trdt", []],
++            ["genbud", "glb_curdt", []],
++            ["gendtt", "gdt_curdt", []],
++            ["genrct", "grt_date", []],
++            ["gentrn", "glt_curdt", ["glt_tramt"], "genmst"],
++            ["memtrn", "mlt_curdt", ["mlt_tramt"], "memmst"],
++            ["memtrs", "mst_trdt", []],
++            ["rcaowt", "rot_curdt", ["rot_tramt"], "rcaowm"],
++            ["rcatnt", "rtu_curdt", ["rtu_tramt"], "rcatnm"],
++            ["rtltrn", "rtt_curdt", ["rtt_tramt"], "rtlmst"],
++            ["slsiv1", "si1_date", []],
++            ["strpom", "pom_date", []],
++            ["strtrn", "stt_curdt", ["stt_qty", "stt_cost"], "strmf1"],
++            ["wagltf", "wlt_curdt", ["wlt_amt"], "waglmf"],
++            ["wagtf1", "wt1_date", []],
++            ["wagtf2", "wt2_date", []]]
++        ynds = self.sql.getRec("ctlynd", where=[("cye_cono", "=",
++            self.opts["conum"])], order="cye_period")
++        if not len(ynds) > self.years:
++            return
++        last = ynds[len(ynds) - (self.years + 1)]
++        sdate = last[self.sql.ctlynd_col.index("cye_start")]
++        edate = last[self.sql.ctlynd_col.index("cye_end")]
++        elong = (edate * 1000000) + 999999
++        emldt = "%04i-%02i-99 99:99" % ((edate/ 10000), ((edate / 100) % 100))
++        ecurdt = edate / 100
++        count = 0
++        for ynd in ynds:
++            if ynd[1] < last[1]:
++                self.sql.delRec("ctlynd", where=[("cye_cono", "=",
++                    self.opts["conum"]), ("cye_period", "=", ynd[1])])
++            else:
++                self.sql.updRec("ctlynd", cols=["cye_period"], data=[count],
++                    where=[("cye_cono", "=", self.opts["conum"]),
++                    ("cye_period", "=", ynd[1])])
++                count += 1
++        tables = self.sql.getRec("ftable", order="ft_tabl")
++        ourtab = []
++        for tab in tables:
++            ourtab.append(tab[0])
++        tabs = []
++        for tab in TABLES:
++            if tab[0] in ourtab:
++                tabs.append(tab[0])
++            if len(tab) > 3:
++                tabs.append(tab[3])
++        pb = ProgressBar(self.opts["mf"].body, typ=("F",
++            "Dropping Periods Older Than %s Years - Please Wait" % \
++            self.years), mxs=len(TABLES))
++        sql = Sql(self.opts["mf"].dbm, tabs, prog=__name__)
++        for num, tab in enumerate(TABLES):
++            pb.displayProgress(num)
++            if not tab[0] in ourtab:
++                continue
++            if tab[0] == "chglog":
++                key = "%03i%s" % (self.opts["conum"], "%")
++                sql.delRec(tab[0], where=[("chg_key", "like", key),
++                    ("chg_dte", "<=", elong)])
++                continue
++            if tab[0] == "ctllog":
++                sql.delRec(tab[0], where=[("clg_start", "<=", elong)])
++                continue
++            if tab[0] == "ctlnot":
++                sql.delRec(tab[0], where=[("not_cono", "=",
++                    self.opts["conum"]), ("not_date", "<=", edate)])
++                continue
++            if tab[0] == "emllog":
++                sql.delRec(tab[0], where=[("eml_dtt", "<=", emldt)])
++                continue
++            ftt = self.sql.getRec("ftable", where=[("ft_tabl", "=", tab[0])])
++            pfxt = ftt[0][4].split("_")[0]
++            coyt = None
++            for k in ftt:
++                for f in k[4:]:
++                    if f.count("_cono"):
++                        coyt = f
++                        break
++                if coyt:
++                    break
++            if coyt:
++                whrt = [(coyt, "=", self.opts["conum"])]
++            else:
++                whrt = []
++            if tab[2]:
++                ftm = self.sql.getRec("ftable", where=[("ft_tabl", "=",
++                    tab[3]), ("ft_seq=1",)], limit=1)
++                pfxm = ftm[4].split("_")[0]
++                keyt = []
++                keym = []
++                coym = None
++                for c in ftm[4:]:
++                    if c:
++                        if c.count("_cono"):
++                            coym = c
++                        keym.append(c)
++                        t = c.replace(pfxm, pfxt)
++                        keyt.append(t)
++                if coym:
++                    whrm = [(coym, "=", self.opts["conum"])]
++                else:
++                    whrm = []
++            if not tab[2]:
++                if tab[1].count("_curdt"):
++                    whrt.append((tab[1], "<=", ecurdt))
++                    sql.delRec(tab[0], where=whrt)
++                elif tab[0] == "crspay":
++                    whrt.extend([("cpt_date", "<=", edate), ("cpt_flag",
++                        "=", "Y")])
++                    sql.delRec(tab[0], where=whrt)
++                elif tab[0] == "drsrcm":
++                    whrt.append((tab[1], "<=", ecurdt))
++                    recs = sql.getRec(tab[0], where=whrt)
++                    for rec in recs:
++                        sql.delRec(tab[0], where=[("dcm_cono", "=", rec[0]),
++                            ("dcm_num", "=", rec[1])])
++                        sql.delRec("drsrct", where=[("dct_cono", "=", rec[0]),
++                            ("dct_num", "=", rec[1])])
++                elif tab[0] == "genbal":
++                    whrt.append((tab[1], "<=", sdate))
++                    sql.delRec(tab[0], where=whrt)
++                elif tab[0] == "slsiv1":
++                    whrt.append((tab[1], "<=", edate))
++                    recs = sql.getRec(tab[0], where=whrt)
++                    for rec in recs:
++                        sql.delRec(tab[0], where=[("si1_cono", "=", rec[0]),
++                            ("si1_rtn", "=", rec[1]), ("si1_docno", "=",
++                            rec[2])])
++                        sql.delRec("slsiv2", where=[("si2_cono", "=", rec[0]),
++                            ("si2_rtn", "=", rec[1]), ("si2_docno", "=",
++                            rec[2])])
++                        sql.delRec("slsiv3", where=[("si3_cono", "=", rec[0]),
++                            ("si3_rtn", "=", rec[1]), ("si3_docno", "=",
++                            rec[2])])
++                elif tab[0] == "strpom":
++                    whrt.append((tab[1], "<=", edate))
++                    recs = sql.getRec(tab[0], where=whrt)
++                    for rec in recs:
++                        sql.delRec(tab[0], where=[("pom_cono", "=", rec[0]),
++                            ("pom_ordno", "=", rec[1])])
++                        sql.delRec("strpot", where=[("pot_cono", "=", rec[0]),
++                            ("pot_ordno", "=", rec[1])])
++            else:
++                recs = sql.getRec(tab[3], where=whrm)
++                for rec in recs:
++                    whr = whrt[:]
++                    for k in keyt:
++                        if not k.count("_cono"):
++                            exec "dat = rec[sql.%s_col.index(k)]" % tab[0]
++                            whr.append((k, '=', dat))
++                    if tab[0] == "asstrn":
++                        whr.append(("ast_mtyp", "<>", 1))
++                        col = ["ast_mtyp"]
++                        grp = "ast_cono, ast_group, ast_code, ast_mtyp"
++                        lim = 0
++                    elif tab[0] == "rcatnt":
++                        col = ["rtu_cnum", "rtu_mtyp"]
++                        grp = "rtu_cono, rtu_owner, rtu_code, rtu_acno, "\
++                            "rtu_cnum, rtu_mtyp"
++                        lim = 0
++                    elif tab[0] == "rtltrn":
++                        col = ["rtt_cnum"]
++                        grp = "rtt_cono, rtt_code, rtt_acno, rtt_cnum"
++                        lim = 0
++                    elif tab[0] == "strtrn":
++                        col = ["stt_loc"]
++                        grp = "stt_cono, stt_group, stt_code, stt_loc"
++                        lim = 0
++                    elif tab[0] == "wagltf":
++                        mt = sql.getRec("wagltf", cols=["wlt_loan",
++                            "max(wlt_curdt)"], where=[("wlt_cono", "=",
++                            rec[0]), ("wlt_empno", "=", rec[1])],
++                            group="wlt_cono, wlt_empno, wlt_loan",
++                            order="wlt_cono, wlt_empno, wlt_loan")
++                        for m in mt:
++                            if m[1] >= ecurdt:
++                                continue
++                            b = sql.getRec("wagltf", cols=["sum(wlt_amt)"],
++                                where=[("wlt_cono", "=", rec[0]), ("wlt_empno",
++                                "=", rec[1]), ("wlt_loan", "=", m[0])],
++                                limit=1)
++                            if not b[0]:
++                                continue
++                            sql.delRec("waglmf", where=[("wlm_cono", "=",
++                                rec[0]), ("wlm_empno", "=", rec[1]),
++                                ("wlm_loan", "=", m[0])])
++                            sql.delRec("wagltf", where=[("wlt_cono", "=",
++                                rec[0]), ("wlt_empno", "=", rec[1]),
++                                ("wlt_loan", "=", m[0])])
++                        continue
++                    else:
++                        col = []
++                        grp = None
++                        lim = 1
++                    for c in tab[2]:
++                        col.append("sum(%s)" % c)
++                    whr.append((tab[1], "<=", ecurdt))
++                    bals = sql.getRec(tab[0], cols=col, where=whr, group=grp,
++                        order=grp, limit=lim)
++                    if not bals:
++                        continue
++                    if tab[0] in ("crstrn", "drstrn", "memtrn"):
++                        trns = sql.getRec(tab[0], where=whr)
++                    sql.delRec(tab[0], where=whr)
++                    if tab[0] == "asstrn":
++                        from tartanWork import armvtp
++                        for bal in bals:
++                            # Create Transactions
++                            if not bal[1] and not bal[2]:
++                                continue
++                            data = rec[:3]
++                            data.extend([3, "Bal-Fwd", "Bal-Fwd", edate,
++                                bal[0], bal[1], bal[2], 0, ecurdt,
++                                "%s Brought Forward" % armvtp[bal[0]-1][1],
++                                "", "", self.opts["capnm"], self.sysdtw, 0])
++                            sql.insRec(tab[0], data=data)
++                    elif tab[0] == "crstrn" and bals[0]:
++                        for trn in trns:
++                            typ = trn[sql.crstrn_col.index("crt_type")]
++                            ref = trn[sql.crstrn_col.index("crt_ref1")]
++                            sql.delRec("crsage", where=[("cra_cono", "=",
++                                rec[0]), ("cra_acno", "=", rec[1]),
++                                ("cra_type", "=", typ), ("cra_ref1", "=",
++                                ref)])
++                            sql.delRec("crsage", where=[("cra_cono", "=",
++                                rec[0]), ("cra_acno", "=", rec[1]),
++                                ("cra_atyp", "=", typ), ("cra_aref", "=",
++                                ref)])
++                            if "crsrtf" in ourtab:
++                                sql.delRec("crsrtf", where=[("rtf_cono",
++                                "=", rec[0]), ("rtf_acno", "=", rec[1]),
++                                ("rtf_type", "=", typ), ("rtf_ref1", "=",
++                                ref)])
++                        data = rec[:2]
++                        data.extend([3, "Bal-Fwd", "Bal-Fwd", edate, "",
++                            bals[0], 0, 0, ecurdt, self.sysdtw, "Y", bals[0],
++                            "Brought Forward", "", "", self.opts["capnm"],
++                            self.sysdtw, 0])
++                        sql.insRec(tab[0], data=data)
++                    elif tab[0] == "drstrn" and bals[0]:
++                        for trn in trns:
++                            typ = trn[sql.drstrn_col.index("drt_type")]
++                            ref = trn[sql.drstrn_col.index("drt_ref1")]
++                            sql.delRec("drsage", where=[("dra_cono", "=",
++                            rec[0]), ("dra_chain", "=", rec[1]), ("dra_acno",
++                            "=", rec[2]), ("dra_type", "=", typ), ("dra_ref1",
++                            "=", ref)])
++                            sql.delRec("drsage", where=[("dra_cono", "=",
++                                rec[0]), ("dra_chain", "=", rec[1]),
++                                ("dra_acno", "=", rec[2]), ("dra_atyp", "=",
++                                typ), ("dra_aref", "=", ref)])
++                        data = rec[:3]
++                        data.extend([3, "Bal-Fwd", "Bal-Fwd", edate, "",
++                            bals[0], 0, ecurdt, "Brought Forward", "", "",
++                            self.opts["capnm"], self.sysdtw, 0])
++                        sql.insRec(tab[0], data=data)
++                    elif tab[0] == "gentrn" and bals[0]:
++                        continue
++                    elif tab[0] == "memtrn" and bals[0]:
++                        for trn in trns:
++                            typ = trn[sql.memtrn_col.index("mlt_type")]
++                            ref = trn[sql.memtrn_col.index("mlt_refno")]
++                            sql.delRec("memage", where=[("mta_cono", "=",
++                                rec[0]), ("mta_memno", "=", rec[1]),
++                                ("mta_type", "=", typ), ("mta_refno", "=",
++                                ref)])
++                            sql.delRec("memage", where=[("mta_cono", "=",
++                                rec[0]), ("mta_memno", "=", rec[1]),
++                                ("mta_atyp", "=", typ), ("mta_aref", "=",
++                                ref)])
++                        data = rec[:2]
++                        data.extend([3, "Bal-Fwd", "Bal-Fwd", edate, bals[0],
++                            0, ecurdt, "", 0, "Brought Forward", "", "",
++                            self.opts["capnm"], self.sysdtw, 0])
++                        sql.insRec(tab[0], data=data)
++                    elif tab[0] == "rcaowt" and bals[0]:
++                        data = rec[:2]
++                        data.extend([4, "Bal-Fwd", "Bal-Fwd", edate, bals[0],
++                            0, ecurdt, "Brought Forward", "", "",
++                            self.opts["capnm"], self.sysdtw, 0])
++                        sql.insRec(tab[0], data=data)
++                    elif tab[0] == "rcatnt":
++                        from tartanWork import rcmvtp
++                        for bal in bals:
++                            # Create Transactions
++                            if not bal[2]:
++                                continue
++                            data = rec[:4]
++                            data.extend([bal[0], 4, "Bal-Fwd", "Bal-Fwd",
++                                edate, bal[1], bal[2], 0, ecurdt,
++                                "%s Brought Forward" % rcmvtp[bal[1]-1][1],
++                                "", "", self.opts["capnm"], self.sysdtw, 0])
++                            sql.insRec(tab[0], data=data)
++                    elif tab[0] == "rtltrn":
++                        for bal in bals:
++                            # Create Transactions
++                            if not bal[1]:
++                                continue
++                            data = rec[:3]
++                            data.extend([bal[0], 4, "Bal-Fwd", "Bal-Fwd",
++                                edate, bal[1], 0, ecurdt, "Brought Forward",
++                                "", "", self.opts["capnm"], self.sysdtw, 0])
++                            sql.insRec(tab[0], data=data)
++                    elif tab[0] == "strtrn":
++                        for bal in bals:
++                            # Create Transactions
++                            if not bal[1] and not bal[2]:
++                                continue
++                            data = rec[:3]
++                            if bal[1] < 0:
++                                typ = 6
++                            else:
++                                typ = 5
++                            data.extend([bal[0], edate, typ, "Bal-Fwd",
++                                "Bal-Fwd", "", bal[1], bal[2], 0, ecurdt,
++                                "Brought Forward", 0, "", "", "", 0, 0, 0,
++                                "", self.opts["capnm"], self.sysdtw, 0])
++                            sql.insRec(tab[0], data=data)
++        pb.closeProgress()
++
++    def doExit(self, widget=None):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
+
+=== modified file 'sls/si2020.py'
+--- sls/si2020.py	2014-12-30 15:37:38 +0000
++++ sls/si2020.py	2015-04-30 12:56:00 +0000
+@@ -251,8 +251,6 @@
+                 [("RoundedFrame", {"sticky": "nsew"})])
+         self.style.configure("Heading",
+             font=self.font, rowheight=rsz)
+-        self.style.configure("B.Treeview",
+-            font=self.font, rowheight=rsz)
+         self.style.configure("C.TFrame",
+             font=("Helvetica", self.fsz, "bold"))
+         self.style.configure("C.TButton",
+@@ -335,7 +333,7 @@
+             ("c", "Value", 12.2, "UD", "N")]
+         lines = 30
+         self.sc = SelectChoice(f2, None, cols, [], lines=lines, sort=False,
+-            neww=False, loop=False, live=False, scrl=False, styl="B.Treeview",
++            neww=False, loop=False, live=False, scrl=False,
+             font=self.font)
+         while self.sc.tree.winfo_reqheight() > self.minrow * 4:
+             lines -= 1
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-04-24 13:45:12 +0000
++++ std/TartanClasses.py	2015-05-20 12:44:13 +0000
+@@ -29,11 +29,11 @@
+ # PyFPDF
+ #========================================================
+ try:
+-    import fpdf
++    from fpdf import fpdf
+     if not fpdf.Image:
+         raise Exception
+ except:
+-    print "Missing fpdf or python-imaging module"
++    print("Missing fpdf or python-imaging module")
+     sys.exit()
+ #========================================================
+ # Excel import and export modules
+@@ -1374,7 +1374,7 @@
+             self.dbm = None
+             if xdisplay:
+                 if not GUI:
+-                    print "Missing Tkinter and/or ttk modules"
++                    print("Missing Tkinter and/or ttk modules")
+                     sys.exit()
+                 if not title:
+                     title = "Tartan Systems - (%s P Malherbe)" % u"\u00A9"
+@@ -3563,7 +3563,7 @@
+         if self.tab:
+             chk = self.doCheckTables(self.tab)
+             if chk:
+-                print "Csv File for Table %s Does Not Exist" % chk
++                print("Csv File for Table %s Does Not Exist" % chk)
+                 return
+         if self.doCreate():
+             if self.cmt:
+@@ -4574,7 +4574,7 @@
+                     found = True
+                     break
+             if not found:
+-                print "Invalid Notebook Tag %s" % label
++                print("Invalid Notebook Tag %s" % label)
+                 return
+         elif index is None:
+             index = page - 1
+@@ -5730,7 +5730,7 @@
+             ok = ("ok",)
+         if ok[0] == "no":
+             if flds[1][0] in ("O", "OCB", "ORB"):
+-                print "Invalid Output Data %s for (%s)" % (ok[1:], flds)
++                print("Invalid Output Data %s for (%s)" % (ok[1:], flds))
+                 sys.exit()
+             else:
+                 self.focusField(frt, pag, self.col, err=ok[1])
+@@ -6472,7 +6472,7 @@
+         elif state == "show" and wid in self.hidden:
+             exec "wid.%s(self.hidden[wid][1])" % self.hidden[wid][0]
+             del self.hidden[wid]
+-        wid.update_idletasks()
++        wid.winfo_toplevel().update_idletasks()
+ 
+     def getInfo(self, wid, geom):
+         # Python 2.7.6 geom_info is broken
+@@ -8477,7 +8477,7 @@
+         self.mf = mf
+         self.system = system
+         self.data = data
+-        self.total = CCD(float(ASD(0) - ASD(total)), "SD", 11.2)
++        self.total = CCD(float(ASD(0) - ASD(total)), "SD", 13.2)
+         self.xits = xits
+         self.setVariables()
+         if self.total.work:
+@@ -8499,9 +8499,9 @@
+             (0, "   Date",    10,   "D1", None),
+             (1, "Reference",   9,   "Na", None),
+             (2, "Typ",         3,   typ,  None),
+-            (3, "    Amount", 11.2, "SD", None),
+-            (4, " Allocated", 11.2, "SD", None),
+-            (5, "   Balance", 11.2, "SD", None))
++            (3, "    Amount", 13.2, "SD", None),
++            (4, " Allocated", 13.2, "SD", None),
++            (5, "   Balance", 13.2, "SD", None))
+         self.work = []
+         self.xit = False
+         self.ccl = False
+@@ -8521,12 +8521,12 @@
+         hbox.grid_columnconfigure(0, weight=1)
+         lab = MyLabel(hbox, text="Allocation Amount")
+         lab.grid(row=0, column=0, sticky="ew")
+-        self.allAmt = MyEntry(hbox, width=11, maxsize=11, cmd=self.enterAmt)
++        self.allAmt = MyEntry(hbox, width=12, maxsize=12, cmd=self.enterAmt)
+         self.allAmt.configure(state="disabled")
+         self.allAmt.grid(row=0, column=1, sticky="ew")
+         lab = MyLabel(hbox, text="Unallocated")
+         lab.grid(row=0, column=2, sticky="ew")
+-        self.allBal = MyEntry(hbox, width=11, maxsize=11)
++        self.allBal = MyEntry(hbox, width=12, maxsize=12)
+         self.allBal.insert(0, self.total.disp)
+         self.allBal.configure(state="disabled")
+         self.allBal.grid(row=0, column=3, sticky="ew")
+@@ -8552,14 +8552,14 @@
+         bal = self.work[self.pos][5]
+         if bal > self.total.work:
+             bal = self.total.work
+-        wrk = CCD(bal, "SD", 11.2)
++        wrk = CCD(bal, "SD", 13.2)
+         self.allAmt.delete(0, "end")
+         self.allAmt.insert(0, wrk.disp)
+         self.allAmt.focus_set()
+         self.allAmt.selection_range(0, "end")
+ 
+     def enterAmt(self, widget=None):
+-        wrk = CCD(self.allAmt.get(), "SD", 11.2)
++        wrk = CCD(self.allAmt.get(), "SD", 13.2)
+         self.data[self.pos][6] = float(ASD(self.data[self.pos][6]) + \
+             ASD(wrk.work))
+         recs = float(ASD(self.work[self.pos][4]) + ASD(wrk.work))
+@@ -8567,7 +8567,7 @@
+         self.work[self.pos][4] = recs
+         self.work[self.pos][5] = bal
+         tot = float(ASD(self.total.work) - ASD(wrk.work))
+-        self.total = CCD(tot,"SD",11.2)
++        self.total = CCD(tot,"SD",13.2)
+         self.closeProcess()
+ 
+     def exitAge(self, widget=None):
+@@ -10957,7 +10957,8 @@
+             "dnote": "n",
+             "dvals": "n",
+             "email": "n",
+-            "copy": "n"}
++            "copy": "n",
++            "splash": True}
+         for nam in args:
+             defaults[nam] = args[nam]
+         for nam in defaults:
+@@ -10977,7 +10978,9 @@
+         return True
+ 
+     def doProcess(self):
+-        sp = SplashScreen(self.mf.body, "Generating Forms\n\n   Please Wait...")
++        if self.splash:
++            sp = SplashScreen(self.mf.body,
++                "Generating Forms\n\n   Please Wait...")
+         s1c = self.sql.slsiv1_col
+         s2c = self.sql.slsiv2_col
+         dmc = self.sql.drsmst_col
+@@ -11052,8 +11055,10 @@
+                     self.form.tptp["document_type"][1] = dat
+             if self.email.lower() == "y" and not self.emadd:
+                 self.doPrint(self.eml)
+-                sp.refreshSplash()
+-        sp.closeSplash()
++                if self.spalsh:
++                    sp.refreshSplash()
++        if self.splash:
++            sp.closeSplash()
+         if self.email.lower() == "n" or self.emadd:
+             self.doPrint(self.emadd)
+ 
+@@ -15171,7 +15176,7 @@
+         portrait = (190, 275)
+         alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" * 15
+         if not head:
+-            print "Missing maximum line width"
++            print("Missing maximum line width")
+             sys.exit()
+         # Adjust to heading width
+         self.font = None
+@@ -15209,7 +15214,7 @@
+                 if self.def_orientation == "P":
+                     self.def_orientation = "L"
+                 else:
+-                    print "Invalid head length", len(head)
++                    print("Invalid head length", len(head))
+                     sys.exit()
+         self.cwth = self.get_string_width("X")
+         self.set_auto_page_break(False, margin=0)
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2015-03-21 07:40:04 +0000
++++ std/tartanFunctions.py	2015-05-19 08:06:18 +0000
+@@ -52,7 +52,7 @@
+                 answer = raw_input("\n%s (yes/no): " % mess)
+             return answer
+         else:
+-            print "\n%s" % mess
++            print("\n%s" % mess)
+             return
+ 
+ def askChoice(screen=None, head="", mess="", butt=None, default=""):
+@@ -352,14 +352,14 @@
+     if path:
+         doSaveExc()
+     if not scrn:
+-        print mess
++        print(mess)
+         return
+     try:
+         if scrn.winfo_toplevel().state() == "withdrawn":
+             scrn.winfo_toplevel().deiconify()
+         ScrollText(scrn=scrn, title=title, mess=mess, select=False, xits=xits)
+     except:
+-        print mess
++        print(mess)
+ 
+ def makeArray(col, row, dth, typ="I"):
+     """
+@@ -562,12 +562,9 @@
+             return
+         if view.lower() == "v" or prtnam == "view":
+             # Execute viewer command
+-            mf.window.iconify()
+             exe, cmd = parsePrg(mf.rcdic["vwr"])
+             cmd.append(rep)
+             os.spawnv(os.P_WAIT, exe, tuple(cmd))
+-            mf.window.deiconify()
+-            mf.window.lift()
+         elif prtnam and prtnam.lower() != "none":
+             if splash:
+                 sp = SplashScreen(mf.body,
+@@ -1287,7 +1284,7 @@
+         df.enableButtonsTags(state=state)
+         df.focusField(df.frt, df.pag, df.col)
+ 
+-def doChkCatChg(mf, cono, memno, yrnd, nxtdt):
++def doChkCatChg(mf, cono, memno, nxtdt):
+     from TartanClasses import Sql
+ 
+     sql = Sql(mf.dbm, ["memctc", "memmst", "memcat"])
+@@ -1303,8 +1300,8 @@
+         doe = mst[sql.memmst_col.index("mlm_entry")]
+     if not dob or not doe:
+         return
+-    age = dateDiff(dob, yrnd, "years")
+-    mem = dateDiff(doe, yrnd, "years")
++    age = dateDiff(dob, nxtdt, "years")
++    mem = dateDiff(doe, nxtdt, "years")
+     # Get current category
+     cat = sql.getRec(tables="memcat", where=[("mlc_cono", "=", cono),
+         ("mlc_memno", "=", memno), ("mlc_type", "=", "B")], limit=1)
+
+=== modified file 'str/st3110.py'
+--- str/st3110.py	2015-02-07 06:31:11 +0000
++++ str/st3110.py	2015-05-20 10:32:47 +0000
+@@ -40,7 +40,6 @@
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
+             (t[0], t[1], t[2], t[3], t[4])
+-        self.labels = {"L7159": (3, 8, 32)}
+         return True
+ 
+     def mainProcess(self):
+
+=== modified file 'str/st6010.py'
+--- str/st6010.py	2015-02-07 06:31:11 +0000
++++ str/st6010.py	2015-05-11 12:43:52 +0000
+@@ -68,18 +68,18 @@
+             "whera": [["T", "st1_group", 0]]}
+         r1s = (("Yes", "Y"), ("No", "N"))
+         self.fld = [
+-            (["T",0,0,0],"I@st1_group",0,"Old Group","Old Group",
+-                "","Y",self.doGroup,grp,None,("notblank",)),
+-            (["T",0,0,31],"O@gpm_desc",0,""),
+-            (["T",0,1,0],"I@st1_group",0,"New Group","New Group",
+-                "","Y",self.doGroup,grp,None,("notblank",)),
+-            (["T",0,1,31],"O@gpm_desc",0,""),
++            (["T",0,0,0],"IUA",3,"Old Group","Old Group",
++                "","Y",self.doGroup,grp,None,("notblank",)),
++            (["T",0,0,31],"ONA",30,""),
++            (["T",0,1,0],"IUA",3,"New Group","New Group",
++                "","Y",self.doGroup,grp,None,("notblank",)),
++            (["T",0,1,31],"ONA",30,""),
+             (["T",0,2,0],("IRB",r1s),0,"All Codes","All Codes",
+                 "N","Y",self.doAllCod,None,None,None),
+-            (["T",0,3,0],"I@st1_code",0,"Old Code","Old Product Code",
++            (["T",0,3,0],"INA",20,"Old Code","Old Product Code",
+                 "","Y",self.doOldCod,stm,None,("notblank",)),
+-            (["T",0,3,0],"O@st1_desc",0,""),
+-            (["T",0,4,0],"I@st1_code",0,"New Code","New Product Code",
++            (["T",0,3,0],"ONA",30,""),
++            (["T",0,4,0],"INA",20,"New Code","New Product Code",
+                 "","Y",self.doNewCod,None,None,("notblank",))]
+         but = (
+             ("Import File",None,self.doImport,0,("T",0,1),("T",0,2),
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2015-04-30 10:16:15 +0000
++++ tab/tb1020.py	2015-05-19 10:55:40 +0000
+@@ -561,7 +561,7 @@
+                 p2.finish()
+                 p2 = None
+             if ndata:
+-                txt = "Populating Table (%s)" % self.table
++                txt = "Populating Table %s" % self.table
+                 if pbar == "w":
+                     p2.mxs = len(ndata)
+                     p2.txtlab.configure(text=txt)
+@@ -784,6 +784,11 @@
+                                 sql.insRec("wagtxr", data=dat)
+             except:
+                 pass
++        # genrcc - Deposits changes to Receipts
++        sql = Sql(self.dbm, "genrcc", prog=__name__, errs=False)
++        sql.updRec("genrcc", cols=["grc_rtn"], data=["R"],
++            where=[("grc_rtn", "=", "D")])
++        # Close Splash
+         if self.opts["mf"] and  self.opts["mf"].window:
+             spl.closeSplash()
+         self.dbm.commitDbase()
+
+=== modified file 'wag/sl4010.py'
+--- wag/sl4010.py	2015-03-21 07:40:04 +0000
++++ wag/sl4010.py	2015-05-19 15:43:54 +0000
+@@ -83,16 +83,16 @@
+             (("T",1,0,0),"OUI",3,"Deduction Code"),
+             (("T",1,1,0),"OUD",6.2,"Interest Percentage"),
+             (("T",1,2,0),"OD1",10,"Start Date"),
+-            (("T",1,3,0),"OSD",10.2,"Deduction Amount"),
+-            (("T",1,4,0),"OSD",10.2,"Total Advances"),
+-            (("T",1,5,0),"OSD",10.2,"Total Interest"),
+-            (("T",1,6,0),"OSD",10.2,"Total Repayments"),
+-            (("T",1,7,0),"OSD",10.2,"Total Adjustments"),
+-            (("T",1,8,0),"OSD",10.2,"Balance"),
++            (("T",1,3,0),"OSD",13.2,"Deduction Amount"),
++            (("T",1,4,0),"OSD",13.2,"Total Advances"),
++            (("T",1,5,0),"OSD",13.2,"Total Interest"),
++            (("T",1,6,0),"OSD",13.2,"Total Repayments"),
++            (("T",1,7,0),"OSD",13.2,"Total Adjustments"),
++            (("T",1,8,0),"OSD",13.2,"Balance"),
+             (("T",1,9,0),"Od1",10,"Last Interest Raised"),
+             (("T",1,10,0),"Od1",10,"Last Payment Received"),
+-            (("T",1,11,0),"OSD",10.2,"Capital"),
+-            (("T",1,12,0),"OSD",10.2,"Int-Due"),
++            (("T",1,11,0),"OSD",13.2,"Capital"),
++            (("T",1,12,0),"OSD",13.2,"Int-Due"),
+             (("T",2,0,0),("IRB",r1s),0,"History","",
+                 "Y","Y",self.doTrans2,None,None,None))
+         tnd = ((self.doEndTop,"N"), None, None)
+@@ -318,8 +318,8 @@
+             ref = CCD(rec[self.sql.wagltf_col.index("wlt_ref")], "Na", 9)
+             bat = CCD(rec[self.sql.wagltf_col.index("wlt_batch")], "Na", 7)
+             rte = CCD(rec[self.sql.wagltf_col.index("wlt_per")], "NA", 7.2)
+-            amt = CCD(rec[self.sql.wagltf_col.index("wlt_amt")], "SD", 11.2)
+-            ded = CCD(rec[self.sql.wagltf_col.index("wlt_ded")], "SD", 11.2)
++            amt = CCD(rec[self.sql.wagltf_col.index("wlt_amt")], "SD", 13.2)
++            ded = CCD(rec[self.sql.wagltf_col.index("wlt_ded")], "SD", 13.2)
+             det = CCD(rec[self.sql.wagltf_col.index("wlt_desc")], "NA", 30)
+             if self.pglin > self.fpdf.lpp:
+                 self.pageHeading()
+
+=== modified file 'wag/wg3020.py'
+--- wag/wg3020.py	2015-02-07 06:31:11 +0000
++++ wag/wg3020.py	2015-05-20 09:10:33 +0000
+@@ -68,7 +68,7 @@
+ 
+     def doPrintReport(self, recs):
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+-        self.head = ("%03u %-30s %10s %47s %10s %10s" % (self.opts["conum"],
++        self.head = ("%03u %-30s %10s %49s %10s %10s" % (self.opts["conum"],
+             self.opts["conam"], "", self.sysdttm, "", __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+@@ -86,7 +86,7 @@
+             cod = CCD(dat[4], "UI", 3)
+             des = CCD(dat[9], "NA", 30)
+             ind = CCD(dat[5], "UA", 1)
+-            amt = CCD(dat[6], "SD", 11.2)
++            amt = CCD(dat[6], "SD", 13.2)
+             if old_empno and old_empno != emp.work:
+                 self.fpdf.drawText()
+                 self.pglin += 1
+@@ -112,12 +112,12 @@
+         self.pgnum += 1
+         self.fpdf.drawText(self.head)
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-35s %-10s %62s %5s" % (
++        self.fpdf.drawText("%-35s %-10s %64s %5s" % (
+             "Salaries Data Capture Report as at", self.date,
+             "Page", self.pgnum))
+         self.fpdf.drawText()
+         self.fpdf.drawText(
+-            "%-5s %-50s %-1s %-5s %-1s %-3s %-30s %-1s %11s" % ("EmpNo",
++            "%-5s %-50s %-1s %-5s %-1s %-3s %-30s %-1s %13s" % ("EmpNo",
+             "Name", "D", "JobNo", "T", "Cod", "Description", "I", "Amount"))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+
+=== modified file 'wag/wg4010.py'
+--- wag/wg4010.py	2015-03-21 07:40:04 +0000
++++ wag/wg4010.py	2015-05-19 15:53:41 +0000
+@@ -68,7 +68,6 @@
+         fld = (
+             (("T",0,0,0),"IUI",5,"Emp-Num","Employee Number",
+                 "","Y",self.doEmpno,wgm,None,("notzero",)),
+-            (("T",0,0,0),"ONA",3,"Branch"),
+             (("T",0,0,0),"OUI",1,"Department"),
+             (("T",0,0,0),"OUI",1,"Class"),
+             (("T",1,0,0),"ONA",30,"Surname"),
+@@ -85,10 +84,9 @@
+             (("T",1,11,0),"OTX",50,"E-Mail Address"),
+             (("T",1,12,0),"OD1",10,"Start Date"),
+             (("T",1,13,0),"Od1",10,"Term  Date"),
+-            (("T",1,14,0),"ONA",3,"Status"),
+-            (("T",1,15,0),"OUD",10.2,"Salary"),
+-            (("T",1,16,0),"OUA",1,"Pay Freq"),
+-            (("T",1,17,0),"OUA",1,"Pay Type"),
++            (("T",1,14,0),"OUD",13.2,"Salary"),
++            (("T",1,15,0),"OUA",1,"Pay Freq"),
++            (("T",1,16,0),"OUA",1,"Pay Type"),
+             (("T",2,0,0),"OUA",1,"P.A.Y.E."),
+             (("T",2,1,0),"ONA",16,"Tax Office"),
+             (("T",2,2,0),"ONA",10,"Tax Number"),
+@@ -139,14 +137,12 @@
+         if not acc:
+             return "Invalid Employee Number"
+         self.empno = w
+-        self.sname = acc[5]
+-        self.fname = acc[6]
+-        acc.insert(18, acc.pop())                    # Termination Date
+-        acc.insert(19, acc.pop())                    # Status Code
+-        self.df.loadEntry("T", 0, 1, data=acc[2])
+-        self.df.loadEntry("T", 0, 2, data=acc[3])
+-        self.df.loadEntry("T", 0, 3, data=acc[4])
+-        d = 5
++        self.sname = acc[4]
++        self.fname = acc[5]
++        acc.insert(17, acc.pop())                    # Termination Date
++        self.df.loadEntry("T", 0, 1, data=acc[2])    # Department
++        self.df.loadEntry("T", 0, 2, data=acc[3])    # Class
++        d = 4
+         for pag in xrange(1, 4):
+             for x in xrange(0, self.df.topq[pag]):
+                 self.df.loadEntry("T", pag, x, data=acc[d])
+@@ -422,17 +418,17 @@
+         for x in xrange(0, len(self.wagtrn)):
+             date = CCD(self.wagtrn[x][0], "D1", 10)
+             page = CCD(self.wagtrn[x][1], "UI", 5)
+-            nhrs = CCD(self.wagtrn[x][2], "SD", 10.2)
+-            npay = CCD(self.wagtrn[x][3], "SD", 10.2)
+-            taxbl = CCD(self.wagtrn[x][4], "SD", 10.2)
+-            notax = CCD(self.wagtrn[x][5], "SD", 10.2)
+-            taxdd = CCD(self.wagtrn[x][6], "SD", 10.2)
+-            nondd = CCD(self.wagtrn[x][7], "SD", 10.2)
++            nhrs = CCD(self.wagtrn[x][2], "SD", 13.2)
++            npay = CCD(self.wagtrn[x][3], "SD", 13.2)
++            taxbl = CCD(self.wagtrn[x][4], "SD", 13.2)
++            notax = CCD(self.wagtrn[x][5], "SD", 13.2)
++            taxdd = CCD(self.wagtrn[x][6], "SD", 13.2)
++            nondd = CCD(self.wagtrn[x][7], "SD", 13.2)
+             if self.pglin > self.fpdf.lpp:
+                 self.pageHeading()
+                 self.pageHeadingTrans()
+             net = CCD((float(ASD(taxbl.work) + ASD(notax.work) - \
+-                ASD(taxdd.work) - ASD(nondd.work))), "OSD", 10.2)
++                ASD(taxdd.work) - ASD(nondd.work))), "OSD", 13.2)
+             self.fpdf.drawText("%s %s %s %s %s %s %s %s %s" % (date.disp,
+                 page.disp, nhrs.disp, npay.disp, taxbl.disp, notax.disp,
+                 taxdd.disp, nondd.disp, net.disp))
+

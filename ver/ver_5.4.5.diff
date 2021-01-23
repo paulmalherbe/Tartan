@@ -1,0 +1,3154 @@
+=== modified file 'ass/ar2010.py'
+--- ass/ar2010.py	2019-01-13 16:38:59 +0000
++++ ass/ar2010.py	2019-01-24 09:55:01 +0000
+@@ -103,7 +103,7 @@
+         cnd = [[self.endPage,"y"]]
+         cxt = (self.exitPage,)
+         but = ((("Import File",None,self.doImport,0,("T",0,0),("C",0,2),
+-            "Import a CSV or XLS File with the Correct Format i.e. "\
++            "Import a CSV or XLS File having the following fields: "\
+             "Asset Group, Code, Description, Depreciation Code, "\
+             "Purchase Date, Original Cost, Company Depeciation and "\
+             "Receiver Depreciation if applicable"),))
+
+=== modified file 'ass/ar4010.py'
+--- ass/ar4010.py	2019-01-13 16:38:59 +0000
++++ ass/ar4010.py	2019-01-31 09:07:43 +0000
+@@ -26,8 +26,8 @@
+ 
+ import time
+ from TartanClasses import ASD, Balances, CCD, GetCtl, MyFpdf, NotesCreate
+-from TartanClasses import SChoice, Sql, SelectChoice, TabPrt, TartanDialog
+-from tartanFunctions import getModName, doPrinter
++from TartanClasses import Sql, SelectChoice, TabPrt, TartanDialog
++from tartanFunctions import askChoice, getModName, doPrinter
+ from tartanWork import artrtp, armvtp
+ 
+ class ar4010:
+@@ -193,6 +193,8 @@
+         self.df.loadEntry("C", 2, 0, data=cbl)
+         if self.rordp == "Y":
+             self.df.loadEntry("C", 2, 1, data=rbl)
++        else:
++            self.df.loadEntry("C", 2, 1, data=0)
+         if mov:
+             for n, c, r in mov:
+                 if self.rordp == "Y":
+@@ -276,23 +278,19 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        titl = "Select the required print option!"
+-        head = ("C", "Description")
+-        data = (
+-            ("Balances Only", "B"),
+-            ("Transactions Only", "T"),
+-            ("Balances and Transactions", "A"))
+-        ss = SChoice(self.opts["mf"], titl=titl, head=head, data=data)
+-        self.opts["mf"].updateStatus("")
+-        if not ss.selection:
+-            self.pr_opts = " "
+-        else:
+-            self.pr_opts = ss.selection[1]
+-        if self.pr_opts != " ":
+-            self.printDetail()
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Balances", "B"),
++            ("Transactions", "T"),
++            ("Both", "A"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+-    def printDetail(self):
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"], ext="pdf")
+         if self.rordp == "Y":
+@@ -304,14 +302,14 @@
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+         self.pglin = 999
+-        if self.pr_opts != "T":
++        if opt != "T":
+             self.pageHeading()
+             self.printInfo()
+-        if self.pr_opts == "B":
++        if opt == "B":
+             self.fpdf.output(pdfnam, "F")
+             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                 pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "A":
++        elif opt == "A":
+             if not self.trn[0]:
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+@@ -323,7 +321,7 @@
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "T":
++        elif opt == "T":
+             if self.trn[0]:
+                 self.pageHeading()
+                 self.pageHeadingTrans()
+
+=== modified file 'ass/ar6010.py'
+--- ass/ar6010.py	2019-01-13 16:38:59 +0000
++++ ass/ar6010.py	2019-01-25 08:37:22 +0000
+@@ -73,12 +73,12 @@
+         fld = [
+             (["T",0,0,0],"I@asm_group",0,"Old Group","Old Group",
+                 "","Y",self.doOldGrp,grp,None,("notblank",)),
+-            (["T",0,0,12],"IRW",7,"Old Code","Old Asset Code",
++            (["T",0,0,12],"INA",7,"Code","Old Asset Code",
+                 "","Y",self.doOldCod,asm,None,("notblank",)),
+-            (["T",0,0,27],"O@asm_desc",0,""),
++            (["T",0,0,27],"ONA",30,""),
+             (["T",0,1,0],"I@asm_group",0,"New Group","New Group",
+                 "","Y",self.doNewGrp,grp,None,("notblank",)),
+-            (["T",0,1,12],"I@asm_code",0,"New Code","New Asset Code",
++            (["T",0,1,12],"I@asm_code",0,"Code","New Asset Code",
+                 "","Y",self.doNewCod,None,None,("notblank",))]
+         tnd = ((self.doProcess,"y"), )
+         txt = (self.doExit, )
+
+=== removed file 'ass/ar6020_rne.py'
+--- ass/ar6020_rne.py	2019-01-13 16:38:59 +0000
++++ ass/ar6020_rne.py	1970-01-01 00:00:00 +0000
+@@ -1,118 +0,0 @@
+-"""
+-SYNOPSIS
+-    Asset Register Batch Deletion Utility.
+-
+-    This file is part of Tartan Systems (TARTAN).
+-
+-AUTHOR
+-    Written by Paul Malherbe, <paul@tartan.co.za>
+-
+-COPYING
+-    Copyright (C) 2004-2019 Paul Malherbe.
+-
+-    This program is free software: you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation, either version 3 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+-    GNU General Public License for more details.
+-
+-    You should have received a copy of the GNU General Public License
+-    along with this program. If not, see <https://www.gnu.org/licenses/>.
+-"""
+-
+-from TartanClasses import TartanDialog, Sql
+-from tartanWork import gltrtp
+-
+-class gl6020:
+-    def __init__(self, **opts):
+-        self.opts = opts
+-        if self.setVariables():
+-            self.mainProcess()
+-            self.opts["mf"].startLoop()
+-
+-    def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "asstrn", "ctlvtf"])
+-        if self.sql.error:
+-            return
+-        return True
+-
+-    def mainProcess(self):
+-        tit = ("Batch Deletions",)
+-        data = []
+-        for n, t in enumerate(gltrtp):
+-            data.append((n+1, t[1]))
+-        ttp = {
+-            "stype": "C",
+-            "titl": "Transaction Types",
+-            "head": ("C", "Type"),
+-            "data": data}
+-        self.bat = {
+-            "stype": "R",
+-            "tables": ("asstrn",),
+-            "cols": (
+-                ("ast_batch", "", 0, "BatchNo"),
+-                ("ast_curdt", "", 0, "Curr-Dt")),
+-            "where": [("ast_cono", "=", self.opts["conum"])],
+-            "whera": [
+-                ["T", "ast_curdt", 0],
+-                ["T", "ast_type", 1]],
+-            "group": "ast_batch",
+-            "order": "ast_batch"}
+-        r1s = (("Yes", "Y"), ("No", "N"))
+-        fld = (
+-            (("T",0,0,0),("IRB",r1s),0,"All Companies","",
+-                "N","N",self.doAllCoy,None,None,None),
+-            (("T",0,1,0),"I@ast_type",0,"","",
+-                "","N",self.doType,ttp,None,("notzero",)),
+-            (("T",0,2,0),"I@ast_batch",0,"","",
+-                "","N",self.doBatch,self.bat,None,("notblank",)),
+-            (("T",0,3,0),"I@ast_curdt",0,"","",
+-                "","N",self.doCurdt,None,None,("efld",)))
+-        tnd = ((self.doEnd,"y"),)
+-        txt = (self.doExit,)
+-        self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
+-            eflds=fld, tend=tnd, txit=txt)
+-
+-    def doAllCoy(self, frt, pag, r, c, p, i, w):
+-        self.allcoy = w
+-
+-    def doType(self, frt, pag, r, c, p, i, w):
+-        if w > len(gltrtp):
+-            return "Invalid Transaction Type"
+-        self.trtp = w
+-
+-    def doBatch(self, frt, pag, r, c, p, i, w):
+-        if self.allcoy == "N":
+-            self.where = [("ast_cono", "=", self.opts["conum"])]
+-        else:
+-            self.where = []
+-        self.where.extend([
+-            ("ast_type", "=", self.trtp),
+-            ("ast_batch", "=", w)])
+-        chk = self.sql.getRec(tables="asstrn", cols=["count(*)"],
+-            where=self.where, limit=1)
+-        if not chk[0]:
+-            return "Invalid Batch Number"
+-
+-    def doCurdt(self, frt, pag, r, c, p, i, w):
+-        self.where.append(("ast_curdt", "=", w))
+-        chk = self.sql.getRec(tables="asstrn", cols=["count(*)"],
+-            where=self.where, limit=1)
+-        if not chk[0]:
+-            return "Invalid Current Date"
+-
+-    def doEnd(self):
+-        self.df.closeProcess()
+-        self.sql.delRec("asstrn", where=self.where)
+-        self.opts["mf"].dbm.commitDbase(ask=True)
+-        self.opts["mf"].closeLoop()
+-
+-    def doExit(self):
+-        self.df.closeProcess()
+-        self.opts["mf"].closeLoop()
+-
+-# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== renamed file 'ass/ar6030_rne.py' => 'ass/ar6020_rne.py'
+--- ass/ar6030_rne.py	2019-01-13 16:38:59 +0000
++++ ass/ar6020_rne.py	2019-01-25 08:44:39 +0000
+@@ -26,7 +26,7 @@
+ 
+ from TartanClasses import TartanDialog, Sql
+ 
+-class ar6030:
++class ar6020:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+@@ -86,21 +86,21 @@
+         self.cono = w
+         acc = self.sql.getRec(tables="ctlmst", cols=["ctm_name"],
+             where=[("ctm_cono", "=", self.cono)], limit=1)
+-        self.df.loadEntry(frt, pag, r+1, data=acc[0])
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
+ 
+     def doGroup(self, frt, pag, r, c, p, i, w):
+         self.group = w
+         acc = self.sql.getRec(tables="assgrp", cols=["asg_desc"],
+             where=[("asg_cono", "=", self.cono), ("asg_group", "=",
+             self.group)], limit=1)
+-        self.df.loadEntry(frt, pag, r+1, data=acc[0])
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
+ 
+     def doCode(self, frt, pag, r, c, p, i, w):
+         self.code = w
+         acc = self.sql.getRec(tables="assmst", cols=["asm_desc"],
+             where=[("asm_cono", "=", self.cono), ("asm_group", "=",
+             self.group), ("asm_code", "=", self.code)], limit=1)
+-        self.df.loadEntry(frt, pag, r+1, data=acc[0])
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+
+=== added file 'ass/ar6030_rne.py'
+--- ass/ar6030_rne.py	1970-01-01 00:00:00 +0000
++++ ass/ar6030_rne.py	2019-02-18 12:20:08 +0000
+@@ -0,0 +1,242 @@
++"""
++SYNOPSIS
++    Asset Register Transfer to Another Company.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2019 Paul Malherbe.
++
++    This program is free software: you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation, either version 3 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program. If not, see <https://www.gnu.org/licenses/>.
++"""
++
++import time
++from TartanClasses import ASD, CCD, GetCtl, TartanDialog, Sql
++from tartanFunctions import askQuestion, copyList, showError
++
++class ar6030:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctlynd", "assdep",
++            "assgrp", "assmst", "asstrn", "ctlvtf"], prog=__name__)
++        if self.sql.error:
++            return
++        self.gc = GetCtl(self.opts["mf"])
++        ynd = self.sql.getRec(tables="ctlynd", cols=["max(cye_period)"],
++            where=[("cye_cono", "=", 1)], limit=1)
++        self.ynd = self.sql.getRec(tables="ctlynd", cols=["cye_start",
++            "cye_end"], where=[("cye_cono", "=", 1), ("cye_period",
++            "=", ynd[0])], limit=1)
++        t = time.localtime()
++        self.capdt = (t[0] * 10000) + (t[1] * 100) + t[2]
++        return True
++
++    def mainProcess(self):
++        tit = ("Transfer Items",)
++        coy = {
++            "stype": "R",
++            "tables": ("ctlmst",),
++            "cols": (
++                ("ctm_cono", "", 0, "Coy"),
++                ("ctm_name", "", 0, "Name", "Y")),
++            "order": "ctm_cono"}
++        asg = {
++            "stype": "R",
++            "tables": ("assgrp",),
++            "cols": [
++                ("asg_group", "", 0, "Grp"),
++                ("asg_desc", "", 0, "Description")],
++            "whera": [["T", "asg_cono", 1]],
++            "order": "asg_desc"}
++        asm = {
++            "stype": "R",
++            "tables": ("assmst",),
++            "cols": [
++                ("asm_code", "", 0, "Code"),
++                ("asm_desc", "", 0, "Description", "Y")],
++            "whera": [
++                ("T", "asm_cono", 1),
++                ("T", "asm_group", 3)],
++            "order": "asm_group, asm_code"}
++        fld = (
++            (("T",0,0,0),"ID1",10,"Transfer Date","",
++                "","Y",self.doDate,None,None,("efld",)),
++            (("T",0,1,0),"I@asm_cono",3,"From Company","",
++                "","N",self.doCono,coy,None,("notzero",)),
++            (("T",0,1,0),"ONA",30,""),
++            (("T",0,2,0),"I@asm_group",3,"","",
++                "","N",self.doGroup,asg,None,("notblank",)),
++            (("T",0,2,0),"ONA",30,""),
++            (("T",0,3,0),"I@asm_code",7,"Product Code","",
++                "","N",self.doCode,asm,None,("notblank",)),
++            (("T",0,3,0),"ONA",30,""),
++            (("T",0,4,0),"IUI",3,"To Company","",
++                "","N",self.doCono,coy,None,("notzero",)),
++            (("T",0,4,0),"ONA",30,""))
++        tnd = ((self.doEnd,"y"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
++            tend=tnd, txit=txt)
++
++    def doDate(self, frt, pag, r, c, p, i, w):
++        if w < self.ynd[0]:
++            return "Invalid Date, Before Financial Start Date"
++        if w > self.ynd[1]:
++            return "Invalid Date, After Financial End Date"
++        self.date = w
++        self.curdt = w / 100
++
++    def doCono(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec(tables="ctlmst", cols=["ctm_name"],
++            where=[("ctm_cono", "=", w)], limit=1)
++        if not acc:
++            return "Invalid Company"
++        if p == 1:
++            assctl = self.gc.getCtl("assctl", w)
++            if not assctl:
++                return "Missing Control Record"
++            if self.curdt <= assctl["cta_lastp"]:
++                ok = askQuestion(self.opts["mf"].window, "Warning",
++                    """The Transfer Date is Earlier than the Last Transaction..
++
++Transfer Transactions, After Date, to New Company?""", default="yes")
++                if ok == "no":
++                    return "ff1"
++            self.cono = w
++        else:
++            self.toco = w
++        self.df.loadEntry(frt, pag, p+1, data=acc[0])
++
++    def doGroup(self, frt, pag, r, c, p, i, w):
++        self.asg = self.sql.getRec(tables="assgrp", where=[("asg_cono",
++            "=", self.cono), ("asg_group", "=", w)], limit=1)
++        if not self.asg:
++            return "Invalid Group"
++        self.group = w
++        self.gdesc = self.asg[self.sql.assgrp_col.index("asg_desc")]
++        self.df.loadEntry(frt, pag, p+1, data=self.gdesc)
++
++    def doCode(self, frt, pag, r, c, p, i, w):
++        self.code = w
++        self.asm = self.sql.getRec(tables="assmst", where=[("asm_cono",
++            "=", self.cono), ("asm_group", "=", self.group), ("asm_code",
++            "=", self.code)], limit=1)
++        self.cdesc = self.asm[self.sql.assmst_col.index("asm_desc")]
++        self.df.loadEntry(frt, pag, p+1, data=self.cdesc)
++        self.where = [
++            ("ast_cono", "=", self.cono),
++            ("ast_group", "=", self.group),
++            ("ast_code", "=", self.code)]
++        whr = copyList(self.where)
++        whr.append(("ast_date", "<=", self.date))
++        self.tots = self.sql.getRec(tables="asstrn", cols=["ast_mtyp",
++            "sum(ast_amt1)", "sum(ast_amt2)", "sum(ast_vat)"],
++            where=whr, group="ast_mtyp")
++        self.bal = 0
++        self.rec = 0
++        self.mov = {}
++        for tot in self.tots:
++            self.mov[tot[0]] = tot[1:]
++            self.bal = float(ASD(self.bal) + ASD(tot[1]))
++            self.rec = float(ASD(self.rec) + ASD(tot[2]))
++        if self.bal <= 0:
++            bal = CCD(self.bal, "SD", 13.2).disp
++            showError(self.opts["mf"].window, "Error",
++                "The Opening Balance is Zero or Minus (%s)" % bal)
++            return "rf"
++
++    def doEnd(self):
++        grp = self.sql.getRec(tables="assgrp", where=[("asg_cono", "=",
++            self.toco), ("asg_group", "=", self.group)], limit=1)
++        mst = self.sql.getRec(tables="assmst", where=[("asm_cono", "=",
++            self.toco), ("asm_group", "=", self.group), ("asm_code", "=",
++            self.code)], limit=1)
++        if mst:
++            showError(self.opts["mf"].window, "Error",
++                "This Code Already Exists in Receiving Company")
++        else:
++            if not grp:
++                data = copyList(self.asg)
++                data[0] = self.toco
++                self.sql.insRec("assgrp", data=data)
++            data = copyList(self.asm)
++            data[0] = self.toco
++            # Depreciation Code
++            depcod = data[self.sql.assmst_col.index("asm_depcod")]
++            old = self.sql.getRec(tables="assdep", where=[("asd_cono",
++                "=", self.cono), ("asd_code", "=", depcod)], limit=1)
++            news = self.sql.getRec(tables="assdep", where=[("asd_cono",
++                "=", self.toco)])
++            find = False
++            for new in news:
++                if new[3:] == old[3:]:
++                    data[self.sql.assmst_col.index("asm_depcod")] = new[1]
++                    find = True
++                    break
++            if not find:
++                cod = self.sql.getRec(tables="assdep", cols=["max(asd_code)"],
++                    where=[("asd_cono", "=", self.toco)], limit=1)
++                try:
++                    cod = str(int(cod[0]) + 1)
++                except:
++                    cod = "A%s" % cod[0].strip()[:2]
++                old[0] = self.toco
++                old[1] = cod
++                self.sql.insRec("assdep", data=old)
++                data[self.sql.assmst_col.index("asm_depcod")] = cod
++            # Assmst in receiving company
++            self.sql.insRec("assmst", data=data)
++            # Asstrn in receiving company
++            mov = list(self.mov.keys())
++            mov.sort()
++            for num, typ in enumerate(mov):
++                data = [self.toco, self.group, self.code, 3,
++                    "TRF-%03d-%s" % (self.cono, num), "ASS-TRF", self.date,
++                    typ, self.mov[typ][0], self.mov[typ][1], 0, self.curdt,
++                    self.cdesc, "N", "", self.opts["capnm"], self.capdt, 0]
++                self.sql.insRec("asstrn", data=data)
++            whr = copyList(self.where)
++            whr.append(("ast_date", ">=", self.date))
++            # Asstrn after transfer date
++            dels = self.sql.getRec(tables="asstrn", where=whr, order="ast_seq")
++            for d in dels:
++                data = copyList(d)
++                data[0] = self.toco
++                data[17] = 0
++                self.sql.insRec("asstrn", data=data)
++                self.sql.delRec("asstrn", data=d)
++            bal = float(ASD(0) - ASD(self.bal))
++            rec = float(ASD(0) - ASD(self.rec))
++            # Asstrn in original company
++            data = [self.cono, self.group, self.code, 3,
++                "TRFTO-%03d" % self.toco, "ASS-TRF", self.date,
++                5, bal, rec, 0, self.curdt, self.cdesc, "N", "",
++                self.opts["capnm"], self.capdt, 0]
++            self.sql.insRec("asstrn", data=data)
++            self.opts["mf"].dbm.commitDbase(ask=True)
++        self.df.focusField("T", 0, 1, clr=True)
++
++    def doExit(self):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'bkm/bkc510.py'
+--- bkm/bkc510.py	2019-01-13 16:38:59 +0000
++++ bkm/bkc510.py	2019-01-24 10:13:56 +0000
+@@ -90,7 +90,10 @@
+                 "","N",None,None,None,("efld",)))
+         but = (
+             ("Import",None,self.doImport,0,("T",0,1),("T",0,2),
+-                "Import Contact Details from a CSV or XLS File."),
++                "Import Contact Details from a CSV or XLS File having "\
++                "the following fields: Code, Title, Surname, Names, "\
++                "Address Line1, Line2, Line3, Postal Code, Telephone Number, "\
++                "Fax Number, Mobile Number, Email Address, VAT Number"),
+             ("Accept",None,self.doAccept,0,("T",0,2),("T",0,1)),
+             ("Print", None, self.doPrint,0,("T",0,2),("T",0,1)),
+             ("Quit", None, self.doExit,1,None,None))
+@@ -221,9 +224,6 @@
+             if not line[3]:
+                 err = "Blank Names"
+                 break
+-            #if not line[4]:
+-            #    err = "Blank Address"
+-            #    break
+             line.insert(0, self.opts["conum"])
+             self.sql.insRec("bkmcon", data=line)
+         sp.closeProgress()
+
+=== modified file 'crs/cr3160_rne.py'
+--- crs/cr3160_rne.py	2019-01-13 16:38:59 +0000
++++ crs/cr3160_rne.py	2019-02-14 14:49:42 +0000
+@@ -120,9 +120,9 @@
+                 if rec[1] not in dic[rec[0]]:
+                     dic[rec[0]][rec[1]] = {}
+                     dic[rec[0]][rec[1]] = [rec[2], 0, 0, 0, 0, 0, 0, 0, 0]
+-                dic[rec[0]][rec[1]][1] = float(ASD(dic[rec[0]][rec[1]][1]) + \
++                dic[rec[0]][rec[1]][1] = float(ASD(dic[rec[0]][rec[1]][1]) +
+                     ASD(rec[3]))
+-                dic[rec[0]][rec[1]][2] = float(ASD(dic[rec[0]][rec[1]][2]) + \
++                dic[rec[0]][rec[1]][2] = float(ASD(dic[rec[0]][rec[1]][2]) +
+                     ASD(rec[4]))
+         if self.curdt.work < 200703:
+             dis = self.getOldPeriod()
+@@ -135,17 +135,17 @@
+                 if rec[1] not in dic[rec[0]]:
+                     dic[rec[0]][rec[1]] = {}
+                     dic[rec[0]][rec[1]] = [rec[2], 0, 0, 0, 0, 0, 0, 0, 0]
+-                dic[rec[0]][rec[1]][3] = float(ASD(dic[rec[0]][rec[1]][3]) + \
++                dic[rec[0]][rec[1]][3] = float(ASD(dic[rec[0]][rec[1]][3]) +
+                     ASD(rec[3]))
+-                dic[rec[0]][rec[1]][4] = float(ASD(dic[rec[0]][rec[1]][4]) + \
++                dic[rec[0]][rec[1]][4] = float(ASD(dic[rec[0]][rec[1]][4]) +
+                     ASD(rec[4]))
+-                dic[rec[0]][rec[1]][5] = float(ASD(dic[rec[0]][rec[1]][5]) + \
++                dic[rec[0]][rec[1]][5] = float(ASD(dic[rec[0]][rec[1]][5]) +
+                     ASD(rec[5]))
+-                dic[rec[0]][rec[1]][6] = float(ASD(dic[rec[0]][rec[1]][6]) + \
++                dic[rec[0]][rec[1]][6] = float(ASD(dic[rec[0]][rec[1]][6]) +
+                     ASD(rec[6]))
+-                dic[rec[0]][rec[1]][7] = float(ASD(dic[rec[0]][rec[1]][7]) + \
++                dic[rec[0]][rec[1]][7] = float(ASD(dic[rec[0]][rec[1]][7]) +
+                     ASD(rec[7]))
+-                dic[rec[0]][rec[1]][8] = float(ASD(dic[rec[0]][rec[1]][8]) + \
++                dic[rec[0]][rec[1]][8] = float(ASD(dic[rec[0]][rec[1]][8]) +
+                     ASD(rec[8]))
+         data = []
+         if dic:
+
+=== modified file 'crs/cr4010.py'
+--- crs/cr4010.py	2019-01-23 09:10:12 +0000
++++ crs/cr4010.py	2019-01-31 09:15:47 +0000
+@@ -26,8 +26,8 @@
+ 
+ import time
+ from TartanClasses import ASD, Balances, GetCtl, NotesCreate, PrintOrder, RepPrt
+-from TartanClasses import SChoice, SelectChoice, Sql, TabPrt, TartanDialog
+-from tartanFunctions import getTrn
++from TartanClasses import SelectChoice, Sql, TabPrt, TartanDialog
++from tartanFunctions import askChoice, getTrn
+ from tartanWork import crtrtp, mthnam
+ 
+ """
+@@ -327,73 +327,76 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        titl = "Select the required print options"
+-        head = ("C", "Description")
+-        data = (
+-            ("I", "Information"),
+-            ("T", "Transactions"),
+-            ("B", "Both"))
+-        ss = SChoice(self.opts["mf"], titl=titl, head=head, data=data)
+-        self.opts["mf"].updateStatus("")
+-        if ss.selection:
+-            state = self.df.disableButtonsTags()
+-            self.df.setWidget(self.df.mstFrame, state="hide")
+-            if ss.selection[0] in ("I", "B"):
+-                table = "crsmst"
+-                whr = [
+-                    ("crm_cono", "=", self.opts["conum"]),
+-                    ("crm_acno", "=", self.acno)]
+-                rp = TabPrt(self.opts["mf"], self.opts["conum"],
+-                    self.opts["conam"], name=__name__, tabs=table,
+-                    where=whr, keys=[self.acno])
+-                repprt = rp.repprt
+-                repeml = rp.repeml
+-                xits = rp.xits
+-            else:
+-                repprt = None
+-                repeml = None
+-                xits = False
+-            if ss.selection[0] in ("T", "B") and not xits:
+-                heads = ["Creditor's Transactions",
+-                    "Account: %s  Name: %s" % (self.acno, self.name)]
+-                whr = [
+-                    ("crt_cono", "=", self.opts["conum"]),
+-                    ("crt_acno", "=", self.acno)]
+-                if self.paidup == "Y":
+-                    col, recs = getTrn(self.opts["mf"].dbm, "crs", whr=whr)
+-                else:
+-                    col, recs = getTrn(self.opts["mf"].dbm, "crs",
+-                        dte=self.curdt, whr=whr)
+-                cols = []
+-                data = []
+-                dic = self.sql.crstrn_dic
+-                for num, rec in enumerate(recs):
+-                    dat = []
+-                    for nam in ["crt_ref1", "crt_trdt", "crt_type",
+-                            "crt_tramt", "paid", "balance", "crt_desc"]:
+-                        if not num:
+-                            if nam == "paid":
+-                                cols.append(["paid", "SD", 13.2, "Paid"])
+-                            elif nam == "balance":
+-                                cols.append(["balance", "SD", 13.2, "Balance"])
+-                            else:
+-                                cols.append([nam, dic[nam][2], dic[nam][3],
+-                                    dic[nam][5]])
+-                        dat.append(rec[col.index(nam)])
+-                    data.append(dat)
+-                gtots = ["crt_tramt", "paid", "balance"]
+-                if repprt:
+-                    prtdia = False
+-                else:
+-                    prtdia = (("Y","V"),("Y","N"))
+-                rp = RepPrt(self.opts["mf"], conum=self.opts["conum"],
+-                    conam=self.opts["conam"], name=__name__, ttype="D",
+-                    tables=data, heads=heads, cols=cols, trtp=["crt_type",
+-                    crtrtp], gtots=gtots, prtdia=prtdia, repprt=repprt,
+-                    repeml=repeml, fromad=self.fromad)
+-            self.df.setWidget(self.df.mstFrame, state="show")
+-            self.df.enableButtonsTags(state=state)
+-            self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Information", "I"),
++            ("Transactions", "T"),
++            ("Both", "B"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
++        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
++        state = self.df.disableButtonsTags()
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        if opt in ("I", "B"):
++            table = "crsmst"
++            whr = [
++                ("crm_cono", "=", self.opts["conum"]),
++                ("crm_acno", "=", self.acno)]
++            rp = TabPrt(self.opts["mf"], self.opts["conum"],
++                self.opts["conam"], name=__name__, tabs=table,
++                where=whr, keys=[self.acno])
++            repprt = rp.repprt
++            repeml = rp.repeml
++            xits = rp.xits
++        else:
++            repprt = None
++            repeml = None
++            xits = False
++        if opt in ("T", "B") and not xits:
++            heads = ["Creditor's Transactions",
++                "Account: %s  Name: %s" % (self.acno, self.name)]
++            whr = [
++                ("crt_cono", "=", self.opts["conum"]),
++                ("crt_acno", "=", self.acno)]
++            if self.paidup == "Y":
++                col, recs = getTrn(self.opts["mf"].dbm, "crs", whr=whr)
++            else:
++                col, recs = getTrn(self.opts["mf"].dbm, "crs",
++                    dte=self.curdt, whr=whr)
++            cols = []
++            data = []
++            dic = self.sql.crstrn_dic
++            for num, rec in enumerate(recs):
++                dat = []
++                for nam in ["crt_ref1", "crt_trdt", "crt_type",
++                        "crt_tramt", "paid", "balance", "crt_desc"]:
++                    if not num:
++                        if nam == "paid":
++                            cols.append(["paid", "SD", 13.2, "Paid"])
++                        elif nam == "balance":
++                            cols.append(["balance", "SD", 13.2, "Balance"])
++                        else:
++                            cols.append([nam, dic[nam][2], dic[nam][3],
++                                dic[nam][5]])
++                    dat.append(rec[col.index(nam)])
++                data.append(dat)
++            gtots = ["crt_tramt", "paid", "balance"]
++            if repprt:
++                prtdia = False
++            else:
++                prtdia = (("Y","V"),("Y","N"))
++            rp = RepPrt(self.opts["mf"], conum=self.opts["conum"],
++                conam=self.opts["conam"], name=__name__, ttype="D",
++                tables=data, heads=heads, cols=cols, trtp=["crt_type",
++                crtrtp], gtots=gtots, prtdia=prtdia, repprt=repprt,
++                repeml=repeml, fromad=self.fromad)
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.enableButtonsTags(state=state)
+ 
+     def doExit(self, widget=None):
+         self.df.closeProcess()
+
+=== modified file 'doc/ASS.rst'
+--- doc/ASS.rst	2017-08-24 07:49:34 +0000
++++ doc/ASS.rst	2019-01-25 08:35:13 +0000
+@@ -128,6 +128,12 @@
+ + **From Action Date** - The starting action date.
+ + **To Action Date** - The ending action date.
+ 
++Toolbox (CR)
++............
++Change Asset Codes (AR)
+++++++++++++++++++++++++
++Use this routine to change asset groups and codes.
++
+ Interrogation (AR)
+ ..................
+ This routine is for querying individual assets.
+
+=== modified file 'doc/BKSMST.rst'
+--- doc/BKSMST.rst	2019-01-23 09:10:12 +0000
++++ doc/BKSMST.rst	2019-02-24 15:37:32 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.4
++:Version:   5.4.5
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWLMST.rst'
+--- doc/BWLMST.rst	2019-01-23 09:10:12 +0000
++++ doc/BWLMST.rst	2019-02-24 15:37:32 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.4
++:Version:   5.4.5
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/CSHMST.rst'
+--- doc/CSHMST.rst	2019-01-23 09:10:12 +0000
++++ doc/CSHMST.rst	2019-02-24 15:37:32 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.4
++:Version:   5.4.5
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2019-01-23 09:10:12 +0000
++++ doc/Downloads.rst	2019-02-24 15:37:32 +0000
+@@ -11,27 +11,27 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.4.4 and was released on the 23rd January, 2019.
++The latest version of Tartan is 5.4.5 and was released on the 24th February, 2019.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.4.4.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.4.5.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.4.4.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.4.5.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.4.4.tgz
+-.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.4.4.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.4.4.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.4.4.exe
+-.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.4.4.tgz
+-.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.4.4.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.4.4.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.4.4.exe
++.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.4.5.tgz
++.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.4.5.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.4.5.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.4.5.exe
++.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.4.5.tgz
++.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.4.5.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.4.5.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.4.5.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2019-01-23 09:10:12 +0000
++++ doc/MST.rst	2019-02-24 15:37:32 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.4
++:Version:   5.4.5
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SECMST.rst'
+--- doc/SECMST.rst	2019-01-23 09:10:12 +0000
++++ doc/SECMST.rst	2019-02-24 15:37:32 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - Reference Manual
+ ==================================
+ 
+-:Version:   5.4.4
++:Version:   5.4.5
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== added file 'doc/openvpn.txt'
+--- doc/openvpn.txt	1970-01-01 00:00:00 +0000
++++ doc/openvpn.txt	2019-02-21 09:15:55 +0000
+@@ -0,0 +1,57 @@
++$ cd ~
++$ git clone https://github.com/Nyr/openvpn-install.git
++$ cd openvpn-install/
++$ ls -1
++    LICENSE.txt
++    README.md
++    openvpn-install.sh
++$ chmod +x openvpn-install.sh
++$ sudo ./openvpn-install.sh
++
++First, provide the IPv4 address of the network interface you want OpenVPN
++listening to.
++IP address: 192.168.10.2
++
++Which protocol do you want for OpenVPN connections?
++1) UDP (recommended)
++2) TCP
++Protocol [1-2]: 1
++
++What port do you want OpenVPN listening to?
++Port: 1194
++
++Which DNS do you want to use with the VPN?
++1) Current system resolvers
++2) 1.1.1.1
++3) Google
++4) OpenDNS
++5) Verisign
++DNS [1-5]: 1
++
++Finally, tell me your name for the client certificate.
++Please, use one word only, no special characters.
++Client name: client
++
++Okay, that was all I needed. We are ready to set up your OpenVPN server now.
++Press any key to continue... <Enter>
++
++sing configuration from ./openssl-easyrsa.cnf
++Check that the request matches the signature
++Signature ok
++The Subject's Distinguished Name is as follows
++commonName            :ASN.1 12:'client'
++Certificate is to be certified until Jul  4 07:53:27 2028 GMT (3650 days)
++
++Write out database with 1 new entries
++Data Base Updated
++Using configuration from ./openssl-easyrsa.cnf
++
++An updated CRL has been created.
++CRL file: /etc/openvpn/easy-rsa/pki/crl.pem
++
++394
++
++Finished!
++
++Your client configuration is available at: /root/client.ovpn
++If you want to add more clients, you simply need to run this script again!
+
+=== modified file 'drs/dr4010.py'
+--- drs/dr4010.py	2019-01-13 16:38:59 +0000
++++ drs/dr4010.py	2019-01-31 09:17:53 +0000
+@@ -26,9 +26,8 @@
+ 
+ import time
+ from TartanClasses import ASD, Balances, GetCtl, NotesCreate, PrintInvoice
+-from TartanClasses import RepPrt, SChoice, Sql, SelectChoice, TabPrt
+-from TartanClasses import TartanDialog
+-from tartanFunctions import getTrn
++from TartanClasses import RepPrt, Sql, SelectChoice, TabPrt, TartanDialog
++from tartanFunctions import askChoice, getTrn
+ from tartanWork import drtrtp, mthnam
+ 
+ class dr4010:
+@@ -491,81 +490,84 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        titl = "Select the required print options"
+-        head = ("C", "Description")
+-        data = (
+-            ("I", "Information"),
+-            ("T", "Transactions"),
+-            ("B", "Both"))
+-        ss = SChoice(self.opts["mf"], titl=titl, head=head, data=data)
+-        self.opts["mf"].updateStatus("")
+-        if ss.selection:
+-            state = self.df.disableButtonsTags()
+-            self.df.setWidget(self.df.mstFrame, state="hide")
+-            if ss.selection[0] in ("I", "B"):
+-                tab = "drsmst"
+-                whr = [
+-                    ("drm_cono", "=", self.opts["conum"]),
+-                    ("drm_chain", "=", self.chain),
+-                    ("drm_acno", "=", self.acno)]
+-                rp = TabPrt(self.opts["mf"], self.opts["conum"],
+-                    self.opts["conam"], name=__name__, tabs=tab,
+-                    where=whr, keys=[self.chain, self.acno])
+-                repprt = rp.repprt
+-                repeml = rp.repeml
+-                xits = rp.xits
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Information", "I"),
++            ("Transactions", "T"),
++            ("Both", "B"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
++        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
++        state = self.df.disableButtonsTags()
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        if opt in ("I", "B"):
++            tab = "drsmst"
++            whr = [
++                ("drm_cono", "=", self.opts["conum"]),
++                ("drm_chain", "=", self.chain),
++                ("drm_acno", "=", self.acno)]
++            rp = TabPrt(self.opts["mf"], self.opts["conum"],
++                self.opts["conam"], name=__name__, tabs=tab,
++                where=whr, keys=[self.chain, self.acno])
++            repprt = rp.repprt
++            repeml = rp.repeml
++            xits = rp.xits
++        else:
++            repprt = None
++            repeml = None
++            xits = False
++        if opt in ("T", "B") and not xits:
++            heads = ["Debtor's Transactions",
++                "Chain: %s  Account: %s  Name: %s" % \
++                (self.chain, self.acno, self.name)]
++            whr = [
++                ("drt_cono", "=", self.opts["conum"]),
++                ("drt_chain", "=", self.chain),
++                ("drt_acno", "=", self.acno)]
++            if self.paidup == "Y":
++                col, recs = getTrn(self.opts["mf"].dbm, "drs", whr=whr)
+             else:
+-                repprt = None
+-                repeml = None
+-                xits = False
+-            if ss.selection[0] in ("T", "B") and not xits:
+-                heads = ["Debtor's Transactions",
+-                    "Chain: %s  Account: %s  Name: %s" % \
+-                    (self.chain, self.acno, self.name)]
+-                whr = [
+-                    ("drt_cono", "=", self.opts["conum"]),
+-                    ("drt_chain", "=", self.chain),
+-                    ("drt_acno", "=", self.acno)]
+-                if self.paidup == "Y":
+-                    col, recs = getTrn(self.opts["mf"].dbm, "drs", whr=whr)
+-                else:
+-                    col, recs = getTrn(self.opts["mf"].dbm, "drs",
+-                        dte=self.curdt, whr=whr)
+-                cols = []
+-                data = []
+-                dic = self.sql.drstrn_dic
+-                for num, rec in enumerate(recs):
+-                    dat = []
+-                    for nam in ["drt_ref1", "drt_ref2", "drt_trdt", "drt_type",
+-                            "drt_tramt", "paid", "balance", "drt_desc"]:
+-                        if not num:
+-                            if nam == "drt_ref2":
+-                                cols.append(["a", "Na", 14, "Ref-Number-Two"])
+-                            elif nam == "paid":
+-                                cols.append(["paid", "SD", 13.2, "Paid"])
+-                            elif nam == "balance":
+-                                cols.append(["balance", "SD", 13.2, "Balance"])
+-                            else:
+-                                cols.append([nam, dic[nam][2], dic[nam][3],
+-                                dic[nam][5]])
++                col, recs = getTrn(self.opts["mf"].dbm, "drs",
++                    dte=self.curdt, whr=whr)
++            cols = []
++            data = []
++            dic = self.sql.drstrn_dic
++            for num, rec in enumerate(recs):
++                dat = []
++                for nam in ["drt_ref1", "drt_ref2", "drt_trdt", "drt_type",
++                        "drt_tramt", "paid", "balance", "drt_desc"]:
++                    if not num:
+                         if nam == "drt_ref2":
+-                            dat.append(self.getRef2(col, rec))
++                            cols.append(["a", "Na", 14, "Ref-Number-Two"])
++                        elif nam == "paid":
++                            cols.append(["paid", "SD", 13.2, "Paid"])
++                        elif nam == "balance":
++                            cols.append(["balance", "SD", 13.2, "Balance"])
+                         else:
+-                            dat.append(rec[col.index(nam)])
+-                    data.append(dat)
+-                gtots = ["drt_tramt", "paid", "balance"]
+-                if repprt:
+-                    prtdia = False
+-                else:
+-                    prtdia = (("Y","V"),("Y","N"))
+-                rp = RepPrt(self.opts["mf"], conum=self.opts["conum"],
+-                    conam=self.opts["conam"], name=__name__, ttype="D",
+-                    tables=data, heads=heads, cols=cols, trtp=["drt_type",
+-                    drtrtp], gtots=gtots, prtdia=prtdia, repprt=repprt,
+-                    repeml=repeml, fromad=self.fromad)
+-            self.df.setWidget(self.df.mstFrame, state="show")
+-            self.df.enableButtonsTags(state=state)
+-            self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++                            cols.append([nam, dic[nam][2], dic[nam][3],
++                            dic[nam][5]])
++                    if nam == "drt_ref2":
++                        dat.append(self.getRef2(col, rec))
++                    else:
++                        dat.append(rec[col.index(nam)])
++                data.append(dat)
++            gtots = ["drt_tramt", "paid", "balance"]
++            if repprt:
++                prtdia = False
++            else:
++                prtdia = (("Y","V"),("Y","N"))
++            rp = RepPrt(self.opts["mf"], conum=self.opts["conum"],
++                conam=self.opts["conam"], name=__name__, ttype="D",
++                tables=data, heads=heads, cols=cols, trtp=["drt_type",
++                drtrtp], gtots=gtots, prtdia=prtdia, repprt=repprt,
++                repeml=repeml, fromad=self.fromad)
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.enableButtonsTags(state=state)
+ 
+     def doExit(self, widget=None):
+         self.df.closeProcess()
+
+=== modified file 'gen/gl1010.py'
+--- gen/gl1010.py	2019-01-13 16:38:59 +0000
++++ gen/gl1010.py	2019-01-26 07:28:17 +0000
+@@ -51,7 +51,7 @@
+         if not self.taxdf:
+             self.taxdf = "N"
+         self.mods = []
+-        for x in xrange(0, len(ctlmst["ctm_modules"].rstrip()), 2):
++        for x in range(0, len(ctlmst["ctm_modules"].rstrip()), 2):
+             self.mods.append(ctlmst["ctm_modules"][x:x+2])
+         tabs = ["ctlctl", "ctldep", "ctlvmf", "genmst", "genrpt",
+                 "gentrn", "chglog"]
+@@ -108,7 +108,10 @@
+                 "","N",self.doVatCod,vat,None,("notblank",)]]
+         but = [
+             ("Import",None,self.doImport,0,("T",0,1),("T",0,2),
+-                "Import a Chart of Accounts from a CSV or XLS File."),
++                "Import a Chart of Accounts from a CSV or XLS file "\
++                "having the following fields: Account Number, "\
++                "Account Type (P/B), Description, Direct Postings (Y/N), "\
++                "VAT Code"),
+             ["Populate",None,self.doPopulate,0,("T",0,1),("T",0,2),
+                 "Generate a Chart of Accounts with Accompanying Control "\
+                 "Records and Financial Statement Report. This Only Applies "\
+@@ -141,7 +144,7 @@
+             return "rf"
+         else:
+             self.new = False
+-            for x in xrange(0, self.df.topq[pag]):
++            for x in range(0, self.df.topq[pag]):
+                 self.df.loadEntry(frt, pag, p+x, data=self.old[x+1])
+ 
+     def doTypCod(self, frt, pag, r, c, p, i, w):
+
+=== modified file 'gen/gl1030.py'
+--- gen/gl1030.py	2019-01-13 16:38:59 +0000
++++ gen/gl1030.py	2019-01-28 09:01:39 +0000
+@@ -511,6 +511,10 @@
+ 
+     def doAcno(self, frt, pag, r, c, p, i, w):
+         if w:
++            if pag == 3 and p == 1 and w < self.df.t_work[pag][0][0]:
++                return "To Account Less Than From Account"
++            if pag == 4 and p == 3 and w < self.df.t_work[pag][0][2]:
++                return "To Account Less Than From Account"
+             found = False
+             for acc in self.glm["data"]:
+                 if w == acc[0]:
+
+=== modified file 'gen/gl2030.py'
+--- gen/gl2030.py	2019-01-13 16:38:59 +0000
++++ gen/gl2030.py	2019-02-24 15:29:54 +0000
+@@ -819,7 +819,8 @@
+                         acc = self.sql.getRec(tables="genrct",
+                             cols=["max(grt_refno)"], where=[("grt_cono", "=",
+                             self.opts["conum"]), ("grt_acno", "=",
+-                            self.bh.acc), ("grt_refno", "like", "BS_______")])
++                            self.bh.acc), ("grt_refno", "like", "BS_______")],
++                            limit=1)
+                         if acc:
+                             try:
+                                 auto = int(acc[0][2:]) + 1
+@@ -970,10 +971,9 @@
+             if len(glt) > 1:
+                 # More than one transaction found, manually select which one
+                 get = self.doSelectEntry(date, memo, refno, amount, glt)
+-                if not get:
++                if get is None:
+                     return
+-                else:
+-                    glt = [glt[get]]
++                glt = [glt[get]]
+             # Set recon Flag on gentrn
+             self.sql.updRec("gentrn", cols=["glt_recon"],
+                 data=[int(date / 100)], where=[("glt_seq", "=", glt[0][0])])
+@@ -1100,9 +1100,7 @@
+         self.opts["mf"].updateStatus("Select Transaction")
+         date = CCD(date, "D1", 10)
+         amount = CCD(amount, "SD", 13.2)
+-        titl = """Multiple Comparison Entries in the Ledger for:-
+-
+-%s %s %s""" % (date.disp, amount.disp, memo)
++        titl = "Multiple Comparison Entries, Please Select One to Apply"
+         head = ("   Date   ", "Reference", "      Amount ", "Details")
+         lines = []
+         for seq in glt:
+@@ -1117,8 +1115,7 @@
+         sc = SChoice(self.opts["mf"], scrn=self.df.mstFrame, titl=titl,
+             head=head, data=lines, retn="I", mode="S")
+         self.df.enableButtonsTags(state=state)
+-        if sc.selection is not None:
+-            return sc.selection
++        return sc.selection
+ 
+     def doUpdateRct(self, seq):
+         # Set genrct grt_flag to Y
+@@ -1392,7 +1389,7 @@
+     def doAccNum(self, frt, pag, r, c, p, i, w):
+         if not w and self.lvl >= 3:
+             ok = askQuestion(self.opts["mf"].body, "Zero Number",
+-                "Do you wish to create a New Account?",
++                "Do you wish to Create a New Account?",
+                 default="no")
+             if ok == "yes":
+                 w = callModule(self.opts["mf"], self.df, "gl1010",
+@@ -1402,7 +1399,7 @@
+         if not w:
+             return "Invalid Account Number"
+         if self.allcoy == self.opts["conum"] and w == self.bh.acc:
+-            return "Invalid Number, Same as Origin"
++            return "Invalid Number, Same as Control"
+         self.others = False
+         self.othtot = 0
+         self.vattot = 0
+@@ -1548,7 +1545,13 @@
+             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+     def updateRecon(self):
+-        self.sql.updRec("gentrn", cols=["glt_recon"], data=[self.bh.curdt],
++        if self.bh.multi == "Y":
++            acc = self.sql.getRec(tables="gentrn", cols=["glt_curdt"],
++                where=[("glt_seq", "=", self.seq)], limit=1)
++            curdt = acc[0]
++        else:
++            curdt = self.bh.curdt
++        self.sql.updRec("gentrn", cols=["glt_recon"], data=[curdt],
+             where=[("glt_seq", "=", self.seq)])
+         self.opts["mf"].dbm.commitDbase()
+ 
+@@ -1717,11 +1720,14 @@
+ 
+     def debit(self, pag):
+         if pag == 1:
++            if self.pcash:
++                rtn = 3
++            else:
++                rtn = self.glrtn
+             amt = self.trnamt
+             data = (self.opts["conum"], self.conacc, self.curdt, self.trndte,
+-                self.glrtn, self.trnref, self.bh.batno, amt, 0.00,
+-                self.trndet, "", "N", self.rflag, self.opts["capnm"],
+-                self.sysdtw, 0)
++                rtn, self.trnref, self.bh.batno, amt, 0.00, self.trndet, "",
++                "N", self.rflag, self.opts["capnm"], self.sysdtw, 0)
+             self.sql.insRec("gentrn", data=data)
+         else:
+             amt = float(ASD(0) - (ASD(self.allamt) - ASD(self.vatamt)))
+@@ -1730,11 +1736,14 @@
+ 
+     def credit(self, pag):
+         if pag == 1:
++            if self.pcash:
++                rtn = 3
++            else:
++                rtn = self.glrtn
+             amt = float(ASD(0) - ASD(self.trnamt))
+             data = (self.opts["conum"], self.conacc, self.curdt, self.trndte,
+-                self.glrtn, self.trnref, self.bh.batno, amt, 0.00,
+-                self.trndet, "", "N", self.rflag, self.opts["capnm"],
+-                self.sysdtw, 0)
++                rtn, self.trnref, self.bh.batno, amt, 0.00, self.trndet, "",
++                "N", self.rflag, self.opts["capnm"], self.sysdtw, 0)
+             self.sql.insRec("gentrn", data=data)
+         else:
+             amt = float(ASD(self.allamt) - ASD(self.vatamt))
+@@ -1742,10 +1751,13 @@
+             self.restDebitCredit(amt, vat)
+ 
+     def restDebitCredit(self, amt, vat):
++        if self.pcash:
++            rtn = 3
++        else:
++            rtn = self.glrtn
+         data = (self.allcoy, self.accnum, self.curdt, self.trndte,
+-            self.glrtn, self.trnref, self.bh.batno, amt, vat,
+-            self.alldet, self.vatcod, "", 0, self.opts["capnm"],
+-            self.sysdtw, 0)
++            rtn, self.trnref, self.bh.batno, amt, vat, self.alldet,
++            self.vatcod, "", 0, self.opts["capnm"], self.sysdtw, 0)
+         self.sql.insRec("gentrn", data=data)
+         if self.allcoy != self.opts["conum"]:
+             acc = self.sql.getRec(tables="genint", cols=["cti_acno"],
+@@ -1753,30 +1765,26 @@
+                 self.allcoy)], limit=1)[0]
+             val = float(ASD(amt) + ASD(vat))
+             data = (self.opts["conum"], acc, self.curdt, self.trndte,
+-                self.glrtn, self.trnref, self.bh.batno, val, 0.00,
+-                self.alldet, self.vatcod, "", 0, self.opts["capnm"],
+-                self.sysdtw, 0)
++                rtn, self.trnref, self.bh.batno, val, 0.00, self.alldet,
++                self.vatcod, "", 0, self.opts["capnm"], self.sysdtw, 0)
+             self.sql.insRec("gentrn", data=data)
+             acc = self.sql.getRec(tables="genint", cols=["cti_acno"],
+                 where=[("cti_cono", "=", self.allcoy), ("cti_inco", "=",
+                 self.opts["conum"])], limit=1)[0]
+             val = float(ASD(0) - ASD(amt) - ASD(vat))
+             data = (self.allcoy, acc, self.curdt, self.trndte,
+-                self.glrtn, self.trnref, self.bh.batno, val, 0.00,
+-                self.alldet, self.vatcod, "", 0, self.opts["capnm"],
+-                self.sysdtw, 0)
++                rtn, self.trnref, self.bh.batno, val, 0.00, self.alldet,
++                self.vatcod, "", 0, self.opts["capnm"], self.sysdtw, 0)
+             self.sql.insRec("gentrn", data=data)
+         if self.vatcod:
+             if vat:
+                 data = (self.allcoy, self.convat, self.curdt, self.trndte,
+-                    self.glrtn, self.trnref, self.bh.batno, vat, 0.00,
+-                    self.alldet, self.vatcod, "", 0, self.opts["capnm"],
+-                    self.sysdtw, 0)
++                    rtn, self.trnref, self.bh.batno, vat, 0.00, self.alldet,
++                    self.vatcod, "", 0, self.opts["capnm"], self.sysdtw, 0)
+                 self.sql.insRec("gentrn", data=data)
+             data = (self.allcoy, self.vatcod, self.vtyp, self.curdt, "G",
+-                self.glrtn, self.bh.batno, self.trnref, self.trndte,
+-                self.accnum, self.alldet, amt, vat, 0,self.opts["capnm"],
+-                self.sysdtw, 0)
++                rtn, self.bh.batno, self.trnref, self.trndte, self.accnum,
++                self.alldet, amt, vat, 0,self.opts["capnm"], self.sysdtw, 0)
+             self.sql.insRec("ctlvtf", data=data)
+ 
+     def doAssGrp(self, frt, pag, r, c, p, i, w):
+
+=== modified file 'img/discount.png' (properties changed: +x to -x)
+=== modified file 'lon/ln4010.py'
+--- lon/ln4010.py	2019-01-13 16:38:59 +0000
++++ lon/ln4010.py	2019-01-31 09:22:23 +0000
+@@ -26,8 +26,8 @@
+ 
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, LoanInterest, NotesCreate, MyFpdf
+-from TartanClasses import SChoice, SelectChoice, Sql, TartanDialog
+-from tartanFunctions import getModName, doPrinter
++from TartanClasses import SelectChoice, Sql, TartanDialog
++from tartanFunctions import askChoice, getModName, doPrinter
+ from tartanWork import lntrtp
+ 
+ class ln4010:
+@@ -252,40 +252,34 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        head = "Select the required print options"
+-        head = ("C", "Description")
+-        data = (
+-            ("Info Only", "I"),
+-            ("Transactions Only", "T"),
+-            ("Info and Transactions", "A"))
+-        state = self.df.disableButtonsTags()
+-        ss = SChoice(self.opts["mf"], head=head, data=data)
+-        self.df.enableButtonsTags(state=state)
+-        self.opts["mf"].updateStatus("")
+-        if ss.selection == [] or ss.selection is None:
+-            self.pr_opts = " "
+-        else:
+-            self.pr_opts = ss.selection[1]
+-        if self.pr_opts != " ":
+-            self.printDetail()
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Information", "I"),
++            ("Transactions", "T"),
++            ("Both", "B"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+-    def printDetail(self):
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
+         self.head = ("%03u %-30s %47s %10s" % \
+             (self.opts["conum"], self.opts["conam"], self.sysdttm, __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+         self.pglin = 999
+-        if self.pr_opts != "T":
++        if opt != "T":
+             self.pageHeading()
+             self.printInfo()
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"], ext="pdf")
+-        if self.pr_opts == "I":
++        if opt == "I":
+             self.fpdf.output(pdfnam, "F")
+             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                 pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "A":
++        elif opt == "B":
+             if not self.lnt:
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+@@ -297,7 +291,7 @@
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "T":
++        elif opt == "T":
+             if self.lnt:
+                 self.pageHeading()
+                 self.pageHeadingTrans()
+
+=== modified file 'mem/ml1010.py'
+--- mem/ml1010.py	2019-01-13 16:38:59 +0000
++++ mem/ml1010.py	2019-01-31 10:19:04 +0000
+@@ -36,11 +36,11 @@
+ 
+ import os, time
+ from TartanClasses import CCD, DrawForm, Dbase, GetCtl, NotesCreate, PwdConfirm
+-from TartanClasses import RepPrt, Sql, SChoice, SelectChoice, ShowImage, TabPrt
++from TartanClasses import RepPrt, Sql, SelectChoice, ShowImage, TabPrt
+ from TartanClasses import TartanDialog
+-from tartanFunctions import askQuestion, callModule, copyList, dateDiff
+-from tartanFunctions import doChkCatChg, doPrinter, getModName, getTrn
+-from tartanFunctions import getVatRate, luhnFunc, mthendDate, showError
++from tartanFunctions import askChoice, askQuestion, callModule, copyList
++from tartanFunctions import dateDiff, doChkCatChg, doPrinter, getModName
++from tartanFunctions import getTrn, getVatRate, luhnFunc, mthendDate, showError
+ from tartanFunctions import showWarning
+ from tartanWork import countries, mltrtp
+ 
+@@ -1546,81 +1546,85 @@
+                 msiz=int(self.opts["mf"].bh*.75))
+ 
+     def doPrint(self, widget=None):
+-        state = self.df.disableButtonsTags()
+-        self.df.setWidget(self.df.mstFrame, state="hide")
+-        titl = "Select the Required Print Options"
+-        head = ("C", "Description")
+-        data = (
+-            ("I", "Information"),
+-            ("T", "Transactions"),
+-            ("S", "Statement"),
+-            ("C", "Membership Card"))
+-        self.ss = SChoice(self.opts["mf"], titl=titl, head=head, data=data)
+-        self.opts["mf"].updateStatus("")
+-        if self.ss.selection:
+-            if self.ss.selection[0] == "I":
+-                table = "memmst"
+-                whr = [("mlm_cono", "=", self.opts["conum"]),
+-                    ("mlm_memno", "=", self.memno)]
+-                TabPrt(self.opts["mf"], self.opts["conum"], self.opts["conam"],
+-                    name=__name__, tabs=table, where=whr, keys=[self.memno])
+-            elif self.ss.selection[0] == "T":
+-                name = "%s %s %s" % (self.title, self.initial, self.surname)
+-                heads = ["Member's Transactions",
+-                    "Member: %s  Name: %s" % (self.memno, name)]
+-                whr = [("mlt_cono", "=", self.opts["conum"]),
+-                    ("mlt_memno", "=", self.memno)]
+-                col, recs = getTrn(self.opts["mf"].dbm, "mem", whr=whr)
+-                cols = []
+-                data = []
+-                dic = self.sql.memtrn_dic
+-                for num, rec in enumerate(recs):
+-                    dat = []
+-                    for nam in ["mlt_refno", "mlt_trdt", "mlt_type",
+-                            "mlt_tramt", "paid", "balance", "mlt_desc"]:
+-                        if not num:
+-                            if nam == "paid":
+-                                cols.append(["paid", "SD", 13.2, "Paid"])
+-                            elif nam == "balance":
+-                                cols.append(["balance", "SD", 13.2, "Balance"])
+-                            else:
+-                                cols.append([nam, dic[nam][2], dic[nam][3],
+-                                    dic[nam][5]])
+-                        dat.append(rec[col.index(nam)])
+-                    data.append(dat)
+-                gtots = ["mlt_tramt", "paid", "balance"]
+-                prtdia = (("Y","V"),("Y","N"))
+-                RepPrt(self.opts["mf"], conum=self.opts["conum"],
+-                    conam=self.opts["conam"], name=__name__, ttype="D",
+-                    tables=data, heads=heads, cols=cols, trtp=["mlt_type",
+-                    mltrtp], gtots=gtots, prtdia=prtdia, fromad=self.fromad)
+-            elif self.ss.selection[0] == "S":
+-                tit = ("Print Options",)
+-                fld = []
+-                self.pf = TartanDialog(self.opts["mf"], tops=True, title=tit,
+-                    eflds=fld, tend=((self.doPrtEnd,"N"),), view=("N","V"),
+-                    mail=("N","Y"))
+-                self.opts["mf"].startLoop()
+-                data = self.sql.getRec(tables="memmst", where=[("mlm_cono",
+-                    "=", self.opts["conum"]), ("mlm_memno", "=", self.memno)],
+-                    limit=1)
+-                if self.ynd:
+-                    date = self.nxtdt
+-                else:
+-                    date = self.tme
+-                callModule(self.opts["mf"], None, "ml3040",
+-                    coy=(self.opts["conum"], self.opts["conam"]),
+-                    args=(data, date, self.pf.repprt, self.pf.repeml))
+-            else:
+-                cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
+-                    system="MEM", code="MemCards")
+-                if cf.flag == "ok":
+-                    self.doPrintCard()
+-        self.df.setWidget(self.df.mstFrame, state="show")
+-        self.df.enableButtonsTags(state=state)
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Information", "I"),
++            ("Transactions", "T"),
++            ("Statement", "S"),
++            ("Member Card", "C"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
+         if self.new or self.edit:
+             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
++        self.opt = opt
++        state = self.df.disableButtonsTags()
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        if opt == "I":
++            table = "memmst"
++            whr = [("mlm_cono", "=", self.opts["conum"]),
++                ("mlm_memno", "=", self.memno)]
++            TabPrt(self.opts["mf"], self.opts["conum"], self.opts["conam"],
++                name=__name__, tabs=table, where=whr, keys=[self.memno])
++        elif opt == "T":
++            name = "%s %s %s" % (self.title, self.initial, self.surname)
++            heads = ["Member's Transactions",
++                "Member: %s  Name: %s" % (self.memno, name)]
++            whr = [("mlt_cono", "=", self.opts["conum"]),
++                ("mlt_memno", "=", self.memno)]
++            col, recs = getTrn(self.opts["mf"].dbm, "mem", whr=whr)
++            cols = []
++            data = []
++            dic = self.sql.memtrn_dic
++            for num, rec in enumerate(recs):
++                dat = []
++                for nam in ["mlt_refno", "mlt_trdt", "mlt_type",
++                        "mlt_tramt", "paid", "balance", "mlt_desc"]:
++                    if not num:
++                        if nam == "paid":
++                            cols.append(["paid", "SD", 13.2, "Paid"])
++                        elif nam == "balance":
++                            cols.append(["balance", "SD", 13.2, "Balance"])
++                        else:
++                            cols.append([nam, dic[nam][2], dic[nam][3],
++                                dic[nam][5]])
++                    dat.append(rec[col.index(nam)])
++                data.append(dat)
++            gtots = ["mlt_tramt", "paid", "balance"]
++            prtdia = (("Y","V"),("Y","N"))
++            RepPrt(self.opts["mf"], conum=self.opts["conum"],
++                conam=self.opts["conam"], name=__name__, ttype="D",
++                tables=data, heads=heads, cols=cols, trtp=["mlt_type",
++                mltrtp], gtots=gtots, prtdia=prtdia, fromad=self.fromad)
++        elif opt == "S":
++            tit = ("Print Options",)
++            fld = []
++            self.pf = TartanDialog(self.opts["mf"], tops=True, title=tit,
++                eflds=fld, tend=((self.doPrtEnd,"N"),), view=("N","V"),
++                mail=("N","Y"))
++            self.opts["mf"].startLoop()
++            data = self.sql.getRec(tables="memmst", where=[("mlm_cono",
++                "=", self.opts["conum"]), ("mlm_memno", "=", self.memno)],
++                limit=1)
++            if self.ynd:
++                date = self.nxtdt
++            else:
++                date = self.tme
++            callModule(self.opts["mf"], None, "ml3040",
++                coy=(self.opts["conum"], self.opts["conam"]),
++                args=(data, date, self.pf.repprt, self.pf.repeml))
++        else:
++            cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
++                system="MEM", code="MemCards")
++            if cf.flag == "ok":
++                self.doPrintCard()
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.enableButtonsTags(state=state)
++
+     def doPrintCard(self):
+         tit = ("Print Options",)
+         tpm = {
+@@ -1657,7 +1661,7 @@
+ 
+     def doPrtEnd(self):
+         self.pf.closeProcess()
+-        if self.ss.selection[0] == "S":
++        if self.opt == "S":
+             self.opts["mf"].closeLoop()
+             return
+         form = DrawForm(self.opts["mf"].dbm, self.tnamef,
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2019-01-23 09:10:12 +0000
++++ mst/ms0000.py	2019-02-24 15:37:32 +0000
+@@ -43,18 +43,18 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2].strip()))
+ else:
+-    VERSION = (5, 4, 4)
++    VERSION = (5, 4, 5)
+     os.environ["TARVER"] = "%s.%s.%s" % VERSION
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+         opts, args = getopt.getopt(
+             sys.argv[1:],
+-            "b:c:de:f:hilnop:q:R:r:t:u:vxy:z", [
+-                "bpwd=", "conum=", "debug", "exclude=", "finper=", "help",
+-                "image", "loader", "nocheck", "output", "program=", "query=",
+-                "rcfdir=", "rcfile=", "script=", "tcode=", "user=", "version",
+-                "xdisplay", "yndfinal=", "zerobar"])
++            "ab:c:de:f:hilnop:q:R:r:t:u:vxy:z", [
++                "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
++                "help", "image", "loader", "nocheck", "output", "program=",
++                "query=", "rcfdir=", "rcfile=", "script=", "tcode=", "user=",
++                "version", "xdisplay", "yndfinal=", "zerobar"])
+     except:
+         opts, args = [("-h", "")], []
+     import msc000
+
+=== modified file 'mst/ms1030.py'
+--- mst/ms1030.py	2019-01-13 16:38:59 +0000
++++ mst/ms1030.py	2019-01-29 16:20:02 +0000
+@@ -87,7 +87,7 @@
+             (("T",0,2,0),"INA",20,"Code","",
+                 "","N",self.doCode,pwd,None,("notblank",)),
+             (("T",0,3,0),"ONA",50,"Description"),
+-            (("T",0,4,0),"IHA",20,"Password","",
++            (("T",0,4,0),"IHA",30,"Password","",
+                 "","N",self.doPwd,None,self.doDelete,None))
+         but = (
+             ("Show All",self.ctl,None,0,("T",0,3),("T",0,0)),
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2019-01-23 09:10:12 +0000
++++ mst/msc000.py	2019-02-06 11:58:02 +0000
+@@ -42,6 +42,7 @@
+     def __init__(self, version, opts, args):
+         self.current = [version, "%s.%s.%s" % version]
+         default = [
++            ("altered", False),
+             ("bpwd", ""),
+             ("conum", None),
+             ("debug", False),
+@@ -67,6 +68,8 @@
+         for arg, val in default:
+             setattr(self, arg, val)
+         for o, v in opts:
++            if o in ("-a", "--altered"):
++                self.altered = True
+             if o in ("-b", "--bpwd"):
+                 self.bpwd = v
+             elif o in ("-c", "--conum"):
+@@ -154,6 +157,7 @@
+ Usage:      python ms0000.py [options]
+ 
+ Options:
++            -a, --altered           Check for Altered Tables
+             -b, --bpwd=             The backup password
+             -c, --conum=            The company number
+             -d, --debug             Enter debug/trace mode
+@@ -1337,13 +1341,13 @@
+         self.updtyp = w
+         self.upgsys = ""
+         for mod in self.mods:
+-            if mod == ["BC"] and self.upgsys is not "Tartan":
++            if mod == ["BC"] and self.upgsys != "Tartan":
+                 self.upgsys = "Bwlclb"
+-            elif mod == ["BS"] and self.upgsys is not "Tartan":
++            elif mod == ["BS"] and self.upgsys != "Tartan":
+                 self.upgsys = "Bksclb"
+-            elif mod == ["CS"] and self.upgsys is not "Tartan":
++            elif mod == ["CS"] and self.upgsys != "Tartan":
+                 self.upgsys = "Cshana"
+-            elif mod == ["SC"] and self.upgsys is not "Tartan":
++            elif mod == ["SC"] and self.upgsys != "Tartan":
+                 self.upgsys = "Seccmp"
+             else:
+                 self.upgsys = "Tartan"
+@@ -1392,7 +1396,7 @@
+     def doSysChkUpgrade(self):
+         try:
+             r = requests.get("http://tartan.co.za/files/current", timeout=5)
+-            if r.status_code is not 200:
++            if r.status_code != 200:
+                 raise Exception
+             v = r.content.split(".")
+             self.newver = (int(v[0]), int(v[1]), int(v[2].strip()))
+@@ -1442,13 +1446,13 @@
+                 if sys.platform == "win32":
+                     nam = self.upgsys + "_%s.%s.%s_upd" % self.newver + ".exe"
+                     r = requests.get(url + nam)
+-                    if r.status_code is not 200:
++                    if r.status_code != 200:
+                         nam = self.upgsys + "_%s.%s.%s" % self.newver + ".exe"
+                         r = requests.get(url + nam)
+                 else:
+                     nam = self.upgsys + "_%s.%s.%s" % self.newver + ".tgz"
+                     r = requests.get(url + nam)
+-                if r.status_code is not 200:
++                if r.status_code != 200:
+                     raise Exception
+                 fle = os.path.join(self.mf.rcdic["upgdir"], nam)
+                 with open(fle, "wb") as code:
+@@ -1548,33 +1552,34 @@
+         else:
+             err = False
+         chg = False
+-        for tb in tabdic:
+-            for ext in ("fld", "idx"):
+-                lines = tabdic[tb][ext]
+-                f1 = []
+-                for line in lines:
+-                    f1.append(line)
+-                if ext == "fld":
+-                    fle = sql.getRec(tables="ffield", where=[("ff_tabl",
+-                        "=", tb)], order="ff_seq")
+-                    f2 = []
+-                    for f in fle:
+-                        tp = [int(f[1]), f[2], f[3], float(f[4])]
+-                        tp.extend(f[5:])
+-                        f2.append(tp)
+-                else:
+-                    fle = sql.getRec(tables="ftable", where=[("ft_tabl",
+-                        "=", tb)], order="ft_seq")
+-                    f2 = []
+-                    for f in fle:
+-                        tp = [f[1], int(f[2]), f[3]]
+-                        for t in f[4:]:
+-                            if t:
+-                                tp.append(t)
+-                        f2.append(tp)
+-                if not f1 == f2:
+-                    chg = True
+-                    break
++        if self.altered:
++            for tb in tabdic:
++                for ext in ("fld", "idx"):
++                    lines = tabdic[tb][ext]
++                    f1 = []
++                    for line in lines:
++                        f1.append(line)
++                    if ext == "fld":
++                        fle = sql.getRec(tables="ffield", where=[("ff_tabl",
++                            "=", tb)], order="ff_seq")
++                        f2 = []
++                        for f in fle:
++                            tp = [int(f[1]), f[2], f[3], float(f[4])]
++                            tp.extend(f[5:])
++                            f2.append(tp)
++                    else:
++                        fle = sql.getRec(tables="ftable", where=[("ft_tabl",
++                            "=", tb)], order="ft_seq")
++                        f2 = []
++                        for f in fle:
++                            tp = [f[1], int(f[2]), f[3]]
++                            for t in f[4:]:
++                                if t:
++                                    tp.append(t)
++                            f2.append(tp)
++                    if not f1 == f2:
++                        chg = True
++                        break
+         if dbopend:
+             self.db.closeDbase()
+         if chg or err:
+@@ -1586,12 +1591,6 @@
+                 self.tarUpd(True)
+             else:
+                 self.doExit()
+-        if chg and err:
+-            return("Tables and Version needs updating")
+-        elif chg:
+-            return("Tables need updating")
+-        elif err:
+-            return("Version needs updating")
+ 
+     def tarBck(self):
+         self.db.openDbase()
+
+=== modified file 'rca/rc4010.py'
+--- rca/rc4010.py	2019-01-13 16:38:59 +0000
++++ rca/rc4010.py	2019-01-31 09:34:26 +0000
+@@ -25,9 +25,9 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, CCD, GetCtl, MyFpdf, NotesCreate, SChoice, Sql
+-from TartanClasses import SRec, TartanDialog
+-from tartanFunctions import getModName, doPrinter
++from TartanClasses import ASD, CCD, GetCtl, MyFpdf, NotesCreate, Sql, SRec
++from TartanClasses import TartanDialog
++from tartanFunctions import askChoice, getModName, doPrinter
+ from tartanWork import rttrtp
+ 
+ class rc4010:
+@@ -185,39 +185,35 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        titl = "Select the required print option!"
+-        head = ("C", "Description")
+-        data = (
+-            ("Info Only", "I"),
+-            ("Transactions Only", "T"),
+-            ("Info and Transactions", "A"))
+-        ss = SChoice(self.opts["mf"], titl=titl, head=head, data=data)
+-        self.opts["mf"].updateStatus("")
+-        if not ss.selection:
+-            self.pr_opts = " "
+-        else:
+-            self.pr_opts = ss.selection[1]
+-        if self.pr_opts != " ":
+-            self.printDetail()
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Information", "I"),
++            ("Transactions", "T"),
++            ("Both", "B"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
+         if self.df.topq[self.df.pag]:
+             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+-    def printDetail(self):
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
+         self.head = ("%03u %-30s %59s %10s" % \
+             (self.opts["conum"], self.opts["conam"], self.sysdttm, __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+         self.pglin = 999
+-        if self.pr_opts != "T":
++        if opt != "T":
+             self.pageHeading()
+             self.printInfo()
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"], ext="pdf")
+-        if self.pr_opts == "I":
++        if opt == "I":
+             self.fpdf.output(pdfnam, "F")
+             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                 pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "A":
++        elif opt == "B":
+             if not self.trn:
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+@@ -229,7 +225,7 @@
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "T":
++        elif opt == "T":
+             if self.trn:
+                 self.pageHeading()
+                 self.pageHeadingTrans()
+
+=== modified file 'rca/rc4020.py'
+--- rca/rc4020.py	2019-01-13 16:38:59 +0000
++++ rca/rc4020.py	2019-01-31 09:41:45 +0000
+@@ -25,9 +25,9 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, CCD, GetCtl, MyFpdf, NotesCreate, SChoice, Sql
+-from TartanClasses import SRec, TartanDialog
+-from tartanFunctions import doPrinter, getDeposit, getModName
++from TartanClasses import ASD, CCD, GetCtl, MyFpdf, NotesCreate, Sql, SRec
++from TartanClasses import TartanDialog
++from tartanFunctions import askChoice, doPrinter, getDeposit, getModName
+ from tartanWork import rcmvtp, rctrtp
+ 
+ class rc4020:
+@@ -291,40 +291,36 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        titl = "Select the required print option!"
+-        head = ("C", "Description")
+-        data = (
++        mess = "Select the Required Print Option."
++        butt = (
+             ("Info Only", "I"),
+             ("Deposit Only", "D"),
+             ("Transactions Only", "T"),
+-            ("Info and Transactions", "A"))
+-        ss = SChoice(self.opts["mf"], titl=titl, head=head, data=data)
+-        self.opts["mf"].updateStatus("")
+-        if not ss.selection:
+-            self.pr_opts = " "
+-        else:
+-            self.pr_opts = ss.selection[1]
+-        if self.pr_opts != " ":
+-            self.printDetail()
++            ("Info and Transactions", "B"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
+         self.df.selPage("Premises")
+         self.df.focusField("T", 1, 1)
+ 
+-    def printDetail(self):
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
+         self.head = ("%03u %-30s %63s %10s" % \
+             (self.opts["conum"], self.opts["conam"], self.sysdttm, __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+         self.pglin = 999
+-        if self.pr_opts not in ("D", "T"):
++        if opt not in ("D", "T"):
+             self.pageHeading()
+             self.printInfo()
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"], ext="pdf")
+-        if self.pr_opts == "I":
++        if opt == "I":
+             self.fpdf.output(pdfnam, "F")
+             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                 pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "A":
++        elif opt == "B":
+             if not self.trn:
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+@@ -336,7 +332,7 @@
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "D":
++        elif opt == "D":
+             recs = getDeposit(self.opts["mf"], self.opts["conum"], self.depdtw,
+                 self.owner, self.code, self.acno)
+             if recs:
+@@ -346,7 +342,7 @@
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "T":
++        elif opt == "T":
+             if self.trn:
+                 self.pageHeading()
+                 self.pageHeadingTrans()
+
+=== modified file 'rtl/rt4010.py'
+--- rtl/rt4010.py	2019-01-13 16:38:59 +0000
++++ rtl/rt4010.py	2019-01-31 09:46:21 +0000
+@@ -25,9 +25,9 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, CCD, GetCtl, MyFpdf, NotesCreate, SChoice, Sql
+-from TartanClasses import SRec, TartanDialog
+-from tartanFunctions import getModName, doPrinter
++from TartanClasses import ASD, CCD, GetCtl, MyFpdf, NotesCreate, Sql, SRec
++from TartanClasses import TartanDialog
++from tartanFunctions import askChoice, getModName, doPrinter
+ from tartanWork import rttrtp
+ 
+ class rt4010:
+@@ -241,39 +241,35 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        titl = "Select the required print option!"
+-        head = ("C", "Description")
+-        data = (
+-            ("Info Only", "I"),
+-            ("Transactions Only", "T"),
+-            ("Info and Transactions", "A"))
+-        ss = SChoice(self.opts["mf"], titl=titl, head=head, data=data)
+-        self.opts["mf"].updateStatus("")
+-        if not ss.selection:
+-            self.pr_opts = None
+-        else:
+-            self.pr_opts = ss.selection[1]
+-        if self.pr_opts:
+-            self.printDetail()
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Information", "I"),
++            ("Transactions", "T"),
++            ("Both", "B"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
+         if self.df.topq[self.df.pag]:
+             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+-    def printDetail(self):
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
+         self.head = ("%03u %-30s %59s %10s" % \
+             (self.opts["conum"], self.opts["conam"], self.sysdttm, __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+         self.pglin = 999
+-        if self.pr_opts != "T":
++        if opt != "T":
+             self.pageHeading()
+             self.printInfo()
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"], ext="pdf")
+-        if self.pr_opts == "I":
++        if opt == "I":
+             self.fpdf.output(pdfnam, "F")
+             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                 pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "A":
++        elif opt == "B":
+             if not self.trn:
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+@@ -285,7 +281,7 @@
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "T":
++        elif opt == "T":
+             if self.trn:
+                 self.pageHeading()
+                 self.pageHeadingTrans()
+
+=== modified file 'sls/si2010.py'
+--- sls/si2010.py	2019-01-13 16:38:59 +0000
++++ sls/si2010.py	2019-01-31 14:01:40 +0000
+@@ -1430,9 +1430,13 @@
+             else:
+                 dnote = "N"
+             self.df.setWidget(self.df.mstFrame, state="hide")
++            if self.acttyp == "A":
++                copy = "a"
++            else:
++                copy = "n"
+             PrintInvoice(self.opts["mf"], self.opts["conum"],
+                 self.opts["conam"], self.typs, self.docno,
+-                tname=self.tname, repprt=self.pr.repprt,
++                copy=copy, tname=self.tname, repprt=self.pr.repprt,
+                 repeml=repeml, dnote=dnote, dvals=self.delval)
+             self.df.setWidget(self.df.mstFrame, state="show")
+         # Clear total and focus
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2019-01-23 09:10:12 +0000
++++ std/TartanClasses.py	2019-02-22 09:12:00 +0000
+@@ -135,7 +135,6 @@
+     OFX = True
+ except:
+     OFX = False
+-OFX = False
+ #========================================================
+ # Tkinter, ttk and PIL imports
+ #========================================================
+@@ -192,6 +191,7 @@
+         "declaration": os.path.join(imgdir, "print.png"),
+         "deladd": os.path.join(imgdir, "truck.png"),
+         "deposits": os.path.join(imgdir, "print.png"),
++        "detail": os.path.join(imgdir, "show.png"),
+         "display": os.path.join(imgdir, "show.png"),
+         "doabout": os.path.join(imgdir, "about.png"),
+         "domanual": os.path.join(imgdir, "help.png"),
+@@ -7211,9 +7211,11 @@
+                             srch = c[4].upper()
+             if self.mode.upper() == "M":
+                 if self.selc is None:
++                    # Last column selectable
+                     cols[n][4] = "Y"
+                 else:
+-                    cols[self.selc+1][4] = "Y"
++                    # Selected column
++                    cols[self.selc + 1][4] = "Y"
+             elif not search:
+                 # Make the last column searchable if no searchable columns set
+                 cols[n][4] = "Y"
+@@ -7898,9 +7900,12 @@
+             self.closeProcess()
+ 
+     def closeProcess(self):
++        self.frame.destroy()
+         for c in self.binds:
+             self.window.unbind("<Key-Alt_L>%s" % c.lower())
+             self.window.unbind("<Key-Alt_L>%s" % c.upper())
++        for key in ("Left", "Right", "Up", "Down", "Prior", "Next"):
++            self.window.unbind("<%s>" % key)
+         self.window.quit()
+ 
+ class ScrollText:
+@@ -11304,14 +11309,18 @@
+     def doFixed(self):
+         # Fixed Period Loan
+         cpymth = copyList(tartanWork.mthnam)
+-        self.cap = self.sql.getRec(tables="lontrn",
++        cap = self.sql.getRec(tables="lontrn",
+             cols=["round(sum(lnt_tramt), 2)"],
+             where=[("lnt_cono", "=", self.cono),
+             ("lnt_acno", "=", self.acno),
+             ("lnt_loan", "=", self.loan),
+             ("lnt_type", "<>", self.inttp),
+             ("lnt_trdt", "<=", self.tdate)],
+-            limit=1)[0]
++            limit=1)
++        if cap[0] is None:
++            self.cap = 0
++        else:
++            self.cap = cap[0]
+         for mth in xrange(self.pmths):
+             yy = int(self.start / 10000)
+             mm = int(self.start / 100) % 100
+@@ -11700,8 +11709,10 @@
+                     self.form.newdic[d][txt] = crm[cmc.index(fld)]
+             self.form.account_details("crm", cmc, crm, 0)
+             self.form.document_date(pom[pmc.index("pom_date")])
++            # strpot
+             pot = self.sql.getRec(tables="strpot", where=[("pot_cono", "=",
+-                self.conum), ("pot_ordno", "=", self.docno.work)])
++                self.conum), ("pot_ordno", "=", self.docno.work)],
++                order="pot_group, pot_code")
+             if not pot:
+                 continue
+             if self.splash:
+@@ -12236,7 +12247,9 @@
+         if "letterhead" in self.form.tptp:
+             self.form.letterhead(cmc, ctm, "letterhead", None)
+         if "document_type" in self.form.tptp:
+-            if self.copy == "y":
++            if self.copy.lower() == "a":
++                typ = "AMENDED"
++            elif self.copy.lower() == "y":
+                 typ = "COPY"
+             else:
+                 typ = ""
+@@ -13814,20 +13827,18 @@
+         self.bankac = bankac
+         self.dtefmt = dtefmt
+         self.setVariables()
+-        while not self.fname:
+-            self.selectFile()
+-            if self.fname is None:
+-                return
+-        for fname in self.fname:
+-            if self.impfmt == "O":
+-                if OFX:
+-                    self.importOfxTool(fname)
+-                else:
+-                    self.importOfxFile(fname)
+-            elif self.impfmt == "Q":
+-                self.importQifFile(fname)
+-            elif self.impfmt == "S":
+-                self.importStdFile(fname)
++        self.selectFile()
++        if self.fname:
++            for fname in self.fname:
++                if self.impfmt == "O":
++                    if OFX:
++                        self.importOfxTool(fname)
++                    else:
++                        self.importOfxFile(fname)
++                elif self.impfmt == "Q":
++                    self.importQifFile(fname)
++                elif self.impfmt == "S":
++                    self.importStdFile(fname)
+ 
+     def setVariables(self):
+         self.trans = []
+@@ -13873,6 +13884,7 @@
+                     showError(self.mf.body, "File Error %s" % fname,
+                         "The File Name Must Contain the Bank Account Number.")
+                     self.fname = []
++                    break
+ 
+     def importOfxTool(self, fname):
+         parser = OFXTree()
+@@ -13885,7 +13897,15 @@
+         self.doClear()
+         for trans in ofx.statements[0].transactions:
+             self.date = CCD(trans.dtposted.strftime("%Y%m%d"), "D1", 10)
+-            self.memo = self.payee = trans.name
++            if trans.memo and trans.name:
++                self.memo = trans.memo
++                self.payee = trans.name
++            elif trans.memo:
++                self.memo = trans.memo
++                self.payee = trans.memo
++            elif trans.name:
++                self.memo = trans.name
++                self.payee = trans.name
+             refno = trans.fitid
+             if len(refno) > 9:
+                 refno = refno[-9:]
+@@ -15098,21 +15118,21 @@
+                 "","Y",self.doUserName,susr,None,("notblank",)),
+             (("T",0,1,0),"INA",30,"Full Name","",
+                 "","N",self.doFullName,susr,self.doDelUser,("notblank",)),
+-            (("T",0,2,0),"IHA",10,"User Password","",
++            (("T",0,2,0),"IHA",30,"User Password","",
+                 "","N",self.doUserPwd1,None,None,None),
+-            (("T",0,2,31),"IHA",10," Check ","Check Password",
++            (("T",0,3,0),"IHA",30,"Check Password ","",
+                 "","N",self.doUserPwd2,None,None,None),
+-            (("T",0,3,0),("IRB",r1s),0,"Copy Existing User","",
++            (("T",0,4,0),("IRB",r1s),0,"Copy Existing User","",
+                 "N","N",self.doCopyUser1,None,None,None),
+-            (("T",0,4,0),"INA",20,"Copy User Name","User Name to Copy",
++            (("T",0,5,0),"INA",20,"Copy User Name","User Name to Copy",
+                 "","N",self.doCopyUser2,susr,None,None),
+-            (("T",0,5,0),"INA",30,"Allowed Companies","",
++            (("T",0,6,0),"INA",30,"Allowed Companies","",
+                 "All","N",self.doValCoy,None,None,None,None,
+                 "Comma Seperated List of Allowed Companies e.g. 1,2,3"),
+-            (("T",0,6,0),"INA",30,"Disallowed Companies","",
++            (("T",0,7,0),"INA",30,"Disallowed Companies","",
+                 "None","N",self.doDisCoy,None,None,None,None,
+                 "Comma Seperated List of Disallowed Companies e.g. 1,2,3"),
+-            (("T",0,7,0),"IUI",1,"Security Level","",
++            (("T",0,8,0),"IUI",1,"Security Level","",
+                 0,"N",self.doSecLvl,slvl,None,("between",0,9)),
+             (("C",0,0,0),"IUI",3,"Coy","Company",
+                 "r","N",self.doCoy,scoy,None,None),
+@@ -16578,7 +16598,7 @@
+                 repeat = cell.getAttribute("numbercolumnsrepeated")
+                 if not repeat:
+                     repeat = 1
+-                    sc = int(cell.getAttribute('numbercolumnsspanned') or 0)
++                    sc = int(cell.getAttribute("numbercolumnsspanned") or 0)
+                     # clone spanned cells
+                     if self.clonesc is not None and sc > 1:
+                         repeat = sc
+@@ -16590,10 +16610,10 @@
+                         if (n.nodeType == 1 and n.tagName == "text:span"):
+                             for c in n.childNodes:
+                                 if (c.nodeType == 3):
+-                                    textContent = u'{}{}'.format(
++                                    textContent = u"{}{}".format(
+                                         textContent, n.data)
+                         if (n.nodeType == 3):
+-                            textContent = u'{}{}'.format(
++                            textContent = u"{}{}".format(
+                                 textContent, n.data)
+                 if(textContent):
+                     if(textContent[0] != "#"):         # ignore comments cells
+
+=== modified file 'std/tartanWork.py'
+--- std/tartanWork.py	2019-01-23 09:10:12 +0000
++++ std/tartanWork.py	2019-02-21 08:40:14 +0000
+@@ -602,7 +602,17 @@
+             [305850, 63853, 31],
+             [195850, 35253, 26],
+             [0, 0, 18]],
+-        "allow": [14067, 7713, 2574, 0]}}
++        "allow": [14067, 7713, 2574, 0]},
++    "2020": {
++        "rates": [
++            [1500000, 532041, 45],
++            [708310, 207448, 41],
++            [555600, 147891, 39],
++            [423300, 100263, 36],
++            [305850, 63853, 31],
++            [195850, 35253, 26],
++            [0, 0, 18]],
++        "allow": [14220, 7794, 2601, 0]}}
+ siteRates = {
+     "2004": 60000,
+     "2005": 60000,
+@@ -619,7 +629,8 @@
+     "2016": 0,
+     "2017": 0,
+     "2018": 0,
+-    "2019": 0}
++    "2019": 0,
++    "2020": 0}
+ uifRates = {
+     "2004": [1.00, 1.00],
+     "2005": [1.00, 1.00],
+@@ -636,7 +647,8 @@
+     "2016": [1.00, 1.00],
+     "2017": [1.00, 1.00],
+     "2018": [1.00, 1.00],
+-    "2019": [1.00, 1.00]}
++    "2019": [1.00, 1.00],
++    "2020": [1.00, 1.00]}
+ sdlRates = {
+     "2004": [0.00, 1.00],
+     "2005": [0.00, 1.00],
+@@ -653,7 +665,8 @@
+     "2016": [0.00, 1.00],
+     "2017": [0.00, 1.00],
+     "2018": [0.00, 1.00],
+-    "2019": [0.00, 1.00]}
++    "2019": [0.00, 1.00],
++    "2020": [0.00, 1.00]}
+ # Labels
+ labels = {
+     "L7159": {
+@@ -1552,11 +1565,12 @@
+         "idx": [
+             ["Creditors Transactions", 1, "U", "crt_seq"],
+             ["", 2, "N", "crt_cono", "crt_type", "crt_ref1"],
+-            ["", 3, "N", "crt_cono", "crt_acno", "crt_ref2"],
+-            ["", 4, "U", "crt_cono", "crt_acno", "crt_type", "crt_ref1"],
+-            ["", 5, "N", "crt_cono", "crt_acno", "crt_type", "crt_ref2"],
+-            ["", 6, "N", "crt_cono", "crt_type", "crt_batch", "crt_batind"],
+-            ["", 7, "N", "crt_cono", "crt_acno", "crt_paydt", "crt_payind"]]},
++            ["", 3, "N", "crt_cono", "crt_type", "crt_ref2"],
++            ["", 4, "N", "crt_cono", "crt_acno", "crt_ref2"],
++            ["", 5, "U", "crt_cono", "crt_acno", "crt_type", "crt_ref1"],
++            ["", 6, "N", "crt_cono", "crt_acno", "crt_type", "crt_ref2"],
++            ["", 7, "N", "crt_cono", "crt_type", "crt_batch", "crt_batind"],
++            ["", 8, "N", "crt_cono", "crt_acno", "crt_paydt", "crt_payind"]]},
+     "cshana": {
+         "fld": [
+             [0, "can_cono", "UI", 3.0, "Company Number", "Coy"],
+@@ -1990,8 +2004,8 @@
+             [6, "ff_head", "NA", 30.0, "Field Heading",
+                 "Field-Heading"]],
+         "idx": [
+-            ["Field Names", 1, "U", "ff_name"],
+-            ["", 2, "N", "ff_tabl"]]},
++            ["Field Names", 1, "U", "ff_tabl", "ff_seq"],
++            ["", 2, "U", "ff_name"]]},
+     "frelat": {
+         "fld": [
+             [0, "rel_tab1", "NA", 6.0, "Table Name", "Tabl-1"],
+@@ -3721,6 +3735,9 @@
+     "msmen": [
+         ["MM","mm_sy","System"],
+         ["MM","mm_ms","Control"],
++        ["CM","mm_ms","ms_fm","File Maintenance"],
++        ["CM","mm_ms","ms_rp","Reporting"],
++        ["CM","mm_ms","ms_ye","Year-End Routines"],
+         ["MM","mm_gl","General Ledger"],
+         ["MM","mm_cr","Creditor's Ledger"],
+         ["MM","mm_dr","Debtor's Ledger"],
+@@ -3752,16 +3769,16 @@
+         ["F","mm_sy","tarRes",5,"Restore Database"],
+         ["F","mm_sy","tarCfg",0,"Preferences"],
+         ["F","mm_sy","sysEnd",0,"Quit"],
+-        ["PNNY","mm_ms","msc110",7,"System Record Maintenance"],
+-        ["PNNY","mm_ms","ms1010",5,"Company Records Maintenance"],
+-        ["PYNN","mm_ms","ms1020",5,"Department Records Maintenance"],
+-        ["PNNN","mm_ms","ms1030",7,"Module Passwords Maintenance"],
+-        ["PNNN","mm_ms","ms3020",7,"Module Passwords Listing"],
+-        ["PYNY","mm_ms","ms1040",3,"V.A.T. Records Maintenance"],
+-        ["PYNN","mm_ms","ms3010",3,"V.A.T. Statement"],
+-        ["PNNN","mm_ms","ms3030",3,"Email Log Report"],
+-        ["PYYY","mm_ms","msy010",6,"Financial Year End Routine"],
+-        ["PYYY","mm_ms","msy020",6,"Change Year End Date"],
++        ["PNNY","ms_fm","msc110",7,"System Record Maintenance"],
++        ["PNNY","ms_fm","ms1010",5,"Company Records Maintenance"],
++        ["PYNN","ms_fm","ms1020",5,"Department Records Maintenance"],
++        ["PNNN","ms_fm","ms1030",7,"Module Passwords Maintenance"],
++        ["PNNN","ms_rp","ms3020",7,"Module Passwords Listing"],
++        ["PYNY","ms_fm","ms1040",3,"V.A.T. Records Maintenance"],
++        ["PYNN","ms_rp","ms3010",3,"V.A.T. Statement"],
++        ["PNNN","ms_rp","ms3030",3,"Email Log Report"],
++        ["PYYY","ms_ye","msy010",6,"Financial Year End Routine"],
++        ["PYYY","ms_ye","msy020",6,"Change Year End Date"],
+         ["PYNN","mm_uy","bm1010",3,"Bulk Mail/SMS Utility"],
+         ["PNNN","mm_uy","fc1010",0,"Loan/Lease Calculator"],
+         ["PNNY","mm_uy","rp1010",2,"Report Generator"],
+
+=== modified file 'std/tartanWork_rne.py'
+--- std/tartanWork_rne.py	2019-01-23 09:10:12 +0000
++++ std/tartanWork_rne.py	2019-02-22 14:47:05 +0000
+@@ -581,10 +581,10 @@
+         "idx": [
+             ["Creditors Trans (RNE Extra)", 1, "U", "rtf_seq"],
+             ["", 2, "U", "rtf_cono", "rtf_acno", "rtf_type", "rtf_ref1"],
+-            ["",  3,  "N",  "rtf_cono",  "rtf_type",  "rtf_depno",  "rtf_pjno",
+-                "rtf_prtdte"],
+-            ["", 4, "N", "rtf_cono", "rtf_type", "rtf_depno", "rtf_pjno"],
+-            ["", 5, "N", "rtf_cono", "rtf_type", "rtf_depno", "rtf_prtdte"]]},
++            ["", 3, "N", "rtf_cono", "rtf_type", "rtf_depno", "rtf_pjno"],
++            ["", 4, "N", "rtf_cono", "rtf_type", "rtf_depno", "rtf_prtdte"],
++            ["", 5,  "N",  "rtf_cono",  "rtf_type",  "rtf_depno",  "rtf_pjno",
++                "rtf_prtdte"]]},
+     "crstrn": {
+         "fld": [
+             [0, "crt_cono", "UI", 3.0, "Company Number", "Coy"],
+@@ -609,12 +609,13 @@
+             [19, "crt_seq", "US", 10.0, "Sequence", "Sequence"]],
+         "idx": [
+             ["Creditors Transactions", 1, "U", "crt_seq"],
+-            ["", 2, "N", "crt_cono", "crt_type", "crt_ref1"],
+-            ["", 3, "N", "crt_cono", "crt_acno", "crt_ref2"],
+-            ["", 4, "U", "crt_cono", "crt_acno", "crt_type", "crt_ref1"],
+-            ["", 5, "N", "crt_cono", "crt_acno", "crt_type", "crt_ref2"],
+-            ["", 6, "N", "crt_cono", "crt_type", "crt_batch", "crt_batind"],
+-            ["", 7, "N", "crt_cono", "crt_acno", "crt_paydt", "crt_payind"]]},
++            ["", 2, "N", "crt_ref2"],
++            ["", 3, "N", "crt_cono", "crt_type", "crt_ref1"],
++            ["", 4, "N", "crt_cono", "crt_acno", "crt_ref2"],
++            ["", 5, "U", "crt_cono", "crt_acno", "crt_type", "crt_ref1"],
++            ["", 6, "N", "crt_cono", "crt_acno", "crt_type", "crt_ref2"],
++            ["", 7, "N", "crt_cono", "crt_type", "crt_batch", "crt_batind"],
++            ["", 8, "N", "crt_cono", "crt_acno", "crt_paydt", "crt_payind"]]},
+     "ctlbat": {
+         "fld": [
+             [0, "btm_cono", "UI", 3.0, "Company Number", "Coy"],
+@@ -2055,6 +2056,9 @@
+     "msmen": [
+         ["MM","mm_sy", "System"],
+         ["MM","mm_ms", "Control"],
++        ["CM","mm_ms","ms_fm","File Maintenance"],
++        ["CM","mm_ms","ms_rp","Reporting"],
++        ["CM","mm_ms","ms_ye","Year-End Routines"],
+         ["MM","mm_gl", "General Ledger"],
+         ["MM","mm_cr", "Creditor's Ledger"],
+         ["MM","mm_dr", "Debtor's Ledger"],
+@@ -2076,16 +2080,16 @@
+         ["F","mm_sy","tarRes",5,"Restore Database"],
+         ["F","mm_sy","tarCfg",0,"Preferences"],
+         ["F","mm_sy","sysEnd",0,"Quit"],
+-        ["PNNY","mm_ms","msc110",7,"System Record Maintenance"],
+-        ["PNNY","mm_ms","ms1010",5,"Company Records Maintenance"],
+-        ["PYNN","mm_ms","ms1020",5,"Department Records Maintenance"],
+-        ["PNNN","mm_ms","ms1030",9,"Module Passwords Maintenance"],
+-        ["PNNN","mm_ms","ms3020",9,"Module Passwords Listing"],
+-        ["PYNY","mm_ms","ms1040",3,"V.A.T. Records Maintenance"],
+-        ["PYNN","mm_ms","ms3010",3,"V.A.T. Statement"],
+-        ["PNNN","mm_ms","ms3030",3,"Email Log Report"],
+-        ["PYYY","mm_ms","msy010",6,"Year End Routine (Single Company)"],
+-        ["PNNY","mm_ms","msy030",6,"Year End Routine (All Companies)"],
++        ["PNNY","ms_fm","msc110",7,"System Record Maintenance"],
++        ["PNNY","ms_fm","ms1010",5,"Company Records Maintenance"],
++        ["PYNN","ms_fm","ms1020",5,"Department Records Maintenance"],
++        ["PNNN","ms_fm","ms1030",9,"Module Passwords Maintenance"],
++        ["PNNN","ms_rp","ms3020",9,"Module Passwords Listing"],
++        ["PYNY","ms_fm","ms1040",3,"V.A.T. Records Maintenance"],
++        ["PYNN","ms_rp","ms3010",3,"V.A.T. Statement"],
++        ["PNNN","ms_rp","ms3030",3,"Email Log Report"],
++        ["PYYY","ms_ye","msy010",6,"Year End Routine (Single Company)"],
++        ["PNNY","ms_ye","msy030",6,"Year End Routine (All Companies)"],
+         ["PYNN","mm_uy","bm1010",3,"Bulk Mail Utility"],
+         ["PNNN","mm_uy","fc1010",0,"Loan/Lease Calculator"],
+         ["PNNY","mm_uy","rp1010",2,"Report Generator"],
+@@ -2209,7 +2213,8 @@
+         ["PYYN","ar_rp","ar3040",1,"Asset Register"],
+         ["PYNN","ar_rp","ar3050",1,"Notes Listing"],
+         ["PYNN","ar_tb","ar6010",5,"Change Asset Codes"],
+-        ["PNNN","ar_tb","ar6030",5,"Un-Sell an Asset"],
++        ["PNNN","ar_tb","ar6020",5,"Un-Sell an Asset"],
++        ["PNNY","ar_tb","ar6030",5,"Transfer Assets"],
+         ["PYYY","mm_ar","ar4010",0,"Interrogation"]],
+ 
+ # Branch Transfers
+
+=== modified file 'str/st2010.py'
+--- str/st2010.py	2019-01-13 16:38:59 +0000
++++ str/st2010.py	2019-01-29 09:18:09 +0000
+@@ -408,7 +408,8 @@
+     def doReadLoadStr(self):
+         self.doClearTots()
+         data = self.sql.getRec(tables="strpot", where=[("pot_cono", "=",
+-            self.opts["conum"]), ("pot_ordno", "=", self.ordno)])
++            self.opts["conum"]), ("pot_ordno", "=", self.ordno)],
++            order="pot_group, pot_code")
+         if not data:
+             return
+         for seq, line in enumerate(data):
+@@ -640,7 +641,8 @@
+     def doEdit(self, widget=None):
+         # Display document items and allow editing of desc, qty and price
+         recs = self.sql.getRec(tables="strpot", where=[("pot_cono", "=",
+-            self.opts["conum"]), ("pot_ordno", "=", self.ordno)])
++            self.opts["conum"]), ("pot_ordno", "=", self.ordno)],
++            order="pot_group, pot_code")
+         if recs:
+             data = []
+             for l in recs:
+@@ -905,7 +907,8 @@
+         # Receipt of Order
+         # Create Stores Transactions and update strpot lines
+         trn = self.sql.getRec(tables="strpot", where=[("pot_cono", "=",
+-            self.opts["conum"]), ("pot_ordno", "=", self.ordno)])
++            self.opts["conum"]), ("pot_ordno", "=", self.ordno)],
++            order="pot_group, pot_code")
+         if not trn:
+             return
+         for line in trn:
+
+=== modified file 'str/st4010.py'
+--- str/st4010.py	2019-01-23 09:10:12 +0000
++++ str/st4010.py	2019-02-07 13:50:11 +0000
+@@ -25,8 +25,8 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, Balances, CCD, GetCtl, NotesCreate, SChoice
+-from TartanClasses import Sql, SRec, RepPrt, TabPrt, TartanDialog
++from TartanClasses import ASD, Balances, CCD, GetCtl, NotesCreate, Sql, SRec
++from TartanClasses import RepPrt, TabPrt, TartanDialog
+ from tartanFunctions import askChoice, getMarkup
+ from tartanWork import mthnam, sttrtp
+ 
+@@ -371,8 +371,8 @@
+     def printRecipe(self, widget=None):
+         self.df.setWidget(self.df.mstFrame, state="hide")
+         hds = ["Stores's Recipe",
+-            "Location: %s  Code: %s  Description: %s" % (self.loc, self.code,
+-            self.desc)]
++            "Location: %s  Code: %s  Description: %s" %
++            (self.loc, self.code, self.desc)]
+         RepPrt(self.opts["mf"], conum=self.opts["conum"],
+             conam=self.opts["conam"], name=__name__, heads=hds,
+             cols=self.rcp[0], tables=self.rcp[1], ttype="D",
+@@ -523,67 +523,77 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        titl = "Select the required print options"
+-        head = ("C", "Description")
+-        data = [
+-            ("I", "Information"),
+-            ("T", "Transactions")]
++        mess = "Select the Required Print Option."
++        butt = [
++            ("Information", "I"),
++            ("Transactions", "T")]
+         if self.itype == "R":
+-            data.append(("R", "Recipe"))
+-        ss = SChoice(self.opts["mf"], titl=titl, head=head, data=data)
+-        self.opts["mf"].updateStatus("")
+-        if ss.selection:
+-            state = self.df.disableButtonsTags()
+-            self.df.setWidget(self.df.mstFrame, state="hide")
+-            if ss.selection[0] == "I":
+-                head = "Stores Masterfile Record"
+-                tab = ["strmf1", "strmf2"]
+-                col = [
+-                    "st1_group", "st1_code", "st2_loc", "st1_desc", "st1_type",
+-                    "st1_uoi", "st1_units", "st1_value_ind", "st1_vatcode",
+-                    "st1_chn_excl", "st1_acc_excl", "st1_sls", "st1_cos",
+-                    "st2_bin", "st2_reord_ind", "st2_reord_level",
+-                    "st2_reord_qty"]
+-                whr = [
+-                    ("st1_cono", "=", self.opts["conum"]),
+-                    ("st1_group", "=", self.group),
+-                    ("st1_code", "=", self.code),
+-                    ("st2_cono=st1_cono",),
+-                    ("st2_group=st1_group",),
+-                    ("st2_code=st1_code",),
+-                    ("st2_loc", "=", self.loc)]
+-                TabPrt(self.opts["mf"], self.opts["conum"], self.opts["conam"],
+-                    name=__name__, head=head, tabs=tab, cols=col, where=whr,
+-                    keys=[self.group, self.code, self.loc])
+-            elif ss.selection[0] == "T":
+-                tab = ["strtrn"]
+-                hds = ["Stores's Transactions",
+-                        "Location: %s  Group: %s  Code: %s  Description: %s" %
+-                        (self.loc, self.group, self.code, self.desc)]
+-                col = []
+-                dic = self.sql.strtrn_dic
+-                for c in ["stt_ref1", "stt_trdt", "stt_type", "stt_qty",
+-                                    "stt_cost", "stt_sell", "stt_desc"]:
+-                    col.append([c, dic[c][2], dic[c][3], dic[c][5]])
+-                whr = [
+-                    ("stt_cono", "=", self.opts["conum"]),
+-                    ("stt_group", "=", self.group),
+-                    ("stt_code", "=", self.code),
+-                    ("stt_loc", "=", self.loc)]
+-                if self.per_from:
+-                    whr.extend([("stt_curdt", ">=", self.per_from),
+-                        ("stt_curdt", "<=", self.per_to)])
+-                odr = "stt_trdt, stt_ref1"
+-                gtots = ["stt_qty", "stt_cost", "stt_sell"]
+-                RepPrt(self.opts["mf"], conum=self.opts["conum"],
+-                    conam=self.opts["conam"], name=__name__, tables=tab,
+-                    heads=hds, cols=col, where=whr, order=odr, gtots=gtots,
+-                    prtdia=(("Y","V"),("Y","N")))
+-            else:
+-                self.printRecipe()
+-            self.df.setWidget(self.df.mstFrame, state="show")
+-            self.df.enableButtonsTags(state=state)
+-            self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++            butt.append(("Recipe", "R"))
++        butt.append(("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
++        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
++        state = self.df.disableButtonsTags()
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        if opt == "I":
++            head = "Stores Masterfile Record"
++            tab = ["strmf1", "strmf2"]
++            col = [
++                "st1_group", "st1_code", "st2_loc", "st1_desc", "st1_type",
++                "st1_uoi", "st1_units", "st1_value_ind", "st1_vatcode",
++                "st1_chn_excl", "st1_acc_excl", "st1_sls", "st1_cos",
++                "st2_bin", "st2_reord_ind", "st2_reord_level",
++                "st2_reord_qty"]
++            whr = [
++                ("st1_cono", "=", self.opts["conum"]),
++                ("st1_group", "=", self.group),
++                ("st1_code", "=", self.code),
++                ("st2_cono=st1_cono",),
++                ("st2_group=st1_group",),
++                ("st2_code=st1_code",),
++                ("st2_loc", "=", self.loc)]
++            TabPrt(self.opts["mf"], self.opts["conum"], self.opts["conam"],
++                name=__name__, head=head, tabs=tab, cols=col, where=whr,
++                keys=[self.group, self.code, self.loc])
++        elif opt == "T":
++            tab = ["strtrn"]
++            hds = ["Stores's Transactions",
++                    "Location: %s  Group: %s  Code: %s  Description: %s" %
++                    (self.loc, self.group, self.code, self.desc)]
++            col = []
++            dic = self.sql.strtrn_dic
++            for c in ["stt_ref1", "stt_trdt", "stt_type", "stt_qty",
++                                "stt_cost", "stt_sell", "stt_desc"]:
++                col.append([c, dic[c][2], dic[c][3], dic[c][5]])
++            whr = [
++                ("stt_cono", "=", self.opts["conum"]),
++                ("stt_group", "=", self.group),
++                ("stt_code", "=", self.code),
++                ("stt_loc", "=", self.loc)]
++            if self.per_from:
++                whr.extend([("stt_curdt", ">=", self.per_from),
++                    ("stt_curdt", "<=", self.per_to)])
++            odr = "stt_trdt, stt_ref1"
++            gtots = ["stt_qty", "stt_cost", "stt_sell"]
++            RepPrt(self.opts["mf"], conum=self.opts["conum"],
++                conam=self.opts["conam"], name=__name__, tables=tab,
++                heads=hds, cols=col, where=whr, order=odr, gtots=gtots,
++                prtdia=(("Y","V"),("Y","N")))
++        else:
++            self.rcp = self.getRecipeItems()
++            hds = ["Stores's Recipe",
++                "Location: %s  Code: %s  Description: %s" %
++                (self.loc, self.code, self.desc)]
++            RepPrt(self.opts["mf"], conum=self.opts["conum"],
++                conam=self.opts["conam"], name=__name__, heads=hds,
++                cols=self.rcp[0], tables=self.rcp[1], ttype="D",
++                prtdia=(("Y", "V"), ("Y", "N")))
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.enableButtonsTags(state=state)
+ 
+     def doExit(self, widget=None):
+         self.df.closeProcess()
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2019-01-23 09:10:12 +0000
++++ tab/tb1020.py	2019-01-23 15:28:25 +0000
+@@ -955,17 +955,23 @@
+     def doFinal(self):
+         chg = False
+         for tab in ("ffield", "ftable"):
+-            chk1 = self.sql.getRec(tables="ffield",
++            chks = self.sql.getRec(tables="ffield",
+                 where=[("ff_tabl", "=", tab)])
+-            for num, chk in enumerate(chk1):
+-                if chk[6] != tabdic[tab]["fld"][num][5]:
+-                    chg = True
+-                    break
+-        if not chg:
+-            chk2 = self.sql.getRec(tables="ftable", cols=["ft_desc"],
+-                where=[("ft_tabl", "=", "ffield")], limit=1)
+-            if chk2[0] != tabdic["ffield"]["idx"][0][0]:
+-                chg = True
++            for num, chk in enumerate(chks):
++                if chk[1:] != tabdic[tab]["fld"][num]:
++                    chg = True
++                    break
++        for tab in ("ffield", "ftable"):
++            chks = self.sql.getRec(tables="ftable",
++                where=[("ft_tabl", "=", tab)])
++            for num, chk in enumerate(chks):
++                sch = []
++                for ft in chk:
++                    if ft:
++                        sch.append(ft)
++                if sch != tabdic[tab]["idx"][num]:
++                    chg = True
++                    break
+         if not chg:
+             return
+         if self.opts["mf"] and self.opts["mf"].window:
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2019-01-23 09:10:12 +0000
++++ uty/pkgprg.py	2019-02-08 06:40:12 +0000
+@@ -67,6 +67,8 @@
+ if verinc and not system == "t":
+     print("Cannot Increment %s" % system)
+     sys.exit()
++if verinc and system == "t":
++    mkcd = True
+ 
+ pypath = findFile(start=[bd], name=bv, ftyp="d")
+ if not pypath:
+@@ -457,7 +459,7 @@
+     else:
+         addpage(doc, fle)
+ doc.close()
+-exeCmd("zip -q %s/TartanSve/%s doc/tarlic.rst" % (bd, zipfle))
++exeCmd("zip -q %s/TartanSve/%s doc/gnugpl.*" % (bd, zipfle))
+ exeCmd("rst2pdf doc/%s.rst -o doc/Manual.pdf -s doc/mystylesheet" % man)
+ exeCmd("zip -mq %s/TartanSve/%s doc/Manual.pdf" % (bd, zipfle))
+ if system == "tartan":
+
+=== modified file 'uty/rp1010.py'
+--- uty/rp1010.py	2019-01-13 16:38:59 +0000
++++ uty/rp1010.py	2019-01-28 10:55:20 +0000
+@@ -47,30 +47,23 @@
+         #======================================================================
+         # Get list of available tables
+         #======================================================================
+-        whr = [("ft_seq", "=", 1), ("ft_tabl", "not", "like", "rpt%")]
++        exc = ("ffield", "frelat", "ftable", "verupd",
++            "ctlpwm", "ctlpwr", "ctlpwu", "ctlynd")
++        whr = [
++            ("ft_seq", "=", 1),
++            ("ft_tabl", "not", "in", exc),
++            ("ft_tabl", "not", "like", "rpt%"),
++            ("ft_tabl", "not", "like", "%sctl")]
+         if self.opts["capnm"]:
+             syss = self.sql.getRec(tables="ctlpwm", cols=["mpw_sys"],
+                 where=[("mpw_usr", "=", self.opts["capnm"]), ("mpw_prg",
+                 "=", "")])
+             if syss:
+-                whr.append(("ft_tabl", "not", "in", ("ffield", "frelat",
+-                    "ftable", "verupd")))
+-                whr.append(("ft_tabl", "not", "like", "ctl%s"))
+-                whr.append(("ft_tabl", "not", "like", "%sctl"))
+-                recs = {
+-                    "ar": "ass",
+-                    "bk": "bkm",
+-                    "cr": "crs",
+-                    "dr": "drs",
+-                    "gl": "gen",
+-                    "ln": "lon",
+-                    "ms": "ctl",
+-                    "rc": "rca",
+-                    "rt": "rtl",
+-                    "si": "sls",
+-                    "sl": "wag",
+-                    "st": "str",
+-                    "wg": "wag"}
++                recs = {"ar": "ass", "bk": "bkm", "bs": "bks", "bc": "bwl",
++                    "cr": "crs", "cs": "csh", "dr": "drs", "gl": "gen",
++                    "ln": "lon", "ml": "mem", "ms": "ctl", "ps": "pos",
++                    "rc": "rca", "rt": "rtl", "sc": "scp", "si": "sls",
++                    "sl": "wag", "st": "str", "wg": "wag"}
+                 for sys in syss:
+                     whr.append(("ft_tabl", "not", "like", recs[sys[0]] + "%"))
+         self.tables = self.sql.getRec(tables="ftable", cols=["ft_tabl",
+
+=== modified file 'wag/sl4010.py'
+--- wag/sl4010.py	2019-01-13 16:38:59 +0000
++++ wag/sl4010.py	2019-01-31 11:36:30 +0000
+@@ -25,9 +25,9 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, CCD, GetCtl, LoanInterest, MyFpdf, SChoice
+-from TartanClasses import Sql, SRec, TartanDialog
+-from tartanFunctions import getModName, getPeriods,  doPrinter
++from TartanClasses import ASD, CCD, GetCtl, LoanInterest, MyFpdf, Sql, SRec
++from TartanClasses import TartanDialog
++from tartanFunctions import askChoice, getModName, getPeriods,  doPrinter
+ from tartanWork import sltrtp
+ 
+ class sl4010:
+@@ -261,55 +261,49 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        head = "Select the required print options"
+-        head = ("C", "Description")
+-        data = (
+-            ("Info Only", "I"),
+-            ("Transactions Only", "T"),
+-            ("Info and Transactions", "A"))
+-        state = self.df.disableButtonsTags()
+-        ss = SChoice(self.opts["mf"], head=head, data=data)
+-        self.df.enableButtonsTags(state=state)
+-        self.opts["mf"].updateStatus("")
+-        if ss.selection == [] or ss.selection is None:
+-            self.pr_opts = " "
+-        else:
+-            self.pr_opts = ss.selection[1]
+-        if self.pr_opts != " ":
+-            self.printDetail()
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Information", "I"),
++            ("Transactions", "T"),
++            ("Both", "B"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+-    def printDetail(self):
+-        self.head = ("%03u %-30s %47s %10s" % \
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
++        self.head = ("%03u %-30s %51s %10s" % \
+             (self.opts["conum"], self.opts["conam"], self.sysdttm, __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+         self.pglin = 999
+-        if self.pr_opts != "T":
++        if opt != "T":
+             self.pageHeading()
+             self.printInfo()
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"], ext="pdf")
+-        if self.pr_opts == "I":
++        if opt == "I":
+             self.fpdf.output(pdfnam, "F")
+             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                 pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "A":
++        elif opt == "B":
+             if not self.wlt:
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+             else:
+-                self.acctot = 0
++                self.acctot = 0.0
+                 self.pageHeading()
+                 self.pageHeadingTrans()
+                 self.printTrans()
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "T":
++        elif opt == "T":
+             if self.wlt:
+-                self.acctot = 0
++                self.acctot = 0.0
+                 self.pageHeading()
+                 self.pageHeadingTrans()
+                 self.printTrans()
+@@ -344,7 +338,7 @@
+             typ = CCD(rec[self.sql.wagltf_col.index("wlt_type")], "UI", 1)
+             ref = CCD(rec[self.sql.wagltf_col.index("wlt_ref")], "Na", 9)
+             bat = CCD(rec[self.sql.wagltf_col.index("wlt_batch")], "Na", 7)
+-            rte = CCD(rec[self.sql.wagltf_col.index("wlt_per")], "NA", 7.2)
++            rte = CCD(rec[self.sql.wagltf_col.index("wlt_per")], "UD", 6.2)
+             amt = CCD(rec[self.sql.wagltf_col.index("wlt_amt")], "SD", 13.2)
+             ded = CCD(rec[self.sql.wagltf_col.index("wlt_ded")], "SD", 13.2)
+             det = CCD(rec[self.sql.wagltf_col.index("wlt_desc")], "NA", 30)
+@@ -356,6 +350,10 @@
+                 sltrtp[(typ.work - 1)][0], ref.disp, bat.disp,
+                 rte.disp, amt.disp, ded.disp, det.disp))
+             self.pglin += 1
++        self.fpdf.underLine(txt=self.head)
++        b = CCD(self.acctot, "SD", 13.2)
++        self.fpdf.drawText("%-39s %13s %13s %-30s" % \
++            ("", b.disp, "", "Closing Balance"))
+ 
+     def pageHeading(self):
+         self.fpdf.add_page()
+@@ -363,33 +361,34 @@
+         self.pgnum += 1
+         self.fpdf.drawText(self.head)
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-31s %-10s %44s %5s" % \
++        self.fpdf.drawText("%-31s %-10s %48s %5s" % \
+             ("Staff Loans Interrogation as at", self.sysdtd, "Page",
+             self.pgnum))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+-        self.pglin = 6
++        self.pglin = 3
+ 
+     def pageHeadingTrans(self):
+         self.fpdf.setFont(style="B")
+-        self.fpdf.drawText()
+-        self.fpdf.drawText("%-1s %-7s %s %-2s %-7s %s %-2s %-8s %s " \
+-            "%-2s %-4s %s" % ("",
+-            self.df.topf[0][0][3], self.df.t_disp[0][0][0], "",
+-            self.df.topf[0][1][3], self.df.t_disp[0][0][1], "",
+-            self.df.topf[0][2][3], self.df.t_disp[0][0][2], "",
+-            self.df.topf[0][3][3], self.df.t_disp[0][0][3]))
+-        self.fpdf.drawText()
+-        self.fpdf.drawText("%-10s %-3s %-9s %-7s %-7s %-10s %-12s %-7s" % \
++        text = "%-8s %5s %-4s %s" % (self.df.topf[0][0][3],
++            self.df.t_disp[0][0][0], self.df.topf[0][1][3],
++            self.df.t_disp[0][0][1])
++        self.fpdf.drawText(text)
++        text = "%-8s %5s %-4s %s" % (self.df.topf[0][2][3],
++            self.df.t_disp[0][0][2], self.df.topf[0][3][3],
++            self.df.t_disp[0][0][3])
++        self.fpdf.drawText(text)
++        self.fpdf.drawText()
++        self.fpdf.drawText("%-10s %-3s %-9s %-7s %6s %12s  %12s  %-30s" % \
+             ("   Date", "Typ", "Reference", "Batch", "Int%",
+             "    Amount", "  Deduction", "Remarks"))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+-        self.pglin = 8
+-        b = CCD(self.acctot / 100.0, "SD", 15.2)
++        self.pglin = 7
++        b = CCD(self.acctot, "SD", 13.2)
+         if self.acctot != 0:
+-            self.fpdf.drawText("%-42s %13s %-30s" % \
+-                (" ", b.disp, "Brought Forward"))
++            self.fpdf.drawText("%-39s %13s %13s %-30s" % \
++                ("", b.disp, "", "Brought Forward"))
+             self.pglin += 1
+ 
+     def doExit(self, widget=None):
+
+=== modified file 'wag/wg2020.py'
+--- wag/wg2020.py	2019-01-15 09:24:43 +0000
++++ wag/wg2020.py	2019-01-25 09:26:08 +0000
+@@ -28,7 +28,7 @@
+ from TartanClasses import ASD, CCD, GetCtl, LoanInterest, PrintPayslip
+ from TartanClasses import ProgressBar, Sql, TartanDialog
+ from tartanFunctions import askQuestion, chkGenAcc, dateDiff, getSingleRecords
+-from tartanFunctions import payeTables, showError
++from tartanFunctions import mthendDate, payeTables, showError
+ 
+ class wg2020:
+     def __init__(self, **opts):
+@@ -749,7 +749,8 @@
+         if taxinc != totinc:
+             ann, x, x, x, x = self.doCompute(totinc)
+             ann = float(ASD(ann) - ASD(self.taxamt))
+-        age = dateDiff(self.dob, self.rundt, "years")
++        yrend = mthendDate((self.taxyr * 10000) + 228)
++        age = dateDiff(self.dob, yrend, "years")
+         if age > 64:
+             prb = float(ASD(prb) + ASD(arb))
+         if age > 74:
+
+=== modified file 'wag/wg4010.py'
+--- wag/wg4010.py	2019-01-13 16:38:59 +0000
++++ wag/wg4010.py	2019-01-31 11:54:30 +0000
+@@ -25,9 +25,9 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, CCD, GetCtl, MyFpdf, NotesCreate, SChoice
+-from TartanClasses import Sql, SRec, TartanDialog
+-from tartanFunctions import getModName, doPrinter
++from TartanClasses import ASD, CCD, GetCtl, MyFpdf, NotesCreate, Sql, SRec
++from TartanClasses import TartanDialog
++from tartanFunctions import askChoice, getModName, doPrinter
+ 
+ class wg4010:
+     def __init__(self, **opts):
+@@ -278,40 +278,34 @@
+         self.df.focusField("T", 0, 1)
+ 
+     def doPrint(self, widget=None):
+-        head = "Select the required print options"
+-        head = ("C", "Description")
+-        data = (
+-            ("Info Only", "I"),
+-            ("Transactions Only", "T"),
+-            ("Info and Transactions", "A"))
+-        state = self.df.disableButtonsTags()
+-        ss = SChoice(self.opts["mf"], head=head, data=data)
+-        self.df.enableButtonsTags(state=state)
+-        self.opts["mf"].updateStatus("")
+-        if ss.selection == [] or ss.selection is None:
+-            self.pr_opts = " "
+-        else:
+-            self.pr_opts = ss.selection[1]
+-        if self.pr_opts != " ":
+-            self.printDetail()
++        mess = "Select the Required Print Option."
++        butt = (
++            ("Information", "I"),
++            ("Transactions", "T"),
++            ("Both", "B"),
++            ("None", "N"))
++        self.doPrintOption(askChoice(self.opts["mf"].body, "Print Options",
++            mess, butt=butt))
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+-    def printDetail(self):
+-        self.head = ("%03u %-30s %47s %10s" % \
++    def doPrintOption(self, opt):
++        if opt == "N":
++            return
++        self.head = ("%03u %-30s %68s %10s" % \
+             (self.opts["conum"], self.opts["conam"], self.sysdttm, __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+         self.pglin = 999
+-        if self.pr_opts != "T":
++        if opt != "T":
+             self.pageHeading()
+             self.printInfo()
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+             self.opts["conum"], ext="pdf")
+-        if self.pr_opts == "I":
++        if opt == "I":
+             self.fpdf.output(pdfnam, "F")
+             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                 pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "A":
++        elif opt == "B":
+             self.wagtrn = self.doGetTrans()
+             if not self.wagtrn:
+                 self.fpdf.output(pdfnam, "F")
+@@ -324,7 +318,7 @@
+                 self.fpdf.output(pdfnam, "F")
+                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+-        elif self.pr_opts == "T":
++        elif opt == "T":
+             self.wagtrn = self.doGetTrans()
+             if self.wagtrn:
+                 self.pageHeading()
+@@ -335,21 +329,21 @@
+                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+ 
+     def printInfo(self):
+-        self.fpdf.drawText("%26s %-25s %s" % \
++        self.fpdf.drawText("%15s %-25s %s" % \
+             ("", self.df.topf[0][0][3], self.df.t_disp[0][0][0]))
+         self.pglin += 1
+         self.fpdf.drawText()
+         self.pglin += 1
+         #General Screen
+         for x in xrange(0, len(self.df.topf[1])):
+-            self.fpdf.drawText("%26s %-25s %s" % \
++            self.fpdf.drawText("%15s %-25s %s" % \
+                 ("", self.df.topf[1][x][3], self.df.t_disp[1][0][x]))
+             self.pglin += 1
+         self.fpdf.drawText()
+         self.pglin += 1
+         #Tax Screen
+         for x in xrange(0, len(self.df.topf[2])):
+-            self.fpdf.drawText("%26s %-25s %s" % \
++            self.fpdf.drawText("%15s %-25s %s" % \
+                 ("", self.df.topf[2][x][3], self.df.t_disp[2][0][x]))
+             self.pglin += 1
+         self.fpdf.drawText()
+@@ -357,7 +351,7 @@
+         #Bank Details Screen
+         if self.df.t_work[1][0][15] == "E":
+             for x in xrange(0, len(self.df.topf[3])):
+-                self.fpdf.drawText("%26s %-25s %s" % \
++                self.fpdf.drawText("%15s %-25s %s" % \
+                     ("", self.df.topf[3][x][3], self.df.t_disp[3][0][x]))
+                 self.pglin += 1
+             self.fpdf.drawText()
+@@ -365,30 +359,30 @@
+         #Balances Screen
+         self.pglin += 1
+         for x in xrange(0, len(self.df.topf[6])):
+-            self.fpdf.drawText("%26s %-25s %s" % \
++            self.fpdf.drawText("%15s %-25s %s" % \
+                 ("", self.df.topf[6][x][3], self.df.t_disp[6][0][x]))
+             self.pglin += 1
+         self.fpdf.drawText()
+         self.pglin += 1
+         #Earnings and Deductions Screen
+-        self.fpdf.drawText("%26s %29s" % ("", "Earnings and Deductions Codes"))
+-        self.pglin += 1
+-        self.fpdf.drawText("%26s %29s" % ("", self.fpdf.suc * 29))
+-        self.pglin += 1
+-        self.fpdf.drawText("%26s %-3s %-1s %-30s %12s  %12s " % \
++        self.fpdf.drawText("%15s %29s" % ("", "Earnings and Deductions Codes"))
++        self.pglin += 1
++        self.fpdf.drawText("%15s %29s" % ("", self.fpdf.suc * 29))
++        self.pglin += 1
++        self.fpdf.drawText("%15s %-3s %-1s %-30s %12s  %12s " % \
+             ("", "Cod", "T", "Description", "Employee", "Employer"))
+         self.pglin += 1
+-        self.fpdf.drawText("%26s %s" % ("", self.fpdf.suc * 63))
++        self.fpdf.drawText("%15s %s" % ("", self.fpdf.suc * 63))
+         self.pglin += 1
+         for x in xrange(0, len(self.df.colf[4])):
+             if self.df.c_work[4][x][0] not in ("", 0):
+-                self.fpdf.drawText("%26s %s %s %s %12s" % \
++                self.fpdf.drawText("%15s %s %s %s %12s" % \
+                     ("", self.df.c_disp[4][x][0], "E",
+                     self.df.c_disp[4][x][1], self.df.c_disp[4][x][2]))
+                 self.pglin += 1
+         for x in xrange(0, len(self.df.colf[5])):
+             if self.df.c_work[5][x][0] not in ("", 0):
+-                self.fpdf.drawText("%26s %s %s %s %12s %12s" % \
++                self.fpdf.drawText("%15s %s %s %s %12s %12s" % \
+                     ("", self.df.c_disp[5][x][0], "D",
+                     self.df.c_disp[5][x][1], self.df.c_disp[5][x][2],
+                     self.df.c_disp[5][x][3]))
+@@ -401,15 +395,15 @@
+             self.pglin += 1
+             s = CCD(self.startb, "D1", 10.0)
+             e = CCD(self.endb, "D1", 10.0)
+-            self.fpdf.drawText("%26s %-25s %10s %2s %10s" % \
++            self.fpdf.drawText("%15s %-25s %10s %2s %10s" % \
+                 ("", "Progressive Balances from", s.disp, "to", e.disp))
+             self.pglin += 1
+-            self.fpdf.drawText("%26s %s" % ("", self.fpdf.suc * 50))
++            self.fpdf.drawText("%15s %s" % ("", self.fpdf.suc * 50))
+             self.pglin += 1
+-            self.fpdf.drawText("%26s %-3s %-1s %-30s %12s  %12s " % \
++            self.fpdf.drawText("%15s %-3s %-1s %-30s %12s  %12s " % \
+                 ("", "Cod", "T", "Description", "Hours", "Value"))
+             self.pglin += 1
+-            self.fpdf.drawText("%26s %s" % ("", self.fpdf.suc * 63))
++            self.fpdf.drawText("%15s %s" % ("", self.fpdf.suc * 63))
+             self.pglin += 1
+             for x in xrange(0, len(self.df.colf[7])):
+                 if self.df.c_work[7][x][0]:
+@@ -417,7 +411,7 @@
+                         hr = self.df.c_disp[7][x][3]
+                     else:
+                         hr = "             "
+-                    self.fpdf.drawText("%26s %s %s %s %12s %12s" % ("",
++                    self.fpdf.drawText("%15s %s %s %s %12s %12s" % ("",
+                         self.df.c_disp[7][x][0], self.df.c_disp[7][x][1],
+                         self.df.c_disp[7][x][2], hr, self.df.c_disp[7][x][4]))
+                     self.pglin += 1
+@@ -460,7 +454,7 @@
+         self.pgnum += 1
+         self.fpdf.drawText(self.head)
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-38s %-10s %37s %5s" % \
++        self.fpdf.drawText("%-38s %-10s %58s %5s" % \
+             ("Salaries and Wages Interrogation as at", self.sysdtd, "Page",
+             self.pgnum))
+         self.fpdf.underLine(txt=self.head)
+@@ -478,7 +472,8 @@
+         self.fpdf.drawText("%8s %-17s %10s %2s %10s" % \
+             ("", "Transactions from", s.disp, "to", e.disp))
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-10s %5s %9s  %9s  %9s  %9s  %9s  %9s  %9s " % \
++        self.fpdf.drawText(
++            "%-10s %5s %12s  %12s  %12s  %12s  %12s  %12s  %12s" %
+             ("   Date", "Page", "Norm-Hrs", "Norm-Pay", "Taxbl-Pay",
+             "Non-Taxbl", "Tax-D-Ded", "Non-D-Ded", "Net-Pay"))
+         self.fpdf.underLine(txt=self.head)
+

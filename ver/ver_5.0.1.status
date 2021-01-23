@@ -1,0 +1,13 @@
+added:
+  bkm/bkc610.py
+modified:
+  bkm/bk1010.py
+  doc/Downloads.rst
+  doc/Main.rst
+  men/stdmen.py
+  mst/ms0000.py*
+  rca/rcm010.py
+  std/TartanClasses.py
+  std/tartanFunctions.py
+unknown:
+  bkm/bkmlet.txt

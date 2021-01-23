@@ -1,0 +1,1640 @@
+=== modified file '.bzrignore'
+--- .bzrignore	2015-01-01 12:48:11 +0000
++++ .bzrignore	2015-02-07 13:01:41 +0000
+@@ -56,3 +56,15 @@
+ web
+ uty/SumatraPDF-settings.txt
+ doc/bkmdoc.py
++std/nmb
++std/smb
++std/pyasn1
++doc/QuickStart.pdf
++doc/bankserv.txt
++doc/mystylesheet
++doc/nfs_setup.rst
++doc/nut_ups.odt
++doc/vnc_setup.rst
++doc/volmoed_client.txt
++.idea
++Tartan-5.pidaproject
+
+=== modified file 'ass/ar4010.py'
+--- ass/ar4010.py	2014-12-30 15:37:38 +0000
++++ ass/ar4010.py	2015-02-08 12:33:41 +0000
+@@ -33,6 +33,8 @@
+             return
+         self.gc = GetCtl(self.opts["mf"])
+         assctl = self.gc.getCtl("assctl", self.opts["conum"])
++        if not assctl:
++            return
+         self.glint = assctl["cta_glint"]
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+
+=== modified file 'bkm/bk1020.py'
+--- bkm/bk1020.py	2015-02-07 06:31:11 +0000
++++ bkm/bk1020.py	2015-02-10 14:29:27 +0000
+@@ -146,7 +146,6 @@
+                 0,"N",self.doDate,None,None,("efld",)),
+             (("T",1,6,0),("IRB",r2s),0,"Units","",
+                 "C","N",self.doUnits,None,None,None),
+-            #(("T",1,6,86),"OTv",(45,2),""),
+             (("T",1,6,0),"OTv",45,""),
+             (("T",1,7,0),"OSD",11.2,"Value"),
+             (("T",1,8,0),"ISD",11.2,"Initial Deposit","",
+@@ -1577,24 +1576,26 @@
+                     break
+                 ln[tdc.index("tpd_text")] = "Dear %s\n\n%s" % (nam, body[0])
+                 if self.state == "Q":
+-                    emess = ["Booking Enquiry", "Dear %s\n\nAttached "\
+-                        "please find your booking enquiry" % nam]
++                    emess = ["Booking Enquiry - %s" % self.number,
++                        "Dear %s\n\nAttached please find your booking "\
++                        "enquiry" % nam]
+                     if self.terms:
+                         emess[1] += " as well as a copy of our Terms "\
+                             "and Conditions."
+                     else:
+                         emess[1] += "."
+                 elif self.state == "C":
+-                    emess = ("Booking Enquiry", "Dear %s\n\nAttached "\
+-                        "please find your booking confirmation." % nam)
++                    emess = ("Booking Enquiry - %s" % self.number,
++                        "Dear %s\n\nAttached please find your booking "\
++                        "confirmation." % nam)
+                 elif self.state == "S":
+-                    emess = ("Booking Settlement", "Dear %s\n\nAttached "\
+-                        "please find your confirmation of settlement of "\
+-                        "your booking." % nam)
++                    emess = ("Booking Settlement - %s" % self.number,
++                        "Dear %s\n\nAttached please find your confirmation "\
++                        "of settlement of your booking." % nam)
+                 elif self.state == "X":
+-                    emess = ("Booking Cancellation", "Dear %s\n\nAttached "\
+-                        "please find the expiry of your booking enquiry." %
+-                        nam)
++                    emess = ("Booking Cancellation - %s" % self.number,
++                        "Dear %s\n\nAttached please find the expiry of your "\
++                        "booking enquiry." % nam)
+             if ln[tdc.index("tpd_detseq")] == 7:
+                 if self.state in ("Q", "C"):
+                     ln[tdc.index("tpd_text")] = "%-20s%60s" % \
+
+=== modified file 'crs/cr2010.py'
+--- crs/cr2010.py	2015-02-07 06:31:11 +0000
++++ crs/cr2010.py	2015-02-08 12:44:23 +0000
+@@ -40,6 +40,13 @@
+             prog=__name__)
+         if self.sql.error:
+             return
++        # Check for Company record
++        self.gc = GetCtl(self.opts["mf"])
++        self.allcoy = self.opts["conum"]
++        ctlmst = self.gc.getCtl("ctlmst", self.allcoy)
++        if not ctlmst:
++            return
++        self.taxdf = ctlmst["ctm_taxdf"]
+         # Check for Intercompany Facility
+         if not self.sql.getRec(tables="ctlmst", cols=["count(*)"],
+                 where=[("ctm_cono", "<>", self.opts["conum"])], limit=1)[0]:
+@@ -52,8 +59,7 @@
+                 [self.incoac.append(coy[0]) for coy in rec]
+             else:
+                 self.incoac = False
+-        # Rest
+-        self.gc = GetCtl(self.opts["mf"])
++        # Rest of Controls
+         crsctl = self.gc.getCtl("crsctl", self.opts["conum"])
+         if not crsctl:
+             return
+@@ -68,13 +74,12 @@
+                 return
+             self.crsctl = ctlctl["crs_ctl"]
+             self.disrec = ctlctl["dis_rec"]
++        # Batch Header
+         self.batchHeader()
+         if not self.bh.batno:
+             return
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+-        self.allcoy = self.opts["conum"]
+-        self.taxdf = self.gc.getCtl("ctlmst", self.opts["conum"])["ctm_taxdf"]
+         if self.opts["rtn"] == 1:
+             self.glt = 5
+         elif self.opts["rtn"] == 2:
+
+=== modified file 'crs/cr2010_rne.py'
+--- crs/cr2010_rne.py	2014-12-30 15:37:38 +0000
++++ crs/cr2010_rne.py	2015-02-08 12:43:00 +0000
+@@ -29,20 +29,27 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        tabs = ["crsmst", "crstrn", "crsrtf", "ctlmst", "ctlvmf", "ctlvrf"]
+-        self.sql = Sql(self.opts["mf"].dbm, tabs, prog=__name__)
+-        if self.sql.error:
+-            return
++        # Check for Valid Posting Routine
+         if self.opts["rtn"] not in (1, 2, 3, 4):
+             showError(self.opts["mf"].body, "Control Error",
+                 "Invalid Routine %s, Only 1, 2, 3 and 4 Are Allowed" % \
+                 str(self.opts["rtn"]))
+             return
++        # Create SQL Object
++        tabs = ["crsmst", "crstrn", "crsrtf", "ctlmst", "ctlvmf", "ctlvrf"]
++        self.sql = Sql(self.opts["mf"].dbm, tabs, prog=__name__)
++        if self.sql.error:
++            return
++        # Check for Company record
++        gc = GetCtl(self.opts["mf"])
++        ctlmst = gc.getCtl("ctlmst", self.opts["conum"])
++        if not ctlmst:
++            return
++        self.taxdf = ctlmst["ctm_taxdf"]
++        # Batch Header
+         self.batchHeader()
+         if not self.bh.batno:
+             return
+-        gc = GetCtl(self.opts["mf"])
+-        self.taxdf = gc.getCtl("ctlmst", self.opts["conum"])["ctm_taxdf"]
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.impfle = False
+
+=== modified file 'crs/cr3080.py'
+--- crs/cr3080.py	2015-02-07 06:31:11 +0000
++++ crs/cr3080.py	2015-02-08 12:48:02 +0000
+@@ -44,6 +44,8 @@
+         self.tplnam = crsctl["ctc_tplnam"]
+         if self.glint == "Y":
+             ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++            if not ctlctl:
++                return
+             if gc.chkRec(self.opts["conum"], ctlctl, ["crs_ctl"]):
+                 return
+             self.crsctl = ctlctl["crs_ctl"]
+
+=== modified file 'csh/ca3010.py'
+--- csh/ca3010.py	2015-02-07 06:31:11 +0000
++++ csh/ca3010.py	2015-02-08 07:45:35 +0000
+@@ -103,7 +103,7 @@
+         self.tk2 = self.sql.getRec(tables="cshana", where=[("can_cono", "=",
+             self.opts["conum"]), ("can_type", "=", "T"), ("can_date",
+             "between", self.fm, self.to)], order="can_trdt, can_code")
+-        self.head = ("%03u %-30s %38s %6s" % (self.opts["conum"],
++        self.head = ("%03u %-30s %40s %6s" % (self.opts["conum"],
+             self.opts["conam"], self.sysdttm, __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+@@ -129,7 +129,7 @@
+         self.fpdf.setFont(style="B")
+         self.fpdf.drawText("Petty Cash Expenditure")
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-10s %-36s %5s %13s %13s" % ("  Date",
++        self.fpdf.drawText("%-10s %-36s %7s %13s %13s" % ("  Date",
+             "Description", "Code", "Vat-Amount ", "Inc-Amount "))
+         self.fpdf.underLine(txt=self.head)
+         self.pglin += 4
+@@ -144,7 +144,7 @@
+             if self.quit:
+                 break
+             trdt = CCD(dat[c1.index("can_trdt")], "D1", 10)
+-            code = CCD(dat[c1.index("can_code")], "UI", 5)
++            code = CCD(dat[c1.index("can_code")], "UI", 7)
+             desc = CCD(dat[c1.index("can_desc")], "NA", 36)
+             inca = CCD(dat[c1.index("can_incamt")], "SD", 13.2)
+             vata = CCD(dat[c1.index("can_vatamt")], "SD", 13.2)
+@@ -160,9 +160,9 @@
+             return
+         self.exp = CCD(tot, "SD", 13.2)
+         vat = CCD(vat, "SD", 13.2)
+-        self.fpdf.drawText("%53s %-12s  %-12s" % ("", self.fpdf.suc*12,
++        self.fpdf.drawText("%55s %-12s  %-12s" % ("", self.fpdf.suc*12,
+             self.fpdf.suc*12))
+-        self.fpdf.drawText("%10s %-36s       %13s %13s" % ("",
++        self.fpdf.drawText("%10s %-36s         %13s %13s" % ("",
+             "Total Expenses", vat.disp, self.exp.disp))
+         self.fpdf.drawText()
+ 
+@@ -170,7 +170,7 @@
+         self.fpdf.setFont(style="B")
+         self.fpdf.drawText("Cash Takings")
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-10s %-36s %5s %13s %13s" % ("  Date",
++        self.fpdf.drawText("%-10s %-36s %7s %13s %13s" % ("  Date",
+             "Description", "Code", "  ", "Amount "))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+@@ -184,7 +184,7 @@
+             if self.quit:
+                 break
+             trdt = CCD(dat[c1.index("can_trdt")], "D1", 10)
+-            code = CCD(dat[c1.index("can_code")], "UI", 5)
++            code = CCD(dat[c1.index("can_code")], "UI", 7)
+             desc = CCD(dat[c1.index("can_desc")], "NA", 36)
+             inca = CCD(dat[c1.index("can_incamt")], "SD", 13.2)
+             if self.pglin > self.fpdf.lpp:
+@@ -197,14 +197,14 @@
+         if self.quit:
+             return
+         tot = CCD(tot, "SD", 13.2)
+-        self.fpdf.drawText("%67s %-12s" % ("", self.fpdf.suc*12))
+-        self.fpdf.drawText("%10s %-56s %13s" % ("", "Total Takings", tot.disp))
++        self.fpdf.drawText("%69s %-12s" % ("", self.fpdf.suc*12))
++        self.fpdf.drawText("%10s %-58s %13s" % ("", "Total Takings", tot.disp))
+ 
+     def printSummary(self):
+         self.fpdf.setFont(style="B")
+         self.fpdf.drawText("Expenses Summary")
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%4s %-62s %13s" % ("Code", "Description",
++        self.fpdf.drawText("%7s %-61s %13s" % ("Code", "Description",
+             "Amount "))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+@@ -223,19 +223,19 @@
+             c = CCD(float(ASD(a.work) - ASD(b.work)), "SD", 13.2)
+             exp = float(ASD(exp) + ASD(a.work))
+             vat = float(ASD(vat) + ASD(b.work))
+-            self.fpdf.drawText("%4s %-62s %s" % (rec[0], rec[1], c.disp))
++            self.fpdf.drawText("%7s %-61s %s" % (rec[0], rec[1], c.disp))
+         vat = CCD(vat, "SD", 13.2)
+-        self.fpdf.drawText("%4s %-62s %s" % ("", "Value Added Tax", vat.disp))
+-        self.fpdf.drawText("%67s %-12s" % ("", self.fpdf.suc*12))
++        self.fpdf.drawText("%7s %-61s %s" % ("", "Value Added Tax", vat.disp))
++        self.fpdf.drawText("%69s %-12s" % ("", self.fpdf.suc*12))
+         exp = CCD(exp, "SD", 13.2)
+-        self.fpdf.drawText("%4s %-62s %s" % ("", "Total", exp.disp))
++        self.fpdf.drawText("%7s %-61s %s" % ("", "Total", exp.disp))
+         self.fpdf.drawText()
+         self.fpdf.drawText()
+ 
+         self.fpdf.setFont(style="B")
+         self.fpdf.drawText("Income Summary")
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%4s %-62s %13s" % ("Code", "Description",
++        self.fpdf.drawText("%7s %-61s %13s" % ("Code", "Description",
+             "Amount "))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+@@ -250,17 +250,17 @@
+         for rec in recs:
+             a = CCD(rec[2], "SD", 13.2)
+             tak = float(ASD(tak) + ASD(a.work))
+-            self.fpdf.drawText("%4s %-62s %s" % (rec[0], rec[1], a.disp))
+-        self.fpdf.drawText("%67s %-12s" % ("", self.fpdf.suc*12))
++            self.fpdf.drawText("%7s %-61s %s" % (rec[0], rec[1], a.disp))
++        self.fpdf.drawText("%69s %-12s" % ("", self.fpdf.suc*12))
+         tak = CCD(tak, "SD", 13.2)
+-        self.fpdf.drawText("%4s %-62s %s" % ("", "Total", tak.disp))
++        self.fpdf.drawText("%7s %-61s %s" % ("", "Total", tak.disp))
+         self.fpdf.drawText()
+         self.fpdf.drawText()
+ 
+         self.fpdf.setFont(style="B")
+         self.fpdf.drawText("Cash Summary")
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-26s %40s %13s" % ("Denomination", "Quantity",
++        self.fpdf.drawText("%-26s %42s %13s" % ("Denomination", "Quantity",
+             "Amount "))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+@@ -275,7 +275,7 @@
+         if recs and recs[0]:
+             val = CCD(recs[0], "SD", 13.2)
+             csh = val.work
+-            self.fpdf.drawText("%-26s %40s %s" % ("Cheques", "", val.disp))
++            self.fpdf.drawText("%-26s %42s %s" % ("Cheques", "", val.disp))
+         else:
+             csh = 0
+         for x in xrange(1, 15):
+@@ -283,26 +283,26 @@
+                 qty = CCD(recs[x], "UI", 5)
+                 val = CCD(qty.work * self.denoms[x-1][1], "SD", 13.2)
+                 csh = float(ASD(csh) + ASD(val.work))
+-                self.fpdf.drawText("%-26s %40s %s" % (self.denoms[x-1][0],
++                self.fpdf.drawText("%-26s %42s %s" % (self.denoms[x-1][0],
+                     qty.disp, val.disp))
+-        self.fpdf.drawText("%67s %-12s" % ("", self.fpdf.suc*12))
++        self.fpdf.drawText("%69s %-12s" % ("", self.fpdf.suc*12))
+         csh = CCD(csh, "SD", 13.2)
+-        self.fpdf.drawText("%-26s %40s %s" % ("Total", "", csh.disp))
++        self.fpdf.drawText("%-26s %42s %s" % ("Total", "", csh.disp))
+ 
+         self.fpdf.drawText()
+         self.fpdf.setFont(style="B")
+         self.fpdf.drawText("Cash Reconciliation")
+         self.fpdf.setFont()
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-26s %40s %s" % ("Total Takings", "",
++        self.fpdf.drawText("%-26s %42s %s" % ("Total Takings", "",
+             tak.disp))
+-        self.fpdf.drawText("%-26s %40s %s" % ("Total Reimbursement", "",
++        self.fpdf.drawText("%-26s %42s %s" % ("Total Reimbursement", "",
+             exp.disp))
+-        self.fpdf.drawText("%67s %-12s" % ("", self.fpdf.suc*12))
++        self.fpdf.drawText("%69s %-12s" % ("", self.fpdf.suc*12))
+         dif = CCD(float(ASD(tak.work) - ASD(exp.work)), "SD", 13.2)
+-        self.fpdf.drawText("%-26s %40s %s" % ("Cash Expected", "", dif.disp))
+-        self.fpdf.drawText("%-26s %40s %s" % ("Cash Actual", "", csh.disp))
+-        self.fpdf.drawText("%67s %-12s" % ("", self.fpdf.suc*12))
++        self.fpdf.drawText("%-26s %42s %s" % ("Cash Expected", "", dif.disp))
++        self.fpdf.drawText("%-26s %42s %s" % ("Cash Actual", "", csh.disp))
++        self.fpdf.drawText("%69s %-12s" % ("", self.fpdf.suc*12))
+         dif = CCD(float(ASD(dif.work) - ASD(csh.work)), "SD", 13.2)
+         if dif.work:
+             if dif.work < 0:
+@@ -310,7 +310,7 @@
+                 dif = CCD(float(ASD(0) - ASD(dif.work)), "SD", 13.2)
+             else:
+                 text = "Cash Under"
+-            self.fpdf.drawText("%-26s %40s %s" % (text, "", dif.disp))
++            self.fpdf.drawText("%-26s %42s %s" % (text, "", dif.disp))
+ 
+     def pageHeading(self):
+         self.fpdf.add_page()
+
+=== modified file 'csv/asterisk.sys'
+--- csv/asterisk.sys	2014-12-30 15:37:38 +0000
++++ csv/asterisk.sys	2015-02-08 09:28:15 +0000
+@@ -15,5 +15,6 @@
+ rpttab
+ rptvar
+ telcon
++telgrp
+ telmst
+ verupd
+
+=== modified file 'csv/bowls.sys'
+--- csv/bowls.sys	2014-12-30 15:37:38 +0000
++++ csv/bowls.sys	2015-02-08 09:28:29 +0000
+@@ -54,6 +54,7 @@
+ rptord
+ rpttab
+ rptvar
++telgrp
+ telmst
+ telcon
+ tplmst
+
+=== modified file 'csv/cshana.sys'
+--- csv/cshana.sys	2014-12-30 15:37:38 +0000
++++ csv/cshana.sys	2015-02-08 09:28:41 +0000
+@@ -38,6 +38,7 @@
+ rpttab
+ rptvar
+ telcon
++telgrp
+ telmst
+ tplmst
+ tpldet
+
+=== modified file 'csv/cshana_fld.csv'
+--- csv/cshana_fld.csv	2014-03-28 07:32:49 +0000
++++ csv/cshana_fld.csv	2015-02-08 07:25:37 +0000
+@@ -2,7 +2,7 @@
+ 1,"can_type","UA","1.0","Type (P/T)","T"
+ 2,"can_date","D1","10.0","Capture Date","Captd-Date"
+ 3,"can_trdt","D1","10.0","Transaction Date","Trans-Date"
+-4,"can_code","UI","4.0","Code","Code"
++4,"can_code","UI","7.0","Account Number","Acc-Num"
+ 5,"can_desc","NA","30.0","Description","Description"
+ 6,"can_vatcod","UA","1.0","VAT Code","V"
+ 7,"can_incamt","SD","13.2","Inclusive Amount","Inc-Amount"
+
+=== modified file 'csv/teldir.sys'
+--- csv/teldir.sys	2014-12-30 15:37:38 +0000
++++ csv/teldir.sys	2015-02-08 09:28:57 +0000
+@@ -7,5 +7,6 @@
+ ctlsys
+ emllog
+ telcon
++telgrp
+ telmst
+ verupd
+
+=== modified file 'doc/Bowls.rst'
+--- doc/Bowls.rst	2015-02-07 06:31:11 +0000
++++ doc/Bowls.rst	2015-02-11 15:26:42 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.2
++:Version:   5.0.4
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -54,14 +54,17 @@
+ ~~~~~~~~~~~~~~~~
+ Ensure that the following dependencies are installed on your system:
+ 
+-+ python >= 2.7.0 and < 3.0.0
+-+ python Imaging >= 1.1.7
+++ python >= 2.7.5 and < 3.0.0
+++ python-tk >= 2.7.5 and < 3.0.0
+++ python-imaging >= 2.3.0
+++ python-pil >= 2.3.0
+++ python-pil.imagetk >= 2.3.0
+ 
+-Additionally, the following dependencies should also be installed:
++Additionally, the following dependencies should also be installed using pip:
+ 
+ + odfpy >= 0.9.6
+-+ python Markdown >= 2.0
+-+ pychart >= 1.39
+++ markdown >= 2.0
+++ Python-Chart >= 1.39
+ + xlrd >= 0.7.1
+ + xlwt >= 0.7.1
+ 
+@@ -69,14 +72,14 @@
+ 
+ + Pysqlite >= 2.6.3
+ 
+-or
++or one of:
+ 
+ + Postgresql >= 8.4.0
+ + Psycopg2 >= 2.0.4
+ 
+-or
++or one of:
+ 
+-+ Mysql >= 5.0.2
+++ Mysql >= 5.0.4
+ + Mysql-python >= 1.2.0
+ 
+ Download the following file from ftp://ftp.tartan.co.za
+@@ -95,7 +98,7 @@
+ 
+ + Tartan_full_5.x.x.exe
+ 
+-Install Tartan_full_5.x.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
++Install Tartan_full_5.x.x.exe by browsing to it and double clicking and then accept the defaults, except, also agree to creating an icon on your desktop.
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+@@ -249,7 +252,7 @@
+ 
+ .. csv-table::
+   :header: "Coy", "SS", "Prog", "Password", "Meaning"
+-  :widths: 4, 4, 6, 8, 50
++  :widths: 5, 5, 6, 10, 50
+ 
+   "0", "gl", "    ", "    ", "All general ledger modules for all companies would be denied."
+   "0", "gl", "2032", "    ", "General ledger payments data capture for all companies would be denied."
+@@ -331,21 +334,31 @@
+ + **Dialog**
+ 
+     + **Menu Font**
+-        + **Name** - This is the font to be used for all menu items.
++        + **Name** - This is the font family to be used for all menu items.
+         + **Size** - This is font size to be used for all menu items.
+     + **Default Font**
+-        + **Name** - This is the font to be used in all other cases.
++        + **Name** - This is the font family to be used in all other cases.
+         + **Size** - This is font size to be used in all other cases.
+     + **Theme** - The theme to be used. The default theme is `clam`.
++    + **Colour Scheme** - The colour scheme to be used. The default scheme is `Red`.
+     + **Normal**
+         + **FG** - The normal label and button foreground colour.
+-        + **BG** - The normal label and button foreground colour.
++        + **BG** - The normal label and button background colour.
+     + **Focus**
+         + **FG** - The focused button foreground colour.
+-        + **BG** - The focused button foreground colour.
++        + **BG** - The focused button background colour.
+     + **Disable**
+         + **FG** - The disabled button foreground colour.
+-        + **BG** - The disabled button foreground colour.
++        + **BG** - The disabled button background colour.
++    + **Booking Query**
++        + **FG** - The booking manager calendar query foreground colour.
++        + **BG** - The booking manager calendar query background colour.
++    + **Booking Confirmed**
++        + **FG** - The booking manager calendar confirm foreground colour.
++        + **BG** - The booking manager calendar confirm background colour.
++    + **Booking Settled**
++        + **FG** - The booking manager calendar settle foreground colour.
++        + **BG** - The booking manager calendar settle background colour.
+ 
+ If this is a new installation you will be prompted to Create the Database after which you will need to create a `System Record` and at least one `Company Record`.
+ 
+@@ -820,19 +833,52 @@
+ Use this routine to send bulk MAIL or bulk SMSes. In order to use the MAIL facility you must enter a valid SMTP server in the `System Control Record`. In order to use the SMS facility you must register with www.smsportal.co.za and then enter your username and password in the `System Control Record` using `System Record Maintenance`_.
+ 
+ + **Delivery Type** - The available delivery types will depend on what is entered in the `System Control Record` and can be either E-Mail, SMS or both.
+-+ **List to Use** - The available lists will depend on the systems being used and can contain Bookings, Bowls, Creditors, Debtors, Members and Directory (Telephone). In addition to the lists, CSV or XLS files can also be used, as long as they contain a name and an email address and or a cell number.
+++ **List to Use** - The available lists will depend on the systems being used and can contain Bookings, Bowls, Creditors, Debtors, Members and Directory (Telephone). In addition to the lists, CSV or XLS files can also be used, as long as they contain a name and an email address and or a cell number. Please note that Creditors and Debtors do not have SMS capabilities.
+     + **Bookings** - This list accesses the tartan booking's contacts.
++        + **Individuals** - Allow selection of individual recipients.
+     + **Bowls** - This list accesses the tartan bowl's tabs.
++        + **Category** - Allow selection by category.
++        + **Gender** - Allow selection by gender.
++        + **Individuals** - Allow selection of individual recipients.
+     + **Creditors** - This list accesses the tartan creditor's masterfile.
++        + **Email To** - Select the recipient.
++        + **Individuals** - Allow selection of individual recipients.
+     + **Debtors** - This list accesses the tartan debtor's masterfile.
++        + **Email To** - Select the recipient.
++        + **Activity** - Allow selection by business activity.
++        + **Type** - Allow selection by business type.
++        + **Individuals** - Allow selection of individual recipients.
+     + **Members** - This list accesses the tartan member's masterfile.
++        + **Category** - Allow selection by membership category.
++        + **Gender** - Allow selection by gender.
++        + **Personalise** - Allow penalisation of the recipient.
++        + **Name Detail** - Select whether to use the names or initials.
++        + **Individuals** - Allow selection of individual recipients.
+     + **Directory** - This list accesses the tartan telephone directory.
++        + **Group Selection** - Allow selection by group.
++        + **Include Contacts** - Include the recipient's contacts.
++        + **Individuals** - Allow selection of individual recipients.
+     + **CSV and XLS File** - This is a csv or xls file containing a name, email address and/or a mobile number.
++        + **File Name** - The full path of the file to use.
++        + **Ignore Invalid Lines** - Select whether to ignore invalid lines.
++        + **Mobile/Email Column** - Enter the column of the mobile number or email address.
++        + **Personalise** - Allow penalisation of the recipient.
++        + **Title** - Select whether or not to use titles.
++        + **Title Column** - Enter the column of the title.
++        + **Surname Column** - Enter the column of the surname.
++        + **Names Column** - Enter the column of the names.
++        + **Name Detail** - Select whether to use the names or initials.
+ + **Skip Delivery Errors** - Select whether or not to skip invalid email addresses.
+ + **Subject** - The subject of the email.
+ + **In-line Attachment** - Any in-line image to be included in the email.
+ + **Separate Attachment** - Any attachment to be attached to the email.
+-+ **Message** - Any text message. In order to get the recipients name in this message use `{{name}}` which will be substituted by the name.
+++ **Message** - Any text message. In order to get the recipients name in the message use one of the following methods:
++    + **{{name}}** - Use this method if the recipient has separate surname and names fields.
++    + **{{surname}}** - Use this method if the recipient has a single name field where the surname and names are comma separated e.g. Malherbe, Paul.
++
++.. raw:: pdf
++
++    PageBreak
+ 
+ Report Generator
+ ................
+@@ -873,6 +919,10 @@
+ + **Exceptions**
+ + **Order**
+ 
++.. raw:: pdf
++
++    PageBreak
++
+ Template Manager
+ ................
+ Use this routine to create, edit or delete templates.
+@@ -880,54 +930,40 @@
+ + **Name** - The name of the template.
+ + **Title** - The title of the template.
+ + **TT** - The template type as follows:
+-
+     + **I** - Sales Document
+     + **O** - Purchase Order
+     + **P** - Payslip
+     + **R** - Remittance Advice
+     + **S** - Statement
+-
+ + **Sys** - The relevant system code relating to the type.
+ + **ST** - This only applies to statements and is the type of statement as follows:
+-
+     + **N** - Normal
+     + **O** - Other
+-
+ + **Size** - The page size i.e. A4, A5 or A6
+ + **Orient** - The page orientation i.e. Portrait or Landscape.
+-
+ + **Sequence**
+-
+     + **Line Number** - The line number to edit or 0 for the next available number.
+     + **Line Type** - The line type as follows:
+-
+         + **C Merge Code** - Use this code for lines that will be populated with data.
+         + **I Image** - Use this code to display an image.
+         + **L Line** - Use this code to draw a line.
+         + **R Rectangle** - Use this code to draw a rectangle.
+         + **T Text** - Use this code to print some fixed text.
+-
+     + **Placement** - Where to place this line.
+-
+ + **Rectangle**
+-
+     + **X1 Co-Ordinate** - The left hand position of the rectangle in mm.
+     + **X2 Co-Ordinate** - The right hand position of the rectangle in mm.
+     + **Y1 Co-Ordinate** - The top position of the rectangle in mm.
+     + **Y2 Co-Ordinate** - The bottom position of the rectangle in mm.
+     + **Line Thickness** - The thickness of the line.
+-
+ + **Image**
+-
+     + **X1 Co-Ordinate** - The left hand position of the image in mm.
+     + **X2 Co-Ordinate** - The right hand position of the image in mm.
+     + **Y1 Co-Ordinate** - The top position of the image in mm.
+     + **Y2 Co-Ordinate** - The bottom position of the image in mm.
+     + **File name** - The full path of the file name of the image.
+     + **Merge Code** - The merge code containing the path to the image e.g. ctlmst ctm_logo.
+-
+ + **Line**
+-
+     + **Font Name** - The name of the font to use.
+     + **Size** - The font size to use.
+     + **Colour** - The line colour.
+@@ -938,9 +974,7 @@
+     + **Y1 Co-Ordinate** - The top position of the line in mm.
+     + **Y2 Co-Ordinate** - The bottom position of the line in mm.
+     + **Line Thickness** - The thickness of the line.
+-
+ + **Text**
+-
+     + **Font Name** - The name of the font to use.
+     + **Size** - The font size to use.
+     + **Colour** - The text colour.
+@@ -956,9 +990,7 @@
+     + **Y1 Co-Ordinate** - The top position of the text in mm.
+     + **Y2 Co-Ordinate** - The bottom position of the text in mm.
+     + **Text Detail** - The text.
+-
+ + **Code**
+-
+     + **Text Type** - The text type. Heading, Label of a Column or No text.
+     + **Text Detail** - The text.
+     + **Font Name** - The name of the font to use.
+@@ -993,9 +1025,28 @@
+     + **Number of Lines** - The number of lines the imported data can contain e.g. a name and address could be 5 lines.
+     + **Repeats** - The number of time to repeat the imported data e.g. the number of lines in the body of a statement could be 30.
+ 
++.. raw:: pdf
++
++    PageBreak
++
+ Telephone Directory
+ ...................
+ Use this routine to manage a telephone directory.
++
++All the fields are self explanatory with the exception of the following:
++
+++ **Contact Group** - This is a 3 letter group code. If the code does not exist you will have to also enter the group description. This code is used in the bulk mailing module.
++
+++ **Buttons**
++    + **Back** - Select this button to display the previous directory entry.
++    + **Forward** - Select this button to display the next directory entry.
++    + **Import** - Select this button to import all contacts from other sources e.g. Creditors, Debtors, Members, Bookings etc.
++    + **Notes** - Select this button to maintain notes relating to this entry.
++    + **Print** - Select this button to print all entries or the current entry.
++    + **Apply** - Select this button to apply current addition or change.
++    + **Contacts** - Select this button to maintain contacts of the current entry.
++    + **Cancel** - Select this button to cancel any current additions or changes.
++    + **Quit** - Select this button to quit the application.
+ Help
+ ~~~~
+ About Tartan
+@@ -1005,6 +1056,10 @@
+ + **Licence** - The Tartan licence details.
+ + **Changes** - The Tartan changes since version 4 to date.
+ 
+-Tartan Manual
+-.............
+-This routine will display this manual using your default browser.
++Reference Manual
++................
++This routine will display this manual, if available, or the on-line one using your default browser.
++
++Quick Start Manual
++..................
++This routine will display the quick start manual, if available, or the on-line one using your default browser.
+
+=== modified file 'doc/Changes.rst'
+--- doc/Changes.rst	2015-02-07 06:31:11 +0000
++++ doc/Changes.rst	2015-02-07 06:31:20 +0000
+@@ -1,3 +1,43 @@
++ver_5.0.4
++=========
++This version, 5.0.x, has been in production since April 2013 and is a Major
++Version Change implementing, amongst many others, the following:
++
++1)  Replaced Gtk widgets with Tkinter. The reason for this change is that
++    Tkinter is the de facto standard for the python language and is packaged
++    with it. In addition it is Python version 3 ready. This change naturally
++    required each and every module in the suite to be altered and tested
++    resulting in numerous changes and hopefully many enhancements.
++2)  Changed all modules to automatically alter the font size to fit the
++    window geometry selected in the System --> Preferences --> Dialog routine.
++3)  Modified the tooltip feature which can be turned on or off in the
++    System --> Preferences --> General routine.
++4)  Added colour schemes in the System --> Preferences --> Dialog routine.
++5)  Added an additional option to set the label and button colours in the
++    System --> Preferences --> Dialog routine.
++6)  Allowed the facility to click on entry fields in some modules e.g. File
++    Maintenance routines.
++7)  Changed the VAT system to allow for VAT rate changes by date. This will
++    facilitate any future VAT rate changes.
++8)  Added a username to all transactions so that they can be interrogated to
++    see which user generated them.
++9)  Added the facility to report by department in the general ledger financial
++    statements routine.
++10) Added a 'Sale of Assets' control account to general ledger integration.
++11) Changed some of the enquiry, F1, functions to support search filters.
++12) Introduced bulk record inserts resulting in quicker restores and updates.
++13) Added support for SMTP security and authentication.
++14) Enabled departmental reporting in the general ledger financials.
++15) Improved the bulk mail utility to include additional systems and telephone
++    directory contacts.
++16) Added a new system i.e. 'Booking's Manager' which is a system for managing
++    short term bookings and letting of facilities like accomodation, functions
++    and conferences.
++
++Note:
++-----
++You can only upgrade to this version if your current version is 4.1.10 or later
++
+ ver_5.0.3
+ =========
+ This version, 5.0.2, fixes some more minor bugs and includes some additional
+@@ -34,9 +74,14 @@
+ 9)  Added a 'Sale of Assets' control account to general ledger integration.
+ 10) Changed the enquiry, F1, function to support search filters.
+ 11) Added a new system i.e. 'Booking's Manager' which is a system for managing
+-    short term bookings and letting of facilities like accomodation,
+-    conferences and functions.
+-
++    short term bookings and letting of facilities like accomodation, functions
++    and conferences.
++12) Introduced bulk record inserts resulting in quicker restores and updates.
++13) Added support for SMTP security and authentication.
++14) Enabled departmental reporting in the general ledger financials.
++15) Improved the bulk mail utility to include additional systems and telephone
++    directory contacts.
++16) Added variable colour schemes in the user's preferences.
+ Note:
+ -----
+ You can only upgrade to this version if your current version is 4.1.10 or later
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-02-07 06:31:11 +0000
++++ doc/Downloads.rst	2015-02-11 16:45:22 +0000
+@@ -11,17 +11,17 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.4 and was released on the 7th February, 2015.
++The latest version of Tartan is 5.0.5 and was released on the 11th February, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.4.tar.gz
+-.. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.10.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.5.tar.gz
++.. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.4.exe
+-.. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.10.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.5.exe
++.. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+ 
+@@ -74,26 +74,26 @@
+ 
+ New Installation
+ ----------------
+-Download the latest version of Tartan, Tartan-5-all-win_, and then follow the installation instructions in the Documentation_.
++Download the latest version of Tartan, Tartan-5-win_, and then follow the installation instructions in the Documentation_.
+ 
+ Upgrade Existing Installation
+ -----------------------------
+-If your current version is less than 4.1.10 you must upgrade as follows:
++If your current version is less than 5.0.0 you must upgrade as follows:
+ 
+     * If your current version is less than 2.5.5
+         - Make a backup.
+-        - Download the last update of version 2, Tartan-2-upd-win_
+-        - Execute the downloaded update by double clicking on it.
++        - Download the last release of version 2, Tartan-2-win_
++        - Execute the downloaded version by double clicking on it.
+         - Login to Tartan and run `Update File Formats`
+     * If your current version is less than 3.0.1
+         - Make a backup.
+-        - Download the last update of version 3, Tartan-3-upd-win_
+-        - Execute the downloaded update by double clicking on it.
++        - Download the last release of version 3, Tartan-3-win_
++        - Execute the downloaded version by double clicking on it.
+         - Login to Tartan and run `Update File Formats`
+     * If your current version is less than 4.1.10
+         - Make a backup.
+         - Download the last release of version 4, Tartan-4-win_
+-        - Execute the downloaded update by double clicking on it.
++        - Execute the downloaded version by double clicking on it.
+         - Login to Tartan and run `Update File Formats`
+     * Download the latest version, Tartan-5-win_
+         - Make a backup.
+@@ -103,7 +103,7 @@
+ otherwise:
+ 
+     * Make a backup.
+-    * Execute `Upgrade System` from the System menu or download the latest update of Tartan, Tartan-5-upd-win_, and execute it.
++    * Execute `Upgrade System` from the System menu or download the latest update of Tartan, Tartan-5-win_, and run it.
+     * Login to Tartan and run `Update File Formats`
+ 
+ Old Versions
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-02-07 06:31:11 +0000
++++ doc/MD.rst	2015-02-11 16:45:22 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.4
++:Version:   5.0.5
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -79,7 +79,7 @@
+ 
+ or one of:
+ 
+-+ Mysql >= 5.0.4
+++ Mysql >= 5.0.1
+ + Mysql-python >= 1.2.0
+ 
+ Download the following file from ftp://ftp.tartan.co.za
+
+=== modified file 'doc/Manual.rst'
+--- doc/Manual.rst	2015-02-07 06:31:11 +0000
++++ doc/Manual.rst	2015-02-11 15:34:54 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.3
++:Version:   5.0.4
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -54,14 +54,17 @@
+ ~~~~~~~~~~~~~~~~
+ Ensure that the following dependencies are installed on your system:
+ 
+-+ python >= 2.7.0 and < 3.0.0
+-+ python Imaging >= 1.1.7
+++ python >= 2.7.5 and < 3.0.0
+++ python-tk >= 2.7.5 and < 3.0.0
+++ python-imaging >= 2.3.0
+++ python-pil >= 2.3.0
+++ python-pil.imagetk >= 2.3.0
+ 
+-Additionally, the following dependencies should also be installed:
++Additionally, the following dependencies should also be installed using pip:
+ 
+ + odfpy >= 0.9.6
+-+ python Markdown >= 2.0
+-+ pychart >= 1.39
+++ markdown >= 2.0
+++ Python-Chart >= 1.39
+ + xlrd >= 0.7.1
+ + xlwt >= 0.7.1
+ 
+@@ -69,14 +72,14 @@
+ 
+ + Pysqlite >= 2.6.3
+ 
+-or
++or one of:
+ 
+ + Postgresql >= 8.4.0
+ + Psycopg2 >= 2.0.4
+ 
+-or
++or one of:
+ 
+-+ Mysql >= 5.0.3
+++ Mysql >= 5.0.4
+ + Mysql-python >= 1.2.0
+ 
+ Download the following file from ftp://ftp.tartan.co.za
+@@ -95,7 +98,7 @@
+ 
+ + Tartan_full_5.x.x.exe
+ 
+-Install Tartan_full_5.x.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
++Install Tartan_full_5.x.x.exe by browsing to it and double clicking and then accept the defaults, except, also agree to creating an icon on your desktop.
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+@@ -2988,8 +2991,7 @@
+         + **4** - X \* Daily Rate of Pay * Factor
+         + **5** - X \* Hourly Rate of Pay * Factor
+         + **6** - U.I.F. Pay * Factor
+-
+-            Where:
++        + **Where:**
+             + **X** refers to a data captured period e.g. hours or days.
+             + **\*** indicates multiplication.
+             + **\/** indicates division
+@@ -2999,6 +3001,7 @@
+         + **Limit** - The maximum amount allowed e.g. U.I.F. - 116.62.
+         + **GL/Cono** - The General Ledger company number to be updated. This will take preference to the general ledger company number in the department record.
+         + **GL/Acno** - The general ledger account number to be updated. This will take preference to the general ledger account number in the department record.
++
+ + **Earnings Type** - Salary if the earning is a salary amount or Commission if the earning is a commission amount.
+ + **Employer Portion** - These are the same as for employee portion above.
+ + **Tax Code** - Indicates whether the earning is taxable or not and if so what type of to apply as follows:
+@@ -3558,6 +3561,10 @@
+ + **Licence** - The Tartan licence details.
+ + **Changes** - The Tartan changes since version 4 to date.
+ 
+-Tartan Manual
+-.............
+-This routine will display this manual using your default browser.
++Reference Manual
++................
++This routine will display this manual, if available, or the on-line one using your default browser.
++
++Quick Start Manual
++..................
++This routine will display the quick start manual, if available, or the on-line one using your default browser.
+
+=== modified file 'doc/QS.rst'
+--- doc/QS.rst	2015-02-07 06:31:11 +0000
++++ doc/QS.rst	2015-02-07 11:32:14 +0000
+@@ -19,12 +19,12 @@
+ ..............
+ If you are going to use the `General Ledger` you must perform the following procedures in order:
+ 
+-+ Create a control record using `Control Record (GL)`.
+-+ Create the chart of accounts using `Masterfile Records (GL)`.
+++ Create a control record using `Control Record`.
+++ Create the chart of accounts using `Masterfile Records`.
+ + Create control accounts using `Control Accounts`.
+-+ Capture the account's opening balances using `Opening Balances (GL)`.
+-+ Print a trial balance using `Trial Balance (GL)` and ensure that your accounts balance. If not, recapture the incorrect ones.
+-+ Capture the account's budgets using `Budgets (GL)` if required.
+++ Capture the account's opening balances using `Opening Balances`.
+++ Print a trial balance using `Trial Balance` and ensure that your accounts balance. If not, recapture the incorrect ones.
+++ Capture the account's budgets using `Budgets` if required.
+ 
+ The General Ledger system is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
+ 
+@@ -32,11 +32,11 @@
+ -----------------
+ If you are going to use the `Creditor's Ledger` you must perform the following procedures in order:
+ 
+-+ Create a control record for the company using `Control Record (CR)`.
+++ Create a control record for the company using `Control Record`.
+ + If you elected to integrate with the General Ledger you must create the `crs_ctl` and `dis_rec` control accounts as per above.
+-+ Create Creditor's accounts using `Masterfile Records (CR)`.
+-+ Capture the account's opening balances using `Journals` in `Data Capture (CR)`.
+-+ Print an aged analysis using `Age Analysis (CR)` and ensure that your totals balance. If not, recapture the incorrect ones.
+++ Create Creditor's accounts using `Masterfile Records`.
+++ Capture the account's opening balances using `Journals` in `Data Capture`.
+++ Print an aged analysis using `Age Analysis` and ensure that your totals balance. If not, recapture the incorrect ones.
+ 
+ Please remember that if you are integrating the Creditors and General Ledger systems, the control account must balance with the age analysis.
+ 
+@@ -48,16 +48,16 @@
+ ---------------
+ If you are going to use the `Debtor's Ledger` you must perform the following procedures in order:
+ 
+-+ Create a control record using `Control Record (DR)`.
+++ Create a control record using `Control Record`.
+ + If you elected to integrate with the General Ledger you must create the `drs_ctl` and `dis_all` controls as per above.
+-+ If you are going to make use of chain stores, i.e. the facility to have separate accounts for branches within a chain with a consolidated statement. You would have to create the necessary chain store records using `Chain Stores (DR)`.
+-+ If you are going to group your accounts by business activity, create the necessary records using `Business Activities (DR)`.
+-+ If you are going to group your accounts by business types, create the necessary records using `Business Types (DR)`.
+-+ If you are going to group your accounts by area, create the necessary records using `Areas (DR)`.
+-+ If you are going to group your accounts by salesman, create the necessary records using `Salesmen (DR)`.
+-+ Create Debtor's accounts using `Masterfile Records (DR)`.
+-+ Capture the account's opening balances using `Journals` in `Data Capture (DR)`.
+-+ Print an aged analysis using `Age Analysis (DR)` and ensure that your totals balance. If not, recapture the incorrect ones.
+++ If you are going to make use of chain stores, i.e. the facility to have separate accounts for branches within a chain with a consolidated statement. You would have to create the necessary chain store records using `Chain Stores`.
+++ If you are going to group your accounts by business activity, create the necessary records using `Business Activities`.
+++ If you are going to group your accounts by business types, create the necessary records using `Business Types`.
+++ If you are going to group your accounts by area, create the necessary records using `Areas`.
+++ If you are going to group your accounts by salesman, create the necessary records using `Salesmen`.
+++ Create Debtor's accounts using `Masterfile Records`.
+++ Capture the account's opening balances using `Journals` in `Data Capture`.
+++ Print an aged analysis using `Age Analysis` and ensure that your totals balance. If not, recapture the incorrect ones.
+ 
+ Please remember that if you are integrating the Debtors and General Ledger systems, the control account must balance with the age analysis.
+ 
+@@ -67,15 +67,15 @@
+ --------------
+ If you are going to use the `Store's Ledger` you must perform the following procedures in order:
+ 
+-+ Create a control record for the company using `Control Record (ST)`.
+++ Create a control record for the company using `Control Record`.
+ + If you elected to integrate with the General Ledger you must create the `stk_soh` and `stk_susp` controls as per above.
+-+ Create units of issue records using `Units of Issue (ST)`.
+-+ Create product groups using `Product Groups (ST)`.
+-+ Create stock records for the company by selecting `Masterfile Records (ST)`.
+-+ Enter the current stock on hand for the company by selecting `Stock Take Returns (ST)`.
+-+ Print a variance report using `Stock Take Variance Report (ST)` and ensure that all the quantities have been entered correctly. Correct any errors by redoing the previous step for the incorrect ones only.
+-+ Update the stock items using `Stock Take Merge (ST)`.
+-+ Print a stock on hand report using `Stock on Hand (ST)`.
+++ Create units of issue records using `Units of Issue`.
+++ Create product groups using `Product Groups`.
+++ Create stock records for the company by selecting `Masterfile Records`.
+++ Enter the current stock on hand for the company by selecting `Stock Take Returns`.
+++ Print a variance report using `Stock Take Variance Report` and ensure that all the quantities have been entered correctly. Correct any errors by redoing the previous step for the incorrect ones only.
+++ Update the stock items using `Stock Take Merge`.
+++ Print a stock on hand report using `Stock on Hand`.
+ 
+ Please remember that if you are integrating the Stores and General Ledger systems, the control account must balance with the stock on hand report.
+ 
+@@ -87,7 +87,7 @@
+ 
+ + Setup the Debtor's System as in 8) above ensuring that you create at least one salesman's record.
+ + Setup the Store's System as in 9) above.
+-+ Create a control record using `Control Record (SI)`.
+++ Create a control record using `Control Record`.
+ 
+ The Sales's Invoicing system is at this stage fully functional and you can capture invoices, credit notes, sales orders and quotations.
+ 
+@@ -95,15 +95,23 @@
+ --------------
+ If you are going to use the `Asset's Register` you must at least perform the following procedures in order:
+ 
+-+ Create a control record using `Control Record (AR)`.
+-+ Create depreciation codes using `Depreciation Codes (AR)`.
+-+ Create group records using `Group Records (AR)`.
+-+ Create masterfile records and take on opening balances for existing assets using `Opening Balances (AR)`.
+++ Create a control record using `Control Record`.
+++ Create depreciation codes using `Depreciation Codes`.
+++ Create group records using `Group Records`.
+++ Create masterfile records and take on opening balances for existing assets using `Opening Balances`.
+ 
+ The Asset's Register system is at this stage fully functional and you can capture payments, receipts and journal entries. Please note that new assets are captured via the data capture routines i.e. Payments and/or Journal Entries.
+ 
+ Bookings Manager
+ ----------------
++If you are going to use the `Booking's Manager` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ Create unit records using `Unit Records`.
+++ Create rate records using `Rate Records`.
+++ Create booking letters using `Booking Letters`.
++
++The Booking's Manager system is at this stage fully functional and you can capture bookings and booking's movements.
+ 
+ Bowling Clubs
+ -------------
+@@ -112,7 +120,7 @@
+ + Create a systems record, by selecting `System Record Maintenance` from the Control menu.
+ + Create a company/club record, by selecting `Company Records Maintenance` from the Control menu.
+ + **Tabs Draw**
+-    * Create a Control record by selecting `Control Record (BC)` from the File Maintenance menu.
++    * Create a Control record by selecting `Control Record` from the File Maintenance menu.
+     * Create Tab records by selecting `TABS Maintenance` from the File Maintenance menu.
+     * Do a draw by selecting `New Draw` from the menu.
+     * Reprint a draw by selecting `Reprint Draw` from the menu.
+@@ -141,7 +149,7 @@
+ ---------------
+ If you are going to use the `Member's Ledger` you must at least perform the following procedures in order:
+ 
+-+ Create a control record using `Control Record (ML)`.
+++ Create a control record using `Control Record`.
+ + If you elected to integrate with the General Ledger you must create the `mem_ctl` and `mem_pen` controls as per above.
+ + Create category records using `Category Records`.
+ + Create contact records using `Contact Records`.
+@@ -152,25 +160,33 @@
+ --------------------------
+ If you are going to use the `Rental's Ledger (Standard)` you must at least perform the following procedures in order:
+ 
+-+ Create a control record using `Control Record (RT)`.
+-+ Create premises records using `Premises Records (RT)`.
+-+ Create masterfile records using `Masterfile Records (RT)`.
+++ Create a control record using `Control Record`.
+++ Create premises records using `Premises Records`.
+++ Create masterfile records using `Masterfile Records`.
+ 
+ The Rental's Ledger (Standard) system is at this stage fully functional and you can capture payments, receipts and journal entries.
+ 
+ Rental's Ledger - Extended
+ --------------------------
++If you are going to use the `Rental's Ledger (Extended)` you must at least perform the following procedures in order:
++
+++ Create a control record using `Control Record`.
+++ Create owners records using `Owners Records`.
+++ Create premises records using `Premises Records`.
+++ Create tenants records using `Tenants Records`.
++
++The Rental's Ledger (Standard) system is at this stage fully functional and you can capture payments, receipts and journal entries.
+ 
+ Salaries and Wages
+ ------------------
+ If you are going to use `Salaries and Wages` you must at least perform the following procedures in order:
+ 
+-+ Create a control record using `Control Record (WG)`.
+++ Create a control record using `Control Record`.
+ + If you elected to integrate with the General Ledger you must create the `wag_ctl`, `wag_slc` and `wag_sli` controls as per above.
+-+ Create at least one branch record using `Branch Records (WG)`.
+-+ Create at least one department record using `Department Records (WG)`.
+-+ Create all necessary earnings and deduction records using `Earning and Deduction Codes (WG)`.
+-+ Create employee records using `Employee Masterfile (WG)`.
+++ Create at least one branch record using `Branch Records`.
+++ Create at least one department record using `Department Records`.
+++ Create all necessary earnings and deduction records using `Earning and Deduction Codes`.
+++ Create employee records using `Employee Masterfile`.
+ 
+ The Salaries and Wages system is at this stage fully functional and you can capture clock cards and produce payslips etc.
+ 
+
+=== modified file 'doc/WG.rst'
+--- doc/WG.rst	2015-02-07 06:31:11 +0000
++++ doc/WG.rst	2015-02-11 15:34:50 +0000
+@@ -33,8 +33,7 @@
+         + **4** - X \* Daily Rate of Pay * Factor
+         + **5** - X \* Hourly Rate of Pay * Factor
+         + **6** - U.I.F. Pay * Factor
+-
+-            Where:
++        + **Where:**
+             + **X** refers to a data captured period e.g. hours or days.
+             + **\*** indicates multiplication.
+             + **\/** indicates division
+@@ -44,6 +43,7 @@
+         + **Limit** - The maximum amount allowed e.g. U.I.F. - 116.62.
+         + **GL/Cono** - The General Ledger company number to be updated. This will take preference to the general ledger company number in the department record.
+         + **GL/Acno** - The general ledger account number to be updated. This will take preference to the general ledger account number in the department record.
++
+ + **Earnings Type** - Salary if the earning is a salary amount or Commission if the earning is a commission amount.
+ + **Employer Portion** - These are the same as for employee portion above.
+ + **Tax Code** - Indicates whether the earning is taxable or not and if so what type of to apply as follows:
+
+=== modified file 'gen/gl4020.py'
+--- gen/gl4020.py	2015-02-07 06:31:11 +0000
++++ gen/gl4020.py	2015-02-08 14:35:35 +0000
+@@ -922,10 +922,8 @@
+                 rec[col.index("glt_batch")],
+                 dr, cr, acctot,
+                 rec[col.index("glt_desc")]])
+-        args[3].withdraw()
+         rec = SRec(self.opts["mf"], screen=None, title=tit, tables=gtt,
+             cols=gtc, where=data, wtype="D", sort=False, rows=15)
+-        args[3].deiconify()
+ 
+     def doMainExit(self):
+         self.df.closeProcess()
+
+=== modified file 'mem/ml3070.py'
+--- mem/ml3070.py	2015-02-07 06:31:11 +0000
++++ mem/ml3070.py	2015-02-08 12:51:17 +0000
+@@ -33,7 +33,10 @@
+         if self.sql.error:
+             return
+         gc = GetCtl(self.opts["mf"])
+-        self.taxdf = gc.getCtl("ctlmst", self.opts["conum"])["ctm_taxdf"]
++        ctlmst = gc.getCtl("ctlmst", self.opts["conum"])
++        if not ctlmst:
++            return
++        self.taxdf = ctlmst["ctm_taxdf"]
+         memctl = gc.getCtl("memctl", self.opts["conum"])
+         if not memctl:
+             return
+
+=== modified file 'mem/ml3090.py'
+--- mem/ml3090.py	2014-12-30 15:37:38 +0000
++++ mem/ml3090.py	2015-02-08 13:47:04 +0000
+@@ -31,10 +31,9 @@
+         if self.sql.error:
+             return
+         gc = GetCtl(self.opts["mf"])
+-        memctl = gc.getCtl("memctl", self.opts["conum"])
+-        if not memctl:
+-            return
+         ctlsys = gc.getCtl("ctlsys")
++        if not ctlsys:
++            return
+         self.smtp = []
+         for fld in ("msvr", "mprt", "msec", "maut", "mnam", "mpwd"):
+             self.smtp.append(ctlsys["sys_%s" % fld])
+@@ -43,11 +42,16 @@
+                 "There is NO SMTP Server in the System Record!")
+             return
+         ctlmst = gc.getCtl("ctlmst", self.opts["conum"])
++        if not ctlmst:
++            return
+         self.fadd = ctlmst["ctm_email"]
+         if not self.fadd:
+             showError(self.opts["mf"].body, "From Error",
+                 "There is NO Email Address on the Company Record!")
+             return
++        memctl = gc.getCtl("memctl", self.opts["conum"])
++        if not memctl:
++            return
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
+@@ -177,7 +181,7 @@
+ %-30s%s
+ %-30s%s
+ %-30s%s
+-%-30s%s""" % (mem[1], mem[2], mem[3], "Membership Number", mem[0], "Names", mem[4], "Nationality", countries[mem[5]][1], "Date of Birth", CCD(mem[6], "D1", 10).disp)
++%-30s%s""" % (mem[1], mem[2], mem[3], "Membership Number:", mem[0], "Names:", mem[4], "Nationality:", countries[mem[5]][1], "Date of Birth:", CCD(mem[6], "D1", 10).disp)
+             add = self.sql.getRec(tables="memadd", cols=["mla_type",
+                 "mla_add1", "mla_add2", "mla_add3", "mla_city", "mla_code"],
+                 where=[("mla_cono", "=", self.opts["conum"]), ("mla_memno",
+@@ -185,14 +189,13 @@
+             for a in add:
+                 if a[0] == "P":
+                     text = """%s
+-%-30s%s""" % (text, "Postal Address", a[1])
++%-30s%s""" % (text, "Postal Address:", a[1])
+                 else:
+                     text = """%s
+-%-30s%s""" % (text, "Street Address", a[1])
++%-30s%s""" % (text, "Street Address:", a[1])
+                 for n in a[2:]:
+                     if n:
+-                        text = """%s
+-%-30s%s""" % (text, "", n)
++                        text = """%s, %s""" % (text, n)
+             kon = self.sql.getRec(tables=["memctk", "memkon"],
+                 cols=["mck_code", "mck_type", "mlk_detail"],
+                 where=[("mlk_cono", "=", self.opts["conum"]), ("mlk_memno",
+@@ -200,9 +203,9 @@
+             mail = []
+             for e in kon:
+                 if e[0] == 5:
+-                    ktyp = "E-Mail Address"
++                    ktyp = "E-Mail Address:"
+                 else:
+-                    ktyp = ktypes[e[1]]
++                    ktyp = "%s:" % ktypes[e[1]]
+                 text = """%s
+ %-30s%s""" % (text, ktyp, e[2])
+                 if e[1] == "E" and e[2][:2] != "08":
+
+=== modified file 'men/cshmen.py'
+--- men/cshmen.py	2014-04-07 20:41:10 +0000
++++ men/cshmen.py	2015-02-08 09:34:03 +0000
+@@ -35,8 +35,8 @@
+ msmen = [
+     ["MM","mm_sy","System"],
+     ["MM","mm_ms","Control"],
+-    ["MM","mm_ca","Cash\nAnalysis"],
+-    ["MM","mm_gl","General\nLedger"],
++    ["MM","mm_ca","Cash Analysis"],
++    ["MM","mm_gl","General Ledger"],
+     ["MM","mm_uy","Utilities"],
+     ["MM","mm_hp","Help","right"]]
+ msmod = [
+@@ -59,9 +59,7 @@
+     ["PNNY","mm_uy","rp1010",2,"Report Generator"],
+     ["PNNY","mm_uy","td1010",0,"Telephone Directory"],
+     ["PNNN","mm_uy","tp1010",5,"Template Manager"],
+-    ["F","mm_uy","showCal",0,"Calendar"],
+-    ["F","mm_hp","doAbout",0,"About"],
+-    ["F","mm_hp","doManual",0,"Manual"]]
++    ["F","mm_hp","doAbout",0,"About"]]
+ 
+ # Cash Analysis Routines
+ camen = []
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2014-12-30 15:37:38 +0000
++++ men/rnemen.py	2015-02-08 07:07:20 +0000
+@@ -34,7 +34,9 @@
+     ["rt", "Rental's Ledger"],
+     ["dr", "Debtor's Ledger"],
+     ["st", "Store's Ledger"],
+-    ["si", "Sales's Ledger"]]
++    ["si", "Sales's Ledger"],
++    ["rp", "Reporting Tools"],
++    ["td", "Telephone Directory"]]
+ 
+ # Control Routines
+ msmen = [
+@@ -74,7 +76,6 @@
+     ["PNNY","mm_uy","rp1010",2,"Report Generator"],
+     ["PNNN","mm_uy","pw1010",5,"Server User Maintenance"],
+     ["PNNN","mm_uy","ss1010",1,"Stock Sheets"],
+-    ["PNNY","mm_uy","td1010",0,"Telephone Directory"],
+     ["PNNN","mm_uy","tp1010",5,"Template Manager"],
+     ["F","mm_hp","doAbout",0,"About"]]
+ 
+@@ -253,4 +254,11 @@
+     ["PYNN","mm_si","si3050",1,"Sales By Customer By Product"],
+     ["PYNN","mm_si","si3060",1,"Sales By Salesman"],
+     ["PYNN","mm_si","si3080",1,"Reprint Documents"]]
++
++# Telephone Directory
++tdmen = [
++    ["CM","mm_uy","td_mm","Telephone Directory"]]
++tdmod = [
++    ["PNNY","td_mm","tdc110",0,"Directory Groups"],
++    ["PNNY","td_mm","td1010",0,"Directory Entries"]]
+ # End
+
+=== modified file 'men/scpmen.py'
+--- men/scpmen.py	2014-03-28 07:32:49 +0000
++++ men/scpmen.py	2015-02-08 07:12:17 +0000
+@@ -50,7 +50,7 @@
+ scmod = [
+     ["PNNY","sc_fm","msc110",0,"System Record"],
+     ["PNNY","sc_fm","scc110",0,"District Record"],
+-    ["PYNN","sc_fm","scc210",0,"Club's Records"],
++    ["PYNN","sc_fm","scc210",0,"Club Records"],
+     ["PYNN","sc_fm","sc1010",0,"Member Records"],
+     ["PYNN","sc_cp","sc2010",0,"Capture Entries"],
+     ["PYNN","sc_cp","sc3010",0,"List Entries"],
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2015-02-07 06:31:11 +0000
++++ men/stdmen.py	2015-02-08 06:29:56 +0000
+@@ -41,7 +41,8 @@
+     ["sl", "Staff Loans"],
+     ["bc", "Bowling Clubs"],
+     ["bk", "Bookings Manager"],
+-    ["rp", "Reporting Tools"]]
++    ["rp", "Reporting Tools"],
++    ["td", "Telephone Directory"]]
+ 
+ # Control Routines
+ msmen = [
+@@ -89,7 +90,6 @@
+     ["PNNY","mm_uy","pm1010",0,"Personal Password Manager"],
+     ["PNNY","mm_uy","rp1010",2,"Report Generator"],
+     ["PNNN","mm_uy","pw1010",5,"Server User Maintenance"],
+-    ["PNNY","mm_uy","td1010",0,"Telephone Directory"],
+     ["PNNN","mm_uy","tp1010",5,"Template Manager"],
+     ["F","mm_hp","doAbout",0,"About"],
+     ["F","mm_hp","doManual",0,"Reference Manual"],
+@@ -486,4 +486,11 @@
+     ["PYNN","bc_cc","bc3120",0,"Contact Request Forms"],
+     ["PYNN","bc_tb","bc6010",3,"Change Tab Numbers"],
+     ["PYNN","bc_tb","bc6020",0,"Clear League History"]]
++
++# Telephone Directory
++tdmen = [
++    ["CM","mm_uy","td_mm","Telephone Directory"]]
++tdmod = [
++    ["PNNY","td_mm","tdc110",0,"Directory Groups"],
++    ["PNNY","td_mm","td1010",0,"Directory Entries"]]
+ # End
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-02-07 06:31:11 +0000
++++ mst/ms0000.py	2015-02-11 16:45:22 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 4)
++    VERSION = (5, 0, 5)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2015-02-07 06:31:11 +0000
++++ mst/msc000.py	2015-02-08 06:39:58 +0000
+@@ -456,7 +456,7 @@
+                 nos = []
+                 # All systems not in the company modules
+                 for sys in self.sys:
+-                    if sys not in ("ca", "ms", "rp"):
++                    if sys not in ("ca", "ms", "rp", "td"):
+                         nos.append(sys)
+                 ctm = sql.getRec(tables="ctlmst", cols=["ctm_modules"])
+                 for m in ctm:
+
+=== modified file 'rca/rc2010.py'
+--- rca/rc2010.py	2014-12-30 15:37:38 +0000
++++ rca/rc2010.py	2015-02-08 12:56:52 +0000
+@@ -34,10 +34,16 @@
+             return
+         gc = GetCtl(self.opts["mf"])
+         ctlsys = gc.getCtl("ctlsys")
+-        if ctlsys and ctlsys["sys_msvr"]:
++        if not ctlsys:
++            return
++        if ctlsys["sys_msvr"]:
+             self.email = "Y"
+         else:
+             self.email = "N"
++        ctlmst = gc.getCtl("ctlmst", self.opts["conum"])
++        if not ctlmst:
++            return
++        self.taxdf = ctlmst["ctm_taxdf"]
+         rcactl = gc.getCtl("rcactl", self.opts["conum"])
+         if not rcactl:
+             return
+@@ -69,7 +75,6 @@
+             self.rcatnt = ctlctl["rca_tnt"]
+             self.rcatrx = ctlctl["rca_trx"]
+             self.convat = ctlctl["vat_ctl"]
+-        self.taxdf = gc.getCtl("ctlmst", self.opts["conum"])["ctm_taxdf"]
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.batno = "R%04i%02i" % (t[0], t[1])
+
+=== modified file 'sls/si2010.py'
+--- sls/si2010.py	2014-12-30 15:37:38 +0000
++++ sls/si2010.py	2015-02-08 12:59:16 +0000
+@@ -42,7 +42,9 @@
+         # Set, Check Controls
+         gc = GetCtl(self.opts["mf"])
+         ctlsys = gc.getCtl("ctlsys")
+-        if ctlsys and ctlsys["sys_msvr"]:
++        if not ctlsys:
++            return
++        if ctlsys["sys_msvr"]:
+             self.email = "Y"
+         else:
+             self.email = "N"
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-02-07 06:31:11 +0000
++++ std/TartanClasses.py	2015-02-10 12:25:07 +0000
+@@ -1587,8 +1587,11 @@
+         if self.trans:
+             self.newwin.transient(self.trans)
+         if self.modal:
+-            #self.newwin.wait_visibility()
+-            self.newwin.grab_set()
++            try:
++                self.newwin.grab_set()
++            except:
++                self.newwin.wait_visibility()
++                self.newwin.grab_set()
+ 
+     def doDestroyNo(self, widget=None):
+         return True
+@@ -4124,7 +4127,6 @@
+                         "typs": (("NA",0,"Y"),("NA",0),("NA",0),("NA",0)),
+                         "data": data,
+                         "mode": "M",
+-                        "index": 3,
+                         "comnd": self.getAddr}
+                     row += 1
+                     a = [("T",0,row,col),"ITX",50,"E-Mail Address","",
+@@ -4399,9 +4401,9 @@
+             addr = ""
+             for a in w:
+                 if not addr:
+-                    addr = a
++                    addr = a[3]
+                 else:
+-                    addr = "%s,%s" % (addr, a)
++                    addr = "%s,%s" % (addr, a[3])
+             self.loadEntry(frt, pag, p, data=addr)
+ 
+     def setAddr(self, frt, pag, r, c, p, i, w):
+@@ -5304,7 +5306,7 @@
+                 self.focusField(ok[0], ok[1], ok[2])
+                 return
+             if ok and not ok == "ok":
+-                showError(self.mstFrame, "Deletion Error", ok)
++                showError(self.master, "Deletion Error", ok)
+             if self.frt == "C":
+                 col = (self.row * self.colq[self.pag]) + 1
+                 self.focusField(self.frt, self.pag, col)
+
+=== modified file 'str/st2010.py'
+--- str/st2010.py	2014-12-30 15:37:38 +0000
++++ str/st2010.py	2015-02-08 13:03:26 +0000
+@@ -35,11 +35,15 @@
+             return
+         gc = GetCtl(self.opts["mf"])
+         ctlsys = gc.getCtl("ctlsys")
+-        if ctlsys and ctlsys["sys_msvr"]:
++        if not ctlsys:
++            return
++        if ctlsys["sys_msvr"]:
+             self.email = "Y"
+         else:
+             self.email = "N"
+         ctlmst = gc.getCtl("ctlmst", self.opts["conum"])
++        if not ctlmst:
++            return
+         mods = []
+         for x in xrange(0, len(ctlmst["ctm_modules"].rstrip()), 2):
+             mods.append(ctlmst["ctm_modules"][x:x+2])
+
+=== modified file 'str/st2020.py'
+--- str/st2020.py	2014-12-30 15:37:38 +0000
++++ str/st2020.py	2015-02-08 13:04:07 +0000
+@@ -34,7 +34,9 @@
+             return
+         gc = GetCtl(self.opts["mf"])
+         ctlsys = gc.getCtl("ctlsys")
+-        if ctlsys and ctlsys["sys_msvr"]:
++        if not ctlsys:
++            return
++        if ctlsys["sys_msvr"]:
+             self.email = "Y"
+         else:
+             self.email = "N"
+
+=== added file 'uty/tdc110.py'
+--- uty/tdc110.py	1970-01-01 00:00:00 +0000
++++ uty/tdc110.py	2015-02-08 06:48:52 +0000
+@@ -0,0 +1,88 @@
++#! /usr/bin/env python
++
++"""
++SYNOPSIS
++    Telephone Directory Group Records.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2015 Paul Malherbe.
++"""
++
++import time
++from TartanClasses import GetCtl, Sql, TartanDialog
++
++class tdc110:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.drawDialog()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["telgrp", "telmst"], prog=__name__)
++        if self.sql.error:
++            return
++        return True
++
++    def drawDialog(self):
++        tit = "Group Records File Maintenance (%s)" % __name__
++        grp = {
++            "stype": "R",
++            "tables": ("telgrp",),
++            "cols": [
++                ("tdg_group", "", 0, "Code"),
++                ("tdg_desc", "", 0, "Description")],
++            "order": "tdg_desc"}
++        self.fld = (
++            (("T",0,0,0),"I@tdg_group",0,"","",
++                "","N",self.doGroup,grp,None,("notblank",)),
++            (("T",0,1,0),"I@tdg_desc",0,"","",
++                "","N",None,None,self.doDelete,("notblank",)))
++        but = (("Quit",None,self.doExit,1,None,None),)
++        tnd = ((self.doEnd,"Y"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
++            butt=but, tend=tnd, txit=txt)
++
++    def doGroup(self, frt, pag, r, c, p, i, w):
++        self.group = w
++        acc = self.sql.getRec(tables="telgrp", where=[("tdg_group", "=",
++            self.group)], limit=1)
++        if not acc:
++            self.new = True
++        else:
++            self.new = False
++            des = acc[self.sql.telgrp_col.index("tdg_desc")]
++            self.df.loadEntry(frt, pag, p+1, data=des)
++
++    def doDelete(self):
++        chk = self.sql.getRec(tables="telmst", cols=["tdm_group"],
++            where=[("tdm_group", "=", self.group)], limit=1)
++        if chk:
++            return "Group In Use, Not Deleted"
++        self.sql.delRec("telgrp", where=[("tdg_group", "=", self.group)])
++        self.opts["mf"].dbm.commitDbase()
++        self.df.focusField("T", 0, 1)
++
++    def doEnd(self):
++        data = []
++        for x in xrange(0, len(self.df.t_work[0][0])):
++            data.append(self.df.t_work[0][0][x])
++        if self.new:
++            self.sql.insRec("telgrp", data=data)
++        else:
++            self.sql.updRec("telgrp", data=data, where=[("tdg_group", "=",
++                self.group)])
++        self.opts["mf"].dbm.commitDbase()
++        self.df.focusField("T", 0, 1)
++
++    def doExit(self, widget=None):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'wag/wg2020.py'
+--- wag/wg2020.py	2015-02-07 06:31:11 +0000
++++ wag/wg2020.py	2015-02-11 15:20:52 +0000
+@@ -340,7 +340,7 @@
+                 self.taxamt = float(ASD(self.taxamt) + ASD(eamt))
+             elif self.ignore == "Y":
+                 continue
+-            elif ctype == "E":
++            elif ctype == "E" and code > 5:
+                 if code in self.ern:
+                     self.ern[code][0] = float(ASD(self.ern[code][0])+ASD(eamt))
+                     self.ern[code][1] = float(ASD(self.ern[code][0])+ASD(ramt))
+

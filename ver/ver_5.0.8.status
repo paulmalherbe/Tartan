@@ -1,0 +1,17 @@
+modified:
+  bkm/bk1020.py
+  doc/Downloads.rst
+  doc/MD.rst
+  gen/gl3100_rne.py
+  mst/ms0000.py
+  mst/ms3010.py
+  mst/msc000.py
+  std/TartanClasses.py
+  uty/bm1010.py
+  uty/ss1010.py
+  wag/sl1010.py
+  wag/sl2020.py
+  wag/sl4010.py
+  wag/wg2020.py
+unknown:
+  gen/gl2030_new.py

@@ -1,0 +1,1672 @@
+=== modified file 'bkm/bk1020.py'
+--- bkm/bk1020.py	2015-02-11 16:45:23 +0000
++++ bkm/bk1020.py	2015-02-16 09:56:50 +0000
+@@ -462,7 +462,7 @@
+             rms = {
+                 "stype": "M",
+                 "func": self.getRooms}
+-            self.rte = {
++            self.rt1 = {
+                 "stype": "R",
+                 "tables": ("bkmrtm",),
+                 "cols": (
+@@ -481,7 +481,7 @@
+                     0,"N",self.doURme,rms,None,("efld",),None,
+                     "Enter the room number or 0 for the whole unit"),
+                 (("C",0,0,3),"IUI",3,"Rte","Rate Code",
+-                    "r","N",self.doURate,self.rte,None,("efld",)),
++                    "r","N",self.doURate,self.rt1,None,("efld",)),
+                 (("C",0,0,4),"OTX",25,"Description"),
+                 (("C",0,0,5),"OUD",10.2,"Normal-Rte"),
+                 (("C",0,0,6),"IUI",3,"Ppl","",
+@@ -578,12 +578,21 @@
+ 
+     def doChgChanges(self):
+         tit = ("Change Unit",)
++        self.rt2 = {
++            "stype": "R",
++            "tables": ("bkmrtm",),
++            "cols": (
++                ("brm_code", "", 0, "Cod"),
++                ("brm_desc", "", 0, "Description"),
++                ("brm_base", "", 0, "B")),
++            "where": [],
++            "order": "brm_type, brm_code"}
+         fld = (
+             (("T",0,0,0),"ONA",8,"Unit-Cod"),
+             (("T",0,0,0),"OTX",30,""),
+             (("T",0,1,0),"ONA",3,"Room Number"),
+             (("T",0,2,0),"IUI",3,"Rate Code","",
+-                "","N",self.doChgRtc,self.rte,None,("notzero",)),
++                "","N",self.doChgRtc,self.rt2,None,("notzero",)),
+             (("T",0,2,0),"OTX",30,""),
+             (("T",0,3,0),"OUD",10.2,"Normal Rate"),
+             (("T",0,4,0),"IUI",3,"Guests","",
+@@ -599,11 +608,14 @@
+             eflds=fld, butt=but, tend=((self.doChgEnd,"n"),),
+             txit=(self.doChgExit,))
+         for x in range(10):
++            self.cg.loadEntry("T", 0, x, data=self.change[x])
+             if x == 0:
+                 self.ctyp, self.ccod = self.change[x].split("-")
+             if x == 5:
+                 self.cnrate = CCD(self.change[x], "UD", 10.2).work
+-            self.cg.loadEntry("T", 0, x, data=self.change[x])
++        self.rt2["where"] = [
++            ("brm_cono", "=", self.opts["conum"]),
++            ("brm_type", "=", self.ctyp)]
+         self.cg.focusField("T", 0, 4, clr=False)
+         self.opts["mf"].startLoop()
+ 
+@@ -737,7 +749,7 @@
+         self.dflt = rec[2]
+         self.rt.loadEntry(frt, pag, p+1, data=self.udes)
+         self.rt.loadEntry(frt, pag, p+3, data=self.dflt)
+-        self.rt.colf[0][3][8]["where"] = [
++        self.rt1["where"] = [
+             ("brm_cono", "=", self.opts["conum"]),
+             ("brm_type", "=", tp)]
+         if tp == "A":
+
+=== modified file 'bkm/bk3010.py'
+--- bkm/bk3010.py	2015-02-07 06:31:11 +0000
++++ bkm/bk3010.py	2015-02-16 10:08:46 +0000
+@@ -107,8 +107,6 @@
+                     inv = True
+             if inv:
+                 continue
+-            if num.work == 1141:
+-                print bal
+             dp1 = float(ASD(rec[5]) + ASD(bal))
+             dt1 = rec[6]
+             if dp1 > 0:
+
+=== modified file 'bkm/bk3030.py'
+--- bkm/bk3030.py	2015-02-07 06:31:11 +0000
++++ bkm/bk3030.py	2015-02-20 05:35:52 +0000
+@@ -210,18 +210,10 @@
+             doPrinter(mf=self.opts["mf"], conum=1, rep=pdfnam, head=subj,
+                 view=self.df.repprt[0][1], prtnam=self.df.repprt[0][2],
+                 mail=self.df.repprt[1][2])
+-        if self.prtinv == "Y":
+-            invoices = []
+-            books.sort()
+-            for number in books:
+-                invs = self.sql.getRec("bkmtrn", cols=["bkt_refno"],
+-                    where=[("bkt_cono", "=", self.opts["conum"]),
+-                    ("bkt_number", "=", number), ("bkt_type", "=", 2)],
+-                    group="bkt_refno")
+-                for inv in invs:
+-                    invoices.append(inv[0])
++        if self.prtinv == "Y" and self.books:
++            self.books.sort()
+             PrintBookingInvoice(self.opts["mf"], self.opts["conum"], "I",
+-                invoices, tname=self.tname, prtnam=self.df.repprt[0][2])
++                self.books, tname=self.tname, prtnam=self.df.repprt[0][2])
+         self.opts["mf"].closeLoop()
+ 
+     def doArrival(self):
+@@ -231,7 +223,7 @@
+         recs = self.sql.getRec(tables="bkmmst", where=[("bkm_cono", "=",
+             self.opts["conum"]), ("bkm_state", "in", tuple(state))],
+             order="bkm_ccode")
+-        books = []
++        self.books = []
+         last = 0
+         for rec in recs:
+             number = rec[self.sql.bkmmst_col.index("bkm_number")]
+@@ -246,7 +238,6 @@
+             elif depart < self.start or arrive > self.end:
+                 continue
+             if self.geninv == "Y":
+-                books.append(number)
+                 self.doRaiseInvoice(number, arrive)
+             con = self.sql.getRec(tables="bkmcon", where=[("bkc_cono", "=",
+                 self.opts["conum"]), ("bkc_ccode", "=", ccode)], limit=1)
+@@ -316,12 +307,6 @@
+                     amt = CCD(bal[0], "SD", 11.2).disp
+                 else:
+                     amt = CCD(0, "SD", 11.2).disp
+-                print name
+-                print unit
+-                print arr
+-                print dep
+-                print amt
+-                print hh
+                 self.printLine(name, unit[0], unit[1], arr, dep, amt, hh)
+                 last = number
+         self.opts["mf"].dbm.commitDbase()
+@@ -449,6 +434,7 @@
+         if not recs:
+             return
+         invno = self.getRef(number)
++        self.books.append(invno)
+         for seq, rec in enumerate(recs):
+             utyp = rec[self.sql.bkmrtt_col.index("brt_utype")]
+             ucod = rec[self.sql.bkmrtt_col.index("brt_ucode")]
+@@ -513,6 +499,7 @@
+                         invno, batno, gls[acc][1], 0, "Booking %s" % number,
+                         "", "", 0, self.opts["capnm"], self.sysdtw, 0]
+                     self.sql.insRec("gentrn", data=data)
++        return True
+ 
+     def getRef(self, number):
+         rec = self.sql.getRec(tables="bkmtrn", cols=["max(bkt_refno)"],
+
+=== modified file 'bwl/bc2020.py'
+--- bwl/bc2020.py	2015-02-07 06:31:11 +0000
++++ bwl/bc2020.py	2015-02-12 13:01:16 +0000
+@@ -96,7 +96,8 @@
+                 "F","N",self.doType,None,None,None),
+             (("T",0,2,0),"I@bfm_date",0,"","",
+                 "","N",self.doDate,None,None,("efld",)),
+-            (("T",0,3,0),"O@bfm_round",0,""),
++            (("T",0,3,0),"I@bfm_round",0,"","",
++                "","N",self.doRound,None,None,("notzero",)),
+             (("T",0,4,0),"I@bfm_team",0,"","",
+                 "","N",self.doSide,sid,None,None),
+             (("T",0,4,0),"ONA",20,""),
+@@ -182,6 +183,18 @@
+                 self.rnd = acc[1] + 1
+         self.df.loadEntry(frt, pag, p+1, data=self.rnd)
+ 
++    def doRound(self, frt, pag, r, c, p, i, w):
++        if not w == self.rnd:
++            ok = askQuestion(self.opts["mf"].body, "Round Change",
++                "The Round Has Been Changed, Please Confirm", default="no")
++            if ok == "no":
++                return "Invalid Round Number"
++            self.sql.updRec("bwlflm", cols=["bfm_round"], data=[w],
++                where=[("bfm_cono", "=", self.opts["conum"]), ("bfm_fmat",
++                "=", self.fmat), ("bfm_type", "=", self.ftyp), ("bfm_date",
++                "=", self.date)])
++        self.rnd = w
++
+     def doSide(self, frt, pag, r, c, p, i, w):
+         if not w:
+             if askQuestion(self.opts["mf"].body, "New Side",
+
+=== modified file 'csv/ctllog_fld.csv'
+--- csv/ctllog_fld.csv	2014-08-06 15:44:15 +0000
++++ csv/ctllog_fld.csv	2015-02-20 11:50:04 +0000
+@@ -1,6 +1,6 @@
+-0,"clg_login","NA","20.0","Login Name","Login-Name"
+-1,"clg_user","NA","20.0","User Name","User-Name"
+-2,"clg_prog","NA","20.0","Program Name","Program-Name"
++0,"clg_login","TX","20.0","Login Name","Login-Name"
++1,"clg_user","TX","20.0","User Name","User-Name"
++2,"clg_prog","TX","20.0","Program Name","Program-Name"
+ 3,"clg_type","UI","2.0","Transaction Type","TT"
+ 4,"clg_cono","UI","3.0","Company Number","Coy"
+ 5,"clg_period","UI","3.0","Financial Period","Per"
+
+=== modified file 'csv/telmst_fld.csv'
+--- csv/telmst_fld.csv	2014-12-30 15:37:38 +0000
++++ csv/telmst_fld.csv	2015-02-19 10:58:48 +0000
+@@ -7,4 +7,4 @@
+ 6,"tdm_faxno","TX","20.0","Fax Number","Facsimile-Number"
+ 7,"tdm_mobile","TX","20.0","Mobile Number","Mobile-Number"
+ 8,"tdm_email","TX","50.0","Email Address","Email-Address"
+-9,"tdm_group","UA","3.0","Contact Group","Grp"
++9,"tdm_group","TX","50.0","Contact Groups","Contact-Groups"
+
+=== modified file 'doc/Changes.rst'
+--- doc/Changes.rst	2015-02-11 16:45:23 +0000
++++ doc/Changes.rst	2015-02-11 16:45:31 +0000
+@@ -1,6 +1,6 @@
+-ver_5.0.4
++ver_5.0.5
+ =========
+-This version, 5.0.x, has been in production since April 2013 and is a Major
++This version, 5.0.5 has been in production since April 2013 and is a Major
+ Version Change implementing, amongst many others, the following:
+ 
+ 1)  Replaced Gtk widgets with Tkinter. The reason for this change is that
+@@ -26,62 +26,14 @@
+ 10) Added a 'Sale of Assets' control account to general ledger integration.
+ 11) Changed some of the enquiry, F1, functions to support search filters.
+ 12) Introduced bulk record inserts resulting in quicker restores and updates.
+-13) Added support for SMTP security and authentication.
+-14) Enabled departmental reporting in the general ledger financials.
+-15) Improved the bulk mail utility to include additional systems and telephone
+-    directory contacts.
+-16) Added a new system i.e. 'Booking's Manager' which is a system for managing
+-    short term bookings and letting of facilities like accomodation, functions
+-    and conferences.
+-
+-Note:
+------
+-You can only upgrade to this version if your current version is 4.1.10 or later
+-
+-ver_5.0.3
+-=========
+-This version, 5.0.2, fixes some more minor bugs and includes some additional
+-new modules especially in the Bookings system.
+-
+-ver_5.0.2
+-=========
+-This version, 5.0.2, fixes some minor bugs and includes some minor enhancements.
+-
+-ver_5.0.1
+-=========
+-This version, 5.0.1, has been in production since April 2013 and is a Major
+-Version Change implementing, amongst many others, the following:
+-
+-1)  Replaced Gtk widgets with Tkinter. The reason for this change is that
+-    Tkinter is the de facto standard for the python language and is packaged
+-    with it. In addition it is Python version 3 ready. This change naturally
+-    required each and every module in the suite to be altered and tested
+-    resulting in numerous changes and hopefully many enhancements.
+-2)  Changed all modules to automatically alter the font size to fit the
+-    window geometry selected in the System --> Preferences --> Dialog routine.
+-3)  Modified the tooltip feature which can be turned on or off in the
+-    System --> Preferences --> General routine.
+-4)  Added some colour to the label and button widgets which can be set in the
+-    System --> Preferences --> Dialog routine.
+-5)  Allowed the facility to click on entry fields in some modules e.g. File
+-    Maintenance routines.
+-6)  Changed the VAT system to allow for VAT rate changes by date. This will
+-    facilitate any future VAT rate changes.
+-7)  Added a username to all transactions so that they can be interrogated to
+-    see which user generated them.
+-8)  Added the facility to report by department in the general ledger financial
+-    statements routine.
+-9)  Added a 'Sale of Assets' control account to general ledger integration.
+-10) Changed the enquiry, F1, function to support search filters.
+-11) Added a new system i.e. 'Booking's Manager' which is a system for managing
+-    short term bookings and letting of facilities like accomodation, functions
+-    and conferences.
+-12) Introduced bulk record inserts resulting in quicker restores and updates.
+-13) Added support for SMTP security and authentication.
+-14) Enabled departmental reporting in the general ledger financials.
+-15) Improved the bulk mail utility to include additional systems and telephone
+-    directory contacts.
+-16) Added variable colour schemes in the user's preferences.
++13) Added support for SMTP security and authentication in the
++    Control --> System Records routine.
++14) Improved the bulk mail utility to include additional systems and telephone
++    directory contacts.
++15) Added a new system i.e. 'Booking's Manager' which is a system for managing
++    short term bookings and letting of facilities like accomodation, functions
++    and conferences.
++
+ Note:
+ -----
+ You can only upgrade to this version if your current version is 4.1.10 or later
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-02-11 16:45:23 +0000
++++ doc/Downloads.rst	2015-02-22 09:42:01 +0000
+@@ -11,16 +11,16 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.5 and was released on the 11th February, 2015.
++The latest version of Tartan is 5.0.6 and was released on the 22nd February, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.5.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.6.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.5.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.6.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-02-11 16:45:23 +0000
++++ doc/MD.rst	2015-02-22 09:42:01 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.5
++:Version:   5.0.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl3050.py'
+--- gen/gl3050.py	2015-02-07 06:31:11 +0000
++++ gen/gl3050.py	2015-02-20 09:26:26 +0000
+@@ -25,7 +25,7 @@
+         self.opts = opts
+         if self.setVariables():
+             if "args" in self.opts:
+-                self.end, self.typ, self.rep, self.val, self.zer, \
++                self.end, self.typ, self.rep, self.val, self.var, self.zer, \
+                     self.repprt, self.fpdf = self.opts["args"]
+                 yed = CCD(mthendDate((self.end * 100) + 1), "D1", 10)
+                 self.yed = "%s %s %s" % ((yed.work % 100),
+@@ -125,6 +125,9 @@
+             ("Combined","C"),
+             ("Variances","X"),
+             ("Detail","D"))
++        r4s = (
++            ("Budgets","B"),
++            ("Previous Year","P"))
+         fld = (
+             (("T",0,0,0),"ID2",7,"Ending Period","Ending Period (YYYY/MM)",
+                 self.e_per,"Y",self.doRepPer,None,None,None),
+@@ -145,11 +148,13 @@
+             (("T",0,8,0),"INA",2,"Detail Code","",
+                 "","Y",self.doRepDet,det,None,("notblank",)),
+             (("T",0,8,0),"ONA",30,""),
+-            (("T",0,9,0),("IRB",r2s),0,"Ignore Zeros","",
++            (("T",0,9,0),("IRB",r4s),0,"Variance","",
++                "B","Y",self.doRepVar,None,None,None),
++            (("T",0,10,0),("IRB",r2s),0,"Ignore Zeros","",
+                 "Y","Y",self.doIgnore,None,None,None),
+-            (("T",0,10,0),("IRB",r2s),0,"Print Options","",
++            (("T",0,11,0),("IRB",r2s),0,"Print Options","",
+                 "Y","Y",self.doOptions,None,None,None),
+-            (("T",0,11,0),("IRB",r2s),0,"Account Numbers","",
++            (("T",0,12,0),("IRB",r2s),0,"Account Numbers","",
+                 "Y","Y",self.doNumber,None,None,None))
+         tnd = ((self.doMainEnd,"y"), )
+         txt = (self.doMainExit, )
+@@ -238,6 +243,9 @@
+             return "Invalid"
+         self.val = w
+         if self.val != "D":
++            if self.typ == "M":
++                self.var = "B"
++                return "sk3"
+             return "sk2"
+ 
+     def doRepDet(self, frt, pag, r, c, p, i, w):
+@@ -248,6 +256,12 @@
+             return "Invalid Code"
+         self.det = w
+         self.df.loadEntry(frt, pag, p+1, data=det[0])
++        if self.typ == "M":
++            self.var = "B"
++            return "sk1"
++
++    def doRepVar(self, frt, pag, r, c, p, i, w):
++        self.var = w
+ 
+     def doIgnore(self, frt, pag, r, c, p, i, w):
+         self.zer = w
+@@ -765,6 +779,11 @@
+         elif not self.det:
+             self.val = "V"
+             self.det = None
++        if self.var == "B":
++            self.vardes = "    Budget"
++        else:
++            self.vardes = " Prev-Year"
++            self.titles[4][0] = "Prev-Year"
+         ####################################################################
+         # RTYPE Determines the basis of the sign check i.e. MTD or YTD value
+         # Maybe this should be an interactive request (Y=YTD, M=MTD)
+@@ -778,8 +797,8 @@
+         for dep in self.dpl:
+             self.fin = FinReport(self.opts["mf"], (self.gldep, self.gldig),
+                 self.opts["conum"], self.opts["period"], rco, self.rep,
+-                self.end, vcode=self.val, dcode=self.det, consol=self.con,
+-                depart=int(dep), rtype=rtype)
++                self.end, vcode=self.val, dcode=self.det, varcd=self.var,
++                consol=self.con, depart=int(dep), rtype=rtype)
+             if self.fin.allFields:
+                 self.allfields.extend(self.fin.allFields)
+         if not self.allfields:
+@@ -880,7 +899,7 @@
+             self.head.append("")
+             self.head.append("")
+             self.head.append("%-14s  %-30s  %-14s  %-11s  %-11s  %-7s" % \
+-                ("    Last-Year", "Description", "       Actual", "    Budget",
++                ("    Last-Year", "Description", "       Actual", self.vardes,
+                 "  Variance", " Var-%"))
+             self.linu = "%s  %31s  %s  %s  %s  %s" % (self.ulc*13, "",
+                 self.ulc*13, self.ulc*11, self.ulc*11, self.ulc*7)
+@@ -915,8 +934,8 @@
+             hdr = hdr + "%-30s  %-14s  %-11s  %-11s  %-7s  %-14s  %-11s  "\
+                 "%-11s  %-7s  %-14s"
+             hdt.extend(["Description",
+-                "       Actual", "    Budget", "  Variance", " Var-%",
+-                "       Actual", "    Budget", "  Variance", " Var-%",
++                "       Actual", self.vardes, "  Variance", " Var-%",
++                "       Actual", self.vardes, "  Variance", " Var-%",
+                 "    Last-Year"])
+             self.head.append(hdr % tuple(hdt))
+             lin = lin + "%30s  %s  %s  %s  %s   %s  %s  %s  %s   %s"
+@@ -1019,13 +1038,6 @@
+             self.width = head
+         if not "args" in self.opts:
+             self.fpdf = MyFpdf(name=__name__, head=self.width)
+-        ############################################
+-        # Replace Temporary Underline Character
+-        ############################################
+-        #self.lind = self.lind.replace("X", self.fpdf.suc)
+-        #self.linh = self.linh.replace("X", self.fpdf.suc)
+-        #self.linw = self.linw.replace("X", self.fpdf.suc)
+-        ############################################
+         self.pgnum = 0
+         self.pglin = 999
+         self.achart = []
+
+=== modified file 'gen/gl3100_rne.py'
+--- gen/gl3100_rne.py	2015-02-07 06:31:11 +0000
++++ gen/gl3100_rne.py	2015-02-17 13:01:20 +0000
+@@ -2,8 +2,7 @@
+ 
+ """
+ SYNOPSIS
+-    General Ledger Multiple Company Reporting and
+-    Multi-Company Columnar Trial Balance.
++    General Ledger Multiple Company Trial Balance Reporting.
+ 
+     This file is part of Tartan Financial Systems (TARTAN).
+ 
+@@ -36,7 +35,7 @@
+         return True
+ 
+     def mainProcess(self):
+-        tit = "Multiple Company Reporting"
++        tit = "Multiple Company Trial Balance"
+         fin = {
+             "stype": "R",
+             "tables": ("ctlynd",),
+@@ -79,22 +78,8 @@
+                 self.finper,"N",self.doFP,fin,None,("notzero",)),
+             (("T",0,1,0),"ID2",7,"Ending Period","",
+                 0,"N",self.doEP,None,None,("efld",)),
+-            (("T",0,2,0),("IRB",r1s),0,"Trial Balance","",
+-                "Y","Y",self.doTB,None,None,None),
+-            (("T",0,3,0),("IRB",r2s),0,"Format","",
+-                "N","Y",self.doTBF,None,None,None),
+-            (("T",0,4,0),"INA",30,"T/B Heading","",
++            (("T",0,2,0),"INA",30,"T/B Heading","",
+                 "","Y",self.doTBH,None,None,("notblank",)),
+-            (("T",0,5,0),("IRB",r1s),0,"Financials","",
+-                "Y","Y",self.doFS,None,None,None),
+-            (("T",0,6,0),("IRB",r3s),0,"Report Type","",
+-                "S","Y",self.doRT,None,None,None),
+-            (("T",0,7,0),"IUI",3,"Report Number","",
+-                1,"Y",self.doRN,rpt,None,("notzero",)),
+-            (("T",0,8,0),("IRB",r4s),0,"Contents","",
+-                "V","Y",self.doRV,None,None,None),
+-            (("T",0,9,0),("IRB",r1s),0,"Ignore Zeros","",
+-                "Y","Y",self.doIZ,None,None,None),
+             (("C",0,0,0),"IUI",3,"Seq","Sequence Number",
+                 "i","N",self.doSeq,None,None,None),
+             (("C",0,0,1),"IUI",3,"Coy","Company Number",
+@@ -108,7 +93,7 @@
+         cxt = (self.doExit,)
+         self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
+             rows=[10], eflds=fld, tend=tnd, txit=txt, cend=cnd, cxit=cxt,
+-            view=("N","V"), mail=("Y","N"))
++            view=("Y","V"), mail=("Y","N"))
+ 
+     def doFP(self, frt, pag, r, c, p, i, w):
+         f = getPeriods(self.opts["mf"], 1, w, check=True)
+@@ -132,47 +117,9 @@
+         self.lp = w - 100
+         self.epd = CCD(self.ep, "D2", 7).disp
+ 
+-    def doTB(self, frt, pag, r, c, p, i, w):
+-        self.tb = w
+-        if self.tb == "N":
+-            return "sk2"
+-
+-    def doTBF(self, frt, pag, r, c, p, i, w):
+-        self.tbf = w
+-
+     def doTBH(self, frt, pag, r, c, p, i, w):
+         self.tbh = w
+ 
+-    def doFS(self, frt, pag, r, c, p, i, w):
+-        self.fs = w
+-        if self.fs == "N":
+-            if self.tbf == "N":
+-                return "sk3"
+-            else:
+-                return "sk4"
+-
+-    def doRT(self, frt, pag, r, c, p, i, w):
+-        self.rt = w
+-
+-    def doRN(self, frt, pag, r, c, p, i, w):
+-        whr = [
+-            ("glr_cono", "=", 0),
+-            ("glr_repno", "=", w),
+-            ("glr_seq", "=", 0)]
+-        chk = self.sql.getRec(tables="genrpt", cols=["glr_cono"], where=whr,
+-            limit=1)
+-        if not chk:
+-            return "Invalid Report Number"
+-        self.rn = w
+-
+-    def doRV(self, frt, pag, r, c, p, i, w):
+-        if w in ("B", "C", "X") and self.rt != "M":
+-            return "Invalid Selection"
+-        self.rv = w
+-
+-    def doIZ(self, frt, pag, r, c, p, i, w):
+-        self.iz = w
+-
+     def doSeq(self, frt, pag, r, c, p, i, w):
+         if not w or w > 10:
+             return "Invalid Sequence Number"
+@@ -234,43 +181,7 @@
+                     coyd = str(self.seqdic[x][0])
+                 else:
+                     coyd = "%s, %s" % (coyd, str(self.seqdic[x][0]))
+-            if self.tb == "Y":
+-                if self.tbf == "N":
+-                    tit = "Trial Balances as at %s for Companies %s" % \
+-                        (self.epd, coyd)
+-                    pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
+-                        __name__, "trialbalance", ext="pdf")
+-                    self.fpdf = MyFpdf(name=__name__, head=77)
+-                    for coy in coys:
+-                        callModule(self.opts["mf"], None, "gl3040", coy=(coy[0],
+-                            coy[1]), period=self.c_per, args=(self.ep, self.iz,
+-                            self.df.repprt, self.fpdf))
+-                    self.fpdf.output(pdfnam, "F")
+-                    doPrinter(mf=self.opts["mf"], rep=pdfnam, head=tit,
+-                        view=self.df.repprt[0][1], prtnam=self.df.repprt[0][2],
+-                        mail=self.df.repprt[1][2])
+-                else:
+-                    self.doTrialBalance(coys, coyd)
+-            if self.fs == "Y":
+-                tit = "Financial Statements as at %s for Companies %s" % \
+-                    (self.epd, coyd)
+-                pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+-                    "financials", ext="pdf")
+-                if self.rt == "S":
+-                    hw = 92
+-                elif self.rt == "L":
+-                    hw = 149
+-                else:
+-                    hw = 191
+-                self.fpdf = MyFpdf(name=__name__, head=hw)
+-                for coy in coys:
+-                    callModule(self.opts["mf"], None, "gl3050", coy=(coy[0],
+-                        coy[1]), period=self.c_per, args=(self.ep, self.rt,
+-                        self.rn, self.rv, self.iz, self.df.repprt, self.fpdf))
+-                self.fpdf.output(pdfnam, "F")
+-                doPrinter(mf=self.opts["mf"], rep=pdfnam, head=tit,
+-                    view=self.df.repprt[0][1], prtnam=self.df.repprt[0][2],
+-                    mail=self.df.repprt[1][2])
++            self.doTrialBalance(coys, coyd)
+         self.opts["mf"].closeLoop()
+ 
+     def doTrialBalance(self, coys, coyd):
+
+=== added file 'gen/gl3110_rne.py'
+--- gen/gl3110_rne.py	1970-01-01 00:00:00 +0000
++++ gen/gl3110_rne.py	2015-02-20 09:26:55 +0000
+@@ -0,0 +1,223 @@
++#! /usr/bin/python
++
++"""
++SYNOPSIS
++    General Ledger Multiple Company Reporting.
++
++    This file is part of Tartan Financial Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2015 Paul Malherbe.
++"""
++
++import copy
++from TartanClasses import ASD, CCD, Dbase, MyFpdf, Sql, TartanDialog
++from tartanFunctions import callModule, doPrinter, getModName, getPeriods
++from tartanFunctions import getSingleRecords
++
++class gl3110:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctlynd", "genrpt"],
++            prog=__name__)
++        if self.sql.error:
++            return
++        p = self.sql.getRec(tables="ctlynd", cols=["max(cye_period)"],
++            where=[("cye_cono", "=", 1)])
++        self.finper = int(p[0][0])
++        return True
++
++    def mainProcess(self):
++        tit = "Multiple Company Reporting"
++        fin = {
++            "stype": "R",
++            "tables": ("ctlynd",),
++            "cols": (
++                ("cye_period", "", 0, "Prd"),
++                ("cye_start", "", 0, "Start"),
++                ("cye_end", "", 0, "End")),
++            "where": [("cye_cono=1",)]}
++        rpt = {
++            "stype": "R",
++            "tables": ("genrpt",),
++            "cols": (
++                ("glr_repno", "", 0, "Num"),
++                ("glr_type", "", 0, "T"),
++                ("glr_desc", "", 0, "Description", "Y")),
++            "where": [
++                ("glr_cono", "=", 0),
++                ("glr_seq", "=", 0),
++                ("glr_type", "in", ("P", "B", "O"))],
++            "group": "glr_repno, glr_type, glr_desc"}
++        coy = {
++            "stype": "R",
++            "tables": ("ctlmst",),
++            "cols": (
++                ("ctm_cono", "", 0, "Com"),
++                ("ctm_name", "", 0, "Name", "Y"))}
++        r1s = (("Yes","Y"),("No","N"))
++        r2s = (("Normal","N"), ("Consolidated","C"))
++        r3s = (
++            ("Short","S"),
++            ("Long","L"),
++            ("Month","M"))
++        r4s = (
++            ("Values","V"),
++            ("Budgets","B"),
++            ("Combined","C"),
++            ("Variances","X"))
++        fld = (
++            (("T",0,0,0),"IUI",3,"Financial Period","",
++                self.finper,"N",self.doFP,fin,None,("notzero",)),
++            (("T",0,1,0),"ID2",7,"Ending Period","",
++                0,"N",self.doEP,None,None,("efld",)),
++            (("T",0,2,0),("IRB",r1s),0,"Trial Balance","",
++                "Y","Y",self.doTB,None,None,None),
++            (("T",0,3,0),("IRB",r1s),0,"Financials","",
++                "Y","Y",self.doFS,None,None,None),
++            (("T",0,4,0),("IRB",r3s),0,"Report Type","",
++                "S","Y",self.doRT,None,None,None),
++            (("T",0,5,0),"IUI",3,"Report Number","",
++                1,"Y",self.doRN,rpt,None,("notzero",)),
++            (("T",0,6,0),("IRB",r4s),0,"Contents","",
++                "V","Y",self.doRV,None,None,None),
++            (("T",0,7,0),("IRB",r1s),0,"Ignore Zeros","",
++                "Y","Y",self.doIZ,None,None,None))
++        tnd = ((self.doEnd,"y"),)
++        txt = (self.doExit,)
++        self.df = TartanDialog(self.opts["mf"], tops=False, title=tit,
++            rows=[10], eflds=fld, tend=tnd, txit=txt, view=("N","V"),
++            mail=("Y","N"))
++
++    def doFP(self, frt, pag, r, c, p, i, w):
++        f = getPeriods(self.opts["mf"], 1, w, check=True)
++        if f == (None, None, None):
++            return "Invalid Financial Period"
++        self.c_per = (w, (f[0].work, f[0].disp), (f[1].work, f[1].disp))
++        self.s_cfp = f[0].work / 100
++        self.e_cfp = f[1].work / 100
++        f = getPeriods(self.opts["mf"], 1, w - 1, check=True)
++        if f == (None, None, None):
++            return "Invalid Financial Period"
++        self.p_per = (w - 1, (f[0].work, f[0].disp), (f[1].work, f[1].disp))
++        self.s_pfp = f[0].work / 100
++        self.e_pfp = f[1].work / 100
++        self.df.loadEntry(frt, pag, p+1, data=self.e_cfp)
++
++    def doEP(self, frt, pag, r, c, p, i, w):
++        if w < self.s_cfp or w > self.e_cfp:
++            return "Invalid Ending Period"
++        self.ep = w
++        self.lp = w - 100
++        self.epd = CCD(self.ep, "D2", 7).disp
++
++    def doTB(self, frt, pag, r, c, p, i, w):
++        self.tb = w
++
++    def doFS(self, frt, pag, r, c, p, i, w):
++        self.fs = w
++        if self.fs == "N":
++            return "sk3"
++
++    def doRT(self, frt, pag, r, c, p, i, w):
++        self.rt = w
++
++    def doRN(self, frt, pag, r, c, p, i, w):
++        whr = [
++            ("glr_cono", "=", 0),
++            ("glr_repno", "=", w),
++            ("glr_seq", "=", 0)]
++        chk = self.sql.getRec(tables="genrpt", cols=["glr_cono"], where=whr,
++            limit=1)
++        if not chk:
++            return "Invalid Report Number"
++        self.rn = w
++
++    def doRV(self, frt, pag, r, c, p, i, w):
++        if w in ("B", "C", "X") and self.rt != "M":
++            return "Invalid Selection"
++        self.rv = w
++
++    def doIZ(self, frt, pag, r, c, p, i, w):
++        self.iz = w
++
++    def doSeq(self, frt, pag, r, c, p, i, w):
++        if not w or w > 10:
++            return "Invalid Sequence Number"
++        self.seq = w
++
++    def doCoy(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec(tables="ctlmst", cols=["ctm_name"],
++            where=[("ctm_cono", "=", w)], limit=1)
++        if not acc:
++            return "Invalid Company Number"
++        self.coy = w
++        self.nam = acc[0]
++        if self.seqdic[self.seq][2]:
++            self.hed = self.seqdic[self.seq][2]
++        else:
++            self.hed = "Company-%03i" % self.coy
++        self.df.loadEntry(frt, pag, p+1, data=self.nam)
++        self.df.loadEntry(frt, pag, p+2, data=self.hed)
++
++    def doHed(self, frt, pag, r, c, p, i, w):
++        self.hed = w
++
++    def doEnd(self):
++        self.df.closeProcess()
++        coys = getSingleRecords(self.opts["mf"], "ctlmst", ("ctm_cono",
++            "ctm_name"), order="ctm_cono")
++        coyd = ""
++        for coy in coys:
++            if not coyd:
++                coyd = coy[1]
++            else:
++                coyd = "%s, %s" % (coyd, coy[1])
++        if self.tb == "Y":
++            tit = "Trial Balances as at %s for Companies %s" % (self.epd, coyd)
++            pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
++                "trialbalance", ext="pdf")
++            self.fpdf = MyFpdf(name=__name__, head=77)
++            for coy in coys:
++                callModule(self.opts["mf"], None, "gl3040", coy=(coy[0],
++                    coy[1]), period=self.c_per, args=(self.ep, self.iz,
++                    self.df.repprt, self.fpdf))
++            self.fpdf.output(pdfnam, "F")
++            doPrinter(mf=self.opts["mf"], rep=pdfnam, head=tit,
++                view=self.df.repprt[0][1], prtnam=self.df.repprt[0][2],
++                mail=self.df.repprt[1][2])
++        if self.fs == "Y":
++            tit = "Financial Statements as at %s for Companies %s" % (self.epd,
++                coyd)
++            pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
++                "financials", ext="pdf")
++            if self.rt == "S":
++                hw = 92
++            elif self.rt == "L":
++                hw = 149
++            else:
++                hw = 191
++            self.fpdf = MyFpdf(name=__name__, head=hw)
++            for coy in coys:
++                callModule(self.opts["mf"], None, "gl3050", coy=(coy[0],
++                    coy[1]), period=self.c_per, args=(self.ep, self.rt,
++                    self.rn, self.rv, self.iz, "P", self.df.repprt, self.fpdf))
++            self.fpdf.output(pdfnam, "F")
++            doPrinter(mf=self.opts["mf"], rep=pdfnam, head=tit,
++                view=self.df.repprt[0][1], prtnam=self.df.repprt[0][2],
++                mail=self.df.repprt[1][2])
++        self.opts["mf"].closeLoop()
++
++    def doExit(self):
++        self.df.closeProcess()
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2015-02-11 16:45:23 +0000
++++ men/rnemen.py	2015-02-17 13:13:20 +0000
+@@ -114,7 +114,8 @@
+     ["PYNN","gl_rp","gl3070",1,"Notes Listing"],
+     ["PYYN","gl_rp","gl3080",1,"Bank Reconciliation"],
+     ["PYNN","gl_rp","gl3090",1,"Imported Bank Statements"],
+-    ["PNNN","gl_rp","gl3100",1,"Multi-Company Reports"],
++    ["PNNN","gl_rp","gl3100",1,"Consolidated Trial Balance"],
++    ["PNNN","gl_rp","gl3110",1,"Multi-Company Reports"],
+     ["PYNN","gl_tb","gl6010",5,"Change Account Numbers"],
+     ["PYNN","gl_tb","gl6020",5,"Copy Masterfile Records"],
+     ["PYYN","gl_tb","gl6030",1,"Integrated Controls Report"],
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-02-11 16:45:23 +0000
++++ mst/ms0000.py	2015-02-22 09:42:01 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 5)
++    VERSION = (5, 0, 6)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-02-11 16:45:23 +0000
++++ std/TartanClasses.py	2015-02-20 09:07:46 +0000
+@@ -680,22 +680,22 @@
+                     return
+                 self.lf = tk.Toplevel(self, bd=2, relief="raised")
+                 self.lf.overrideredirect(1)
++                wdth = int(self.cget("width"))
+                 if len(words) > 10:
+                     yScroll = tk.Scrollbar(self.lf, orient="vertical")
+                     yScroll.grid(row=0, column=1, sticky="ns")
+-                    self.lb = tk.Listbox(self.lf, width=self.cget("width"),
+-                        height=10, yscrollcommand=yScroll.set)
++                    self.lb = tk.Listbox(self.lf, width=wdth, height=10,
++                        yscrollcommand=yScroll.set)
+                     yScroll["command"] = self.lb.yview
+                 else:
+-                    self.lb = tk.Listbox(self.lf, width=self.cget("width"),
+-                        height=len(words))
++                    self.lb = tk.Listbox(self.lf, width=wdth, height=len(words))
+                 self.lb.bind("<Double-Button-1>", self.list_aut)
+                 self.lb.bind("<KP_Enter>", self.list_aut)
+                 self.lb.bind("<Return>", self.list_aut)
+                 self.lb.bind("<Escape>", self.escape)
+                 self.lb.grid(row=0, column=0, sticky="nsew")
+                 self.lf.wm_geometry("+%d+%d" % (self.winfo_rootx(),
+-                    self.winfo_rooty()+self.winfo_height()))
++                    self.winfo_rooty() + self.winfo_height()))
+                 self.lb.delete(0, "end")
+                 for w in words:
+                     self.lb.insert("end", w)
+@@ -1451,9 +1451,6 @@
+             fieldbackground=[
+                 ("active", "white"),
+                 ("disabled", "white")])
+-        self.style.configure("Treeview",
+-            font=(self.rcdic["dft"], self.rcdic["dfs"]),
+-            rowheight=int(round(self.rcdic["dfs"] * 1.5, 0)))
+         self.style.configure("CLabel.TLabel",
+             foreground=self.rcdic["nfg"],
+             background=self.rcdic["nbg"])
+@@ -3832,6 +3829,39 @@
+                                  'sort':   If the columns can be sorted,
+                                  'size':   The default screen size,
+                                  'butt':   Additional Buttons and functions}
++                     OR = A selection of single records
++                            a_name = {
++                                 'stype':  "S",
++                                 'title':  Selection Title
++                                 'head':   A list of column headings
++                                 'tables': ('genbal',),
++                                            The table(s) from which to return
++                                            the records.  In the case of
++                                            multiple tables, only the first
++                                            table's columns will be returned,
++                                            all other tables must only be used
++                                            for the where statement
++                                 'cols':   A list/tuple of columns to display
++                                           (('glo_acno', '', 0, 'Acc-Num'),
++                                            ('glo_trdt', '', 0, 'Date'),
++                                            ('glo_cyr', '', 0, 'Balance')),
++                                           if type is a tuple ("XX", gltrtp)
++                                           then display XXX type from list.
++                                 'where':  A list of where conditions else all
++                                           records or a list of data to use in
++                                           the selection
++                                 'group':  True or False
++                                 'order':  The fields to order on
++                                 'selcol': The column for keyboard selection
++                                 'ttype':  T = The where above is a list of
++                                               where conditions
++                                           D = The where above is a list of
++                                               data. In this case the returned
++                                               columns will be as per the cols
++                                               list
++                                 'dic':    A dictionary of column details as
++                                           per sql.table_dic. This only applies
++                                           when ttype is 'D'
+                      OR = The choice selection function to perform as:
+                             a_name = {
+                                  'stype':  "C",
+@@ -4669,7 +4699,7 @@
+                 e_dic[col].append([b, var, (val[1], cr)])
+             if self.mf.rcdic["ttip"] == "Y" and len(fld) == 13 and fld[12]:
+                 ToolTip(hbox, fld[12])
+-            self.doRadioButton(e_dic[col], col, "disabled")
++            self.doRadioButton(e_dic[col], "disabled")
+         elif typ[1:] in ("TV", "Tv"):
+             if typ[1:] == "Tv":
+                 e_dic[col] = MyTextView_v(self.ttabl, width=siz, height=hgt,
+@@ -4908,6 +4938,28 @@
+             if not "screen" in opts:
+                 opts["screen"] = self.mstFrame
+             self.rs = self.selRecord(pag, opts)
++        elif opts["stype"] == "S":
++            if not "screen" in opts:
++                opts["screen"] = self.mstFrame
++            if not "title" in opts:
++                opts["title"] = None
++            if not "head" in opts:
++                opts["head"] = None
++            if not "where" in opts:
++                opts["where"] = None
++            if not "group" in opts:
++                opts["group"] = None
++            if not "order" in opts:
++                opts["order"] = None
++            if not "selcol" in opts:
++                opts["selcol"] = None
++            if not "ttype" in opts:
++                opts["ttype"] = None
++            if not "dic" in opts:
++                opts["dic"] = None
++            return getSingleRecords(self.mf, opts["tables"], opts["cols"],
++                opts["title"], opts["head"], opts["where"], opts["group"],
++                opts["order"], opts["selcol"], opts["ttype"], opts["dic"])
+         elif opts["stype"] == "X":
+             return self.selColour(opts)
+         if self.rs.selection:
+@@ -5262,7 +5314,7 @@
+             if flds[1][0][1:] == "CB":
+                 self.doCheckButton(fldd, "focus", dflt)
+             elif flds[1][0][1:] == "RB":
+-                self.doRadioButton(fldd, self.idx, "focus", dflt)
++                self.doRadioButton(fldd, "focus", dflt)
+         elif flds[1][1:] in ("TV", "Tv"):
+             self.doTextView(self.frt, self.pag, fldd, "focus", dflt)
+         else:
+@@ -5328,7 +5380,7 @@
+             if flds[self.idx][1][0][1:] == "CB":
+                 self.doCheckButton(fldd, "disabled")
+             elif flds[self.idx][1][0][1:] == "RB":
+-                self.doRadioButton(fldd, self.idx, "disabled")
++                self.doRadioButton(fldd, "disabled")
+         elif flds[self.idx][1][1:] in ("TV", "Tv"):
+             self.doTextView(frt, pag, fldd, "disable")
+         else:
+@@ -5424,7 +5476,7 @@
+                 if self.topf[pag][idx][1][0][1:] == "CB":
+                     self.doCheckButton(fldd, "clear")
+                 elif self.topf[pag][idx][1][0][1:] == "RB":
+-                    self.doRadioButton(fldd, pos, "clear")
++                    self.doRadioButton(fldd, "clear")
+             elif self.topf[pag][idx][1][1:] in ("TV", "Tv"):
+                 fldd.configure(state="normal")
+                 fldd.delete("1.0", "end")
+@@ -5482,7 +5534,7 @@
+                 if self.topf[pag][idx][1][0][1:] == "CB":
+                     self.doCheckButton(fld, "load", data)
+                 elif self.topf[pag][idx][1][0][1:] == "RB":
+-                    self.doRadioButton(fld, idx, "load", data)
++                    self.doRadioButton(fld, "load", data)
+             else:
+                 state = fld.cget("state")
+                 fld.configure(state="normal")
+@@ -5611,7 +5663,7 @@
+                 fld = self.doCheckButton(fldd, "active")
+                 fld = CCD(fld, "CB", 0)
+             elif flds[1][0][1:] == "RB":
+-                fld = self.doRadioButton(fldd, self.idx, "active")
++                fld = self.doRadioButton(fldd, "active")
+                 fld = CCD(fld, "NA", 1)
+         elif flds[1][1:] == "TV":
+             text = fldd.get("1.0", "end").rstrip()
+@@ -5640,7 +5692,7 @@
+                 if flds[1][0][1:] == "CB":
+                     self.doCheckButton(fldd, "disabled")
+                 elif flds[1][0][1:] == "RB":
+-                    self.doRadioButton(fldd, self.idx, "disabled")
++                    self.doRadioButton(fldd, "disabled")
+             elif flds[1][1:] in ("TV", "Tv"):
+                 self.doTextView(frt, pag, fldd, "disable")
+             else:
+@@ -5809,12 +5861,11 @@
+         if action == "load":
+             grp[1].set(data)
+ 
+-    def doRadioButton(self, grp, num=None, action=None, data=None):
++    def doRadioButton(self, grp, action=None, data=None):
+         """
+         Radio Button actions as follows:
+ 
+-        grp         = The group
+-        num         = The number in the group
++        grp         = The widget details
+         action      = The action to be taken as follows:
+                         active   = Return the active button
+                         clear    = Clear all buttons
+@@ -5829,12 +5880,10 @@
+             grp[0][1].set(None)
+             for b in grp:
+                 b[0].configure(state="disabled")
+-            return
+-        if action == "disabled":
++        elif action == "disabled":
+             for b in grp:
+                 b[0].configure(state="disabled")
+-            return
+-        if action == "focus":
++        elif action == "focus":
+             if self.pag and self.nbf:
+                 self.nb.select(self.pag - 1)
+             grp[0][1].set(data)
+@@ -5842,8 +5891,7 @@
+                 b[0].configure(state="normal")
+                 if b[2][0] == data:
+                     b[0].focus_set()
+-            return
+-        if action == "load":
++        elif action == "load":
+             grp[0][1].set(data)
+ 
+     def doTextView(self, frt, pag, vwr, act, data=None):
+@@ -6351,30 +6399,45 @@
+             return self.colEntry[pag][pos]
+ 
+     def setWidget(self, wid, state=None):
+-        if type(wid) == list and  wid[0][0].winfo_class() == "TRadiobutton":
+-            self.doRadioButton(wid, 0, state)
++        if type(wid) in (list, tuple):
++            if wid[0][0].winfo_class() == "TRadiobutton":
++                self.doRadioButton(wid, state)
++            else:
++                self.doCheckButton(wid, state)
+             return
+-        elif state == "normal":
++        if state == "normal":
+             wid.configure(state=state)
+         elif state == "disabled":
+             wid.configure(state=state)
+         elif state == "focus":
+             wid.focus_set()
+-        elif state == "hide":
++        elif state == "hide" and wid not in self.hidden:
+             try:
+                 wid.update_idletasks()
+                 geom = wid.winfo_manager()
+-                exec "info = wid.%s_info()" % geom
+-                place = wid.winfo_toplevel().winfo_x() - 1
+-                self.hidden[wid] = (geom, place, info)
++                info = self.getInfo(wid, geom)
+                 exec "wid.%s_forget()" % geom
++                self.hidden[wid] = (geom, info)
+             except:
+                 pass
+         elif state == "show" and wid in self.hidden:
+-            exec "wid.%s(self.hidden[wid][2])" % self.hidden[wid][0]
++            exec "wid.%s(self.hidden[wid][1])" % self.hidden[wid][0]
+             del self.hidden[wid]
+         wid.update_idletasks()
+ 
++    def getInfo(self, wid, geom):
++        # Python 2.7.6 geom_info is broken
++        root = wid.winfo_toplevel()
++        words = root.splitlist(str(root.tk.call(geom, "info", wid)))
++        dict = {}
++        for i in range(0, len(words), 2):
++            key = words[i][1:]
++            value = words[i+1]
++            if str(value)[:1] == '.':
++                value = root._nametowidget(value)
++            dict[key] = value
++        return dict
++
+     def closeProcess(self):
+         try:
+             # Clear dialog bindings
+@@ -6732,7 +6795,7 @@
+     font   - Font to use.
+     addh   - Additional height.
+     """
+-    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, loop=True, cmnd=None, butt=[], neww=True, deco=True, live=True, posn=0, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", addh=0):
++    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, loop=True, cmnd=None, butt=[], neww=True, deco=True, live=True, posn=0, fltr=False, scrl=True, font="TkHeadingFont", addh=0):
+         self.scrn = scrn
+         if titl:
+             self.titl = titl
+@@ -6782,13 +6845,14 @@
+         self.posn = posn
+         self.fltr = fltr
+         self.scrl = scrl
+-        self.styl = styl
+         self.font = tkFont.Font(font=font)
++        if self.font.cget("size") < 12:
++            self.font.configure(size=12)
+         self.addh = addh
+         self.selection = None
+         if not lines:
+-            if len(self.data) < 10:
+-                self.lines = 10
++            if len(self.data) < 20:
++                self.lines = 20
+             elif len(self.data) > 30:
+                 self.lines = 30
+             else:
+@@ -6814,7 +6878,7 @@
+             self.mstFrame.grid(column=0, sticky="nsew")
+         self.mstFrame.grid_columnconfigure(0, weight=1)
+         self.mstFrame.grid_rowconfigure(0, weight=1)
+-        chgt = self.font.cget("size")
++        chgt = int(self.font.cget("size"))
+         if self.scrn:
+             tlin = int((self.scrn.winfo_reqheight() / chgt) * .80)
+         else:
+@@ -6830,9 +6894,12 @@
+         nams = []
+         for num, col in enumerate(self.cols):
+             nams.append("%s%s" % (col, num))
++        style = ttk.Style()
++        style.configure("Treeview",
++            font=self.font,
++            rowheight=int(round(chgt * 1.5, 0)))
+         self.tree = ttk.Treeview(self.mstFrame, columns=nams,
+-            height=self.lines, show=show, selectmode=self.mode,
+-            style=self.styl)
++            height=self.lines, show=show, selectmode=self.mode)
+         self.tree.grid(column=0, row=0, sticky="nswe")
+         if self.scrl:
+             vsb = ttk.Scrollbar(self.mstFrame, orient="vertical",
+@@ -9487,6 +9554,7 @@
+         defaults = {
+             "vcode": "V",
+             "dcode": None,
++            "varcd": "B",
+             "rtype": "Y",
+             "consol": "N",
+             "depart": 0}
+@@ -10022,29 +10090,42 @@
+                 bas = 10 ** (7 - self.sysdp[1])
+                 acc = self.s_acno % bas
+                 lyr = self.sql.getRec(tables="gentrn",
+-                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
+-                    self.s_cono), ("glt_acno", "%", bas, "=", acc),
++                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono",
++                    "=", self.s_cono), ("glt_acno", "%", bas, "=", acc),
+                     ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+                 cyr = self.sql.getRec(tables="gentrn",
+-                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
+-                    self.s_cono), ("glt_acno", "%", bas, "=", acc),
++                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono",
++                    "=", self.s_cono), ("glt_acno", "%", bas, "=", acc),
+                     ("glt_curdt", "=", curdt)], limit=1)[0]
+-                bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
+-                    where=[("glb_cono", "=", self.s_cono), ("glb_acno", "%",
+-                    bas, "=", acc), ("glb_curdt", "=", curdt)], limit=1)[0]
++                if self.varcd == "B":
++                    bud = self.sql.getRec(tables="genbud",
++                        cols=["sum(glb_tramt)"], where=[("glb_cono",
++                        "=", self.s_cono), ("glb_acno", "%", bas, "=", acc),
++                        ("glb_curdt", "=", curdt)], limit=1)[0]
++                else:
++                    bud = self.sql.getRec(tables="gentrn",
++                        cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
++                        "=", self.s_cono), ("glt_acno", "%", bas, "=", acc),
++                        ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+             else:
+                 lyr = self.sql.getRec(tables="gentrn",
+-                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
+-                    self.s_cono), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+-                    "=", (curdt - 100))], limit=1)[0]
++                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono",
++                    "=", self.s_cono), ("glt_acno", "=", self.s_acno),
++                    ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+                 cyr = self.sql.getRec(tables="gentrn",
+-                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
+-                    self.s_cono), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+-                    "=", curdt)], limit=1)[0]
+-                bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
+-                    where=[("glb_cono", "=", self.s_cono), ("glb_acno", "=",
+-                    self.s_acno), ("glb_curdt", "=", curdt)],
+-                    limit=1)[0]
++                    cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono",
++                    "=", self.s_cono), ("glt_acno", "=", self.s_acno),
++                    ("glt_curdt", "=", curdt)], limit=1)[0]
++                if self.varcd == "B":
++                    bud = self.sql.getRec(tables="genbud",
++                        cols=["sum(glb_tramt)"], where=[("glb_cono",
++                        "=", self.s_cono), ("glb_acno", "=", self.s_acno),
++                        ("glb_curdt", "=", curdt)], limit=1)[0]
++                else:
++                    bud = self.sql.getRec(tables="gentrn",
++                        cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
++                        "=", self.s_cono), ("glt_acno", "=", self.s_acno),
++                        ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+         elif self.sysdp[0] == "Y" and not self.depart:
+             bas = 10 ** (7 - self.sysdp[1])
+             acc = self.s_acno % bas
+@@ -10056,9 +10137,15 @@
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
+                 self.consol), ("glt_acno", "%", bas, "=", acc),
+                 ("glt_curdt", "=", curdt)], limit=1)[0]
+-            bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
+-                where=[("glb_cono", "in", self.consol), ("glb_acno", "%", bas,
+-                "=", acc), ("glb_curdt", "=", curdt)], limit=1)[0]
++            if self.varcd == "B":
++                bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
++                    where=[("glb_cono", "in", self.consol), ("glb_acno", "%",
++                    bas, "=", acc), ("glb_curdt", "=", curdt)], limit=1)[0]
++            else:
++                bud = self.sql.getRec(tables="gentrn",
++                    cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
++                    "in", self.consol), ("glt_acno", "%", bas, "=", acc),
++                    ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+         else:
+             lyr = self.sql.getRec(tables="gentrn",
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
+@@ -10068,9 +10155,15 @@
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
+                 self.consol), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+                 "=", curdt)], limit=1)[0]
+-            bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
+-                where=[("glb_cono", "in", self.consol), ("glb_acno", "=",
+-                self.s_acno), ("glb_curdt", "=", curdt)], limit=1)[0]
++            if self.varcd == "B":
++                bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
++                    where=[("glb_cono", "in", self.consol), ("glb_acno", "=",
++                    self.s_acno), ("glb_curdt", "=", curdt)], limit=1)[0]
++            else:
++                bud = self.sql.getRec(tables="gentrn",
++                    cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
++                    "in", self.consol), ("glt_acno", "=", self.s_acno),
++                    ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+         if not lyr:
+             lyr = 0
+         else:
+@@ -15378,6 +15471,8 @@
+             for key in self.icode:
+                 dat = line[tdc.index(self.icode[key])]
+                 exec "%s = dat" % key
++            if text:
++                text = getFileName(text, wrkdir=self.wrkdir)
+             if text and os.path.isfile(text):
+                 self.doImage(x1=x1, y1=y1, x2=x2, y2=y2, text=text)
+         elif line[tdc.index("tpd_type")] == "L":
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2015-02-07 06:31:11 +0000
++++ tab/tb1020.py	2015-02-19 11:15:37 +0000
+@@ -396,6 +396,7 @@
+                     Bar()], maxval=len(data)+1).start()
+             else:
+                 pbar = None
++                p2 = None
+             for num, old in enumerate(data):
+                 if pbar == "w":
+                     p2.displayProgress(num)
+
+=== modified file 'uty/bm1010.py'
+--- uty/bm1010.py	2015-01-01 12:48:11 +0000
++++ uty/bm1010.py	2015-02-19 15:52:44 +0000
+@@ -805,8 +805,6 @@
+             whr = [("tdm_mobile", "<>", "")]
+             odr = "tdm_name"
+             sel = "tdm_name"
+-            if self.fltgrp:
+-                whr.append(("tdm_group", "in", self.fltgrp))
+             recs = self.doGetRecs(tab, col, whr, odr, sel)
+             accs = []
+             for rec in recs:
+@@ -1007,8 +1005,6 @@
+             whr = [("tdm_email", "<>", "")]
+             odr = "tdm_name"
+             sel = "tdm_name"
+-            if self.fltgrp:
+-                whr.append(("tdm_group", "in", self.fltgrp))
+             recs = self.doGetRecs(tab, col, whr, odr, sel)
+             accs = []
+             for rec in recs:
+@@ -1084,49 +1080,60 @@
+             self.opts["mf"].dbm.commitDbase()
+ 
+     def doGetRecs(self, tab, col, whr, odr, sel):
++        if self.ulist == "T" and self.fltgrp:
++            accs = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
++            recs = []
++            for acc in accs:
++                grp = acc[col.index("tdm_group")].split(",")
++                for g in grp:
++                    if g in self.fltgrp:
++                        recs.append(acc)
++                        break
++        else:
++            recs = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
++        nrec = []
+         if self.fltind == "Y":
+-            recs = []
+-            data = getSingleRecords(self.opts["mf"], tab, col, where=whr,
+-                order=odr, selcol=sel)
++            data = getSingleRecords(self.opts["mf"], tab, col, where=recs,
++                selcol=sel, ttype="D")
+             if self.ulist == "B":
+                 for dat in data:
+                     if tab[0] == "bwltab":
+-                        snm = dat[self.sql.bwltab_col.index("btb_surname")]
+-                        nms = dat[self.sql.bwltab_col.index("btb_names")]
++                        snm = dat[col.index("btb_surname")]
++                        nms = dat[col.index("btb_names")]
+                         if self.dtyp == "S":
+-                            con = dat[self.sql.bwltab_col.index("btb_cell")]
++                            con = dat[col.index("btb_cell")]
+                         else:
+-                            con = dat[self.sql.bwltab_col.index("btb_mail")]
++                            con = dat[col.index("btb_mail")]
+                     else:
+-                        snm = dat[self.sql.scpmem_col.index("scm_surname")]
+-                        nms = dat[self.sql.scpmem_col.index("scm_names")]
++                        snm = dat[col.index("scm_surname")]
++                        nms = dat[col.index("scm_names")]
+                         if self.dtyp == "S":
+-                            con = dat[self.sql.scpmem_col.index("scm_phone")]
++                            con = dat[col.index("scm_phone")]
+                         else:
+-                            con = dat[self.sql.scpmem_col.index("scm_email")]
+-                    recs.append([snm, nms, con])
++                            con = dat[col.index("scm_email")]
++                    nrec.append([snm, nms, con])
+             elif self.ulist == "C":
+                 for dat in data:
+                     acc = []
+                     for c in col:
+-                        acc.append(dat[self.sql.crsmst_col.index(c)])
+-                    recs.append(acc)
++                        acc.append(dat[col.index(c)])
++                    nrec.append(acc)
+             elif self.ulist == "D":
+                 for dat in data:
+                     acc = []
+                     for c in col:
+-                        acc.append(dat[self.sql.drsmst_col.index(c)])
+-                    recs.append(acc)
++                        acc.append(dat[col.index(c)])
++                    nrec.append(acc)
+             elif self.ulist == "K":
+                 for dat in data:
+-                    tit = dat[self.sql.bkmcon_col.index("bkc_title")]
+-                    snm = dat[self.sql.bkmcon_col.index("bkc_sname")]
+-                    nms = dat[self.sql.bkmcon_col.index("bkc_names")]
++                    tit = dat[col.index("bkc_title")]
++                    snm = dat[col.index("bkc_sname")]
++                    nms = dat[col.index("bkc_names")]
+                     if self.dtyp == "S":
+-                        con = dat[self.sql.bkmcon_col.index("bkc_celno")]
++                        con = dat[col.index("bkc_celno")]
+                     else:
+-                        con = dat[self.sql.bkmcon_col.index("bkc_email")]
+-                    recs.append([tit, snm, nms, con])
++                        con = dat[col.index("bkc_email")]
++                    nrec.append([tit, snm, nms, con])
+             elif self.ulist == "M":
+                 for dat in data:
+                     if self.dtyp == "S":
+@@ -1143,22 +1150,22 @@
+                     if len(con) > 1:
+                         for a in con[1:]:
+                             add = "%s,%s" % (add, a[0])
+-                    recs.append([
+-                        dat[self.sql.memmst_col.index("mlm_title")],
+-                        dat[self.sql.memmst_col.index("mlm_surname")],
+-                        dat[self.sql.memmst_col.index("mlm_names")], add])
++                    nrec.append([
++                        dat[col.index("mlm_title")],
++                        dat[col.index("mlm_surname")],
++                        dat[col.index("mlm_names")], add])
+             elif self.ulist == "T":
+                 for dat in data:
+-                    nam = dat[self.sql.telmst_col.index("tdm_name")]
++                    nam = dat[col.index("tdm_name")]
+                     if self.dtyp == "S":
+-                        con = dat[self.sql.telmst_col.index("tdm_mobile")]
++                        con = dat[col.index("tdm_mobile")]
+                     else:
+-                        con = dat[self.sql.telmst_col.index("tdm_email")]
+-                    grp = dat[self.sql.telmst_col.index("tdm_group")]
+-                    recs.append([nam, con, grp])
++                        con = dat[col.index("tdm_email")]
++                    grp = dat[col.index("tdm_group")]
++                    nrec.append([nam, con, grp])
++            return nrec
+         else:
+-            recs = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
+-        return recs
++            return recs
+ 
+     def doExit(self, widget=None):
+         self.df.closeProcess()
+
+=== modified file 'uty/td1010.py'
+--- uty/td1010.py	2015-02-07 06:31:11 +0000
++++ uty/td1010.py	2015-02-19 12:39:41 +0000
+@@ -16,7 +16,7 @@
+ import time
+ from TartanClasses import CCD, NotesCreate, NotesPrint, ProgressBar, RepPrt
+ from TartanClasses import SelectChoice, SplashScreen, Sql, TabPrt, TartanDialog
+-from tartanFunctions import showWarning, textFormat
++from tartanFunctions import getSingleRecords, showWarning, textFormat
+ 
+ class td1010:
+     def __init__(self, **opts):
+@@ -54,16 +54,11 @@
+             "order": "tdm_name",
+             "autoc": autoc,
+             "sort": "n"}
+-        dat = self.sql.getRec(tables="telmst", cols=["tdm_group"],
+-            where=[("tdm_group", "<>", "")], group="tdm_group",
+-            order="tdm_group")
+         grp = {
+-            "stype": "R",
+-            "tables": ("telgrp",),
+-            "cols": (
+-                ("tdg_group", "", 3, "Name","Y"),
+-                ("tdg_desc", "", 30, "Code")),
+-            "order": "tdg_group"}
++            "stype": "S",
++            "tables": "telgrp",
++            "cols": ("tdg_group", "tdg_desc"),
++            "order": "tdg_desc"}
+         self.fld = (
+             (("T",0,0,0),"I@tdm_name",50,"","",
+                 "","Y",self.doName,tdm,None,("notblank",)),
+@@ -84,9 +79,8 @@
+             (("T",0,8,0),"I@tdm_email",0,"","",
+                 "","N",None,None,None,("efld",)),
+             (("T",0,9,0),"I@tdm_group",0,"","",
+-                "","N",self.doGroup,grp,None,("efld",)),
+-            (("T",0,9,0),"ITX",30,"","",
+-                "","N",None,None,None,("efld",)))
++                "","N",self.doGroup,grp,None,("efld",),None,
++                "Comma separated groups which this contact belongs to."))
+         but = (
+             ("Back",None,self.doUp,1,None,("T",0,1),"",1),
+             ("Forward",None,self.doDn,1,None,("T",0,1),"",1),
+@@ -129,18 +123,28 @@
+             self.doLoadDetail(acc)
+ 
+     def doGroup(self, frt, pag, r, c, p, i, w):
+-        self.group = w
++        try:
++            w = eval(w)
++            self.group = ""
++            for g in w:
++                if not self.group:
++                    self.group = g[0]
++                else:
++                    self.group = "%s,%s" % (self.group, g[0])
++        except:
++            self.group = w
++        self.df.loadEntry(frt, pag, p, data=self.group)
+         if not self.group:
+-            self.df.loadEntry(frt, pag, p+1, data="")
+-            return "sk1"
+-        acc = self.sql.getRec(tables="telgrp", cols=["tdg_desc"],
+-            where=[("tdg_group", "=", self.group)], limit=1)
+-        if not acc:
+-            self.newgrp = True
+-        else:
+-            self.newgrp = False
+-            self.df.loadEntry(frt, pag, p+1, data=acc[0])
+-            return "sk1"
++            return
++        check = self.group.split(",")
++        err = None
++        for chk in check:
++            acc = self.sql.getRec(tables="telgrp", cols=["tdg_desc"],
++                where=[("tdg_group", "=", chk)], limit=1)
++            if not acc:
++                err = "Invalid Group %s" % chk
++                break
++        return err
+ 
+     def doDelAll(self):
+         self.sql.delRec("telmst", where=[("tdm_name", "=", self.name)])
+@@ -152,12 +156,10 @@
+ 
+     def doTopEnd(self):
+         if self.newmst:
+-            self.sql.insRec("telmst", self.df.t_work[0][0][:-1])
++            self.sql.insRec("telmst", self.df.t_work[0][0])
+         else:
+-            self.sql.updRec("telmst", data=self.df.t_work[0][0][:-1],
++            self.sql.updRec("telmst", data=self.df.t_work[0][0],
+                 where=[("tdm_name", "=", self.name)])
+-        if self.group and self.newgrp:
+-            self.sql.insRec("telgrp", self.df.t_work[0][0][-2:])
+         self.opts["mf"].dbm.commitDbase()
+         self.df.focusField("T", 0, 1)
+ 
+@@ -528,15 +530,8 @@
+ 
+     def doLoadDetail(self, data):
+         self.name = data[0]
+-        desc = ""
+-        if data[-1]:
+-            acc = self.sql.getRec(tables="telgrp", cols=["tdg_desc"],
+-                where=[("tdg_group", "=", data[-1])], limit=1)
+-            if acc:
+-                desc = acc[0]
+         for num, fld in enumerate(data):
+             self.df.loadEntry(self.df.frt, self.df.pag, num, data=fld)
+-        self.df.loadEntry(self.df.frt, self.df.pag, num+1, data=desc)
+ 
+     def doNotes(self, widget=None):
+         state = self.df.disableButtonsTags()
+
+=== modified file 'uty/tdc110.py'
+--- uty/tdc110.py	2015-02-11 16:45:23 +0000
++++ uty/tdc110.py	2015-02-19 12:48:37 +0000
+@@ -62,9 +62,15 @@
+ 
+     def doDelete(self):
+         chk = self.sql.getRec(tables="telmst", cols=["tdm_group"],
+-            where=[("tdm_group", "=", self.group)], limit=1)
++            where=[("tdm_group", "<>", "")])
+         if chk:
+-            return "Group In Use, Not Deleted"
++            err = None
++            for c in chk:
++                d = c[0].split(",")
++                if self.group in d:
++                    err = "Group In Use, Not Deleted"
++            if err:
++                return err
+         self.sql.delRec("telgrp", where=[("tdg_group", "=", self.group)])
+         self.opts["mf"].dbm.commitDbase()
+         self.df.focusField("T", 0, 1)
+
+=== modified file 'wag/wg2010.py'
+--- wag/wg2010.py	2015-02-07 06:31:11 +0000
++++ wag/wg2010.py	2015-02-19 16:35:06 +0000
+@@ -65,7 +65,7 @@
+         fld = (
+             (("C",0,0,0),"IUI",5,"EmpNo","Employee Number",
+                 "r","N",self.doEmpno,wgm,None,("efld",)),
+-            (("C",0,0,1),"ONA",20,"Surname"),
++            (("C",0,0,1),"ONA",40,"Name"),
+             (("C",0,0,2),"OUI",3,"Dep"),
+             (("C",0,0,3),"IUI",5,"JobNo","Job Number",
+                 "r","N",None,None,None,("efld",)),
+@@ -85,15 +85,18 @@
+             cend=((self.endData,"y"),), cxit=(self.exitData,))
+ 
+     def doEmpno(self, frt, pag, r, c, p, i, w):
+-        self.empno = w
+-        rec = self.readWagmst()
++        rec = self.sql.getRec(tables="wagmst", cols=["wgm_sname", "wgm_fname",
++            "wgm_dept", "wgm_freq", "wgm_term"], where=[("wgm_cono", "=",
++            self.opts["conum"]), ("wgm_empno", "=", w)], limit=1)
+         if not rec:
+             return "Invalid Employee Number"
+-        if rec[3]:
++        elif rec[4]:
+             return "Employment Terminated"
+-        self.df.loadEntry(frt, pag, p+1, rec[0])
+-        self.df.loadEntry(frt, pag, p+2, rec[1])
+-        self.freq = rec[2]
++        self.empno = w
++        name = "%s, %s" % (rec[0], rec[1].split()[0])
++        self.df.loadEntry(frt, pag, p+1, data=name)
++        self.df.loadEntry(frt, pag, p+2, data=rec[2])
++        self.freq = rec[3]
+ 
+     def doType(self, frt, pag, r, c, p, i, w):
+         self.rtyp = w
+@@ -129,15 +132,6 @@
+     def doAmt(self, frt, pag, r, c, p, i, w):
+         self.xrow = r
+ 
+-    def readWagmst(self):
+-        rec = self.sql.getRec(tables="wagmst", cols=["wgm_sname",
+-            "wgm_dept", "wgm_freq", "wgm_term"], where=[("wgm_cono", "=",
+-            self.opts["conum"]), ("wgm_empno", "=", self.empno)], limit=1)
+-        if not rec:
+-            return None
+-        else:
+-            return rec
+-
+     def readWagedc(self):
+         rec = self.sql.getRec(tables="wagedc", cols=["ced_desc"],
+             where=[("ced_cono", "=", self.opts["conum"]), ("ced_type", "=",
+
+=== modified file 'wag/wg2020.py'
+--- wag/wg2020.py	2015-02-11 16:45:23 +0000
++++ wag/wg2020.py	2015-02-17 14:03:19 +0000
+@@ -14,8 +14,8 @@
+ """
+ 
+ import os, time
+-from TartanClasses import ASD, CCD, GetCtl, LoanInterest, PrintPayslip, Sql
+-from TartanClasses import TartanDialog
++from TartanClasses import ASD, CCD, GetCtl, LoanInterest, PrintPayslip
++from TartanClasses import ProgressBar, Sql, TartanDialog
+ from tartanFunctions import askQuestion, chkCtlAcc, dateDiff, getSingleRecords
+ from tartanFunctions import payeTables, showError
+ 
+@@ -234,8 +234,20 @@
+                 showError(self.opts["mf"].body, "Error",
+                     "No Records Available")
+         if recs:
+-            for emp in recs:
++            if self.preview == "Y":
++                pb = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
++            else:
++                pb = ProgressBar(self.opts["mf"].body, mxs=len(recs))
++            for num, emp in enumerate(recs):
++                if self.preview == "Y":
++                    pb.displayProgress(num)
++                    if self.preview == "Y" and pb.quit:
++                        break
+                 self.doProcess(emp)
++            pb.closeProgress()
++            if self.preview == "Y" and pb.quit:
++                self.opts["mf"].closeLoop()
++                return
+             if self.glint == "Y":
+                 chk = self.doIntegration()
+             else:
+

@@ -1,0 +1,20 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Fixed an error in the General Ledger Financial Statements History option
+    which was not handling Detail records correctly.
+ 2) Added a 'None' option for General Ledger Financial Statements Variance
+    option i.e. (B)udgets, (P)revious-Year and (N)one.
+ 3) Added the same option to the Stream Records.
+ 4) Integrated the Financial Statements Stream Records with the Report Stream
+    module.
+ 5) Added the option to send temporary work files to Trash/Recycle-Bin, on
+    exiting Tartan.  The default action can be set in 'Preferences' under the
+    'General' tag.
+ 6) Added an option to display a Preview of the report in the General Ledger
+    Report Generator module,
+ 7) Improved the Bowls tabs-in status report.
+ 8) Some minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

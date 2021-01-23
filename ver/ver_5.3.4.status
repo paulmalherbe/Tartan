@@ -1,0 +1,16 @@
+modified:
+  doc/BKS.rst
+  doc/BWM.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SEC.rst
+  gen/gl2040.py
+  gen/gl3030_rne.py
+  mst/ms0000.py
+  std/tartanWork.py
+  str/st3020.py
+  str/st4010.py
+  uty/pkgprg.py
+unknown:
+  doc/Manual.pdf
+  doc/aptget.txt

@@ -1,0 +1,14 @@
+modified:
+  csv/genstr_fld.csv
+  doc/Downloads.rst
+  doc/MB.rst
+  doc/MD.rst
+  gen/gl1050.py
+  gen/gl2030.py
+  gen/gl3050.py
+  men/posmen.py
+  men/stdmen.py
+  mst/ms0000.py
+  sls/si3010.py
+  str/st6020.py
+  tab/tb1020.py

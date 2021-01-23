@@ -1,0 +1,21 @@
+modified:
+  .bzrignore
+  bwl/bc2010.py
+  bwl/bcc110.py
+  csv/bwlctl_fld.csv
+  doc/BC.rst
+  doc/Downloads.rst
+  doc/MB.rst
+  doc/MD.rst
+  mem/ml3060.py
+  men/stdmen.py
+  mst/ms0000.py
+  mst/ms1010.py
+  mst/ms1010_rne.py
+  mst/msy010.py
+  mst/msy010_rne.py
+  std/TartanClasses.py
+  tab/tb1020.py
+unknown:
+  doc/Notes.txt
+  std/test.html

@@ -1,0 +1,10 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Corrected the paye calculation.
+ 2) Updated the personal income tax rates for 2020.
+ 3) Fixed the running batch total with petty cash data capture.
+ 4) Some minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

@@ -1,0 +1,31 @@
+added:
+  doc/Rnehol.rst
+modified:
+  .bzrignore
+  bkm/bk1010.py
+  bkm/bk3040.py
+  bwl/bc2010.py
+  crs/cr2010.py
+  crs/cr3080.py
+  csv/ctllog_fld.csv
+  doc/CR.rst
+  doc/Changes.rst
+  doc/Downloads.rst
+  doc/GL.rst
+  doc/MD.rst
+  doc/Tartan.rst
+  gen/gl2030.py
+  mst/ms0000.py
+  mst/msc000.py
+  std/TartanClasses.py
+  std/tartanFunctions.py
+  tab/tb1020.py
+  wag/sl2010.py
+  wag/sl2020.py
+  wag/sl2030.py
+  wag/sl3030.py
+  wag/sl3040.py
+  wag/sl4010.py
+  wag/wg2010.py
+  wag/wg2020.py
+  wag/wg4010.py

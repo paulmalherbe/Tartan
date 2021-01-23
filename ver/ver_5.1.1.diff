@@ -1,0 +1,326 @@
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-10-03 07:36:56 +0000
++++ doc/Downloads.rst	2015-10-04 09:29:44 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.1.0 and was released on the 3rd October, 2015.
++The latest version of Tartan is 5.1.1 and was released on the 4th October, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.1.0.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.1.1.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.1.0.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.1.1.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.1.0.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.1.0.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.1.0.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.1.0.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.1.1.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.1.1.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.1.1.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.1.1.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2015-10-03 07:36:56 +0000
++++ doc/MB.rst	2015-10-04 09:29:44 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.1.0
++:Version:   5.1.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-10-03 07:36:56 +0000
++++ doc/MD.rst	2015-10-04 09:29:44 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.1.0
++:Version:   5.1.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'lon/ln3030.py'
+--- lon/ln3030.py	2015-10-03 07:36:56 +0000
++++ lon/ln3030.py	2015-10-04 09:15:59 +0000
+@@ -2,7 +2,7 @@
+ 
+ """
+ SYNOPSIS
+-    Loans Master Listing.
++    Loans Balances Listing.
+ 
+     This file is part of Tartan Systems (TARTAN).
+ 
+@@ -39,7 +39,7 @@
+ 
+     def mainProcess(self):
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-            "Loans Master Listing (%s)" % __name__)
++            "Loans Balances Listing (%s)" % __name__)
+         r1s = (("Number","N"),("Name","M"))
+         r2s = (("Yes","Y"),("No","N"))
+         fld = (
+@@ -81,10 +81,10 @@
+ 
+     def printReport(self, recs):
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+-        self.head = ("%03u %-30s %81s %6s" % \
++        self.head = ("%03u %-30s %52s %6s" % \
+             (self.opts["conum"], self.opts["conam"], self.sysdttm, __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+-        tots = [0, 0, 0]
++        tots = 0
+         self.pgnum = 0
+         self.pglin = 999
+         for num, rec in enumerate(recs):
+@@ -102,31 +102,23 @@
+                 dte = CCD(dat[self.sql.lonmf2_col.index("lm2_start")], "d1", 10)
+                 lint = LoanInterest("L", self.opts["mf"].dbm, dat, update="Y",
+                     tdate=self.date, batch="Pending", curdt=self.date / 100)
+-                cap = CCD(lint.cap, "SD", 13.2)
+                 lbal = self.sql.getRec(tables="lontrn", cols=["sum(lnt_tramt)"],
+                     where=[("lnt_cono", "=", self.opts["conum"]), ("lnt_acno",
+                     "=", acc.work), ("lnt_loan", "=", lon.work)], limit=1)
+                 bal = CCD(lbal[0], "SD", 13.2)
+                 if self.zero == "Y" and not bal.work:
+                     continue
+-                rin = CCD(float(ASD(bal.work) - ASD(cap.work)), "SD", 13.2)
+-                tots[0] = float(ASD(tots[0]) + ASD(cap.work))
+-                tots[1] = float(ASD(tots[1]) + ASD(rin.work))
+-                tots[2] = float(ASD(tots[2]) + ASD(bal.work))
++                tots = float(ASD(tots) + ASD(bal.work))
+                 if self.pglin > self.fpdf.lpp:
+                     self.pageHeading()
+-                self.fpdf.drawText("%s %s %s %s %s %s %s %s" % (acc.disp,
+-                    nam.disp, lon.disp, des.disp, dte.disp, cap.disp,
+-                    rin.disp, bal.disp))
++                self.fpdf.drawText("%s %s %s %s %s %s" % (acc.disp,
++                    nam.disp, lon.disp, des.disp, dte.disp, bal.disp))
+                 self.pglin += 1
+         p.closeProgress()
+         if self.fpdf.page and not p.quit:
+-            tots[0] = CCD(tots[0], "SD", 13.2)
+-            tots[1] = CCD(tots[1], "SD", 13.2)
+-            tots[2] = CCD(tots[2], "SD", 13.2)
++            tots = CCD(tots, "SD", 13.2)
+             self.fpdf.underLine(txt=self.head)
+-            self.fpdf.drawText("%8s%-74s%13s %13s %13s" % ("", "Totals",
+-                tots[0].disp, tots[1].disp, tots[2].disp))
++            self.fpdf.drawText("%8s%-74s%13s" % ("", "Totals", tots.disp))
+             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+                 self.opts["conum"], ext="pdf")
+             self.fpdf.output(pdfnam, "F")
+@@ -140,15 +132,14 @@
+         self.pgnum += 1
+         self.fpdf.drawText(self.head)
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-29s %-10s %76s %5s" % \
+-            ("Loans Master List as at", self.sysdtd, "Page", self.pgnum))
++        self.fpdf.drawText("%-29s %-10s %47s %5s" % \
++            ("Loans Balances Listing as at", self.sysdtd, "Page", self.pgnum))
+         self.fpdf.drawText()
+         self.fpdf.drawText("%s %s  %s %s)" % \
+             ("(Options: Sort:", self.sort, "Ignore-Zero-Bal:", self.zero))
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-7s %-28s %-2s %-30s %-10s %13s %13s %13s" % \
+-            ("Acc-Num", "Name", "Ln", "Description", "Start-Date",
+-            "Capital ", "Interest ", "Balance "))
++        self.fpdf.drawText("%-7s %-28s %-2s %-30s %-10s %13s" % \
++            ("Acc-Num", "Name", "Ln", "Description", "Start-Date", "Balance "))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+         self.pglin = 8
+
+=== modified file 'lon/ln3040.py'
+--- lon/ln3040.py	2015-10-03 07:36:56 +0000
++++ lon/ln3040.py	2015-10-04 09:23:43 +0000
+@@ -208,7 +208,7 @@
+                 for _ in xrange(lines):
+                     trn = trns.pop(0)
+                     bal = float(ASD(bal) + ASD(trn[ltc.index("lnt_tramt")]))
+-                trn[ltc.index("lnt_type")] = 5
++                trn[ltc.index("lnt_type")] = 3
+                 trn[ltc.index("lnt_refno")] = "B/FWD"
+                 trn[ltc.index("lnt_batch")] = ""
+                 trn[ltc.index("lnt_tramt")] = bal
+
+=== modified file 'lon/ln3050.py'
+--- lon/ln3050.py	2015-10-03 07:36:56 +0000
++++ lon/ln3050.py	2015-10-04 08:43:17 +0000
+@@ -49,7 +49,6 @@
+                 if not n:
+                     acc = dat[2][:7].strip()
+                     lon = int(dat[2][7:])
+-                    print dat[2], acc, lon
+                     nam = self.sql.getRec(tables="lonmf1", cols=["lm1_name"],
+                         where=[("lm1_cono", "=", self.opts["conum"]),
+                         ("lm1_acno", "=", acc)], limit=1)
+@@ -69,7 +68,7 @@
+         p.closeProgress()
+         if not p.quit:
+             name = __name__
+-            head = ["Debtor's Masterfile Notes Listing"]
++            head = ["Loan's Masterfile Notes Listing"]
+             cols = [
+                 ["a", "NA",  7, "Acc-Num",     "y"],
+                 ["b", "NA", 30, "Acc-Name",    "y"],
+
+=== modified file 'lon/ln4010.py'
+--- lon/ln4010.py	2015-10-03 07:36:56 +0000
++++ lon/ln4010.py	2015-10-04 08:43:09 +0000
+@@ -14,8 +14,8 @@
+ """
+ 
+ import time
+-from TartanClasses import ASD, CCD, LoanInterest, MyFpdf, SChoice, Sql, SRec
+-from TartanClasses import TartanDialog
++from TartanClasses import ASD, CCD, LoanInterest, NotesCreate, MyFpdf, SChoice
++from TartanClasses import Sql, SRec, TartanDialog
+ from tartanFunctions import getModName, doPrinter
+ from tartanWork import lntrtp
+ 
+@@ -90,6 +90,7 @@
+         cxt = (None, None, None)
+         but = (
+             ("Clear",None,self.doClear,0,("T",0,0),("T",0,1)),
++            ("Notes",None,self.doNotes,0,("T",0,0),("T",0,1)),
+             ("Print",None,self.doPrint,0,("T",0,0),("T",0,1)),
+             ("Quit",None,self.doExit,1,None,None))
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+@@ -199,6 +200,14 @@
+         self.df.enableButtonsTags(state=state)
+         self.df.focusField("T", 2, 1)
+ 
++    def doNotes(self, widget=None):
++        state = self.df.disableButtonsTags()
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        NotesCreate(self.opts["mf"], self.opts["conum"], self.opts["conam"],
++            self.opts["capnm"], "LON", "%7s%02i" % (self.acno, self.loan))
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.enableButtonsTags(state=state)
++
+     def doClear(self, widget=None):
+         self.df.selPage("General")
+         self.df.focusField("T", 0, 1)
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2015-08-25 15:02:35 +0000
++++ men/rnemen.py	2015-10-04 08:37:05 +0000
+@@ -122,6 +122,7 @@
+     ["PYYN","gl_tb","gl6030",1,"Integrated Controls Report"],
+     ["PYYN","gl_tb","gl6040",1,"Intercompany Accounts Report"],
+     ["PYNN","gl_tb","gl6050",2,"Initialise Bank Reconciliation"],
++    ["PYNN","gl_tb","gl6060",6,"Merge Accounts Into a Control"],
+     ["PYYY","gl_qy","gl4010",0,"Interrogation (Normal)"],
+     ["PYYN","gl_qy","gl4020",1,"Interrogation (Financials)"]]
+ 
+@@ -257,6 +258,29 @@
+     ["PYNN","mm_si","si3060",1,"Sales By Salesman"],
+     ["PYNN","mm_si","si3080",1,"Reprint Documents"]]
+ 
++# Loan's Ledger
++lnmen = [
++    ["CM","mm_ln","ln_fm","File Maintenance"],
++    ["CM","mm_ln","ln_dc","Data Capture"],
++    ["CM","mm_ln","ln_rp","Reporting"],
++    ["CM","mm_ln","ln_tb","Toolbox"]]
++lnmod = [
++    ["PYNY","ln_fm","lnc110",5,"Control Record"],
++    ["PYNY","ln_fm","ln1010",3,"Loans Masterfile"],
++    ["PYYY","ln_dc","ln2010",2,"Payments",1],
++    ["PYYY","ln_dc","ln2010",2,"Receipts",2],
++    ["PYYY","ln_dc","ln2010",2,"Journals",3],
++    ["PYYY","ln_dc","ln2010",2,"Interest Adjustments",4],
++    ["PYYY","ln_dc","ln2020",2,"Raise Interest",0],
++    ["PYYY","ln_dc","ln2030",2,"Rate Change",0],
++    ["PYNN","ln_rp","ln3010",1,"Batch Error Listing"],
++    ["PYYN","ln_rp","ln3020",1,"Transaction Audit Trail"],
++    ["PYNN","ln_rp","ln3030",1,"Balances Listing"],
++    ["PYNN","ln_rp","ln3040",1,"Statements"],
++    ["PYNN","ln_rp","ln3050",1,"Notes Listing"],
++    ["PYNN","ln_tb","ln6010",5,"Change Account Numbers"],
++    ["PYLY","mm_ln","ln4010",0,"Interrogation"]]
++
+ # Telephone Directory
+ tdmen = [
+     ["CM","mm_uy","td_mm","Telephone Directory"]]
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2015-10-03 07:36:56 +0000
++++ men/stdmen.py	2015-10-04 08:37:01 +0000
+@@ -323,7 +323,8 @@
+ lnmen = [
+     ["CM","mm_ln","ln_fm","File Maintenance"],
+     ["CM","mm_ln","ln_dc","Data Capture"],
+-    ["CM","mm_ln","ln_rp","Reporting"]]
++    ["CM","mm_ln","ln_rp","Reporting"],
++    ["CM","mm_ln","ln_tb","Toolbox"]]
+ lnmod = [
+     ["PYNY","ln_fm","lnc110",5,"Control Record"],
+     ["PYNY","ln_fm","ln1010",3,"Loans Masterfile"],
+@@ -335,8 +336,10 @@
+     ["PYYY","ln_dc","ln2030",2,"Rate Change",0],
+     ["PYNN","ln_rp","ln3010",1,"Batch Error Listing"],
+     ["PYYN","ln_rp","ln3020",1,"Transaction Audit Trail"],
+-    ["PYNN","ln_rp","ln3030",1,"Master Listing"],
++    ["PYNN","ln_rp","ln3030",1,"Balances Listing"],
+     ["PYNN","ln_rp","ln3040",1,"Statements"],
++    ["PYNN","ln_rp","ln3050",1,"Notes Listing"],
++    ["PYNN","ln_tb","ln6010",5,"Change Account Numbers"],
+     ["PYLY","mm_ln","ln4010",0,"Interrogation"]]
+ 
+ # Member's Ledger
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-10-03 07:36:56 +0000
++++ mst/ms0000.py	2015-10-04 09:29:44 +0000
+@@ -34,7 +34,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 1, 0)
++    VERSION = (5, 1, 1)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-10-03 07:36:56 +0000
++++ std/TartanClasses.py	2015-10-04 07:39:27 +0000
+@@ -11041,13 +11041,13 @@
+                     "lnt_type", "sum(lnt_tramt)"], where=[("lnt_cono", "=",
+                     self.cono), ("lnt_acno", "=", self.acno), ("lnt_loan",
+                     "=", self.loan), ("lnt_trdt", ">", self.lint)],
+-                    group="lnt_curdt", order="lnt_curdt")
++                    group="lnt_curdt, lnt_type", order="lnt_curdt")
+             else:
+                 trns = self.sql.getRec(tables="wagltf", cols=["wlt_curdt",
+                     "wlt_type", "sum(wlt_amt)"], where=[("wlt_cono", "=",
+                     self.cono), ("wlt_acno", "=", self.acno), ("wlt_loan",
+                     "=", self.loan), ("wlt_trdt", ">", self.lint)],
+-                    group="wlt_curdt", order="wlt_curdt")
++                    group="wlt_curdt, wlt_type", order="wlt_curdt")
+             for trn in trns:
+                 if not trn[0] in bals:
+                     bals[trn[0]] = [0, 0]
+

@@ -1,0 +1,37 @@
+added:
+  crs/cr3200_rne.py
+renamed:
+  crs/cr3310_rne.py => crs/cr3120_rne.py
+  crs/cr3320_rne.py => crs/cr3130_rne.py
+  crs/cr3330_rne.py => crs/cr3140_rne.py
+  crs/cr3340_rne.py => crs/cr3150_rne.py
+  crs/cr3350_rne.py => crs/cr3160_rne.py
+  crs/cr3360_rne.py => crs/cr3080_rne.py
+  crs/cr3370_rne.py => crs/cr3170_rne.py
+  crs/cr3380_rne.py => crs/cr3180_rne.py
+  crs/cr3390_rne.py => crs/cr3190_rne.py
+modified:
+  bks/bs3010.py
+  crs/cr4010_rne.py
+  doc/BKS.rst
+  doc/BWM.rst
+  doc/Contact.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SEC.rst
+  gen/gl1030.py
+  men/rnemen.py
+  mst/ms0000.py
+  mst/msc000.py
+  std/TartanClasses.py
+  uty/bm1010.py
+  uty/pkgprg.py
+  crs/cr3120_rne.py
+  crs/cr3130_rne.py
+  crs/cr3140_rne.py
+  crs/cr3150_rne.py
+  crs/cr3160_rne.py
+  crs/cr3080_rne.py
+  crs/cr3170_rne.py
+  crs/cr3180_rne.py
+  crs/cr3190_rne.py

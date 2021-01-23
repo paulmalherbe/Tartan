@@ -1,0 +1,9 @@
+1) Increased transactions to support up to 999 million as per g/l.
+2) Added file imports for G/L account number changes.
+3) Added file imports for Stores group and code changes.
+4) Fixed an error with member's category changes.
+5) Some minor bug fixes including the bank import control.
+
+Note:
+-----
+You can only upgrade to this version if your current version is 4.1.10 or later.

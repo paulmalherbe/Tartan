@@ -1,0 +1,14 @@
+1) Added Orders tag to creditor's interrogation to display outstanding orders.
+2) Included the pycrypto module to enable the password manager utility.
+3) Fixed a bug in the debtor's master listing module.
+4) Fixed a bug in general ledger data capture module.
+5) Fixed a bug with the bowls competition draw module.
+6) Simplified bowls competition results reporting.
+7) Added times to knockout competitions.
+8) Included the 2017-2018 rates of tax for individuals.
+9) Changed the windows packaging utility to pyinstaller.
+10) Made some other minor enhancements and bug fixes.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

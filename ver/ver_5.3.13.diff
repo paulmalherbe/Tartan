@@ -1,0 +1,616 @@
+=== modified file 'bks/bs3010.py'
+--- bks/bs3010.py	2018-08-19 10:44:06 +0000
++++ bks/bs3010.py	2018-08-24 13:53:28 +0000
+@@ -36,11 +36,17 @@
+     def mainProcess(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "Listing of Books")
++        lst = {
++            "stype": "R",
++            "tables": ("bksmst",),
++            "cols": (("bmf_mnth", "", 0, "Month"),),
++            "group": "bmf_mnth",
++            "order": "bmf_mnth"}
+         r1s = (("All","A"), ("Current","C"), ("Removed","R"))
+         r2s = (("Title","T"), ("Date","D"),("Author","A"),("Owner","O"))
+         fld = (
+             (("T",0,0,0),"ID2",7,"Last Meeting","",
+-                "","N",self.doLast,None,None,("efld",)),
++                "","N",self.doLast,lst,None,("efld",)),
+             (("T",0,1,0),("IRB",r1s),0,"Status","",
+                 "A","N",self.doStatus,None,None,None),
+             (("T",0,2,0),("IRB",r2s),0,"Order","",
+@@ -141,7 +147,7 @@
+                 code, auth, mnth, ownr), h=5, fill=fill)
+         if new:
+             sp = SplashScreen(self.opts["mf"].body,
+-                "Preparing precis of New Books ... Please Wait")
++                "Preparing Summary of New Books ... Please Wait")
+             try:
+                 self.new = True
+                 self.fpdf.add_page()
+@@ -179,7 +185,7 @@
+         self.fpdf.set_x(x)
+         self.fpdf.cell(0, 10, self.opts["conam"],"TLR",1,"C")
+         if self.new:
+-            txt = "Details of New Books"
++            txt = "Summary of New Books"
+         elif self.stat == "C":
+             txt = "Current Books as at %s" % self.curdt
+         else:
+@@ -200,7 +206,7 @@
+         elif titl[-4:] == " the":
+             titl = titl[:-4]
+         get = requests.get("https://www.googleapis.com/books/v1/volumes?q="\
+-            "'%s'+inauthor:'%s'" % (titl, auth))
++            "'%s'+inauthor:'%s'" % (titl, auth), timeout=5)
+         if get.status_code == 200 and get.json()["totalItems"]:
+             ok = False
+             for item in get.json()["items"]:
+
+=== renamed file 'crs/cr3360_rne.py' => 'crs/cr3080_rne.py'
+--- crs/cr3360_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3080_rne.py	2018-08-28 08:11:35 +0000
+@@ -17,7 +17,7 @@
+ from tartanFunctions import doPrinter, getModName, copyList, showError
+ from tartanWork import crtrtp
+ 
+-class cr3360:
++class cr3080:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+@@ -73,11 +73,9 @@
+         fld = (
+             (("T",0,0,0),"INA",20,"Template Name","",
+                 self.tplnam,"Y",self.doTplNam,tpm,None,None),
+-            (("T",0,1,0),"ID2",7,"Starting Period","",
+-                int(self.sysdtw / 100),"Y",self.doPer,None,None,None),
+-            (("T",0,2,0),"INA",9,"From Number","",
++            (("T",0,1,0),"INA",9,"From Number","",
+                 "","Y",self.doNum,num,None,None),
+-            (("T",0,3,0),"INA",9,"To   Number","To Number",
++            (("T",0,2,0),"INA",9,"To   Number","To Number",
+                 "","Y",self.doNum,num,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+@@ -91,16 +89,11 @@
+             return "Invalid Template Name"
+         self.tname = w
+         if "args" in self.opts:
+-            self.period = 0
+             self.snum = self.opts["args"]
+             self.enum = self.opts["args"]
+-            self.df.loadEntry(frt, pag, p+1, data=self.period)
+-            self.df.loadEntry(frt, pag, p+2, data=self.snum)
+-            self.df.loadEntry(frt, pag, p+3, data=self.enum)
+-            return "sk3"
+-
+-    def doPer(self, frt, pag, r, c, p, i, w):
+-        self.period = w
++            self.df.loadEntry(frt, pag, p+1, data=self.snum)
++            self.df.loadEntry(frt, pag, p+2, data=self.enum)
++            return "sk2"
+ 
+     def doNum(self, frt, pag, r, c, p, i, w):
+         chk = self.sql.getRec(tables="crstrn", cols=["crt_ref1"],
+@@ -108,7 +101,7 @@
+             "=", 5), ("crt_ref1", "=", w)], limit=1)
+         if not chk:
+             return "Invalid Reference Number"
+-        if c == 3:
++        if c == 2:
+             self.snum = w
+             self.df.topf[pag][p+1][5] = self.snum
+         else:
+
+=== renamed file 'crs/cr3310_rne.py' => 'crs/cr3120_rne.py'
+--- crs/cr3310_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3120_rne.py	2018-08-28 07:33:40 +0000
+@@ -15,7 +15,7 @@
+ from TartanClasses import CCD, GetCtl, MyFpdf, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import doWriteExport, getModName, doPrinter, showError
+ 
+-class cr3310:
++class cr3120:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'crs/cr3320_rne.py' => 'crs/cr3130_rne.py'
+--- crs/cr3320_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3130_rne.py	2018-08-28 07:33:48 +0000
+@@ -17,7 +17,7 @@
+ from tartanFunctions import doPrinter, getModName, getSingleRecords, showError
+ from tartanWork import crtrtp
+ 
+-class cr3320:
++class cr3130:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'crs/cr3330_rne.py' => 'crs/cr3140_rne.py'
+--- crs/cr3330_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3140_rne.py	2018-08-28 07:33:56 +0000
+@@ -17,7 +17,7 @@
+ from tartanFunctions import doWriteExport, getModName, getVatRate, doPrinter
+ from tartanFunctions import showError
+ 
+-class cr3330:
++class cr3140:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'crs/cr3340_rne.py' => 'crs/cr3150_rne.py'
+--- crs/cr3340_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3150_rne.py	2018-08-28 07:34:05 +0000
+@@ -16,7 +16,7 @@
+ from TartanClasses import Sql, TartanDialog
+ from tartanFunctions import doWriteExport, getModName, doPrinter, showError
+ 
+-class cr3340:
++class cr3150:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'crs/cr3350_rne.py' => 'crs/cr3160_rne.py'
+--- crs/cr3350_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3160_rne.py	2018-08-28 07:34:12 +0000
+@@ -16,7 +16,7 @@
+ from TartanClasses import Sql, TartanDialog
+ from tartanFunctions import getModName, doPrinter, showError
+ 
+-class cr3350:
++class cr3160:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'crs/cr3370_rne.py' => 'crs/cr3170_rne.py'
+--- crs/cr3370_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3170_rne.py	2018-08-28 07:52:53 +0000
+@@ -16,7 +16,7 @@
+ from tartanFunctions import doDrawTable, doPrinter, getModName
+ from tartanFunctions import getSingleRecords, getVatRate
+ 
+-class cr3370:
++class cr3170:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'crs/cr3380_rne.py' => 'crs/cr3180_rne.py'
+--- crs/cr3380_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3180_rne.py	2018-08-28 07:53:03 +0000
+@@ -13,7 +13,7 @@
+ 
+ from TartanClasses import GetCtl, RepPrt, Sql, TartanDialog
+ 
+-class cr3380:
++class cr3180:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== renamed file 'crs/cr3390_rne.py' => 'crs/cr3190_rne.py'
+--- crs/cr3390_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr3190_rne.py	2018-08-28 07:53:08 +0000
+@@ -13,7 +13,7 @@
+ 
+ from TartanClasses import GetCtl, RepPrt, Sql, TartanDialog
+ 
+-class cr3390:
++class cr3190:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+
+=== added file 'crs/cr3200_rne.py'
+--- crs/cr3200_rne.py	1970-01-01 00:00:00 +0000
++++ crs/cr3200_rne.py	2018-08-28 07:53:16 +0000
+@@ -0,0 +1,91 @@
++"""
++SYNOPSIS
++    Creditors Ledger Payments by Branch Report.
++
++    This file is part of Tartan Systems (TARTAN).
++
++AUTHOR
++    Written by Paul Malherbe, <paul@tartan.co.za>
++
++COPYING
++    Copyright (C) 2004-2018 Paul Malherbe.
++"""
++
++from TartanClasses import CCD, RepPrt, SplashScreen, Sql, TartanDialog
++
++class cr3200:
++    def __init__(self, **opts):
++        self.opts = opts
++        if self.setVariables():
++            self.mainProcess()
++            self.opts["mf"].startLoop()
++
++    def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "crstrn", "crsrtf"],
++            prog=__name__)
++        if self.sql.error:
++            return
++        return True
++
++    def mainProcess(self):
++        tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
++            "Creditors Ledger Payments by Branch (%s)" % __name__)
++        fld = (
++            (("T",0,0,0),"ID2",7,"Period","",
++                0,"N",self.doPeriod,None,None,("efld",)),)
++        tnd = ((self.doEnd,"y"), )
++        txt = (self.doExit, )
++        self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
++            tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
++
++    def doPeriod(self, frt, pag, r, c, p, i, w):
++        self.perw = w
++        self.perd = self.df.t_disp[pag][r][p]
++
++    def doEnd(self):
++        self.df.closeProcess()
++        sp = SplashScreen(self.opts["mf"].body,
++            "Generating Report\n\nPlease Wait ...")
++        hds = ["Creditors' Ledger Payments for %s" % self.perd]
++        recs = self.sql.getRec(tables="crstrn", cols=["crt_ref1"],
++            where=[("crt_cono", "=", self.opts["conum"]),
++            ("crt_type", "=", 5), ("crt_curdt", "=", self.perw)])
++        pays = []
++        for rec in recs:
++            pays.append(rec[0])
++        whr = [
++            ("crt_cono", "=", self.opts["conum"]),
++            ("crt_type", "<", 5),
++            ("crt_ref2", "in", pays),
++            ("rtf_cono=crt_cono",),
++            ("rtf_acno=crt_acno",),
++            ("rtf_type=crt_type",),
++            ("rtf_ref1=crt_ref1",)]
++        recs = self.sql.getRec(tables=["crstrn", "crsrtf"], cols=["rtf_depno",
++            "sum(crt_tramt - rtf_disamt - rtf_incamt - rtf_advamt)"],
++            where=whr, group="rtf_depno", order="rtf_depno")
++        dat = []
++        for rec in recs:
++            coy = self.sql.getRec(tables="ctlmst", cols=["ctm_name"],
++                where=[("ctm_cono", "=", rec[0])], limit=1)
++            amt = CCD(rec[1], "SD", 15.2).work
++            dat.append((rec[0], coy[0], amt))
++        sp.closeSplash()
++        col = [
++            ["rtf_depno", "UI",  3.0, "Dep", "Y"],
++            ["ctm_name",  "NA", 30.0, "Name", "Y"],
++            ["payment",   "SD", 15.2, "Payment", "Y"]]
++        RepPrt(self.opts["mf"], conum=self.opts["conum"],
++            conam=self.opts["conam"], name=__name__, ttype="D", tables=dat,
++            heads=hds, cols=col, gtots=["payment"], repprt=self.df.repprt,
++            repeml=self.df.repeml, pbar="P")
++        self.closeProcess()
++
++    def doExit(self):
++        self.df.closeProcess()
++        self.closeProcess()
++
++    def closeProcess(self):
++        self.opts["mf"].closeLoop()
++
++# vim:set ts=4 sw=4 sts=4 expandtab:
+
+=== modified file 'crs/cr4010_rne.py'
+--- crs/cr4010_rne.py	2018-08-19 10:44:06 +0000
++++ crs/cr4010_rne.py	2018-08-28 07:58:12 +0000
+@@ -301,7 +301,7 @@
+                 if rec.selection:
+                     self.df.setWidget(self.df.mstFrame, state="hide")
+                     if rec.selection[5][:3] == "EFT":
+-                        callModule(self.opts["mf"], self.df, "cr3360",
++                        callModule(self.opts["mf"], self.df, "cr3080",
+                             coy=(self.opts["conum"], self.opts["conam"]),
+                             period=None, user=None, args=rec.selection[5])
+                     else:
+
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2018-08-19 10:44:06 +0000
++++ doc/BKS.rst	2018-08-29 15:51:35 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.12
++:Version:   5.3.13
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2018-08-19 10:44:06 +0000
++++ doc/BWM.rst	2018-08-29 15:51:35 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.12
++:Version:   5.3.13
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Contact.rst'
+--- doc/Contact.rst	2018-07-13 08:38:41 +0000
++++ doc/Contact.rst	2018-08-25 11:01:14 +0000
+@@ -1,19 +1,18 @@
+-Street Address
+-==============
+-| 292 5th Street
+-| Voelklip
+-| Hermanus
++Address
++=======
++| 1 Waterford Green
++| 43 Main Street
++| Newlands, Cape Town
+ | South Africa
+-
+-Postal Address
+-==============
+-| P O Box 60
+-| Hermanus
+-| South Africa  
+-| 7200
++| 7700
+ 
+ Other
+ =====
+-| Telephone: 27-82-9005260
+-| Facsimile: 27-86-2621838
+-| E-Mail: paul@tartan.co.za
++
++.. csv-table::
++  :header: "Description", "Detail"
++  :widths: 12, 20
++
++  "Phone", "27-21-6710071"
++  "Mobile", "27-82-9005260"
++  "E-Mail", "paul@tartan.co.za"
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2018-08-19 10:44:06 +0000
++++ doc/Downloads.rst	2018-08-29 15:51:35 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.12 and was released on the 19th August, 2018.
++The latest version of Tartan is 5.3.13 and was released on the 29th August, 2018.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: http://tartan.co.za/files/Tartan_5.3.12.tgz
++.. _Tartan-5-lnx: http://tartan.co.za/files/Tartan_5.3.13.tgz
+ .. _Tartan-4-lnx: http://tartan.co.za/files/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: http://tartan.co.za/files/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: http://tartan.co.za/files/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: http://tartan.co.za/files/Tartan_5.3.12.exe
++.. _Tartan-5-win: http://tartan.co.za/files/Tartan_5.3.13.exe
+ .. _Tartan-4-win: http://tartan.co.za/files/Tartan_4.1.14.exe
+ .. _Tartan-3-win: http://tartan.co.za/files/Tartan_3.4.51.exe
+ .. _Tartan-2-win: http://tartan.co.za/files/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: http://tartan.co.za/files/Bwlclb_5.3.12.tgz
+-.. _Bwlclb-5-win: http://tartan.co.za/files/Bwlclb_5.3.12.exe
+-.. _Seccmp-5-lnx: http://tartan.co.za/files/Seccmp_5.3.12.tgz
+-.. _Seccmp-5-win: http://tartan.co.za/files/Seccmp_5.3.12.exe
++.. _Bwlclb-5-lnx: http://tartan.co.za/files/Bwlclb_5.3.13.tgz
++.. _Bwlclb-5-win: http://tartan.co.za/files/Bwlclb_5.3.13.exe
++.. _Seccmp-5-lnx: http://tartan.co.za/files/Seccmp_5.3.13.tgz
++.. _Seccmp-5-win: http://tartan.co.za/files/Seccmp_5.3.13.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2018-08-19 10:44:06 +0000
++++ doc/MST.rst	2018-08-29 15:51:35 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.12
++:Version:   5.3.13
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2018-08-19 10:44:06 +0000
++++ doc/SEC.rst	2018-08-29 15:51:35 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.12
++:Version:   5.3.13
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl1030.py'
+--- gen/gl1030.py	2018-08-19 10:44:06 +0000
++++ gen/gl1030.py	2018-08-24 11:09:48 +0000
+@@ -76,6 +76,13 @@
+             "titl": "Select the Required Type",
+             "head": ("T", "Description"),
+             "data": data}
++        coy = {
++            "stype": "R",
++            "tables": ("ctlmst",),
++            "cols": (
++                ("ctm_cono", "", 0, "Coy"),
++                ("ctm_name", "", 0, "Description", "Y")),
++            "order": "ctm_cono"}
+         glr = {
+             "stype": "R",
+             "tables": ("genrpt",),
+@@ -140,7 +147,7 @@
+             ("Percent",None,None,None,False)]
+         fld = (
+             (("T",0,0,0),"IUI",3,"Company","Company Number, 0=All",
+-                self.opts["conum"],"Y",self.doCoyNum,None,None,
++                self.opts["conum"],"Y",self.doCoyNum,coy,None,
+                 ("in", (self.opts["conum"], 0))),
+             (("T",0,0,0),"IUI",3,"Report","Report Number",
+                 "","N",self.doRepNum,glr,None,("notzero",)),
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2018-08-19 10:44:06 +0000
++++ men/rnemen.py	2018-08-28 07:54:13 +0000
+@@ -159,18 +159,19 @@
+     ["PYNN","cr_rp","cr3050",1,"Age Analysis"],
+     ["PYNN","cr_rp","cr3060",1,"Master Listing"],
+     ["PYNN","cr_rp","cr3070",1,"Reconciliation Statements"],
++    ["PYNN","cr_rp","cr3080",1,"Remittance Advice Reprint"],
+     ["PYNN","cr_rp","cr3090",1,"Name and Address Labels"],
+     ["PYNN","cr_rp","cr3100",1,"Notes Listing"],
+     ["PYNN","cr_rp","cr3110",1,"Purchases History"],
+-    ["PYNN","cr_rp","cr3310",1,"Terms Listing"],
+-    ["PYNN","cr_rp","cr3320",1,"Purchase Journal"],
+-    ["PYYN","cr_rp","cr3330",1,"Branch Purchases"],
+-    ["PYYN","cr_rp","cr3340",1,"Purchases by Branch by Supplier"],
+-    ["PYYN","cr_rp","cr3350",1,"Purchases by Supplier by Branch"],
+-    ["PYNN","cr_rp","cr3360",1,"Remittance Advice Reprint"],
+-    ["PYNN","cr_rp","cr3370",1,"Advertising/Incentive Invoices"],
+-    ["PYNN","cr_rp","cr3380",1,"Transactions by Branch Groups"],
+-    ["PYNN","cr_rp","cr3390",1,"Last PJ by Branch Groups"],
++    ["PYNN","cr_rp","cr3120",1,"Terms Listing"],
++    ["PYNN","cr_rp","cr3130",1,"Purchase Journal"],
++    ["PYYN","cr_rp","cr3140",1,"Branch Purchases"],
++    ["PYYN","cr_rp","cr3150",1,"Purchases by Branch by Supplier"],
++    ["PYYN","cr_rp","cr3160",1,"Purchases by Supplier by Branch"],
++    ["PYNN","cr_rp","cr3170",1,"Advertising/Incentive Invoices"],
++    ["PYNN","cr_rp","cr3180",1,"Transactions by Branch Groups"],
++    ["PYNN","cr_rp","cr3190",1,"Last PJ by Branch Groups"],
++    ["PYNN","cr_rp","cr3200",1,"Payments by Branch"],
+     ["PYNN","cr_tb","cr6010",4,"Change Account Numbers"],
+     ["PYNN","cr_tb","cr6020",5,"Transaction Reallocations"],
+     ["PYNY","mm_cr","cr4010",0,"Interrogation"]]
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2018-08-19 10:44:06 +0000
++++ mst/ms0000.py	2018-08-29 15:51:35 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 12)
++    VERSION = (5, 3, 13)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2018-08-19 10:44:06 +0000
++++ mst/msc000.py	2018-08-25 07:46:32 +0000
+@@ -1310,7 +1310,7 @@
+ 
+     def doSysChkUpgrade(self):
+         try:
+-            r = requests.get("http://tartan.co.za/files/current")
++            r = requests.get("http://tartan.co.za/files/current", timeout=5)
+             if r.status_code is not 200:
+                 raise Exception
+             v = r.content.split(".")
+@@ -1329,7 +1329,7 @@
+             return ("Connection Error", """Please Ensure that You Are Connected to the Internet.
+ 
+ 
+-"If Not, Please Connect and then Try Again!""")
++If Not, Please Connect and then Try Again!""")
+ 
+     def doSysUpgrade(self, widget=None):
+         self.su.closeProcess()
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2018-08-19 10:44:06 +0000
++++ std/TartanClasses.py	2018-08-29 15:47:09 +0000
+@@ -5570,7 +5570,7 @@
+             #===================================================================
+             if len(flds) > 4 and flds[6] == "Y":
+                 r1 = self.col
+-                r2 = self.col + self.colq[pag]
++                r2 = self.col + (self.colq[pag] - self.idx)
+                 for c in range(r1, r2):
+                     self.clearEntry(frt, pag, c)
+             #===================================================================
+@@ -17372,8 +17372,9 @@
+ 
+ Paul Malherbe
+ 
+-Phone:    27-28-3140092
+-Email:    info@tartan.co.za
++Phone:    27-21-6710071
++Mobile:   27-82-9005260
++Email:    paul@tartan.co.za
+ 
+ %s 2004-%s Paul Malherbe
+ 
+
+=== modified file 'uty/bm1010.py'
+--- uty/bm1010.py	2018-08-19 10:44:06 +0000
++++ uty/bm1010.py	2018-08-24 12:23:03 +0000
+@@ -881,7 +881,7 @@
+             par["numto"] = num
+             par["data1"] = dat
+         try:
+-            f = requests.post(self.url, data=par)
++            f = requests.post(self.url, data=par, timeout=5)
+             if stype == "credits":
+                 s = f.text
+                 s = s.split("<%s>" % stype)[1].split("</%s>" % stype)[0]
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2018-08-19 10:44:06 +0000
++++ uty/pkgprg.py	2018-08-28 15:48:57 +0000
+@@ -131,20 +131,20 @@
+     dirs.extend(["ass", "crs", "drs", "gen", "ibt", "lon", "rtl", "sls",
+                  "str", "uty"])
+     custom = ["rne", ["ar6020", "ar6030", "cr1010", "cr2010", "cr2020",
+-              "cr2030", "cr3030", "cr3070", "cr3310", "cr3320", "cr3330",
+-              "cr3340", "cr3350", "cr3360", "cr3370", "cr3380", "cr3390",
+-              "cr4010", "cr6010", "cr6020", "gl3030", "gl3100", "gl3110",
+-              "gl3120", "gl3130", "gl3140", "gl3150", "glc310", "glc410",
+-              "glc510", "ln2020", "ms1010", "msy030", "tartanWork"]]
+-    exclude = ["cr3080", "dr1020", "dr2030", "dr6030", "drc210", "drc220",
+-               "drc310", "drc320", "drc510", "drc520", "drc610", "drc620",
+-               "drc710", "drc810", "msy020", "si2020", "si3010", "si3070",
+-               "sic110", "st1020", "st2010", "st2020", "st2030", "st2040",
+-               "st3010", "st3020", "st3030", "st3040", "st3050", "st3060",
+-               "st3070", "st3080", "st3090", "st3100", "st3110", "st3120",
+-               "st4010", "st5010", "st5020", "st5030", "st5040", "st6010",
+-               "st6020", "st6030", "st6040", "stc220", "stc320", "stc410",
+-               "stc420", "tb1010", "tb1040", "tb3010", "pw1010"]
++              "cr2030", "cr3030", "cr3070", "cr3080", "cr3120", "cr3130",
++              "cr3140", "cr3150", "cr3160", "cr3170", "cr3180", "cr3190",
++              "cr3200", "cr4010", "cr6010", "cr6020", "gl3030", "gl3100",
++              "gl3110", "gl3120", "gl3130", "gl3140", "gl3150", "glc310",
++              "glc410", "glc510", "ln2020", "ms1010", "msy030", "tartanWork"]]
++    exclude = ["dr1020", "dr2030", "dr6030", "drc210", "drc220", "drc310",
++               "drc320", "drc510", "drc520", "drc610", "drc620", "drc710",
++               "drc810", "msy020", "si2020", "si3010", "si3070", "sic110",
++               "st1020", "st2010", "st2020", "st2030", "st2040", "st3010",
++               "st3020", "st3030", "st3040", "st3050", "st3060", "st3070",
++               "st3080", "st3090", "st3100", "st3110", "st3120", "st4010",
++               "st5010", "st5020", "st5030", "st5040", "st6010", "st6020",
++               "st6030", "st6040", "stc220", "stc320", "stc410", "stc420",
++               "pw1010", "tb1010", "tb1040", "tb3010", "pw1010"]
+ elif system == "s":
+     if publish or verinc:
+         exeCmd("mv %s/TartanExe/Seccmp_%s.* %s/TartanOld/" % (bd, vv, bd))
+

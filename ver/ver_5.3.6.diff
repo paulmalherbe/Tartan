@@ -1,0 +1,767 @@
+=== modified file 'bwl/bc2010.py'
+--- bwl/bc2010.py	2018-03-30 21:03:30 +0000
++++ bwl/bc2010.py	2018-04-02 08:00:47 +0000
+@@ -1243,6 +1243,9 @@
+             self.adraw1.extend(self.adraw2)
+         if self.teams:
+             # Teams
++            # Pair teams and try not to let the same skips play against the
++            # same skip they played in their previous game. Also try and
++            # put them on a different rink.
+             self.adraw2 = []
+             random.shuffle(self.rinks1)
+             temp = []
+@@ -1260,7 +1263,7 @@
+                 ok = False
+                 rk1 = False
+                 rk2 = False
+-                sk1 = temp.pop(0)
++                sk1 = temp.pop(0)       # Next skip
+                 whr = [
+                     ("bdt_cono", "=", self.opts["conum"]),
+                     ("bdt_tab", "=", sk1[2][0]),
+@@ -1269,7 +1272,7 @@
+                 chk = self.sql.getRec(tables="bwldrt", where=whr,
+                     order="bdt_date, bdt_time asc")
+                 if chk:
+-                    rk1 = chk[-1][4]
++                    rk1 = chk[-1][4]    # Opposition skip of last game
+                     whr = [
+                         ("bdt_cono", "=", self.opts["conum"]),
+                         ("bdt_pos", "=", 4),
+
+=== modified file 'bwl/bc2050.py'
+--- bwl/bc2050.py	2018-02-17 07:36:43 +0000
++++ bwl/bc2050.py	2018-04-03 11:46:59 +0000
+@@ -1580,7 +1580,7 @@
+             y = self.fpdf.get_y()
+             if skip[1] > 900000:
+                 self.fpdf.drawText(self.getSkip(skip[0], skip[2]),
+-                    x * (cwth * n2), w=(cwth * nm), border="TLRB")
++                    x + (cwth * n2), w=(cwth * nm), border="TLRB")
+             else:
+                 self.fpdf.drawText(self.getWinner(rd, grp, skip),
+                     x + (cwth * n2), w=(cwth * nm), border="LRB")
+
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2018-03-30 21:03:30 +0000
++++ doc/BKS.rst	2018-04-08 06:05:25 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.3.5
++:Version:   5.3.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2018-03-30 21:03:30 +0000
++++ doc/BWM.rst	2018-04-08 06:05:25 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.3.5
++:Version:   5.3.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2018-03-30 21:03:30 +0000
++++ doc/Downloads.rst	2018-04-08 06:05:25 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.3.5 and was released on the 30th March, 2018.
++The latest version of Tartan is 5.3.6 and was released on the 8th April, 2018.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.5.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.6.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.5.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.6.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.5.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.5.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.5.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.5.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.6.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.6.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.6.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.6.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2018-03-30 21:03:30 +0000
++++ doc/MST.rst	2018-04-08 06:05:25 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.3.5
++:Version:   5.3.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -62,13 +62,15 @@
+ 
+ The following dependencies must be installed using pip:
+ 
+++ fpdf >= 1.7.0
+ + pillow >= 2.3.0
+-+ fpdf >= 1.7.0
+++ requests
+ 
+ Additionally, the following dependencies should also be installed using pip:
+ 
+ + ghostscript
+ + markdown
+++ pycrypto
+ + pysmb
+ + python-chart
+ + simpleodspy
+@@ -436,7 +438,7 @@
+ 
+ V.A.T. Records Maintenance
+ ..........................
+-Use this routine to create, amend or delete value added tax records. Please note that you can have multiple rate records for a code e.g. Code 'I' could have a rate record starting at 2014/01/01 @ 14% and another one starting at 2016/01/01 @ 15% etc. The system will then automatically apply the correct rate depnding on the transaction date of antries.
++Use this routine to create, amend or delete value added tax records. Please note that you can have multiple rate records for a code e.g. Code 'I' could have a rate record starting at 2014/01/01 @ 14% and another one starting at 2016/01/01 @ 15% etc. The system will then automatically apply the correct rate depending on the transaction date of entries.
+ 
+ + **V,A.T. Code** - A single character V.A.T. code.
+ + **Description** - A description of the code.
+@@ -451,6 +453,13 @@
+ + **Date** - The starting date of the current or new rate.
+ + **Rate** - The current or new rate.
+ 
++The following buttons are applicable:
++
+++ **Print** - Click this button to produce a report of all codes.
+++ **Add** - Use this button to add additional rate records.
+++ **Edit** - Use this button to edit existing codes and or rates. Please note that no codes or dates can be modified if any transactions have already been created using the code.
+++ **Exit** - Use this button to exit the selected code.
++
+ V.A.T. Statement
+ ................
+ Use this routine to produce a value added tax statement for a specific period.
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2018-03-30 21:03:30 +0000
++++ doc/SEC.rst	2018-04-08 06:05:25 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.3.5
++:Version:   5.3.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2018-03-30 21:03:30 +0000
++++ men/rnemen.py	2018-04-01 12:07:50 +0000
+@@ -78,7 +78,6 @@
+     ["PNNN","mm_uy","fc1010",0,"Loan/Lease Calculator"],
+     ["PNNY","mm_uy","pm1010",0,"Personal Password Manager"],
+     ["PNNY","mm_uy","rp1010",2,"Report Generator"],
+-    ["PNNN","mm_uy","pw1010",5,"Server User Maintenance"],
+     ["PNNN","mm_uy","ss1010",1,"Stock Sheets"],
+     ["PNNN","mm_uy","tp1010",5,"Template Manager"],
+     ["F","mm_hp","doAbout",0,"About"],
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2018-03-30 21:03:30 +0000
++++ mst/ms0000.py	2018-04-08 06:05:25 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 3, 5)
++    VERSION = (5, 3, 6)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms1040.py'
+--- mst/ms1040.py	2018-03-30 21:03:30 +0000
++++ mst/ms1040.py	2018-03-31 06:46:36 +0000
+@@ -158,19 +158,21 @@
+                 self.sql.insRec("ctlvrf", data=newr)
+                 self.opts["mf"].dbm.commitDbase()
+                 self.df.focusField("T", 0, 1)
++            else:
++                self.doButtons()
++                self.df.focusField("C", 0, 1)
+         elif self.cat in ("N", "X", "Z"):
+             self.df.focusField("T", 0, 1)
+-        else:
+-            if datm != self.oldm:
+-                self.sql.updRec("ctlvmf", data=datm, where=[("vtm_cono", "=",
+-                    self.opts["conum"]), ("vtm_code", "=", self.code)])
+-                dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+-                for num, dat in enumerate(self.oldm):
+-                    if dat != datm[num]:
+-                        self.sql.insRec("chglog", data=["ctlvmf",
+-                        "U", "%03i%-1s" % (self.opts["conum"], self.code),
+-                        self.sql.ctlvmf_col[num], dte, self.opts["capnm"],
+-                        str(dat), str(datm[num]), 0])
++        elif datm != self.oldm:
++            self.sql.updRec("ctlvmf", data=datm, where=[("vtm_cono", "=",
++                self.opts["conum"]), ("vtm_code", "=", self.code)])
++            dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++            for num, dat in enumerate(self.oldm):
++                if dat != datm[num]:
++                    self.sql.insRec("chglog", data=["ctlvmf",
++                    "U", "%03i%-1s" % (self.opts["conum"], self.code),
++                    self.sql.ctlvmf_col[num], dte, self.opts["capnm"],
++                    str(dat), str(datm[num]), 0])
+             self.doButtons()
+ 
+     def doTExit(self):
+
+=== modified file 'mst/ms3010.py'
+--- mst/ms3010.py	2017-08-24 07:49:34 +0000
++++ mst/ms3010.py	2018-04-08 05:56:31 +0000
+@@ -14,8 +14,8 @@
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import doPrinter, doWriteExport, getModName, showError
+-from tartanFunctions import mthendDate
++from tartanFunctions import doPrinter, doWriteExport, getModName, getVatRate
++from tartanFunctions import showError, mthendDate
+ 
+ class ms3010:
+     def __init__(self, **opts):
+@@ -56,20 +56,20 @@
+         self.head = ("%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
+             "%s"))
+         self.colsh = ["C", "T", "Curr-Dt", "S", "TT", "Acc-Num", "Reference",
+-            "Date", "Remarks", "Input-Value", "Input-Tax ", "Output-Value",
+-            "Output-Tax"]
++            "Date", "Remarks", "Rate-%", "Input-Value", "Input-Tax ",
++            "Output-Value", "Output-Tax"]
+         self.forms = [("UA", 2), ("UA", 2), ("D2", 7), ("UA", 2),
+             ("UI", 2, False, False, True), ("NA", 7), ("Na", 9),
+-            ("D1", 10), ("NA", 30), ("SD", 13.2), ("SD", 13.2),
+-            ("SD", 13.2), ("SD",13.2)]
++            ("D1", 10), ("NA", 30), ("UD", 6.2), ("SD", 13.2),
++            ("SD", 13.2), ("SD", 13.2), ("SD",13.2)]
+         self.ctopv = 0
+         self.ctopt = 0
+         self.ctipv = 0
+         self.ctipt = 0
+-        self.ttopv = {"C": 0, "N": 0, "S": 0, "X": 0, "Z": 0}
+-        self.ttopt = {"C": 0, "N": 0, "S": 0, "X": 0, "Z": 0}
+-        self.ttipv = {"C": 0, "N": 0, "S": 0, "X": 0, "Z": 0}
+-        self.ttipt = {"C": 0, "N": 0, "S": 0, "X": 0, "Z": 0}
++        self.ttopv = {}
++        self.ttopt = {}
++        self.ttipv = {}
++        self.ttipt = {}
+         self.gtopv = 0
+         self.gtopt = 0
+         self.gtipv = 0
+@@ -274,27 +274,30 @@
+             for n2, dat in enumerate(vtf):
+                 p2.displayProgress(n2)
+                 vtyp, curdt,styp, ttyp, acno, refno, refdt, desc, exc, \
+-                    tax, inc = self.getValues2(dat)
++                    vtr, tax, inc = self.getValues2(dat)
+                 line = ["BODY", [self.pcode, vtyp.work, curdt.work, styp.work,
+-                    ttyp.work, acno.work, refno.work, refdt.work, desc.work]]
++                    ttyp.work, acno.work, refno.work, refdt.work, desc.work,
++                    vtr.work]]
+                 if vtyp.work == "I":
+                     line[1].extend([inc.work, tax.work, 0, 0])
+                     self.ctipv = float(ASD(self.ctipv) + ASD(inc.work))
+                     self.ctipt = float(ASD(self.ctipt) + ASD(tax.work))
+-                    self.ttipv[self.pcat] = float(ASD(self.ttipv[self.pcat]) \
+-                        + ASD(inc.work))
+-                    self.ttipt[self.pcat] = float(ASD(self.ttipt[self.pcat]) \
+-                        + ASD(tax.work))
++                    self.ttipv[self.pcat][vtr.disp] = \
++                        float(ASD(self.ttipv[self.pcat][vtr.disp]) + \
++                        ASD(inc.work))
++                    self.ttipt[self.pcat][vtr.disp] = \
++                        float(ASD(self.ttipt[self.pcat][vtr.disp]) + \
++                        ASD(tax.work))
+                     self.gtipv = float(ASD(self.gtipv) + ASD(inc.work))
+                     self.gtipt = float(ASD(self.gtipt) + ASD(tax.work))
+                 else:
+                     line[1].extend([0, 0, inc.work, tax.work])
+                     self.ctopv = float(ASD(self.ctopv) + ASD(inc.work))
+                     self.ctopt = float(ASD(self.ctopt) + ASD(tax.work))
+-                    self.ttopv[self.pcat] = float(ASD(self.ttopv[self.pcat]) \
+-                        + ASD(inc.work))
+-                    self.ttopt[self.pcat] = float(ASD(self.ttopt[self.pcat]) \
+-                        + ASD(tax.work))
++                    self.ttopv[self.pcat][vtr.disp] = \
++                        float(ASD(self.ttopv[self.pcat]) + ASD(inc.work))
++                    self.ttopt[self.pcat][vtr.disp] = \
++                        float(ASD(self.ttopt[self.pcat]) + ASD(tax.work))
+                     self.gtopv = float(ASD(self.gtopv) + ASD(inc.work))
+                     self.gtopt = float(ASD(self.gtopt) + ASD(tax.work))
+                 self.expdatas.append(line)
+@@ -312,7 +315,7 @@
+     def printReport(self, recs):
+         p1 = ProgressBar(self.opts["mf"].body, mxs=len(recs),
+             typ="VAT Categories")
+-        self.head = ("%03u %-30s %23s %18s %27s %6s" % (self.opts["conum"],
++        self.head = ("%03u %-30s %30s %18s %27s %6s" % (self.opts["conum"],
+             self.opts["conam"], "", self.sysdttm, "", __name__))
+         self.fpdf = MyFpdf(name=__name__, head=self.head)
+         self.pgnum = 0
+@@ -345,38 +348,42 @@
+             for n2, dat in enumerate(vtf):
+                 p2.displayProgress(n2)
+                 vtyp, curdt,styp, ttyp, acno, refno, refdt, desc, exc, \
+-                    tax, inc = self.getValues2(dat)
++                    vtr, tax, inc = self.getValues2(dat)
+                 if self.pglin > self.fpdf.lpp:
+                     self.doPrintHeading("A")
+                     self.pglin += 1
+                 if vtyp.work == "I":
+                     if self.totsonly != "Y":
+-                        self.fpdf.drawText("%s %s %s %s %s %s %s %s %s %-13s "\
+-                            "%-13s" % (curdt.disp, styp.disp, ttyp.disp,
++                        self.fpdf.drawText("%s %s %s %s %s %s %s %s %s %s "\
++                            "%-13s %-13s" % (curdt.disp, styp.disp, ttyp.disp,
+                             acno.disp, refno.disp, refdt.disp, desc.disp,
+-                            inc.disp, tax.disp, " ", " "))
++                            vtr.disp, inc.disp, tax.disp, " ", " "))
+                         self.pglin += 1
+                     self.ctipv = float(ASD(self.ctipv) + ASD(inc.work))
+                     self.ctipt = float(ASD(self.ctipt) + ASD(tax.work))
+-                    self.ttipv[self.pcat] = float(ASD(self.ttipv[self.pcat]) \
+-                        + ASD(inc.work))
+-                    self.ttipt[self.pcat] = float(ASD(self.ttipt[self.pcat]) \
+-                        + ASD(tax.work))
++                    self.ttipv[self.pcat][vtr.disp] = \
++                        float(ASD(self.ttipv[self.pcat][vtr.disp]) + \
++                        ASD(inc.work))
++                    self.ttipt[self.pcat][vtr.disp] = \
++                        float(ASD(self.ttipt[self.pcat][vtr.disp]) + \
++                        ASD(tax.work))
+                     self.gtipv = float(ASD(self.gtipv) + ASD(inc.work))
+                     self.gtipt = float(ASD(self.gtipt) + ASD(tax.work))
+                 elif vtyp.work == "O":
+                     if self.totsonly != "Y":
+-                        self.fpdf.drawText("%s %s %s %s %s %s %s %-13s %-13s "\
+-                            "%s %s" % (curdt.disp, styp.disp, ttyp.disp,
++                        self.fpdf.drawText("%s %s %s %s %s %s %s %s %-13s "\
++                            "%-13s %s %s" % (curdt.disp, styp.disp, ttyp.disp,
+                             acno.disp, refno.disp, refdt.disp, desc.disp,
+-                            " ", " ", inc.disp, tax.disp))
++                            vtr.disp, " ", " ", inc.disp, tax.disp))
+                         self.pglin += 1
+                     self.ctopv = float(ASD(self.ctopv) + ASD(inc.work))
+                     self.ctopt = float(ASD(self.ctopt) + ASD(tax.work))
+-                    self.ttopv[self.pcat] = float(ASD(self.ttopv[self.pcat]) \
+-                        + ASD(inc.work))
+-                    self.ttopt[self.pcat] = float(ASD(self.ttopt[self.pcat]) \
+-                        + ASD(tax.work))
++                    self.ttopv[self.pcat][vtr.disp] = \
++                        float(ASD(self.ttopv[self.pcat][vtr.disp]) + \
++                        ASD(inc.work))
++                    self.ttopt[self.pcat][vtr.disp] = \
++                        float(ASD(self.ttopt[self.pcat][vtr.disp]) + \
++                        ASD(tax.work))
+                     self.gtopv = float(ASD(self.gtopv) + ASD(inc.work))
+                     self.gtopt = float(ASD(self.gtopt) + ASD(tax.work))
+             p2.closeProgress()
+@@ -425,10 +432,23 @@
+         refdt = CCD(data[self.sql.ctlvtf_col.index("vtt_refdt")],"D1",10)
+         desc = CCD(data[self.sql.ctlvtf_col.index("vtt_desc")],"NA",30)
+         exc = CCD(data[self.sql.ctlvtf_col.index("vtt_exc")],"SD",13.2)
++        vtr = getVatRate(self.sql, self.opts["conum"], self.pcode, refdt.work)
++        vtr = CCD(vtr, "UD", 6.2)
++        for cat in ("C", "N", "S", "X", "Z"):
++            if cat not in self.ttopv:
++                self.ttopv[cat] = {}
++                self.ttopt[cat] = {}
++                self.ttipv[cat] = {}
++                self.ttipt[cat] = {}
++            if vtr.disp not in self.ttopv[cat]:
++                self.ttopv[cat][vtr.disp] = 0
++                self.ttopt[cat][vtr.disp] = 0
++                self.ttipv[cat][vtr.disp] = 0
++                self.ttipt[cat][vtr.disp] = 0
+         tax = CCD(data[self.sql.ctlvtf_col.index("vtt_tax")],"SD",13.2)
+         inc = CCD(((exc.work * 100) + (tax.work * 100)) / 100, "SD", 13.2)
+-        return (vtyp, curdt,styp, ttyp, acno, refno, refdt, desc, exc, tax,
+-                inc)
++        return (vtyp, curdt,styp, ttyp, acno, refno, refdt, desc, exc, vtr,
++                tax, inc)
+ 
+     def doPrintHeading(self, htype):
+         if htype in ("A", "C"):
+@@ -448,7 +468,7 @@
+                 flag = "(Transactions Not Flagged)"
+             elif self.flag == "R":
+                 flag = "(Transactions Paid on %s)" % self.paidd
+-            self.fpdf.drawText("%-25s %-7s %-2s %-7s %-71s %4s %5s" % \
++            self.fpdf.drawText("%-25s %-7s %-2s %-7s %-78s %4s %5s" % \
+                 ("VAT Statements for Period",
+                 self.sperd, "to", self.eperd, flag, "Page", self.pgnum))
+             self.fpdf.drawText()
+@@ -471,12 +491,13 @@
+             self.pglin += 2
+         self.fpdf.drawText()
+         if htype == "S":
+-            self.fpdf.drawText("%-30s %13s %13s %13s %13s" % ("Category", \
+-                "Input-Value ", "Input-Tax ", "Output-Value ", " Output-Tax "))
++            self.fpdf.drawText("%-30s %6s %13s %13s %13s %13s" % ("Category",
++                "Rate-%", "Input-Value ", "Input-Tax ", "Output-Value ",
++                " Output-Tax "))
+         else:
+-            self.fpdf.drawText("%-7s %-1s %-2s %-7s %-9s %-10s %-30s "\
++            self.fpdf.drawText("%-7s %-1s %-2s %-7s %-9s %-10s %-30s %6s "\
+                 "%13s %13s %13s %13s" % ("Curr-Dt", "S", "TT", "Acc-Num",
+-                "Reference", "   Date", "Remarks", "Input-Value ",
++                "Reference", "   Date", "Remarks", "Rate-%", "Input-Value ",
+                 "Input-Tax ", "Output-Value ", " Output-Tax "))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+@@ -490,12 +511,12 @@
+         if ttype == "P":
+             if self.totsonly != "Y":
+                 self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+-            self.fpdf.drawText("%-41s %-14s %-15s %-13s %-13s %-13s %-13s" %
++            self.fpdf.drawText("%-41s %-14s %-22s %-13s %-13s %-13s %-13s" %
+                 ("", "Code-Total", self.pcode, j.disp, k.disp, l.disp, m.disp))
+         else:
+             self.expdatas.append(["ULINES"])
+             desc = "Code-Total %s" % self.pcode
+-            line = ["TOTAL", ["", "", "", "", "", "", "", "", desc,
++            line = ["TOTAL", ["", "", "", "", "", "", "", "", desc, "",
+                 j.work, k.work, l.work, m.work]]
+             self.expdatas.append(line)
+         self.ctipv = 0
+@@ -504,37 +525,44 @@
+         self.ctopt = 0
+ 
+     def doPrintCatTotal(self, ttype="P", page=True):
+-        j = CCD(self.ttipv[self.pcat], "SD", 13.2)
+-        k = CCD(self.ttipt[self.pcat], "SD", 13.2)
+-        l = CCD(self.ttopv[self.pcat], "SD", 13.2)
+-        m = CCD(self.ttopt[self.pcat], "SD", 13.2)
+-        if ttype == "P":
+-            self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+-            self.fpdf.drawText("%-41s %-14s %-15s %-13s %-13s %-13s %-13s" %
+-                ("", "Category-Total", self.pcat, j.disp, k.disp, l.disp,
+-                m.disp))
+-        else:
+-            self.expdatas.append(["ULINES"])
+-            desc = "Category-Total %s" % self.pcat
+-            line = ["TOTAL", ["", "", "", "", "", "", "", "", desc,
+-                j.work, k.work, l.work, m.work]]
+-            self.expdatas.append(line)
+-            if page:
+-                self.expdatas.append(["PAGE", [self.expheads, self.expcolsh]])
++        rates = self.ttipv[self.pcat].keys()
++        rates.sort()
++        for num, rte in enumerate(rates):
++            j = CCD(self.ttipv[self.pcat][rte], "SD", 13.2)
++            k = CCD(self.ttipt[self.pcat][rte], "SD", 13.2)
++            l = CCD(self.ttopv[self.pcat][rte], "SD", 13.2)
++            m = CCD(self.ttopt[self.pcat][rte], "SD", 13.2)
++            if ttype == "P":
++                if not num:
++                    self.fpdf.drawText("%-125s" % (
++                        self.fpdf.suc * len(self.head)))
++                self.fpdf.drawText("%-41s %-14s %-15s %-6s "\
++                    "%-13s %-13s %-13s %-13s" % ("", "Category-Total",
++                    self.pcat, rte, j.disp, k.disp, l.disp, m.disp))
++            else:
++                if not num:
++                    self.expdatas.append(["ULINES"])
++                desc = "Category-Total %s" % self.pcat
++                line = ["TOTAL", ["", "", "", "", "", "", "", "", desc, rte,
++                    j.work, k.work, l.work, m.work]]
++                self.expdatas.append(line)
++        if ttype == "X" and page:
++            self.expdatas.append(["PAGE", [self.expheads, self.expcolsh]])
+ 
+     def doPrintGrandTotal(self, ttype="P"):
+         j = CCD(self.gtipv, "SD", 13.2)
+         k = CCD(self.gtipt, "SD", 13.2)
+         l = CCD(self.gtopv, "SD", 13.2)
+         m = CCD(self.gtopt, "SD", 13.2)
+-        if ttype == "P":
+-            self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+-            self.fpdf.drawText("%-41s %-14s %-15s %-13s %-13s %-13s %-13s" %
+-                ("", "Grand-Total", "", j.disp, k.disp, l.disp, m.disp))
+-        else:
++        #if ttype == "P":
++        #    self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
++        #    self.fpdf.drawText("%-41s %-14s %-15s %-13s %-13s %-13s %-13s" %
++        #        ("", "Grand-Total", "", j.disp, k.disp, l.disp, m.disp))
++        #else:
++        if 'a' == 'a':
+             self.expdatas.append(["ULINES"])
+             desc = "Grand-Total"
+-            line = ["TOTAL", ["", "", "", "", "", "", "", "", desc,
++            line = ["TOTAL", ["", "", "", "", "", "", "", "", desc, "",
+                 j.work, k.work, l.work, m.work]]
+             self.expdatas.append(line)
+             self.expdatas.append(["ULINED"])
+@@ -546,29 +574,32 @@
+                 continue
+             if self.cat == "B" and c[0] == "N":
+                 continue
+-            d = CCD(c[1], "NA", 30)
+-            j = CCD(self.ttipv[c[0]], "SD", 13.2)
+-            tots[0] = float(ASD(tots[0]) + ASD(j.work))
+-            k = CCD(self.ttipt[c[0]], "SD", 13.2)
+-            tots[1] = float(ASD(tots[1]) + ASD(k.work))
+-            l = CCD(self.ttopv[c[0]], "SD", 13.2)
+-            tots[2] = float(ASD(tots[2]) + ASD(l.work))
+-            m = CCD(self.ttopt[c[0]], "SD", 13.2)
+-            tots[3] = float(ASD(tots[3]) + ASD(m.work))
+-            self.fpdf.drawText("%s %s %s %s %s" % (d.disp, j.disp, k.disp,
+-                l.disp, m.disp))
++            rates = self.ttipv[c[0]].keys()
++            rates.sort()
++            for rte in rates:
++                d = CCD(c[1], "NA", 30)
++                j = CCD(self.ttipv[c[0]][rte], "SD", 13.2)
++                tots[0] = float(ASD(tots[0]) + ASD(j.work))
++                k = CCD(self.ttipt[c[0]][rte], "SD", 13.2)
++                tots[1] = float(ASD(tots[1]) + ASD(k.work))
++                l = CCD(self.ttopv[c[0]][rte], "SD", 13.2)
++                tots[2] = float(ASD(tots[2]) + ASD(l.work))
++                m = CCD(self.ttopt[c[0]][rte], "SD", 13.2)
++                tots[3] = float(ASD(tots[3]) + ASD(m.work))
++                self.fpdf.drawText("%s %s %s %s %s %s" % (d.disp, rte,
++                    j.disp, k.disp, l.disp, m.disp))
+         self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+         d = CCD("Grand Totals", "NA", 30)
+         j = CCD(tots[0], "SD", 13.2)
+         k = CCD(tots[1], "SD", 13.2)
+         l = CCD(tots[2], "SD", 13.2)
+         m = CCD(tots[3], "SD", 13.2)
+-        self.fpdf.drawText("%s %s %s %s %s" % (d.disp, j.disp, k.disp,
++        self.fpdf.drawText("%-37s %s %s %s %s" % (d.disp, j.disp, k.disp,
+             l.disp, m.disp))
+         self.fpdf.drawText()
+         self.fpdf.drawText()
+         tvat = CCD(float(ASD(tots[1]) + ASD(tots[3])), "SD", 13.2)
+-        self.fpdf.drawText("%-72s %13s" % ("Total Net Tax Due/Owed",
++        self.fpdf.drawText("%-79s %13s" % ("Total Net Tax Due/Owed",
+             tvat.disp))
+         if not self.genleg:
+             return
+@@ -592,7 +623,7 @@
+             b = CCD(0, "SD", 13.2)
+         tbal = CCD(float(ASD(bal) + ASD(b.work)), "SD", 13.2)
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-72s %13s" % ("Balance of VAT Control",
++        self.fpdf.drawText("%-79s %13s" % ("Balance of VAT Control",
+             tbal.disp))
+ 
+     def doExit(self):
+
+=== modified file 'sls/sic110.py'
+--- sls/sic110.py	2018-02-17 07:36:43 +0000
++++ sls/sic110.py	2018-04-05 07:53:12 +0000
+@@ -50,18 +50,15 @@
+                 ("tpm_system", "=", "INV")],
+             "order": "tpm_tname"}
+         r1s = (("Yes","Y"),("No","N"))
+-        r2s = (("None","N"),("10c","T"),("50c","F"),("Rand","R"))
+         self.fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Delivery Notes","",
+                 self.acc[1],"N",self.doDelNo,None,None,None),
+             (("T",0,1,0),("IRB",r1s),0,"Print Values","",
+                 self.acc[2],"N",None,None,None,None),
+-            (("T",0,2,0),("IRB",r2s),0,"Round Down to Nearest","",
+-                self.acc[3],"N",None,None,None,None),
+-            (("T",0,3,0),"INA",20,"Invoice Template","",
+-                self.acc[4],"N",self.doTplNam,tpl,None,None),
+-            (("T",0,4,0),"ITX",50,"Email Address","",
+-                self.acc[5],"N",None,None,None,None))
++            (("T",0,2,0),"INA",20,"Invoice Template","",
++                self.acc[3],"N",self.doTplNam,tpl,None,None),
++            (("T",0,3,0),"ITX",50,"Email Address","",
++                self.acc[4],"N",None,None,None,None))
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
+             ("Quit",None,self.doExit,1,None,None))
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2018-03-30 21:03:30 +0000
++++ std/tartanFunctions.py	2018-04-03 06:45:07 +0000
+@@ -2267,7 +2267,7 @@
+             return tuple(newo)
+         else:
+             return newo
+-    import copy, types
++    import copy, inspect
+     meth = False
+     deep = False
+     for obj in orig:
+@@ -2276,11 +2276,11 @@
+             for x in obj:
+                 if type(x) in (list, tuple):
+                     for y in x:
+-                        if isinstance(y, types.MethodType):
++                        if inspect.ismethod(y):
+                             meth = True
+-                elif isinstance(x, types.MethodType):
++                elif inspect.ismethod(x):
+                     meth = True
+-        elif isinstance(obj, types.MethodType):
++        elif inspect.ismethod(obj):
+             meth = True
+     try:
+         if meth:
+@@ -2290,7 +2290,7 @@
+         else:
+             return copy.copy(orig)
+     except:
+-        return copy.deepcopy(orig)
++        return orig[:]
+ 
+ def luhnFunc(number):
+     def digits_of(n):
+
+=== modified file 'str/st2010.py'
+--- str/st2010.py	2018-02-17 07:36:43 +0000
++++ str/st2010.py	2018-04-06 06:02:03 +0000
+@@ -736,10 +736,13 @@
+                 ("pom_cono=crm_cono",),
+                 ("pom_acno=crm_acno",)],
+             "screen": self.opts["mf"].body}
++        r1s = (("Copies", "C"), ("Originals", "O"))
+         fld = (
+-            (("T",0,0,0),"IUI",9,"From Number","From Document Number",
++            (("T",0,0,0),("IRB",r1s),0,"Document Mode","",
++                "C","N",self.doMode,None,None,None),
++            (("T",0,1,0),"IUI",9,"From Number","From Document Number",
+                 "","N",self.doOrd,odr,None,("notzero",)),
+-            [("T",0,1,0),"IUI",9,"To   Number","To Document Number",
++            [("T",0,2,0),"IUI",9,"To   Number","To Document Number",
+                 "","N",None,odr,None,("notzero",)])
+         state = self.df.disableButtonsTags()
+         self.rp = TartanDialog(self.opts["mf"], title=tit, tops=True,
+@@ -749,24 +752,30 @@
+         self.df.enableButtonsTags(state=state)
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
++    def doMode(self, frt, pag, r, c, p, i, w):
++        if w == "C":
++            self.copy = "y"
++        else:
++            self.copy = "n"
++
+     def doOrd(self, frt, pag, r, c, p, i, w):
+-        self.rp.topf[pag][1][5] = w
++        self.rp.topf[pag][2][5] = w
+ 
+     def doReprntEnd(self):
+         self.rp.closeProcess()
+         self.df.setWidget(self.df.mstFrame, state="hide")
+-        frm = self.rp.t_work[0][0][0]
+-        if not self.rp.t_work[0][0][1]:
++        frm = self.rp.t_work[0][0][1]
++        if not self.rp.t_work[0][0][2]:
+             to = frm
+         else:
+-            to = self.rp.t_work[0][0][1]
++            to = self.rp.t_work[0][0][2]
+         odr = self.sql.getRec(tables="strpom", cols=["pom_ordno"],
+-            where=[("pom_cono", "=", self.opts["conum"]), ("pom_ordno", ">=",
+-            frm), ("pom_ordno", "<=", to)])
++            where=[("pom_cono", "=", self.opts["conum"]),
++            ("pom_ordno", ">=", frm), ("pom_ordno", "<=", to)])
+         if odr:
+             PrintOrder(self.opts["mf"], self.opts["conum"], self.opts["conam"],
+                 odr, tname=self.tname, repprt=self.rp.repprt,
+-                repeml=self.rp.repeml, copy="y")
++                repeml=self.rp.repeml, copy=self.copy)
+         self.df.setWidget(self.df.mstFrame, state="show")
+         self.opts["mf"].closeLoop()
+ 
+
+=== modified file 'uty/pm1010.py'
+--- uty/pm1010.py	2017-08-24 07:49:34 +0000
++++ uty/pm1010.py	2018-03-31 15:30:46 +0000
+@@ -13,10 +13,10 @@
+     Copyright (C) 2004-2017 Paul Malherbe.
+ """
+ 
+-import os, shutil, sys
++import csv, os, shutil, sys
+ from Crypto.Cipher import AES
+ from TartanClasses import MyFpdf, TartanDialog
+-from tartanFunctions import askQuestion, doPrinter
++from tartanFunctions import askChoice, askQuestion, doPrinter
+ 
+ class pm1010:
+     def __init__(self, **opts):
+@@ -147,9 +147,21 @@
+         self.opts["mf"].closeLoop()
+ 
+     def doExport(self, widget=None):
+-        fle = os.path.join(self.opts["mf"].rcdic["wrkdir"], "secrets.xml")
+-        xml = open(fle, "w")
+-        xml.write("""<!DOCTYPE KEEPASSX_DATABASE>
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        but = (("CSV", "C"), ("XML", "X"))
++        typ = askChoice(self.opts["mf"].window, "Type", "Select the File Type",
++            butt=but, default="CSV")
++        self.df.setWidget(self.df.mstFrame, state="show")
++        if typ == "C":
++            fle = os.path.join(self.opts["mf"].rcdic["wrkdir"], "secrets.csv")
++            csvwrt = csv.writer(open(fle, "wb"), delimiter=";", quotechar='"',
++               quoting=csv.QUOTE_MINIMAL)
++            csvwrt.writerow(["Title", "Category", "Username", "Password",
++                "Website","Comments"])
++        else:
++            fle = os.path.join(self.opts["mf"].rcdic["wrkdir"], "secrets.xml")
++            xml = open(fle, "w")
++            xml.write("""<!DOCTYPE KEEPASSX_DATABASE>
+ <database>
+  <group>
+   <title>Secrets</title>
+@@ -160,7 +172,10 @@
+             log, enc = self.data[self.opts["capnm"]][code]
+             log = log.replace("&", "and").replace("<", "").replace(">","")
+             enc = enc.replace("&", "and").replace("<", "").replace(">","")
+-            xml.write("""
++            if typ == "C":
++                csvwrt.writerow([code, "", log, enc, "", ""])
++            else:
++                xml.write("""
+   <entry>
+    <title>%s</title>
+    <username>%s</username>
+@@ -173,10 +188,11 @@
+    <lastmod>0</lastmod>
+    <expire>Never</expire>
+   </entry>""" % (code, log, enc))
+-        xml.write("""
++        if typ == "X":
++            xml.write("""
+  </group>
+ </database>""")
+-        xml.close()
++            xml.close()
+         self.df.focusField("T", 0, 1)
+ 
+     def doShow(self, widget=None):
+

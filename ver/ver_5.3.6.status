@@ -1,0 +1,16 @@
+modified:
+  bwl/bc2010.py
+  bwl/bc2050.py
+  doc/BKS.rst
+  doc/BWM.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SEC.rst
+  men/rnemen.py
+  mst/ms0000.py
+  mst/ms1040.py
+  mst/ms3010.py
+  sls/sic110.py
+  std/tartanFunctions.py
+  str/st2010.py
+  uty/pm1010.py

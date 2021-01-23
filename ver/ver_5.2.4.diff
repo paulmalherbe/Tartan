@@ -1,0 +1,2203 @@
+=== modified file 'ass/ar4010.py'
+--- ass/ar4010.py	2016-02-27 13:18:41 +0000
++++ ass/ar4010.py	2016-06-27 20:03:33 +0000
+@@ -86,12 +86,12 @@
+         if self.rordp == "Y":
+             fld.extend([
+                 (("C",1,0,0),"OUD",15.2,"Company-Rate","",
+-                    "","N",None,None,None,None,("Year",7)),
++                    "","N",None,None,None,None,("Period",7)),
+                 (("C",1,0,1),"OUD",15.2,"Receiver-Rate")])
+         else:
+             fld.append(
+                 (("C",1,0,0),"OUD",15.2,"Rate","",
+-                    "","N",None,None,None,None,("Year",7)))
++                    "","N",None,None,None,None,("Period",7)))
+         fld.extend([
+             (("T",2,0,0),"Od1",10,"Date of Purchase"),
+             (("T",2,0,0),"OSD",15.2,"Purchase Price")])
+
+=== modified file 'ass/arc210.py'
+--- ass/arc210.py	2016-05-21 12:42:32 +0000
++++ ass/arc210.py	2016-06-27 20:05:45 +0000
+@@ -62,7 +62,7 @@
+                 "S","N",self.doRecTyp,None,None,None))
+         fld.append(
+             (("C",0,0,0),"IUD",12.2,"Company-Rate","Company Rate",
+-                "","N",self.doCoyRte,None,None,("efld",),("Year",7)))
++                "","N",self.doCoyRte,None,None,("efld",),("Period",7)))
+         if self.rordp == "Y":
+             fld.append(
+             (("C",0,0,1),"IUD",12.2,"Receiver-Rate","Receiver Rate",
+
+=== modified file 'bks/bs3010.py'
+--- bks/bs3010.py	2016-06-22 08:28:55 +0000
++++ bks/bs3010.py	2016-07-07 16:25:23 +0000
+@@ -14,9 +14,8 @@
+ """
+ 
+ import os, requests, time, urllib2
+-from TartanClasses import CCD, GetCtl, MyFpdf, SplashScreen, Sql, TartanDialog
+-from tartanFunctions import doPrinter, getModName, getSingleRecords, copyList
+-from tartanFunctions import mthendDate
++from TartanClasses import CCD, MyFpdf, SplashScreen, Sql, TartanDialog
++from tartanFunctions import doPrinter, getModName
+ 
+ class bs3010:
+     def __init__(self, **opts):
+@@ -197,9 +196,12 @@
+ 
+     def getDesc(self, book):
+         auth = book[0].strip().lower()
+-        titl = book[1].strip().lower()
++        titl = book[1].strip().lower().replace(",", "")
+         if titl[:4] == "the ":
+             titl = titl[4:]
++        elif titl[-4:] == " the":
++            titl = titl[:-4]
++        print titl
+         get = requests.get("https://www.googleapis.com/books/v1/volumes?q="\
+             "'%s'+inauthor:'%s'" % (titl, auth))
+         if get.status_code == 200 and get.json()["totalItems"]:
+
+=== modified file 'bwl/bc2010.py'
+--- bwl/bc2010.py	2016-06-22 08:28:55 +0000
++++ bwl/bc2010.py	2016-07-04 20:30:13 +0000
+@@ -358,6 +358,7 @@
+     def doRating(self, frt, pag, r, c, p, i, w):
+         self.rating = w
+         if not self.dbase == "C":
++            self.nbase = self.dbase
+             self.df.loadEntry(frt, pag, p + 1, data=self.dbase)
+             return "sk1"
+ 
+
+=== renamed file 'doc/AR.rst' => 'doc/ASS.rst'
+=== renamed file 'doc/BK.rst' => 'doc/BKM.rst'
+=== added file 'doc/BKS.rst'
+--- doc/BKS.rst	1970-01-01 00:00:00 +0000
++++ doc/BKS.rst	2016-06-27 09:59:44 +0000
+@@ -0,0 +1,224 @@
++=============================
++ TARTAN SYSTEMS - Book Clubs
++=============================
++
++:Version:   5.2.3
++:Author:    Paul Malherbe
++:Contact:   paul@tartan.co.za
++:Home:      http://www.tartan.co.za
++:Copyright: Paul Malherbe (C) 2004-2016.
++:Licence:   Free use of this software and all it's modules is granted under the terms of the License.
++
++.. contents:: **Table of Contents**
++
++.. raw:: pdf
++
++    PageBreak
++
++Installation Procedure
++----------------------
++Browse to the Bksclb_5.2.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
++
++Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
++
++Startup Procedure
++-----------------
++Start Tartan by clicking on the shortcut icon on the desktop or by navigating to the `C:\\Tartan\\prg` directory and double clicking on the `ms0000[.exe]` file.
++
++The first time you run Tartan you will automatically be taken to `Preferences`_ where you will have to enter various parameters relating to your installation. After saving the preferences and restarting Tartan you will be prompted to create the database. Once the database has been created you will have to create the System record as per `System Record`_ as well as a Club record as per `Club Master Record`_.
++
++Status Line
++-----------
++Please note that when using Tartan your available options will be highlighted on the status line at the bottom left hand side of the screen. Please always read this carefully before asking for assistance.
++
++Common Keyboard Functions
++-------------------------
++Throughout the various modules comprising **Tartan Systems** the following keys are used to perform certain functions. These options will always be highlighted in the `Status Line`_ at the bottom of the screen. The most common ones are:
++
+++ **Enter**  - Accept keyboard input.
+++ **Esc**    - Exit a module or go to a previous entry field.
+++ **F1**     - Record Selection used with all data input routines.
+++ **F5**     - Record Deletion used with record maintenance routines.
++
++In addition to the above keys, all underlined characters on notebook tags and buttons, can be used in conjunction with the <Alt> key as shortcuts e.g <Alt-s> to open the System menu.
++
++Common Routines
++---------------
++Printer Selection
++-----------------
++Whenever a report is being produced you will have the opportunity of deciding on the output method i.e. viewing, printing, exporting and, in some cases, whether or not to email it.  Please note that the option to email the report will only be available if there is a valid `SMTP Server` in the `System Record`_ record.
++
++* **Output** - Select the required output option.
++* **Printer Name** - If you selected `Print`, enter the printer name.
++* **E-Mail Report** - If available, select whether or not to email the report.
++* **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
++* **E-Mail Message** - If available, enter the email message.
++
++Error Messages
++--------------
++Should an error message occur and there is a file named *errors.txt* in the `Work Path` as created in `Preferences`_. Please email it to errors@tartan.co.za after which you may delete it.
++
++Menus and Sub Menus
++-------------------
++System
++------
++Update File Formats
++...................
++Every time you perform an upgrade of Tartan you will have to run this routine as well. This routine will automatically update all table formats in the database.
++
++Backup Database
++...............
++Select this routine to create a backup of the current database. These backups will reside in the *Backup Path* directory as created using the `Preferences`_ routine. Each backup will further reside in a sub directory named after the name of the database and a further sub directory named `arch`.
++
++Restore Database
++................
++Select this routine to restore a previous backup.
++
+++ **Type** - Select a Full or Partial restore.
+++ **Archive** - Select the relevant archive to restore from.
+++ **All Companies** - `Yes` or `Include/Exclude` some companies.
+++ **Companies** - Comma separated list of companies to include or exclude.
+++ **All Systems** - `Yes` or `Include/Exclude` some systems.
+++ **Systems** - Comma separated list of systems to include or exclude.
++
++Please note that unless you really know what you are doing it is very dangerous to restore individual systems as your data could become unbalanced because of integration and table relationships.
++
++If you are doing a full restore and the database already exists you will be asked whether to drop it first. Unless you are sure of what you are doing select No.
++
++Preferences
++...........
++Use this routine to configure Tartan, however, depending on your security level, some of the options might not be available to you.
++
+++ **Configuration File** - This is the full path of your configuration file. Every user can have his or her own file. This file, by default, is placed in the user's home directory or, in Windows, the root directory of the Tartan installation e.g. `C:\\Tartan`. If you want to change this default, you must set an environment variable as **TARTANRC=path-to-rcfile** or use the command line option **-r path-to-rcfile**.
++
+++ **Database**
++
++    + **Database Engine** - This is the database being used and must be one of PostgreSQL, SQLite, MySQL or Firebird. The recommended one for single user installations is SQLite and PostgreSQL for multi-user installations.
++    + **Database Name** - This can be any single word name defaulting to **tartan**.
++    + **Host Name** - This is the host name of the Server. This is not used with SQLite.
++    + **Files Directory** - This is only used for SQLite and Firebird database engines and is the directory where the database will be created.
++    + **Port Number** - This is the port number the database uses. At this stage it is not in use.
++    + **Administrator** - This is the name used to connect to the database. This is not used with SQLite.
++    + **Password** - This is the password of the user. This is not necessary with SQLite.
++
+++ **General**
++
++    + **Program Path** - This is the path where the programs reside.
++    + **Archive Path** - This is the path where archived reports will be stored.
++    + **Backup Path** - This is the path where backups of the database will be stored.
++    + **Work Path** - This is the path of the work directory. All temporary files will be created in this directory.
++    + **Upgrade Path** - This is the path where any upgrades will be stored.
++    + **PDF Viewer** - This is the full path of the program used to display pdf files.  The default for LINUX is **xpdf** and Windows is **SumatraPDF**. Other recommended programs for windows are **Foxit Reader** and **AcroRd32** version 4.05.
++    + **Print Command** - This is the full path of the print program used to print postscript files. The LINUX default is **lpr** and Windows is **SumatraPDF**. Other recommended programs for windows are **Foxit Reader** and **AcroRd32** version 4.05.
++    + **PS Converter** - This is the full path of the program needed to convert pdf files to postscript. The LINUX default is **pdftops** and the Windows one is **blank**.  If this field is left blank, no conversion will take place and the print routine will have to be able to print pdf files directly e.g. where one of `SumatraPDF`, `Foxit Reader` or `Acrobat Reader` has been selected as the printer.
++    + **CSV Reader** - This is the full path of the program used to display csv and xls file formats.
++    + **Screen Geometry** - This defaults to the suggested geometry for your screen.
++    + **Enforce Confirm** - Whether confirmation is required on the completion of data entry.
++    + **Auto-completion** - Whether auto-completion will be available. This means that as you enter data, and if there are available options, these will appear in a box below the entry field for selection.
++    + **Tool-tips** - Whether tool-tips will display as you hover your cursor over certain entry fields.
++    + **Text Viewer** - Whether to, when entering text in a field which is smaller than the allowed entry size, display the whole entry in a box below the entry field or not.
++    + **Entry Frame** - Whether or not to frame all entry fields.
++    + **Error Alarm** - Whether or not to sound an audible alarm with errors. This can be No, Yes or Multimedia. Use Multimedia if you do not have an internal speaker.
++
+++ **Dialog**
++
++    + **Menu Font**
++
++        + **Name** - This is the font to be used for all menu items.
++        + **Size** - This is font size to be used for all menu items.
++
++    + **Default Font**
++
++        + **Name** - This is the font to be used in all other cases.
++        + **Size** - This is font size to be used in all other cases.
++
++    + **Theme** - The theme to be used. The default theme is `Default`.
++
++After you exit from the configuration routine elect to Exit and Save Tartan. You must then restart Tartan and if you have not yet created your database you will be prompted to do so.
++
++Quit
++....
++Select this to exit Tartan.
++
++.. raw:: pdf
++
++    PageBreak
++
++Book Club
++---------
++System Record
++.............
++This routine is used to create or amend a system control record by entering the following:
++
++    + **Years to Keep History** - Enter the number of years that historical data must be retained. Enter a 0 for infinity.
++    + **Enforce Passwords** - Select Yes or No.
++    + **Minimum Characters** - If you elected to enforce passwords enter the minimum number of characters that the passwords must consist of.
++    + **Maximum Life (Days)** - If you elected to enforce passwords enter the maximum number of days that the passwords will be valid for.
++    + **Backup History (Days)** - Enter the maximum number of days that backups will be retained. Enter 0 for infinity.
++    + **SMTP Server** - If you have email then enter your SMTP server's address e.g. smtp.mweb.co.za or smtp.saix.net or smtp.vodacom.co.za
++    + **SMTP Username** - If your smtp server requires a username enter it here.
++    + **SMTP Password** - If your smtp server requires a password enter it here.
++    + **SMS Service** - Select Yes or No. In order to use the SMS facility you will first have to register with www.smsportal.co.za.
++    + **SMS Username** - Enter the user name for the service.
++    + **SMS Password** - Enter the password for the service.
++
++Club Master Record
++..................
++This routine is used to create or amend the main club record.
++
++While most of the fields are self explanatory the following are of note:
++
+++ **E-Mail Address** - Your default email address.
++
++Member Records
++..............
++This routine is used to create or amend member's details.
++
++While most of the fields are self explanatory the following are of note:
++
+++ **Code Number** - This is the member's code. To enter a new member enter zero.
++
++Author Records
++..............
++This routine is used to create or amend author's details.
++
++While most of the fields are self explanatory the following are of note:
++
+++ **Author's Number** - This is the author's code. To enter a new author enter zero.
++
++Book Records
++............
++This routine is used to create or amend member's details.
++
++While most of the fields are self explanatory the following are of note:
++
+++ **Code** - This is the book's code. To enter a new book enter zero.
+++ **Month** - This is the month the book was received in YYYYMM format.
++
++Books Listing
++.............
++This routine is used to generate a list of books and a precis of new books received at or after the last meeting.
++
+++ **Last Meeting** - The date of the last meeting in YYYYMM format.
+++ **Status** - The books to be included in the listing.
+++ **Order** - The order that the books must appear on the list.
+++ **Output** - Select whether to view or print the list.
+++ **Printer Name** - If print was selected select the relevant printer.
+++ **Email** - If email has been enabled in the system record the following will also be available:
++    + **Email Document** - Select whether to email the completed list.
++    + **Email Address** - Enter an email address or leave blank for all members.
++    + **Email Message** - Select whether to change the default message.
++    + **View/Print Emailed Document** - Select whether to view or print the emailed list.
++
++Help
++----
++About
++.....
++This routine will display the copyright details, version and contact information for Tartan Systems.
++
+++ **Licence** - The Tartan licence details.
+++ **Changes** - The Tartan changes since version 4 to date.
++
++Reference Manual
++................
++This routine will display this manual, if available, or the on-line one using your default browser.
+
+=== renamed file 'doc/BC.rst' => 'doc/BWL.rst'
+=== renamed file 'doc/MB.rst' => 'doc/BWM.rst'
+--- doc/MB.rst	2016-06-22 08:50:32 +0000
++++ doc/BWM.rst	2016-07-10 11:57:13 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.2.3
++:Version:   5.2.4
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -17,7 +17,7 @@
+ 
+ Installation Procedure
+ ----------------------
+-Browse to the Bwlclb_5.0.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
++Browse to the Bwlclb_5.2.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+
+=== renamed file 'doc/UB.rst' => 'doc/BWU.rst'
+=== renamed file 'doc/CR.rst' => 'doc/CRS.rst'
+=== renamed file 'doc/CR_rne.rst' => 'doc/CRS_rne.rst'
+=== renamed file 'doc/DR.rst' => 'doc/DRS.rst'
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2016-06-22 08:50:32 +0000
++++ doc/Downloads.rst	2016-07-10 11:57:14 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.2.3 and was released on the 22nd June, 2016.
++The latest version of Tartan is 5.2.4 and was released on the 10th July, 2016.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.3.tar.gz
+-.. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+-.. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+-.. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.3.exe
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.4.tgz
++.. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
++.. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
++.. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.4.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.3.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.3.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.3.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.3.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.4.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.4.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.4.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.4.exe
+ 
+ |linux| Linux
+ =============
+
+=== renamed file 'doc/GL.rst' => 'doc/GEN.rst'
+=== added file 'doc/GEN_rne.rst'
+--- doc/GEN_rne.rst	1970-01-01 00:00:00 +0000
++++ doc/GEN_rne.rst	2016-04-04 10:18:43 +0000
+@@ -0,0 +1,584 @@
++General Ledger
++--------------
++File Maintenance (GL)
++.....................
++Masterfile Records (GL)
+++++++++++++++++++++++++
++This routine is used to create or amend general ledger account records. For a new company you can **automatically populate** the company with standard accounts and reports by selecting the `Populate` button. You can also import a chart of accounts by selecting the `Import` button in which case the file must be in `csv` or `xls` format and must contain all the fields as listed below.
++
+++ **Acc-Num** - The account number of the record. This is a numeric field and can have up to 7 digits. There is nothing special about this number it is only used to access the record.
+++ **Account Type** - Select the applicable account type for the record.
+++ **Description** - The account's description up to 30 characters in length.
+++ **Allow Postings** - Whether or not direct postings are allowed to this account. Normally direct postings are not allowed to control accounts of subsidiary ledgers, e.g. Debtor's as they should be generated in the subsidiary ledger.
+++ **Tax Default** - The V.A.T. code normally associated with postings to this account.
++
++Once all accounts have been created, you should print a list of them by selecting `Chart of Accounts (GL)`_ from the reporting menu, and check that all accounts have been created correctly.
++
++Control Accounts (GL)
+++++++++++++++++++++++
++This routine is used to create control accounts for the company. Control accounts are accounts that the system needs to know about in order to create double sided entries. You must create at least one bank as well as the retained income control records but preferably most of the others as well.
++
++If you elected to **automatically populate** while creating masterfile records this would already have been done for you.
++
+++ **Code** - Enter a valid control code e.g. **bank_1**. If you press F1 you  will be given a list of available codes which you can select from.
+++ **G/L Acc-Num** - Enter the applicable general ledger account number for this code.
+++ **Bank Account** - If the code is a bank account then you can enter the bank's account number here. This is required for importing bank statements.
+++ **Import Format** - If you are going to import bank statements you must select the format you will be downloading or else `None` for no imports. The preferred format for internet banking is the OFX, or Open Financial eXchange, format.
+++ **Date Format** - If you entered an import format, select the applicable date format. The date format for OFX is CCYYMMDD.
++
++Inter Company Records (GL)
++++++++++++++++++++++++++++
++This routine only applies to systems which have multiple companies. This allows one to capture transactions in one company directly into another company's accounts e.g. capture a payment made by company one for a telephone account for company two. For the purposes of simplicity lets assume that we are presently in company 1's ledger and want to integrate company 2.
++
+++ **Coy-Num** - The other company's number i.e. 2
+++ **Acc-Num-1** - Company 2's inter company loan account number in company 1.
+++ **Acc-Num-2** - Company 1's inter company loan account number in company 2.
++
++Standard Journals (GL)
++++++++++++++++++++++++
++Use this routine to create, amend and delete standard journals.
++
+++ **Number** - This is the journals reference number.
+++ **Description** - This is the description of the journal.
+++ **Frequency** - This is the frequency with which this journal is raised:
++    + **M** - Monthly
++    + **3** - Quarterly
++    + **6** - Biannually
++    + **Y** - Annually
+++ **Starting Period** - The first period this journal is to be raised, (CCYYMM)
+++ **Ending Period** - The last period this journal is to be raised, (CCYYMM)
++
++Now all the journal lines must be entered as follows:
++
+++ **Seq** - The line number.
+++ **Acc-Num** - The general ledger account number.
+++ **V** - The VAT code.
+++ **Value** - The value of the transaction. Enter credits as minus values.
++
++Please note that you will not be able to end this routine until the debits equal the credits.
++
++Report Generator (GL)
+++++++++++++++++++++++
++Use this routine to create, amend and delete `Financial Statements (GL)`_ report formats.
++
+++ **Company** - The company number or a 0 to create a general report for all companies.
+++ **Report** - The report number. After this point certain options are available.
++    + **Re-Sequence** - This re-sequences the whole report starting from 1
++    + **Copy** - This allows you to copy an existing report
++        + **Company Number** - The company number of the existing report
++        + **Report Number** - The number of the existing report
++    + **Print** - This allows you to print the report layout
+++ **Type** - The type of report to create:
++    + **B** - Balance Sheet
++    + **P** - Profit and Loss
++    + **O** - Any Other type of report
+++ **Heading** - The report heading.
+++ **Sequence**
++    + **Seq-Num** - The report sequence number. To insert lines use decimals.
++    + **Sequence Type** - The sequence type as follows.
+++ **Heading (H)**
++    + **Description** - The heading detail.
++    + **Highlight** - Whether to print the heading in bold characters.
++    + **New Page** - Whether to print the heading on a new page.
++    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
+++ **Ledger (L)**
++    + **From Account** - The first account in a range of accounts.
++    + **To Account** - The last account in a range or 0 for only the first account.
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Include Opening Balance** - Whether to include the opening balance.
++    + **Accumulate Month Values** - Whether to accumulate the month values. This only applies to (M)onthly report types.
++    + **Print Values**
++        + **Yes** - Print
++        + **No** - Do not print
++        + **Debit** - Only print if the value is positive
++        + **Credit** - Only print of the value is negative
++    + **Normal Sign**
++        + **Positive** - The value for this account is normally positive
++        + **Negative** - The value for this account is normally negative
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
++    + **Store Amount** - Whether you want to store the value for later
++    + **Storage Number** - The number to use when storing the value
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the storage
++        + **Subtract** - Subtract the value from the storage
++        + **Ignore** - Do not add nor subtract the value
+++ **Group (G)** - This is used to group a number of accounts together
++    + **Group Number** - The group number
++    + **Description** - The group description
++    + **From Account** - The first account in a range of accounts.
++    + **To Account** - The last account in a range or 0 for only the first account.
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Include Opening Balance** - Whether to include the opening balance.
++    + **Accumulate Month Values** - Whether to accumulate the month values. This only applies to (M)onthly report types.
++    + **Print Values**
++        + **Yes** - Print
++        + **No** - Do not print
++        + **Debit** - Only print if the value is positive
++        + **Credit** - Only print of the value is negative
++    + **Normal Sign**
++        + **Positive** - The value for this account is normally positive
++        + **Negative** - The value for this account is normally negative
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
++    + **Store Amount** - Whether you want to store the value for later
++    + **Storage Number** - The number to use when storing the value
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Chart Label**
+++ **Stored (S)**
++    + **Description** - The description of the stored value
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Print Values**
++        + **Yes** - Print
++        + **No** - Do not print
++        + **Debit** - Only print if the value is positive
++        + **Credit** - Only print of the value is negative
++    + **Normal Sign**
++        + **Positive** - The value for this account is normally positive
++        + **Negative** - The value for this account is normally negative
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Clear Stored Value** - Whether to zero the stored amount
++    + **Storage Number** - The stored value's number
++    + **Percentage of Stored Value** - The percentage of the stored value to print
+++ **Total (T)** - All values are automatically added into or subtracted from totals numbered from 1 to 9.
++    + **Description** - To description of the total or blank
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Total Level** - The total number to print
++    + **Print Values**
++        + **Yes** - Print
++        + **No** - Do not print
++        + **Debit** - Only print if the value is positive
++        + **Credit** - Only print of the value is negative
++    + **Normal Sign**
++        + **Positive** - The value for this account is normally positive
++        + **Negative** - The value for this account is normally negative
++    + **Clear Total** - Whether to zero the total
++    + **Store Amount** - Whether you want to store the value for later
++    + **Storage Number** - The number to use when storing the value
++    + **Add, Subtract or Ignore**
++        + **Add** - Add the value in the totals
++        + **Subtract** - Subtract the value from the totals
++        + **Ignore** - Do not add nor subtract the value
++    + **Chart Label**
+++ **Uline (U)**
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Underline Type**
++        + **Single** - Single line
++        + **Double** - Double line
++        + **Blank** - Blank line
+++ **Calc (C)** - Not Yet Implemented:
+++ **Percent (P)** - This is a percentage of one stored amount against another stored amount.
++    + **Description** - The description of the percentage
++    + **Highlight** - Whether to print the line in bold characters.
++    + **Storage Number** - The first stored amount
++    + **Storage Number** - The second stored amount
++
++Detail Records (GL)
+++++++++++++++++++++
++Use this routine to create, amend and delete detail records used by `Financial Statements (GL)`_ report formats.
++
+++ **Code** - A sequential number for the detail record.
+++ **Description** - A description of the detail.
++
++For each month in the financial year enter the following:
++
+++ **Period** - A financial period i.e. CCYYMM
+++ **Value** - A value for the period.
++
++Stream Records (GL)
+++++++++++++++++++++
++Use this routine to create, amend and delete stream records used by `Financial Statements (GL)`_ report formats.
++
+++ **Stream Number** - A sequential number for the stream record.
+++ **Description** - A description of the stream.
++
++For each report in the stream enter the following:
++
+++ **Seq** - A sequence number starting at 0.
+++ **T** - The report type, S(mall), L(arge), M(onthly) or C(ustom).
+++ **CN** - If the report type is a C then this is the custom report number.
+++ **C** - Consolidation code, Y or N.
+++ **Rep** - Report number.
+++ **G** - General report, Y or N.
+++ **V** - Report contents, V(alues), B(udgets), C(ombined) or D(etail).
+++ **Cod** - For contents type D, enter the applicable detail code.
+++ **Z** - Ignore zeros, Y or N.
+++ **O** - Print the options line on report, Y or N.
+++ **N** - Print account numbers on the report, Y or N.
+++ **Printer Name** - The printer name to print on or None.
+++ **E-Mail Address** - An email address to send the report to or leave blank.
++
++Bank Import Control (GL)
++++++++++++++++++++++++++
++Use this routine to create, amend and delete bank import control records. These records are used when importing bank statements to automatically create transactions for recurring entries e.g. charges, fees, interest, stop orders etc.
++
+++ **Bank Account** - The G/L account number for the bank.
+++ **Memo Code** - This is a 5 digit sequential number of the record. Entering a zero will automatically allocated the next number.
+++ **Memo Desc Contains** - This together with the next two fields are used to correctly identify the transaction using the description appearing on the bank statement.
+++ **Transaction Type** - Payment or Deposit.
+++ **Allocation Company** - The company number to be debited or credited.
+++ **Allocation Account** - The account number to be debited or credited.
+++ **Chn** - The chain store code if the account number is the debtor's control account.
+++ **Acc-Num** - If the account number is the creditor's or debtor's account enter the relevant creditor's or debtor's account number.
+++ **Ageing Code** - If the account number is the creditor's or debtor's account select how to age the amount.
+++ **Vat Code** - Enter the applicable V.A.T. code.
++
++Data Capture (GL)
++.................
++Opening Balances (GL)
+++++++++++++++++++++++
++Use this routine to capture initial opening balances. You can also import these balances by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain the account number and balance fields.
++
++* **Acc-Num** - The account number.
++* **Balance** - The opening balance.
++
++Budgets (GL)
++++++++++++++
++Use this routine to capture monthly budgets for a specific financial period. You can also import budgets by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain all the fields as detailed in the prompt when you hover your cursor over the button. There is also an `Auto Populate` button which will create budgets based on the previous year's actual plus or minus a standard rate.
++
++* **Acc-Num** - The account number.
++* **F** - `M` to enter a monthly budget or `A` to enter an annual budget amount.
++* **Period** - If `M` was selected then enter the period i.e. YYYYMM.
++* **Budget** - The budget value.
++
++*Auto Populate*
++
++If the auto populate button is used the following screen will appear:
++
+++ **Use Previous Year's** - Actual or Budgets.
+++ **Standard Rate (+-)** - The rate to be used to increase or decrease the previous year's amounts.
+++ **Rounding to Nearest** - Select the rounding requirement.
++
++You are now able to enter exclusions to the above parameters as follows:
++
+++ **Acc-Num** - The generals ledger account number.
+++ **Rate** - The rate to apply to this account.
++
++On exiting the the screen with the <Esc> key the budgets will be populated.
++
++Sales, Payments, Petty Cash, Purchases and Receipts (GL)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++These data capture routines are similar in operation and therefore I will handle them together. Please note that if subsidiary books are integrated i.e. creditors and debtors, purchases and sales will not be available and an error message will be displayed if you attempt to access them.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
++
+++ **Transaction**
++    + **T** - The transaction type (Petty Cash Only), (P)ayment or (R)eceipt.
++    + **Reference** - The document's reference number.
++    + **Date** - The date of the document.
++    + **Amount** - The total inclusive value of the document.
++    + **Details** - The description of the document.
+++ **Allocation**
++    + **Coy** - The company number in multi company installations.
++    + **Acc-Num** - The general ledger account number to debit or credit.
++    + **Alloc-Amt** - The inclusive amount to be allocated to this account.
++    + **V** - The applicable V.A.T. code to apply to this allocation.
++    + **VAT-Amount** - The V.A.T. amount, which can be overridden.
++    + **Details** - The description of the allocation.
+++ **ASS** - This only applies if the `Acc-Num` is one of the asset control accounts.
++    + **Grp** - The asset's group code.
++    + **Cod-Num** - The asset's code.
++    + **M** - The transaction type i.e. New purchase, improvement, write off, depreciation or sale of asset.
++    + **Amount** - The amount of the allocation.
++    + **Details** - The description of the allocation.
+++ **BKM** - This only applies if the `Acc-Num` is the booking control account.
++    + **Bkm-Num** - The booking number.
++    + **Amount** - The amount of the allocation.
+++ **CRS** - This only applies if the `Acc-Num` is the creditor's control account and the transaction type is payments or receipts.
++    + **Acc-Num** - The creditor's account number.
++    + **Ref-No2** - A further reference number if applicable.
++    + **Discount** - A discount amount.
++    + **Amount** - The amount to be allocated to this account.
+++ **DRS** - This only applies if the `Acc-Num` is the debtor's control account and the transaction type is payments or receipts.
++    + **Chn** - The chain store code, if chain stores apply.
++    + **Acc-Num** - The debtor's account number.
++    + **Ref-No2** - A further reference number if applicable.
++    + **Discount** - A discount amount.
++    + **Amount** - The amount to be allocated to this account.
+++ **LON** - This only applies if the `Acc-Num` is the staff loans control account.
++    + **Acc-Num** - The account number.
++    + **Ln** - The loan number.
++    + **Description** - The description of the loan, new loans only.
++    + **Amount** - The amount of the loan.
++    + **Rate-%** - The new interest rate to apply to the loan.
++    + **Mth** - The interest rate to apply to the loan.
++    + **Repayment** - The new amount to be repaid monthly.
+++ **MEM** = This only applies if the `Acc-Num` is the members control account.
++    + **Mem-Num** - The member's number.
++    + **Discount** - A discount amount.
++    + **Amount** - The amount to be allocated to this member.
+++ **SLN** - This only applies if the `Acc-Num` is the staff loans control account.
++    + **EmpNo** - The employee number.
++    + **Ln** - The loan number.
++    + **Amount** - The amount of the loan.
++    + **Cde** - The new deduction code to use to repay the loan.
++    + **Intr-%** - The new interest rate to apply to the loan.
++    + **Ded-Amt** - The new amount to be deducted from earnings to repay the loan.
++
++If you have allocated the transaction to a creditor's, debtor's or member's account you might be required to age the amount as described in `Ageing Transactions`_ above.
++
++Manual Journal Entries (GL)
+++++++++++++++++++++++++++++
++Use this routine to capture manual journal entries. You can also import journals by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain all the fields as detailed in the prompt when you hover your cursor over the button.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following fields apply:
++
+++ **Ref-Num** - The journal number.
+++ **Date** - The date of the journal.
+++ **Coy** - The company number in multi company installations.
+++ **Acc-Num** - The general ledger account number to debit or credit.
+++ **Amount** - The inclusive amount of the journal.
+++ **V** - The applicable V.A.T. code to apply to this journal.
+++ **VAT-Amt** - The V.A.T. amount, which can be overridden.
+++ **Details** - The description of the journal.
++
++The *List All* button will show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
++
++Please note that you will not be able to exit this routine until the debits equal the credits. Credits are entered as minus amounts.
++
++Standard Journal Entries (GL)
+++++++++++++++++++++++++++++++
++Use this routine to raise standard journal entries as created using `Standard Journals (GL)`_.
++
++As with most data capture routines you will first have to enter the `Batch Details`_ after which the following fields apply:
++
+++ **Frequency** - Select the frequency of the journals to be raised.
+++ **All Journals** - Select whether to raise all journals for the selected frequency.
+++ **All Periods** - Select whether to raise journals for all periods from the start of the current financial period up to and including the batch header period.
++
++Bank Statements (GL)
++++++++++++++++++++++
++Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed during this routine.
++
++As with most data capture routines you will first have to enter the `Batch Details`_.  The following buttons will then be available:
++
+++ **Exit** - This exits out of the capture routine as per using the <Escape> key.
+++ **Import Bank File** - This routine is used to import a bank statement file as described under `Control Accounts (GL)`_.
++
++    Once you have selected the file to import the system will automatically flag all transactions which already exist on your database.
++
++    If there are more than one transaction satisfying the comparison criteria these transactions will be displayed and you will have to select the transaction to be flagged. Should none of the transactions be the correct one, click the `Quit` button to skip allocating it.
++
++    While importing, if a duplicate record is detected, i.e. a possible duplication of the import file, a message will be displayed giving you the choice of importing it or not.
++
++    At the end of the import process a screen will be displayed showing all unallocated transactions. You must now capture these transactions as per the next option i.e. `Process Bank Data`.
++
+++ **Process Bank Data** - This routine is to continue an import which was suspended for whatever reason. This is also the procedure for capturing unallocated transactions from the previous option i.e. `Import Bank File`. A screen showing all the unallocated transactions will display.
++
++  Select a transaction to process by clicking on it or moving the cursor to it and hitting the `Enter` key.  Continue from the `Details` field in the following section.
++
+++ **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocated these using the `Process Bank Data` routine, before continuing.
++
++    + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
++    + **Ref-Num** - Enter the reference number. If the transaction already exists on your database it will be flagged as either paid or received i.e. will not appear on the bank reconciliation statement. If the transaction does not already exist you can capture it by entering the following fields:
++
++    + **Date** - Enter the transaction date.
++    + **Amount** - Enter the transaction amount.
++    + **Details** - The details for this transaction.
++
++    You will then be asked to confirm your entry and if you do so you will be able to allocate the transaction as in `Sales, Payments, Petty Cash, Purchases and Receipts (GL)`_ above.
++
++Reporting (GL)
++..............
++Batch Error Listing (GL)
++++++++++++++++++++++++++
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
++
++Transaction Audit Trail (GL)
++++++++++++++++++++++++++++++
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
+++ **Include Other Companies** - Whether or not to include other companies. If yes, you will be prompted at a later stage to select which other companies to include.
++
++Account Statements (GL)
+++++++++++++++++++++++++
++Use this routine to produce statements for individual ledger accounts.
++
++* **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
++* **From Account** - If range was selected enter the starting account number.
++* **To Account** - If range was selected enter the ending account number.
++* **Starting Period** - The starting financial period in the financial year.
++* **Ending Period** - The ending financial period in the financial year.
++* **Separate Pages** - Select whether or not to print each account on a new page.
++
++Trial Balance (GL)
++++++++++++++++++++
++Use this routine to produce a trial balance.
++
++* **Opening Balances Only** - Select whether or not to only print opening balances.
++* **Include Opening Balances** - Select whether or not to include opening balances.
++* **Starting Period** - The starting financial period in the financial year.
++* **Ending Period** - The ending financial period in the financial year.
++* **Ignore Zero Balances** - Select whether or not to ignore zero balances.
++
++Financial Statements (GL)
+++++++++++++++++++++++++++
++Use this routine to produce financial statements using the information as set up with `Report Generator (GL)`_.
++
++* **Ending Period** - The last period, in the financial year, to take into account.
++* **Stream Number** - To print the reports as enumerated in a stream record as created using `Stream Records (GL)`_.
++* **Report Type** - Select the relevant report type.
++* **Consolidate Companies** - Select whether or not to print a consolidated report. This is only applicable in a multi company installation.
++* **Report Number** - The relevant report number as created using `Report Generator (GL)`_.
++* **General Report** - Select whether or not the report is a general report.
++* **Contents** - Select which values to use in the report.
++* **Detail Code** - If `Detail` was selected above, enter the detail code as created using `Detail Records (GL)`_.
++* **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
++* **Print Options** - Select whether or not to include the selected options on the report heading.
++* **Account Numbers** - Select whether or not to include the account numbers in the report.
++
++Chart of Accounts (GL)
++++++++++++++++++++++++
++Use this routine to produce a chart of accounts.
++
++* **Sort Order** - Select the order by which the report must be sorted.
++
++Notes Listing (GL)
++++++++++++++++++++
++Use this routine to print any notes on the general ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
++Bank Reconciliation (GL)
++++++++++++++++++++++++++
++Use this routine to produce a bank reconciliation statement.
++
++* **Bank Account** - The bank account number.
++* **Accounting Period** - The relevant period in the financial year.
++
++Imported Bank Statements (GL)
+++++++++++++++++++++++++++++++
++Use this routine to produce a report of imported bank statements.
++
+++ **Bank Account** - Bank account number.
+++ **From Date** - The starting date.
+++ **To Date** - The ending date.
+++ **Unallocated Only** - Whether to only print entries which have not yet been allocated.
++
++Consolidated Trial Balance (GL)
+++++++++++++++++++++++++++++++++
++Use this routine to produce a consolidated trial balance of groups of companies.
++
+++ **Financial Period** - The relevant financial period.
+++ **Ending Period** - The last period to include in the report.
+++ **Group** - The group code of the companies.
+++ **Description** - The description of the group.
++
++Multi-Company Reports (GL)
++++++++++++++++++++++++++++
++Use this routine to produce financial statements for multiple companies.
++
+++ **Financial Period** - The relevant financial period.
+++ **Ending Period** - The last period to include in the report.
+++ **Trial Balance** - Select whether to produce trial balances.
+++ **Financials** - Select whether to produce financial statements.
+++ **Report Type** - Select the financial statement report type.
+++ **Report Number** - Select the financial statement report number.
+++ **Contents** - Select the financial statement contents type.
+++ **Ignore Zeros** - Select whether to include accounts with zero balances.
++
++Quick Trading Results (GL)
++++++++++++++++++++++++++++
++Use this routine to produce quick trading results reporting.
++
+++ **Financial Period** - The financial period to report on.
+++ **Ending Period** - The last period to include in the report.
++
++The following Buttons are now available:
++
+++ **Import** - Use this button to import values, by company, for additional purchases, sales, incentives, invoices in transit and closing stock.
+++ **Manual** - Use this button to  manually edit branches and departments.
++    + **Branch Details**
++        + **Branch Code** - The branch code to create/amend.
++        + **Branch Name** - The name of the branch.
++        + **Country Code** - The country where the branch operates.
++        + **Group Code** - The group the branch is part of.
++    + **Department Details**
++        + **Dep** - The department code.
++        + **Coy** - The company code.
++        + **Purchases** - The additional purchases value.
++        + **Sales** - The additional sales value.
++        + **Incentives** - The additional incentives value.
++        + **Transit** - The invoices in transit value.
++        + **Stock** - The closing stock value.
++    + **Edit** - Use this button to edit department values.
+++ **Print** - Use this button to generate and print the reports.
++    + **Totals Only** - Select whether to only print totals.
++    + **All Branches** - Select whether to print selected branches only.
++    + **Department Totals** - Select whether to print department totals.
++    + **Graphs** - Select whether to print graphs for the selections.
+++ **Exit** - Use this button to exit the financial period.
++
++Toolbox (GL)
++............
++Change Account Numbers (GL)
+++++++++++++++++++++++++++++
++Use this routine to change account numbers within a company.
++
++* **Old Number** - The current account number to change.
++* **New Number** - The new account number. It must not already exist.
++
++Copy Masterfile Records (GL)
++++++++++++++++++++++++++++++
++Use this routine to copy accounts from another company.
++
++* **Copy From Company** - The company number from which to copy.
++* **Include ...** - Select what additional data is to be copied.
++
++Integrated Controls Report (GL)
+++++++++++++++++++++++++++++++++
++Use this routine to produce a report showing the balance status of integrated systems and their respective control accounts.
++
++* **Cut Off Period** - The relevant period in the financial year.
++
++Intercompany Accounts Report (GL)
+++++++++++++++++++++++++++++++++++
++Use this routine to produce a report showing the balance status of intercompany accounts in a multi company installation.
++
++Initialise Bank Reconciliation (GL)
+++++++++++++++++++++++++++++++++++++
++Use this routine to initialise the bank reconciliation.
++
++* **Bank Account** - The bank account number.
++* **Last Period** - The last reconciled period.
++* **Clear History** - Select whether or not to mark all transactions up to the `Last Period` as being cleared through the bank.
++
++Now capture all the outstanding transactions as at the `Last Period`.
++
+++ **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+++ **Ref-Num** - Enter the transaction reference number.
++
++Merge Accounts Into a Control (GL)
++++++++++++++++++++++++++++++++++++
++Use this routine to transfer all transactions of selected accounts into a control account and then delete the accounts e.g. Transfer individual loan accounts into a loan's control account.
++
++Interrogation (GL)
++..................
++This routine is for querying individual general ledger accounts.
+
+=== removed file 'doc/GL_rne.rst'
+--- doc/GL_rne.rst	2016-05-21 12:42:32 +0000
++++ doc/GL_rne.rst	1970-01-01 00:00:00 +0000
+@@ -1,584 +0,0 @@
+-General Ledger
+---------------
+-File Maintenance (GL)
+-.....................
+-Masterfile Records (GL)
+-+++++++++++++++++++++++
+-This routine is used to create or amend general ledger account records. For a new company you can **automatically populate** the company with standard accounts and reports by selecting the `Populate` button. You can also import a chart of accounts by selecting the `Import` button in which case the file must be in `csv` or `xls` format and must contain all the fields as listed below.
+-
+-+ **Acc-Num** - The account number of the record. This is a numeric field and can have up to 7 digits. There is nothing special about this number it is only used to access the record.
+-+ **Account Type** - Select the applicable account type for the record.
+-+ **Description** - The account's description up to 30 characters in length.
+-+ **Allow Postings** - Whether or not direct postings are allowed to this account. Normally direct postings are not allowed to control accounts of subsidiary ledgers, e.g. Debtor's as they should be generated in the subsidiary ledger.
+-+ **Tax Default** - The V.A.T. code normally associated with postings to this account.
+-
+-Once all accounts have been created, you should print a list of them by selecting `Chart of Accounts (GL)`_ from the reporting menu, and check that all accounts have been created correctly.
+-
+-Control Accounts (GL)
+-+++++++++++++++++++++
+-This routine is used to create control accounts for the company. Control accounts are accounts that the system needs to know about in order to create double sided entries. You must create at least one bank as well as the retained income control records but preferably most of the others as well.
+-
+-If you elected to **automatically populate** while creating masterfile records this would already have been done for you.
+-
+-+ **Code** - Enter a valid control code e.g. **bank_1**. If you press F1 you  will be given a list of available codes which you can select from.
+-+ **G/L Acc-Num** - Enter the applicable general ledger account number for this code.
+-+ **Bank Account** - If the code is a bank account then you can enter the bank's account number here. This is required for importing bank statements.
+-+ **Import Format** - If you are going to import bank statements you must select the format you will be downloading or else `None` for no imports. The preferred format for internet banking is the OFX, or Open Financial eXchange, format.
+-+ **Date Format** - If you entered an import format, select the applicable date format. The date format for OFX is CCYYMMDD.
+-
+-Inter Company Records (GL)
+-++++++++++++++++++++++++++
+-This routine only applies to systems which have multiple companies. This allows one to capture transactions in one company directly into another company's accounts e.g. capture a payment made by company one for a telephone account for company two. For the purposes of simplicity lets assume that we are presently in company 1's ledger and want to integrate company 2.
+-
+-+ **Coy-Num** - The other company's number i.e. 2
+-+ **Acc-Num-1** - Company 2's inter company loan account number in company 1.
+-+ **Acc-Num-2** - Company 1's inter company loan account number in company 2.
+-
+-Standard Journals (GL)
+-++++++++++++++++++++++
+-Use this routine to create, amend and delete standard journals.
+-
+-+ **Number** - This is the journals reference number.
+-+ **Description** - This is the description of the journal.
+-+ **Frequency** - This is the frequency with which this journal is raised:
+-    + **M** - Monthly
+-    + **3** - Quarterly
+-    + **6** - Biannually
+-    + **Y** - Annually
+-+ **Starting Period** - The first period this journal is to be raised, (CCYYMM)
+-+ **Ending Period** - The last period this journal is to be raised, (CCYYMM)
+-
+-Now all the journal lines must be entered as follows:
+-
+-+ **Seq** - The line number.
+-+ **Acc-Num** - The general ledger account number.
+-+ **V** - The VAT code.
+-+ **Value** - The value of the transaction. Enter credits as minus values.
+-
+-Please note that you will not be able to end this routine until the debits equal the credits.
+-
+-Report Generator (GL)
+-+++++++++++++++++++++
+-Use this routine to create, amend and delete `Financial Statements (GL)`_ report formats.
+-
+-+ **Company** - The company number or a 0 to create a general report for all companies.
+-+ **Report** - The report number. After this point certain options are available.
+-    + **Re-Sequence** - This re-sequences the whole report starting from 1
+-    + **Copy** - This allows you to copy an existing report
+-        + **Company Number** - The company number of the existing report
+-        + **Report Number** - The number of the existing report
+-    + **Print** - This allows you to print the report layout
+-+ **Type** - The type of report to create:
+-    + **B** - Balance Sheet
+-    + **P** - Profit and Loss
+-    + **O** - Any Other type of report
+-+ **Heading** - The report heading.
+-+ **Sequence**
+-    + **Seq-Num** - The report sequence number. To insert lines use decimals.
+-    + **Sequence Type** - The sequence type as follows.
+-+ **Heading (H)**
+-    + **Description** - The heading detail.
+-    + **Highlight** - Whether to print the heading in bold characters.
+-    + **New Page** - Whether to print the heading on a new page.
+-    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
+-+ **Ledger (L)**
+-    + **From Account** - The first account in a range of accounts.
+-    + **To Account** - The last account in a range or 0 for only the first account.
+-    + **Highlight** - Whether to print the line in bold characters.
+-    + **Include Opening Balance** - Whether to include the opening balance.
+-    + **Accumulate Month Values** - Whether to accumulate the month values. This only applies to (M)onthly report types.
+-    + **Print Values**
+-        + **Yes** - Print
+-        + **No** - Do not print
+-        + **Debit** - Only print if the value is positive
+-        + **Credit** - Only print of the value is negative
+-    + **Normal Sign**
+-        + **Positive** - The value for this account is normally positive
+-        + **Negative** - The value for this account is normally negative
+-    + **Add, Subtract or Ignore**
+-        + **Add** - Add the value in the totals
+-        + **Subtract** - Subtract the value from the totals
+-        + **Ignore** - Do not add nor subtract the value
+-    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
+-    + **Store Amount** - Whether you want to store the value for later
+-    + **Storage Number** - The number to use when storing the value
+-    + **Add, Subtract or Ignore**
+-        + **Add** - Add the value in the storage
+-        + **Subtract** - Subtract the value from the storage
+-        + **Ignore** - Do not add nor subtract the value
+-+ **Group (G)** - This is used to group a number of accounts together
+-    + **Group Number** - The group number
+-    + **Description** - The group description
+-    + **From Account** - The first account in a range of accounts.
+-    + **To Account** - The last account in a range or 0 for only the first account.
+-    + **Highlight** - Whether to print the line in bold characters.
+-    + **Include Opening Balance** - Whether to include the opening balance.
+-    + **Accumulate Month Values** - Whether to accumulate the month values. This only applies to (M)onthly report types.
+-    + **Print Values**
+-        + **Yes** - Print
+-        + **No** - Do not print
+-        + **Debit** - Only print if the value is positive
+-        + **Credit** - Only print of the value is negative
+-    + **Normal Sign**
+-        + **Positive** - The value for this account is normally positive
+-        + **Negative** - The value for this account is normally negative
+-    + **Add, Subtract or Ignore**
+-        + **Add** - Add the value in the totals
+-        + **Subtract** - Subtract the value from the totals
+-        + **Ignore** - Do not add nor subtract the value
+-    + **Ignore Account Type** - In the case of B and P report types, when the account type changes the heading will automatically also change. To ignore this action select this option.
+-    + **Store Amount** - Whether you want to store the value for later
+-    + **Storage Number** - The number to use when storing the value
+-    + **Add, Subtract or Ignore**
+-        + **Add** - Add the value in the totals
+-        + **Subtract** - Subtract the value from the totals
+-        + **Ignore** - Do not add nor subtract the value
+-    + **Chart Label**
+-+ **Stored (S)**
+-    + **Description** - The description of the stored value
+-    + **Highlight** - Whether to print the line in bold characters.
+-    + **Print Values**
+-        + **Yes** - Print
+-        + **No** - Do not print
+-        + **Debit** - Only print if the value is positive
+-        + **Credit** - Only print of the value is negative
+-    + **Normal Sign**
+-        + **Positive** - The value for this account is normally positive
+-        + **Negative** - The value for this account is normally negative
+-    + **Add, Subtract or Ignore**
+-        + **Add** - Add the value in the totals
+-        + **Subtract** - Subtract the value from the totals
+-        + **Ignore** - Do not add nor subtract the value
+-    + **Clear Stored Value** - Whether to zero the stored amount
+-    + **Storage Number** - The stored value's number
+-    + **Percentage of Stored Value** - The percentage of the stored value to print
+-+ **Total (T)** - All values are automatically added into or subtracted from totals numbered from 1 to 9.
+-    + **Description** - To description of the total or blank
+-    + **Highlight** - Whether to print the line in bold characters.
+-    + **Total Level** - The total number to print
+-    + **Print Values**
+-        + **Yes** - Print
+-        + **No** - Do not print
+-        + **Debit** - Only print if the value is positive
+-        + **Credit** - Only print of the value is negative
+-    + **Normal Sign**
+-        + **Positive** - The value for this account is normally positive
+-        + **Negative** - The value for this account is normally negative
+-    + **Clear Total** - Whether to zero the total
+-    + **Store Amount** - Whether you want to store the value for later
+-    + **Storage Number** - The number to use when storing the value
+-    + **Add, Subtract or Ignore**
+-        + **Add** - Add the value in the totals
+-        + **Subtract** - Subtract the value from the totals
+-        + **Ignore** - Do not add nor subtract the value
+-    + **Chart Label**
+-+ **Uline (U)**
+-    + **Highlight** - Whether to print the line in bold characters.
+-    + **Underline Type**
+-        + **Single** - Single line
+-        + **Double** - Double line
+-        + **Blank** - Blank line
+-+ **Calc (C)** - Not Yet Implemented:
+-+ **Percent (P)** - This is a percentage of one stored amount against another stored amount.
+-    + **Description** - The description of the percentage
+-    + **Highlight** - Whether to print the line in bold characters.
+-    + **Storage Number** - The first stored amount
+-    + **Storage Number** - The second stored amount
+-
+-Detail Records (GL)
+-+++++++++++++++++++
+-Use this routine to create, amend and delete detail records used by `Financial Statements (GL)`_ report formats.
+-
+-+ **Code** - A sequential number for the detail record.
+-+ **Description** - A description of the detail.
+-
+-For each month in the financial year enter the following:
+-
+-+ **Period** - A financial period i.e. CCYYMM
+-+ **Value** - A value for the period.
+-
+-Stream Records (GL)
+-+++++++++++++++++++
+-Use this routine to create, amend and delete stream records used by `Financial Statements (GL)`_ report formats.
+-
+-+ **Stream Number** - A sequential number for the stream record.
+-+ **Description** - A description of the stream.
+-
+-For each report in the stream enter the following:
+-
+-+ **Seq** - A sequence number starting at 0.
+-+ **T** - The report type, S(mall), L(arge), M(onthly) or C(ustom).
+-+ **CN** - If the report type is a C then this is the custom report number.
+-+ **C** - Consolidation code, Y or N.
+-+ **Rep** - Report number.
+-+ **G** - General report, Y or N.
+-+ **V** - Report contents, V(alues), B(udgets), C(ombined) or D(etail).
+-+ **Cod** - For contents type D, enter the applicable detail code.
+-+ **Z** - Ignore zeros, Y or N.
+-+ **O** - Print the options line on report, Y or N.
+-+ **N** - Print account numbers on the report, Y or N.
+-+ **Printer Name** - The printer name to print on or None.
+-+ **E-Mail Address** - An email address to send the report to or leave blank.
+-
+-Bank Import Control (GL)
+-++++++++++++++++++++++++
+-Use this routine to create, amend and delete bank import control records. These records are used when importing bank statements to automatically create transactions for recurring entries e.g. charges, fees, interest, stop orders etc.
+-
+-+ **Bank Account** - The G/L account number for the bank.
+-+ **Memo Code** - This is a 5 digit sequential number of the record. Entering a zero will automatically allocated the next number.
+-+ **Memo Desc Contains** - This together with the next two fields are used to correctly identify the transaction using the description appearing on the bank statement.
+-+ **Transaction Type** - Payment or Deposit.
+-+ **Allocation Company** - The company number to be debited or credited.
+-+ **Allocation Account** - The account number to be debited or credited.
+-+ **Chn** - The chain store code if the account number is the debtor's control account.
+-+ **Acc-Num** - If the account number is the creditor's or debtor's account enter the relevant creditor's or debtor's account number.
+-+ **Ageing Code** - If the account number is the creditor's or debtor's account select how to age the amount.
+-+ **Vat Code** - Enter the applicable V.A.T. code.
+-
+-Data Capture (GL)
+-.................
+-Opening Balances (GL)
+-+++++++++++++++++++++
+-Use this routine to capture initial opening balances. You can also import these balances by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain the account number and balance fields.
+-
+-* **Acc-Num** - The account number.
+-* **Balance** - The opening balance.
+-
+-Budgets (GL)
+-++++++++++++
+-Use this routine to capture monthly budgets for a specific financial period. You can also import budgets by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain all the fields as detailed in the prompt when you hover your cursor over the button. There is also an `Auto Populate` button which will create budgets based on the previous year's actual plus or minus a standard rate.
+-
+-* **Acc-Num** - The account number.
+-* **F** - `M` to enter a monthly budget or `A` to enter an annual budget amount.
+-* **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+-* **Budget** - The budget value.
+-
+-*Auto Populate*
+-
+-If the auto populate button is used the following screen will appear:
+-
+-+ **Use Previous Year's** - Actual or Budgets.
+-+ **Standard Rate (+-)** - The rate to be used to increase or decrease the previous year's amounts.
+-+ **Rounding to Nearest** - Select the rounding requirement.
+-
+-You are now able to enter exclusions to the above parameters as follows:
+-
+-+ **Acc-Num** - The generals ledger account number.
+-+ **Rate** - The rate to apply to this account.
+-
+-On exiting the the screen with the <Esc> key the budgets will be populated.
+-
+-Sales, Payments, Petty Cash, Purchases and Receipts (GL)
+-++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-These data capture routines are similar in operation and therefore I will handle them together. Please note that if subsidiary books are integrated i.e. creditors and debtors, purchases and sales will not be available and an error message will be displayed if you attempt to access them.
+-
+-As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
+-
+-+ **Transaction**
+-    + **T** - The transaction type (Petty Cash Only), (P)ayment or (R)eceipt.
+-    + **Reference** - The document's reference number.
+-    + **Date** - The date of the document.
+-    + **Amount** - The total inclusive value of the document.
+-    + **Details** - The description of the document.
+-+ **Allocation**
+-    + **Coy** - The company number in multi company installations.
+-    + **Acc-Num** - The general ledger account number to debit or credit.
+-    + **Alloc-Amt** - The inclusive amount to be allocated to this account.
+-    + **V** - The applicable V.A.T. code to apply to this allocation.
+-    + **VAT-Amount** - The V.A.T. amount, which can be overridden.
+-    + **Details** - The description of the allocation.
+-+ **ASS** - This only applies if the `Acc-Num` is one of the asset control accounts.
+-    + **Grp** - The asset's group code.
+-    + **Cod-Num** - The asset's code.
+-    + **M** - The transaction type i.e. New purchase, improvement, write off, depreciation or sale of asset.
+-    + **Amount** - The amount of the allocation.
+-    + **Details** - The description of the allocation.
+-+ **BKM** - This only applies if the `Acc-Num` is the booking control account.
+-    + **Bkm-Num** - The booking number.
+-    + **Amount** - The amount of the allocation.
+-+ **CRS** - This only applies if the `Acc-Num` is the creditor's control account and the transaction type is payments or receipts.
+-    + **Acc-Num** - The creditor's account number.
+-    + **Ref-No2** - A further reference number if applicable.
+-    + **Discount** - A discount amount.
+-    + **Amount** - The amount to be allocated to this account.
+-+ **DRS** - This only applies if the `Acc-Num` is the debtor's control account and the transaction type is payments or receipts.
+-    + **Chn** - The chain store code, if chain stores apply.
+-    + **Acc-Num** - The debtor's account number.
+-    + **Ref-No2** - A further reference number if applicable.
+-    + **Discount** - A discount amount.
+-    + **Amount** - The amount to be allocated to this account.
+-+ **LON** - This only applies if the `Acc-Num` is the staff loans control account.
+-    + **Acc-Num** - The account number.
+-    + **Ln** - The loan number.
+-    + **Description** - The description of the loan, new loans only.
+-    + **Amount** - The amount of the loan.
+-    + **Rate-%** - The new interest rate to apply to the loan.
+-    + **Mth** - The interest rate to apply to the loan.
+-    + **Repayment** - The new amount to be repaid monthly.
+-+ **MEM** = This only applies if the `Acc-Num` is the members control account.
+-    + **Mem-Num** - The member's number.
+-    + **Discount** - A discount amount.
+-    + **Amount** - The amount to be allocated to this member.
+-+ **SLN** - This only applies if the `Acc-Num` is the staff loans control account.
+-    + **EmpNo** - The employee number.
+-    + **Ln** - The loan number.
+-    + **Amount** - The amount of the loan.
+-    + **Cde** - The new deduction code to use to repay the loan.
+-    + **Intr-%** - The new interest rate to apply to the loan.
+-    + **Ded-Amt** - The new amount to be deducted from earnings to repay the loan.
+-
+-If you have allocated the transaction to a creditor's, debtor's or member's account you might be required to age the amount as described in `Ageing Transactions`_ above.
+-
+-Manual Journal Entries (GL)
+-+++++++++++++++++++++++++++
+-Use this routine to capture manual journal entries. You can also import journals by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain all the fields as detailed in the prompt when you hover your cursor over the button.
+-
+-As with most data capture routines you will first have to enter the `Batch Details`_ after which the following fields apply:
+-
+-+ **Ref-Num** - The journal number.
+-+ **Date** - The date of the journal.
+-+ **Coy** - The company number in multi company installations.
+-+ **Acc-Num** - The general ledger account number to debit or credit.
+-+ **Amount** - The inclusive amount of the journal.
+-+ **V** - The applicable V.A.T. code to apply to this journal.
+-+ **VAT-Amt** - The V.A.T. amount, which can be overridden.
+-+ **Details** - The description of the journal.
+-
+-The *List All* button will show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
+-
+-Please note that you will not be able to exit this routine until the debits equal the credits. Credits are entered as minus amounts.
+-
+-Standard Journal Entries (GL)
+-+++++++++++++++++++++++++++++
+-Use this routine to raise standard journal entries as created using `Standard Journals (GL)`_.
+-
+-As with most data capture routines you will first have to enter the `Batch Details`_ after which the following fields apply:
+-
+-+ **Frequency** - Select the frequency of the journals to be raised.
+-+ **All Journals** - Select whether to raise all journals for the selected frequency.
+-+ **All Periods** - Select whether to raise journals for all periods from the start of the current financial period up to and including the batch header period.
+-
+-Bank Statements (GL)
+-++++++++++++++++++++
+-Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed during this routine.
+-
+-As with most data capture routines you will first have to enter the `Batch Details`_.  The following buttons will then be available:
+-
+-+ **Exit** - This exits out of the capture routine as per using the <Escape> key.
+-+ **Import Bank File** - This routine is used to import a bank statement file as described under `Control Accounts (GL)`_.
+-
+-    Once you have selected the file to import the system will automatically flag all transactions which already exist on your database.
+-
+-    If there are more than one transaction satisfying the comparison criteria these transactions will be displayed and you will have to select the transaction to be flagged. Should none of the transactions be the correct one, click the `Quit` button to skip allocating it.
+-
+-    While importing, if a duplicate record is detected, i.e. a possible duplication of the import file, a message will be displayed giving you the choice of importing it or not.
+-
+-    At the end of the import process a screen will be displayed showing all unallocated transactions. You must now capture these transactions as per the next option i.e. `Process Bank Data`.
+-
+-+ **Process Bank Data** - This routine is to continue an import which was suspended for whatever reason. This is also the procedure for capturing unallocated transactions from the previous option i.e. `Import Bank File`. A screen showing all the unallocated transactions will display.
+-
+-  Select a transaction to process by clicking on it or moving the cursor to it and hitting the `Enter` key.  Continue from the `Details` field in the following section.
+-
+-+ **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocated these using the `Process Bank Data` routine, before continuing.
+-
+-    + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+-    + **Ref-Num** - Enter the reference number. If the transaction already exists on your database it will be flagged as either paid or received i.e. will not appear on the bank reconciliation statement. If the transaction does not already exist you can capture it by entering the following fields:
+-
+-    + **Date** - Enter the transaction date.
+-    + **Amount** - Enter the transaction amount.
+-    + **Details** - The details for this transaction.
+-
+-    You will then be asked to confirm your entry and if you do so you will be able to allocate the transaction as in `Sales, Payments, Petty Cash, Purchases and Receipts (GL)`_ above.
+-
+-Reporting (GL)
+-..............
+-Batch Error Listing (GL)
+-++++++++++++++++++++++++
+-Use this routine to print any unbalanced batches.
+-
+-+ **Type** - The transaction type or 0 for all.
+-+ **Batch-Number** - The batch number or blank for all.
+-
+-Transaction Audit Trail (GL)
+-++++++++++++++++++++++++++++
+-Use this routine to print lists of transactions either by financial period or date of capture.
+-
+-+ **Period Type** - Financial or Capture.
+-+ **Starting Period** - The first financial period to include in the report.
+-+ **Ending Period** - The last financial period to include in the report.
+-+ **Starting Date** - The from date to include in the report.
+-+ **Ending Date** - The to date to include in the report.
+-+ **Type** - The transaction type or 0 for all.
+-+ **Batch-Number** - The batch number or blank for all.
+-+ **Totals Only** - Yes or No.
+-+ **Include Other Companies** - Whether or not to include other companies. If yes, you will be prompted at a later stage to select which other companies to include.
+-
+-Account Statements (GL)
+-+++++++++++++++++++++++
+-Use this routine to produce statements for individual ledger accounts.
+-
+-* **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
+-* **From Account** - If range was selected enter the starting account number.
+-* **To Account** - If range was selected enter the ending account number.
+-* **Starting Period** - The starting financial period in the financial year.
+-* **Ending Period** - The ending financial period in the financial year.
+-* **Separate Pages** - Select whether or not to print each account on a new page.
+-
+-Trial Balance (GL)
+-++++++++++++++++++
+-Use this routine to produce a trial balance.
+-
+-* **Opening Balances Only** - Select whether or not to only print opening balances.
+-* **Include Opening Balances** - Select whether or not to include opening balances.
+-* **Starting Period** - The starting financial period in the financial year.
+-* **Ending Period** - The ending financial period in the financial year.
+-* **Ignore Zero Balances** - Select whether or not to ignore zero balances.
+-
+-Financial Statements (GL)
+-+++++++++++++++++++++++++
+-Use this routine to produce financial statements using the information as set up with `Report Generator (GL)`_.
+-
+-* **Ending Period** - The last period, in the financial year, to take into account.
+-* **Stream Number** - To print the reports as enumerated in a stream record as created using `Stream Records (GL)`_.
+-* **Report Type** - Select the relevant report type.
+-* **Consolidate Companies** - Select whether or not to print a consolidated report. This is only applicable in a multi company installation.
+-* **Report Number** - The relevant report number as created using `Report Generator (GL)`_.
+-* **General Report** - Select whether or not the report is a general report.
+-* **Contents** - Select which values to use in the report.
+-* **Detail Code** - If `Detail` was selected above, enter the detail code as created using `Detail Records (GL)`_.
+-* **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
+-* **Print Options** - Select whether or not to include the selected options on the report heading.
+-* **Account Numbers** - Select whether or not to include the account numbers in the report.
+-
+-Chart of Accounts (GL)
+-++++++++++++++++++++++
+-Use this routine to produce a chart of accounts.
+-
+-* **Sort Order** - Select the order by which the report must be sorted.
+-
+-Notes Listing (GL)
+-++++++++++++++++++
+-Use this routine to print any notes on the general ledger accounts.
+-
+-+ **Action Flag** - Normal or Urgent.
+-+ **From Capture Date** - The starting creation date.
+-+ **To Capture Date** - The ending creation date.
+-+ **From Action Date** - The starting action date.
+-+ **To Action Date** - The ending action date.
+-
+-Bank Reconciliation (GL)
+-++++++++++++++++++++++++
+-Use this routine to produce a bank reconciliation statement.
+-
+-* **Bank Account** - The bank account number.
+-* **Accounting Period** - The relevant period in the financial year.
+-
+-Imported Bank Statements (GL)
+-+++++++++++++++++++++++++++++
+-Use this routine to produce a report of imported bank statements.
+-
+-+ **Bank Account** - Bank account number.
+-+ **From Date** - The starting date.
+-+ **To Date** - The ending date.
+-+ **Unallocated Only** - Whether to only print entries which have not yet been allocated.
+-
+-Consolidated Trial Balance (GL)
+-+++++++++++++++++++++++++++++++
+-Use this routine to produce a consolidated trial balance of groups of companies.
+-
+-+ **Financial Period** - The relevant financial period.
+-+ **Ending Period** - The last period to include in the report.
+-+ **Group** - The group code of the companies.
+-+ **Description** - The description of the group.
+-
+-Multi-Company Reports (GL)
+-++++++++++++++++++++++++++
+-Use this routine to produce financial statements for multiple companies.
+-
+-+ **Financial Period** - The relevant financial period.
+-+ **Ending Period** - The last period to include in the report.
+-+ **Trial Balance** - Select whether to produce trial balances.
+-+ **Financials** - Select whether to produce financial statements.
+-+ **Report Type** - Select the financial statement report type.
+-+ **Report Number** - Select the financial statement report number.
+-+ **Contents** - Select the financial statement contents type.
+-+ **Ignore Zeros** - Select whether to include accounts with zero balances.
+-
+-Quick Trading Results (GL)
+-++++++++++++++++++++++++++
+-Use this routine to produce quick trading results reporting.
+-
+-+ **Financial Period** - The financial period to report on.
+-+ **Ending Period** - The last period to include in the report.
+-
+-The following Buttons are now available:
+-
+-+ **Import** - Use this button to import values, by company, for additional purchases, sales, incentives, invoices in transit and closing stock.
+-+ **Manual** - Use this button to  manually edit branches and departments.
+-    + **Branch Details**
+-        + **Branch Code** - The branch code to create/amend.
+-        + **Branch Name** - The name of the branch.
+-        + **Country Code** - The country where the branch operates.
+-        + **Group Code** - The group the branch is part of.
+-    + **Department Details**
+-        + **Dep** - The department code.
+-        + **Coy** - The company code.
+-        + **Purchases** - The additional purchases value.
+-        + **Sales** - The additional sales value.
+-        + **Incentives** - The additional incentives value.
+-        + **Transit** - The invoices in transit value.
+-        + **Stock** - The closing stock value.
+-    + **Edit** - Use this button to edit department values.
+-+ **Print** - Use this button to generate and print the reports.
+-    + **Totals Only** - Select whether to only print totals.
+-    + **All Branches** - Select whether to print selected branches only.
+-    + **Department Totals** - Select whether to print department totals.
+-    + **Graphs** - Select whether to print graphs for the selections.
+-+ **Exit** - Use this button to exit the financial period.
+-
+-Toolbox (GL)
+-............
+-Change Account Numbers (GL)
+-+++++++++++++++++++++++++++
+-Use this routine to change account numbers within a company.
+-
+-* **Old Number** - The current account number to change.
+-* **New Number** - The new account number. It must not already exist.
+-
+-Copy Masterfile Records (GL)
+-++++++++++++++++++++++++++++
+-Use this routine to copy accounts from another company.
+-
+-* **Copy From Company** - The company number from which to copy.
+-* **Include ...** - Select what additional data is to be copied.
+-
+-Integrated Controls Report (GL)
+-+++++++++++++++++++++++++++++++
+-Use this routine to produce a report showing the balance status of integrated systems and their respective control accounts.
+-
+-* **Cut Off Period** - The relevant period in the financial year.
+-
+-Intercompany Accounts Report (GL)
+-+++++++++++++++++++++++++++++++++
+-Use this routine to produce a report showing the balance status of intercompany accounts in a multi company installation.
+-
+-Initialise Bank Reconciliation (GL)
+-+++++++++++++++++++++++++++++++++++
+-Use this routine to initialise the bank reconciliation.
+-
+-* **Bank Account** - The bank account number.
+-* **Last Period** - The last reconciled period.
+-* **Clear History** - Select whether or not to mark all transactions up to the `Last Period` as being cleared through the bank.
+-
+-Now capture all the outstanding transactions as at the `Last Period`.
+-
+-+ **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+-+ **Ref-Num** - Enter the transaction reference number.
+-
+-Merge Accounts Into a Control (GL)
+-++++++++++++++++++++++++++++++++++
+-Use this routine to transfer all transactions of selected accounts into a control account and then delete the accounts e.g. Transfer individual loan accounts into a loan's control account.
+-
+-Interrogation (GL)
+-..................
+-This routine is for querying individual general ledger accounts.
+
+=== renamed file 'doc/HD.rst' => 'doc/HLP.rst'
+--- doc/HD.rst	2015-06-17 15:23:42 +0000
++++ doc/HLP.rst	2016-06-27 09:56:27 +0000
+@@ -1,7 +1,7 @@
+ Help
+ ----
+-About Tartan
+-............
++About
++.....
+ This routine will display the copyright details, version and contact information for Tartan Systems.
+ 
+ + **Licence** - The Tartan licence details.
+
+=== renamed file 'doc/IB.rst' => 'doc/IBT.rst'
+=== renamed file 'doc/LN.rst' => 'doc/LON.rst'
+=== renamed file 'doc/ML.rst' => 'doc/MEM.rst'
+=== renamed file 'doc/MD.rst' => 'doc/MST.rst'
+--- doc/MD.rst	2016-06-22 08:50:32 +0000
++++ doc/MST.rst	2016-07-10 11:57:13 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.2.3
++:Version:   5.2.4
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== renamed file 'doc/QS.rst' => 'doc/QST.rst'
+=== renamed file 'doc/RC.rst' => 'doc/RCA.rst'
+=== renamed file 'doc/RT.rst' => 'doc/RTL.rst'
+=== renamed file 'doc/SC.rst' => 'doc/SEC.rst'
+--- doc/SC.rst	2016-05-22 06:39:45 +0000
++++ doc/SEC.rst	2016-06-27 09:22:54 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.0.3
++:Version:   5.2.3
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -17,7 +17,7 @@
+ 
+ Installation Procedure
+ ----------------------
+-Browse to the Seccmp_5.0.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
++Browse to the Seccmp_5.2.x file and double click on it. Accept all defaults and agree to creating an icon on your desktop.
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+
+=== renamed file 'doc/SL.rst' => 'doc/SLN.rst'
+=== renamed file 'doc/SI.rst' => 'doc/SLS.rst'
+=== renamed file 'doc/ST.rst' => 'doc/STR.rst'
+=== renamed file 'doc/UD.rst' => 'doc/UTY.rst'
+=== renamed file 'doc/WG.rst' => 'doc/WAG.rst'
+=== modified file 'gen/gl1010.py'
+--- gen/gl1010.py	2016-05-21 12:42:32 +0000
++++ gen/gl1010.py	2016-06-30 15:53:25 +0000
+@@ -90,7 +90,7 @@
+                 "","N",None,None,None,("notblank",)),
+             (("T",0,3,0),("IRB",r2s),0,"Allow Postings","",
+                 "Y","N",None,None,None,None),
+-            [("T",0,4,0),"INA",1,"Tax Default","",
++            [("T",0,4,0),"IUA",1,"Tax Default","",
+                 "","N",self.doVatCod,vat,None,("notblank",)]]
+         but = (
+             ("Import",None,self.doImport,0,("T",0,1),("T",0,2),
+
+=== modified file 'gen/gl1050.py'
+--- gen/gl1050.py	2016-02-27 13:18:41 +0000
++++ gen/gl1050.py	2016-07-01 11:29:03 +0000
+@@ -243,9 +243,13 @@
+     def doContent(self, frt, pag, r, c, p, i, w):
+         if w in ("B", "C", "X") and self.typ in ("S", "L", "C"):
+             return "Invalid Choice for this Report Type"
+-        if w != "D":
+-            self.df.loadEntry(frt, pag, p+1, data="")
+-            return "sk1"
++        if w == "D":
++            return
++        self.df.loadEntry(frt, pag, p+1, data="")
++        if self.typ == "M":
++            self.df.loadEntry(frt, pag, p+2, data="B")
++            return "sk2"
++        return "sk1"
+ 
+     def doCod(self, frt, pag, r, c, p, i, w):
+         d = self.sql.getRec(tables="gendtm", cols=["gdm_desc"],
+@@ -253,6 +257,9 @@
+             w)], limit=1)
+         if not d:
+             return "Invalid Detail Code"
++        if self.typ == "M":
++            self.df.loadEntry(frt, pag, p+2, data="B")
++            return "sk1"
+ 
+     def doPrt(self, frt, pag, r, c, p, i, w):
+         if w not in self.printers:
+
+=== modified file 'gen/gl3050.py'
+--- gen/gl3050.py	2016-05-21 12:42:32 +0000
++++ gen/gl3050.py	2016-07-01 15:25:48 +0000
+@@ -263,11 +263,15 @@
+         if w in ("B", "C", "X") and self.typ != "M":
+             return "Invalid"
+         self.val = w
+-        if self.val != "D":
+-            if self.typ == "M":
+-                self.var = "B"
+-                return "sk3"
+-            return "sk2"
++        if self.val == "D":
++            return
++        self.df.loadEntry(frt, pag, p+1, data="")
++        self.df.loadEntry(frt, pag, p+2, data="")
++        if self.typ == "M":
++            self.var = "B"
++            self.df.loadEntry(frt, pag, p+3, data=self.var)
++            return "sk3"
++        return "sk2"
+ 
+     def doRepDet(self, frt, pag, r, c, p, i, w):
+         det = self.sql.getRec(tables="gendtm", cols=["gdm_desc"],
+@@ -279,6 +283,7 @@
+         self.df.loadEntry(frt, pag, p+1, data=det[0])
+         if self.typ == "M":
+             self.var = "B"
++            self.df.loadEntry(frt, pag, p+3, data=self.var)
+             return "sk1"
+ 
+     def doRepVar(self, frt, pag, r, c, p, i, w):
+@@ -324,7 +329,10 @@
+                         continue
+                     self.val = rep[col.index("gls_val")]
+                     self.det = rep[col.index("gls_det")]
+-                    self.var = rep[col.index("gls_var")]
++                    if self.typ == "M":
++                        self.var = "B"
++                    else:
++                        self.var = rep[col.index("gls_var")]
+                     self.zer = rep[col.index("gls_zer")]
+                     self.opt = rep[col.index("gls_opt")]
+                     if not self.opt:
+@@ -1001,9 +1009,12 @@
+             m = self.s_per % 100
+             self.text = ""
+             space = " " * 20
+-            for _ in xrange(0, 12):
++            self.cutmth = 11
++            for x in xrange(0, 12):
+                 self.text = self.text + space[0:(10-len(mthnam[m][1]))] + \
+                     mthnam[m][1] + "  "
++                if self.val == "C" and m == self.lastmth:
++                    self.cutmth = x
+                 m += 1
+                 if m > 12:
+                     m = 1
+@@ -1299,23 +1310,23 @@
+                         ldic["mx13"].work]])
+             else:
+                 if self.num == "Y":
+-                    self.fpdf.drawText(
+-                        "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % \
+-                        (acc.disp, des.disp, ldic["mp0"].disp, ldic["mp1"].disp,
+-                        ldic["mp2"].disp, ldic["mp3"].disp, ldic["mp4"].disp,
+-                        ldic["mp5"].disp, ldic["mp6"].disp, ldic["mp7"].disp,
+-                        ldic["mp8"].disp, ldic["mp9"].disp, ldic["mp10"].disp,
+-                        ldic["mp11"].disp, ldic["mp12"].disp,
+-                        ldic["mp13"].disp))
++                    txt = "%s %s " % (acc.disp, des.disp)
+                 else:
+-                    self.fpdf.drawText(
+-                        "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % \
+-                        (des.disp, ldic["mp0"].disp, ldic["mp1"].disp,
+-                        ldic["mp2"].disp, ldic["mp3"].disp, ldic["mp4"].disp,
+-                        ldic["mp5"].disp, ldic["mp6"].disp, ldic["mp7"].disp,
+-                        ldic["mp8"].disp, ldic["mp9"].disp, ldic["mp10"].disp,
+-                        ldic["mp11"].disp, ldic["mp12"].disp,
+-                        ldic["mp13"].disp))
++                    txt = "%s " % des.disp
++                w = self.fpdf.cwth * len(txt)
++                self.fpdf.drawText(txt, w=w, ln=0)
++                for x in xrange(14):
++                    txt = "%s " % ldic["mp%s" % x].disp
++                    w = self.fpdf.cwth * len(txt)
++                    p = self.fpdf.get_x()
++                    if x == 13:
++                        ln = 1
++                    else:
++                        ln = 0
++                    if self.val == "C" and x < 13 and x > self.cutmth + 1:
++                        self.fpdf.drawText(txt, x=p, w=w, fill=1, ln=ln)
++                    else:
++                        self.fpdf.drawText(txt, x=p, w=w, ln=ln)
+                 self.pglin += 1
+                 self.last = True
+                 if line[10]:
+
+=== modified file 'men/bksmen.py'
+--- men/bksmen.py	2016-06-22 08:28:55 +0000
++++ men/bksmen.py	2016-06-27 09:52:16 +0000
+@@ -35,7 +35,7 @@
+ msmen = [
+     ["MM","mm_sy","System"],
+     ["MM","mm_bs","Book Club"],
+-    ["MM","mm_uy","Utilities"]]
++    ["MM","mm_hp","Help"]]
+ msmod = [
+     ["F","mm_sy","tarUpd",8,"Update File Formats"],
+     ["F","mm_sy","tarBck",0,"Backup Database"],
+@@ -48,6 +48,6 @@
+     ["PYNY","mm_bs","bsc210",0,"Author Records"],
+     ["PYNY","mm_bs","bs1010",0,"Book Records"],
+     ["PYNY","mm_bs","bs3010",0,"Books Listing"],
+-    ["PNNY","mm_uy","rp1010",2,"Report Generator"],
+-    ["PYNN","mm_uy","bm1010",2,"Bulk Mail/SMS Utility"]]
++    ["F","mm_hp","doAbout",0,"About"],
++    ["F","mm_hp","doManual",0,"Reference Manual"]]
+ # End
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2016-06-22 08:50:32 +0000
++++ mst/ms0000.py	2016-07-10 11:57:13 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 2, 3)
++    VERSION = (5, 2, 4)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2016-06-22 08:28:55 +0000
++++ mst/msc000.py	2016-07-07 10:24:41 +0000
+@@ -420,7 +420,7 @@
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.direct = False
+         self.tarmen = None
+-        self.emadd = None
++        self.email = None
+ 
+     def userLogin(self):
+         if not self.db.dbopen:
+@@ -804,6 +804,8 @@
+         self.conam = chk["ctm_name"]
+         self.email = chk["ctm_email"]
+         self.modul = chk["ctm_modules"]
++        if not prg:
++            return
+         # Check Module
+         mod = prg[:2].upper()
+         if mod in ("BM", "CA", "MS", "RP", "TD"):
+@@ -1256,10 +1258,10 @@
+     def doSysChkUpgrade(self):
+         try:
+             err = self.conoCheck(1)
+-            if err or not self.emadd:
+-                self.emadd = "info@tartan.co.za"
++            if err or not self.email:
++                self.email = "info@tartan.co.za"
+             flenam = cStringIO.StringIO()
+-            error = ftpDownload("tartan.co.za", "current", word=self.emadd,
++            error = ftpDownload("192.168.1.250", "current", word=self.email,
+                 dest=flenam, close=False)
+             if error:
+                 raise Exception
+@@ -1314,9 +1316,9 @@
+                     ext = "exe"
+                 else:
+                     ext = "tgz"
+-                nam = self.upgsys + "_%s.%s.%s.%s" % (self.newver, ext)
++                nam = self.upgsys + "_%s.%s.%s" % self.newver + ".%s" % ext
+                 fle = os.path.join(self.mf.rcdic["upgdir"], nam)
+-                error = ftpDownload("tartan.co.za", nam, word=self.emadd,
++                error = ftpDownload("192.168.1.250", nam, word=self.email,
+                     dest=fle)
+                 if error:
+                     raise Exception
+@@ -1333,7 +1335,7 @@
+                 "Upgrade File Could Not be Retrieved.\n\n"\
+                 "Your System Has Not Been Upgraded.\n\n"\
+                 "Please Contact Your IT Manager.")
+-            sys.exit()
++            self.doSysUpdXit()
+ 
+     def doSysUpdXit(self, widget=None):
+         self.su.closeProcess()
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2016-06-22 08:28:55 +0000
++++ std/TartanClasses.py	2016-07-09 09:02:53 +0000
+@@ -13,10 +13,6 @@
+ #========================================================
+ # Standard Python modules
+ #========================================================
+-# To profile a function enable the following import
+-#   from profilehooks import profile
+-# Then insert the following line before the function to profile
+-#   @profile(entries=40, immediate=True)
+ import calendar, csv, functools, glob, gzip, os, re, shutil, sys
+ import tarfile, textwrap, threading, time, urllib2, webbrowser
+ from pkgutil import iter_modules
+@@ -7758,6 +7754,7 @@
+                 setattr(self, nam, defaults[nam])
+                 if nam == "typ":
+                     text = ""
++        print text
+         if not self.mxs:
+             self.typ = "G"
+         if self.typ == "G":
+@@ -7769,6 +7766,7 @@
+         elif self.typ == "F" and not text:
+             text = "Updating Files ... Please Wait"
+         else:
++            text = self.typ
+             self.typ = "P"
+         self.quit = False
+         if self.inn:
+@@ -10324,8 +10322,6 @@
+                 if cm > 12:
+                     cm -= 12
+                     cy += 1
+-        if self.vcode == "C":
+-            cut = "n"
+         if self.d_per:
+             # Current Financial period exceeds 12 months
+             cy = self.i_per / 100
+@@ -10333,7 +10329,7 @@
+             for _ in range(self.d_per):
+                 curdt = (cy * 100) + cm
+                 lyr, cyr, bud = self.getMbal(curdt)
+-                if self.vcode == "B" or (self.vcode == "C" and cut == "y"):
++                if self.vcode == "B":
+                     self.mth[1] = float(ASD(self.mth[1]) + ASD(bud))
+                     self.mth[13] = float(ASD(self.mth[13]) + ASD(bud))
+                 elif self.vcode == "C":
+@@ -10356,10 +10352,12 @@
+                 if cm > 12:
+                     cm -= 12
+                     cy += 1
++        if self.vcode == "C":
++            cut = False
+         curdt = self.s_per
+         for mth in xrange(1, 13):
+             lyr, cyr, bud = self.getMbal(curdt)
+-            if self.vcode == "B" or (self.vcode == "C" and cut == "y"):
++            if self.vcode == "B" or (self.vcode == "C" and cut):
+                 self.mth[mth] = float(ASD(self.mth[mth]) + ASD(bud))
+                 self.mth[13] = float(ASD(self.mth[13]) + ASD(bud))
+             elif self.vcode == "C":
+@@ -10381,7 +10379,7 @@
+                 self.mth[13] = float(ASD(self.mth[13]) + ASD(cyr))
+             if curdt == self.curdt:
+                 if self.vcode == "C":
+-                    cut = "y"
++                    cut = True
+                 else:
+                     break
+             y = curdt / 100
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2016-05-25 06:55:19 +0000
++++ std/tartanFunctions.py	2016-07-09 10:40:17 +0000
+@@ -111,7 +111,7 @@
+     if sys.platform == "win32":
+         homedir = os.path.normpath("C:/Tartan")
+     else:
+-        homedir = os.path.expanduser("~")
++        homedir = os.path.join(os.path.expanduser("~"), "Tartan")
+     opts = {
+         "dbase": ["SQLite"],
+         "dbname": ["tartan"],
+@@ -164,9 +164,9 @@
+                 if os.path.isfile(os.path.normpath("C:/tartanrc")):
+                     rcfile = os.path.normpath("C:/tartanrc")
+                 else:
+-                    rcfile = os.path.normpath("C:/Tartan/tartanrc")
++                    rcfile = os.path.join(homedir, "tartanrc")
+             else:
+-                rcfile = os.path.join(homedir, ".tartanrc")
++                rcfile = os.path.join(homedir, "tartanrc")
+     try:
+         rcdic = {"name": rcfile}
+         fle = open(rcfile, "r")
+@@ -223,11 +223,6 @@
+     rcdic["dfs"] = f
+     if not rcdic["theme"]:
+         rcdic["theme"] = "clam"
+-    if prgdir.count("_MEI"):
+-        # Change for pyinstaller
+-        rcdic["prn"] = rcdic["prn"].replace(rcdic["prgdir"], prgdir)
+-        rcdic["vwr"] = rcdic["vwr"].replace(rcdic["prgdir"], prgdir)
+-        rcdic["prgdir"] = prgdir
+     if os.path.exists(rcfile):
+         # Create missing directories
+         check = []
+@@ -682,7 +677,7 @@
+                     elif flenam.lower() == name.lower():
+                         return os.path.join(root, flenam)
+ 
+-def sendMail(server, ex, to, subj, mess="", attach=[], embed=[], check=False, timeout=30):
++def sendMail(server, ex, to, subj, mess="", attach=[], embed=[], check=False, timeout=30, local=None):
+     """
+     A routine to email a message plus a file as an attachment
+ 
+@@ -695,8 +690,9 @@
+         attach  = A list of attachments
+         embed   = A list of attachments to embed in the body of the message.
+         timeout = The number of seconds before timing out defaulting to 30.
++        local   = The local hostname
+     """
+-    import mimetypes, os, smtplib, sys
++    import mimetypes, os, smtplib, socket, sys
+     if sys.version.split()[0] < "2.6.0":
+         from email import Encoders
+         from email.MIMEBase import MIMEBase
+@@ -713,11 +709,13 @@
+         from email.utils import COMMASPACE, formatdate
+ 
+     host, port, secu, auth, unam, upwd = server
++    if not local:
++        local = socket.getfqdn()
+     try:
+         if secu and int(secu) == 2:
+-            smtp = smtplib.SMTP_SSL(host, port, timeout=timeout)
++            smtp = smtplib.SMTP_SSL(host, port, local, timeout=timeout)
+         else:
+-            smtp = smtplib.SMTP(host, port, timeout=timeout)
++            smtp = smtplib.SMTP(host, port, local, timeout=timeout)
+         if check:
+             smtp.quit()
+             return True
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2016-06-22 08:50:32 +0000
++++ uty/pkgprg.py	2016-07-10 11:56:46 +0000
+@@ -88,7 +88,6 @@
+     sysmod = "stdsys"
+     modfle = "tarmod"
+     chgfle = "tarchg"
+-    chgrst = "chgrst"
+     dirs.extend(["ass", "bkm", "bwl", "crs", "drs", "gen", "lon", "mem",
+                 "rca", "rtl", "sls", "str", "uty", "wag"])
+     custom = [""]
+@@ -100,7 +99,6 @@
+     sysmod = "bwlsys"
+     modfle = "tarmod"
+     chgfle = "tarchg"
+-    chgrst = "chgrst"
+     dirs.extend(["bwl", "scp", "uty"])
+     custom = ["oth", ["ms1010"]]
+     exclude = ["sc2010", "sc2030", "sc1010", "sc2020", "sc3010", "scc210",
+@@ -114,12 +112,10 @@
+     sysmod = "bkssys"
+     modfle = "tarmod"
+     chgfle = "tarchg"
+-    chgrst = "chgrst"
+-    dirs.extend(["bks", "uty"])
++    dirs.extend(["bks"])
+     custom = ["oth", ["ms1010"]]
+     exclude = ["tb1010", "tb1030", "tb1040", "tb3010", "ms1020", "ms1030",
+-               "ms3010", "ms3020", "msy010", "msy020", "msy030", "fc1010",
+-               "pm1010", "pw1010", "tp1010"]
++               "ms3010", "ms3020", "msy010", "msy020", "msy030"]
+ elif system == "s":
+     if publish or verinc:
+         exeCmd("mv %s/TartanExe/Seccmp_5.* %s/TartanOld/" % (bd, bd))
+@@ -127,7 +123,6 @@
+     sysmod = "scpsys"
+     modfle = "tarmod"
+     chgfle = "tarchg"
+-    chgrst = "chgrst"
+     dirs.extend(["scp"])
+     custom = ["oth", ["ms1010"]]
+     exclude = ["tb1010", "tb1030", "tb1040", "tb3010", "ms1020", "ms1030",
+@@ -140,7 +135,6 @@
+     sysmod = "rnesys"
+     modfle = "tarmod"
+     chgfle = "tarchg"
+-    chgrst = "chgrst"
+     dirs.extend(["ass", "crs", "drs", "gen", "ibt", "lon", "rtl", "sls",
+                 "str", "uty"])
+     custom = ["rne", ["ar6020", "ar6030", "cr1010", "cr2010", "cr2020",
+@@ -164,7 +158,6 @@
+     sysmod = "cshsys"
+     modfle = "tarmod"
+     chgfle = "tarchg"
+-    chgrst = "chgrst"
+     dirs.extend(["csh", "gen"])
+     custom = [""]
+     exclude = ["tb1010", "tb1030", "tb1040", "tb3010", "pm1010", "pw1010"]
+@@ -200,7 +193,7 @@
+                 new.write(l)
+             new.close()
+             os.chmod("%s/mst/ms0000.py" % pypath, 0755)
+-            for fl in ("MB", "MD"):
++            for fl in ("BWM", "MST"):
+                 old = open("%s/doc/%s.rst" % (pypath, fl), "r")
+                 lin = old.readlines()
+                 old.close()
+@@ -386,6 +379,8 @@
+ extractModule(prg, "p")
+ extractModule(std, "s")
+ for fle in std:
++    if fle == "tarchg.py" and not system == "tartan":
++        continue
+     if os.path.isfile("%s/std/%s" % (pypath, fle)):
+         prg.append("%s/std/%s" % (pypath, fle))
+ 
+@@ -468,43 +463,43 @@
+ if os.path.exists("%s/tmp" % pypath):
+     shutil.rmtree("%s/tmp" % pypath)
+ man = system.capitalize()
+-if system == "seccmp":
+-    fles = ["doc/SC.rst"]
+-elif system == "bksclb":
+-    fles = ["doc/MB.rst"]
++if system == "bksclb":
++    fles = ["doc/BKS.rst"]
++elif system == "seccmp":
++    fles = ["doc/SEC.rst"]
+ else:
+     if system == "bwlclb":
+-        fles = ["doc/MB.rst", "doc/BC.rst", "doc/UB.rst"]
++        fles = ["doc/BWM.rst", "doc/BWL.rst", "doc/BWU.rst"]
+     else:
+-        fles = ["doc/MD.rst"]
++        fles = ["doc/MST.rst"]
+         if system == "rnehol":
+             fles.extend([
+-                "doc/GL_rne.rst",
+-                "doc/AR.rst",
+-                "doc/CR_rne.rst",
+-                "doc/DR.rst",
+-                "doc/IB.rst",
+-                "doc/LN.rst",
+-                "doc/RT.rst",
+-                "doc/ST.rst",
+-                "doc/SI.rst"])
++                "doc/GEN_rne.rst",
++                "doc/ASS.rst",
++                "doc/CRS_rne.rst",
++                "doc/DRS.rst",
++                "doc/IBT.rst",
++                "doc/LON.rst",
++                "doc/RTL.rst",
++                "doc/STR.rst",
++                "doc/SLS.rst"])
+         else:
+             fles.extend([
+-                "doc/GL.rst",
+-                "doc/AR.rst",
+-                "doc/BK.rst",
+-                "doc/BC.rst",
+-                "doc/CR.rst",
+-                "doc/DR.rst",
+-                "doc/LN.rst",
+-                "doc/ML.rst",
+-                "doc/RT.rst",
+-                "doc/RC.rst",
+-                "doc/ST.rst",
+-                "doc/SI.rst",
+-                "doc/WG.rst",
+-                "doc/SL.rst"])
+-        fles.extend(["doc/UD.rst", "doc/HD.rst"])
++                "doc/GEN.rst",
++                "doc/ASS.rst",
++                "doc/BKM.rst",
++                "doc/BWL.rst",
++                "doc/CRS.rst",
++                "doc/DRS.rst",
++                "doc/LON.rst",
++                "doc/MEM.rst",
++                "doc/RTL.rst",
++                "doc/RCA.rst",
++                "doc/STR.rst",
++                "doc/SLS.rst",
++                "doc/WAG.rst",
++                "doc/SLN.rst"])
++        fles.extend(["doc/UTY.rst", "doc/HLP.rst"])
+ doc = open("doc/%s.rst" % man, "w")
+ for fle in fles:
+     if fle == fles[-1]:
+@@ -516,7 +511,7 @@
+ exeCmd("rst2pdf doc/%s.rst -o doc/Manual.pdf -s doc/mystylesheet" % man)
+ exeCmd("zip -qr %s/TartanSve/%s doc/Manual.pdf" % (bd, zipfle))
+ if system == "tartan":
+-    exeCmd("rst2pdf doc/QS.rst -o doc/QuickStart.pdf -s doc/mystylesheet")
++    exeCmd("rst2pdf doc/QST.rst -o doc/QuickStart.pdf -s doc/mystylesheet")
+     exeCmd("zip -qr %s/TartanSve/%s doc/QuickStart.pdf" % (bd, zipfle))
+ exeCmd("zip -q %s/TartanSve/%s img/tartan.ico" % (bd, zipfle))
+ exeCmd("zip -q %s/TartanSve/%s snd/ding.wav" % (bd, zipfle))
+@@ -526,7 +521,8 @@
+ exeCmd("zip -q %s/TartanSve/%s uty/SumatraPDF-settings.txt" % (bd, zipfle))
+ if py3:
+     # Create python 3 zip file
+-    shutil.rmtree("/home/paul/tartan")
++    if os.path.isdir("/home/paul/tartan"):
++        shutil.rmtree("/home/paul/tartan")
+     os.mkdir("/home/paul/tartan")
+     os.chdir("/home/paul/tartan")
+     exeCmd("unzip -q %s/TartanSve/%s" % (bd, zipfle))
+@@ -626,7 +622,7 @@
+         # WWW Server
+         if system == "tartan":
+             exeCmd("rsync -artz %s/Tartan-5/doc/Tartan.rst root@server:/var/www/tartan.co.za/htdocs/Manual/Manual.rst --progress" % bd)
+-            exeCmd("rsync -artz %s/Tartan-5/doc/QS.rst root@server:/var/www/tartan.co.za/htdocs/QuickStart/QuickStart.rst --progress" % bd)
++            exeCmd("rsync -artz %s/Tartan-5/doc/QST.rst root@server:/var/www/tartan.co.za/htdocs/QuickStart/QuickStart.rst --progress" % bd)
+             exeCmd("rsync -artz %s/Tartan-5/doc/Downloads.rst root@server:/var/www/tartan.co.za/htdocs/Downloads/ --progress" % bd)
+             exeCmd("rsync -artz %s/Tartan-5/doc/Changes.rst root@server:/var/www/tartan.co.za/htdocs/Changes/ --progress" % bd)
+ os.remove("%s/Tartan-5/doc/Manual.pdf" % bd)
+@@ -639,7 +635,7 @@
+ if email:
+     chgfle = "%s/ver/ver_%s.%s.%s.changes" % (pypath, ver[0], ver[1], ver[2])
+     if os.path.isfile(chgfle):
+-        serv = ["server", 25, 0, 0, "", ""]
++        serv = ["server", 465, 2, 1, "paul", "pakati10"]
+         mfrm = "paul@tartan.co.za"
+         subj = "Tartan Update %s.%s.%s is Available" % tuple(ver)
+         info = open(chgfle, "rb")
+@@ -654,7 +650,7 @@
+                 text = "%s%s" % (text, dat)
+         html = "<pre>%s</pre>" % text
+         mess = (text, html)
+-        self.addrs = [
++        addrs = [
+             "admin@amadlelo.co.za",
+             "admin@blueberry.co.za",
+             "chris@resinsolutions.co.za",
+@@ -670,6 +666,7 @@
+             "mcbagro@gmail.com",
+             "mel@acsaccounting.co.za",
+             "mike@annettelaing.co.za",
++            "neil@cpms.co.za",
+             "no2pigstash@hotmail.com",
+             "paul@tartan.co.za",
+             "rob@itennis.co.za",
+@@ -682,6 +679,7 @@
+             #"deonk@spargs.co.za",
+             #"knorton@xsinet.co.za"
+             #"mjredman@bigpond.net.au"
+-        for addr in self.addrs:
++        for addr in addrs:
+             sendMail(serv, mfrm, addr, subj, mess=(text, html))
++print "DONE"
+ # END
+

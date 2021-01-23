@@ -1,0 +1,8 @@
+1) Fixed an error in general ledger postings to subsiduary ledgers.
+2) Fixed an error in general ledger manual journal entries import routine.
+3) Made some other enhancements and bug fixes.
+
+NB:
+--
+This is a very important update if you are using the general ledger.
+You can only upgrade to this version if your current version is 4.1.10 or later.

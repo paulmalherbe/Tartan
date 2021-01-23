@@ -1,0 +1,45 @@
+removed:
+  img/bowl.png
+  img/bowls.jpg
+  img/check.gif
+  img/properties.png
+  img/tartan.gif
+  img/uncheck.gif
+added:
+  doc/CR_rne.rst
+  img/bowls.png
+  img/check.png
+  img/tartan.png
+  img/uncheck.png
+modified:
+  .bzrignore
+  bkm/bk1020.py
+  bkm/bk3010.py
+  bkm/bk3030.py
+  bwl/bc1010.py
+  bwl/bc2010.py
+  bwl/bc3020.py
+  bwl/bc3070.py
+  bwl/bc3080.py
+  bwl/bc3110.py
+  bwl/bc6010.py
+  bwl/bc6020.py
+  crs/cr2010_rne.py
+  doc/BC.rst
+  doc/DR.rst
+  doc/Downloads.rst
+  doc/GL.rst
+  doc/MD.rst
+  doc/Rnehol.rst
+  doc/Tartan.rst
+  doc/WinPkg.txt
+  doc/tarlic.rst
+  drs/dr2030.py
+  gen/gl2030.py
+  gen/gl2040.py
+  men/rnemen.py
+  mst/ms0000.py
+  mst/msc000.py
+  scp/sc3010.py
+  std/TartanClasses.py
+  wag/wg2020.py

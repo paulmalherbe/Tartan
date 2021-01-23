@@ -1,0 +1,5 @@
+1) Added extra tag to debtor's interrogation to display outstanding quotations
+   and orders. Double-clicking on the document will display the actual document.
+2) Added the facility to do random or strength verses strength tab draws in the
+   Bowling Clubs system.
+3) Fixed a bug in the general ledger manual journal module.

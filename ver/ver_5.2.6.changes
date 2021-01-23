@@ -1,0 +1,9 @@
+1) Loans System - Fixed a bug in the loans rate change module.
+2) Stores System - Changed the purchase order module to print cancelled orders.
+3) Bowls System - Added an new competition type for drawn club competitions e.g.
+     Drawn Pairs and Trips, Drawn Mixed Pairs and Trips etc.
+4) Made some other minor enhancements and bug fixes.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

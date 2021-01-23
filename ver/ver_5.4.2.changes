@@ -1,0 +1,37 @@
+Tartan Systems Upgrade
+----------------------
+ 1) This is a Major Upgrade leading up to Python version 3.
+ 2) Converted to GPL, version 3, open source license.
+ 3) Changed stores selling price capturing and added file import facility.
+ 4) Fixed an error in stores purchase order editing procedure.
+ 5) Fixed an error in value added tax records maintenance.
+ 6) Added svg chart support, with pygal, as pychart is not supported in
+    Python 3.
+ 7) Consolidated all Tartan modules thus adding 4 new system modules:
+        Point of Sale terminal (POS).
+        Book Clubs library (BKS).
+        Cash Analysis (CSH).
+        Sectional Competitions (SCP).
+ 8) Integrated all record layout csv files into tartanWork
+ 9) Integrated all menu layout files into tartanWork
+10) Numerous documentation changes and updates.
+11) Numerous other changes and fixes necessitated by the pending upgrade to
+    Python 3.
+
+NB:
+--
+The End Of Life date (EOL, sunset date) for Python 2 is 1st January 2020,
+that measns that python 2 will not be maintained past that date.
+
+Python 3 is considered the future of Python. It was developed to add more
+features and to fix bugs. It is continuously being developed and is presently
+at version 3.7.x.
+
+So, to prepare for this, I felt I had to prepare Tartan for Python 3, which is
+now the industry standard. The preparation was complicated but is now completed
+and Tartan Systems is now 99% Python 3 compatible. I am confident that it was
+worthwile and gaurantees the future of Tartan.
+
+This will probably be the last release of Tartan using Python 2.
+
+You can only upgrade to this version if your current version is 4.1.10 or later.

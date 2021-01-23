@@ -1,0 +1,34 @@
+removed:
+  wag/wgc410.py
+  wag/wgc420.py
+added:
+  std/bksimp.py
+  std/bksmod.py
+renamed:
+  wag/wgc510.py => wag/wgc410.py
+  wag/wgc520.py => wag/wgc420.py
+modified:
+  doc/BKSMST.rst
+  doc/BWLMST.rst
+  doc/CSHMST.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SECMST.rst
+  mst/ms0000.py
+  mst/msc000.py
+  std/bwlimp.py
+  std/bwlmod.py
+  std/cshimp.py
+  std/cshmod.py
+  std/rneimp.py
+  std/rnemod.py
+  std/secimp.py
+  std/secmod.py
+  std/tarchg.py
+  std/tartanWork.py
+  uty/pkgprg.py
+  wag/wg2020.py
+  wag/wgc410.py
+  wag/wgc420.py
+unknown:
+  oldchg.txt

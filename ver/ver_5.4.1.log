@@ -1,0 +1,679 @@
+------------------------------------------------------------
+revno: 97
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2019-01-15 11:24:43 +0200
+message:
+  ver_5.4.1
+------------------------------------------------------------
+revno: 96
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2019-01-13 18:38:59 +0200
+message:
+  ver_5.4.0
+------------------------------------------------------------
+revno: 95
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2018-08-29 17:51:52 +0200
+message:
+  ver_5.3.13
+------------------------------------------------------------
+revno: 94
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2018-08-19 12:44:06 +0200
+message:
+  ver_5.3.12
+------------------------------------------------------------
+revno: 93
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2018-07-13 10:38:41 +0200
+message:
+  ver_5.3.11
+------------------------------------------------------------
+revno: 92
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Mon 2018-06-18 08:16:26 +0200
+message:
+  ver_5.3.10
+------------------------------------------------------------
+revno: 91
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Thu 2018-05-31 17:57:14 +0200
+message:
+  ver_5.3.9
+------------------------------------------------------------
+revno: 90
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2018-05-01 18:28:35 +0200
+message:
+  ver_5.3.8
+------------------------------------------------------------
+revno: 89
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2018-04-11 07:38:23 +0200
+message:
+  ver_5.3.7
+------------------------------------------------------------
+revno: 88
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2018-04-08 08:05:45 +0200
+message:
+  ver_5.3.6
+------------------------------------------------------------
+revno: 87
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2018-03-30 23:03:30 +0200
+message:
+  ver_5.3.5
+------------------------------------------------------------
+revno: 86
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2018-02-25 15:05:58 +0200
+message:
+  ver_5.3.4
+------------------------------------------------------------
+revno: 85
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2018-02-17 09:36:43 +0200
+message:
+  ver_5.3.3
+------------------------------------------------------------
+revno: 84
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2017-09-10 16:30:43 +0200
+message:
+  ver_5.3.2
+------------------------------------------------------------
+revno: 83
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Thu 2017-08-24 09:49:34 +0200
+message:
+  ver_5.3.1
+------------------------------------------------------------
+revno: 82
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2017-03-25 17:17:51 +0200
+message:
+  ver_5.3.0
+------------------------------------------------------------
+revno: 81
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2017-02-25 16:03:05 +0200
+message:
+  ver_5.2.8
+------------------------------------------------------------
+revno: 80
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2016-12-30 16:10:51 +0200
+message:
+  ver_5.2.7
+------------------------------------------------------------
+revno: 79
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Mon 2016-11-07 18:11:53 +0200
+message:
+  ver_5.2.6
+------------------------------------------------------------
+revno: 78
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2016-09-03 16:07:52 +0200
+message:
+  ver_5.2.5
+------------------------------------------------------------
+revno: 77
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2016-07-10 13:57:24 +0200
+message:
+  ver_5.2.4
+------------------------------------------------------------
+revno: 76
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2016-06-22 10:50:32 +0200
+message:
+  ver_5.2.3
+------------------------------------------------------------
+revno: 75
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2016-06-22 10:28:55 +0200
+message:
+  ver_5.2.2_rc14
+------------------------------------------------------------
+revno: 74
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Thu 2016-05-26 16:49:17 +0200
+message:
+  ver_5.2.2_rc13
+------------------------------------------------------------
+revno: 73
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Thu 2016-05-26 10:46:30 +0200
+message:
+  ver_5.2.2_rc12
+------------------------------------------------------------
+revno: 72
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Thu 2016-05-26 10:05:22 +0200
+message:
+  ver_5.2.2_rc11
+------------------------------------------------------------
+revno: 71
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2016-05-25 15:06:42 +0200
+message:
+  ver_5.2.2_rc10
+------------------------------------------------------------
+revno: 70
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2016-05-25 14:14:11 +0200
+message:
+  ver_5.2.2_rc9
+------------------------------------------------------------
+revno: 69
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2016-05-25 14:03:49 +0200
+message:
+  ver_5.2.2_rc8
+------------------------------------------------------------
+revno: 68
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2016-05-25 08:55:19 +0200
+message:
+  ver_5.2.2_rc7
+------------------------------------------------------------
+revno: 67
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2016-05-25 08:42:31 +0200
+message:
+  ver_5.2.2_rc6
+------------------------------------------------------------
+revno: 66
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2016-05-24 10:24:31 +0200
+message:
+  ver_5.2.2_rc5
+------------------------------------------------------------
+revno: 65
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Mon 2016-05-23 10:10:54 +0200
+message:
+  ver_5.2.2_rc4
+------------------------------------------------------------
+revno: 64
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Mon 2016-05-23 07:56:48 +0200
+message:
+  ver_5.2.2_rc3
+------------------------------------------------------------
+revno: 63
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2016-05-22 08:58:01 +0200
+message:
+  ver_5.2.2_rc2
+------------------------------------------------------------
+revno: 62
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2016-05-22 08:39:45 +0200
+message:
+  ver_5.2.2_rc1
+------------------------------------------------------------
+revno: 61
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2016-05-21 14:42:32 +0200
+message:
+  ver_5.2.2
+------------------------------------------------------------
+revno: 60
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2016-03-01 16:42:33 +0200
+message:
+  ver_5.2.1
+------------------------------------------------------------
+revno: 59
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2016-02-27 15:18:41 +0200
+message:
+  ver_5.2.0
+------------------------------------------------------------
+revno: 58
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-12-12 11:12:17 +0200
+message:
+  ver_5.1.4
+------------------------------------------------------------
+revno: 57
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2015-10-25 14:48:08 +0200
+message:
+  ver_5.1.3.rc3 tarUpd
+------------------------------------------------------------
+revno: 56
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2015-10-25 12:31:24 +0200
+message:
+  ver_5.1.3.rc2 wrkdir
+------------------------------------------------------------
+revno: 55
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2015-10-25 12:12:58 +0200
+message:
+  ver_5.1.3.rc1 wrkdir
+------------------------------------------------------------
+revno: 54
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2015-10-25 11:33:02 +0200
+message:
+  ver_5.1.3
+------------------------------------------------------------
+revno: 53
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2015-10-13 09:46:15 +0200
+message:
+  ver_5.1.2
+------------------------------------------------------------
+revno: 52
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Mon 2015-10-05 16:03:48 +0200
+message:
+  ver_5.1.1.rc1 modified:
+------------------------------------------------------------
+revno: 51
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2015-10-04 11:29:52 +0200
+message:
+  ver_5.1.1
+------------------------------------------------------------
+revno: 50
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-10-03 09:36:56 +0200
+message:
+  ver_5.1.0
+------------------------------------------------------------
+revno: 49
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2015-08-26 10:52:51 +0200
+message:
+  ver_5.0.18.rc2 doPrinter
+------------------------------------------------------------
+revno: 48
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2015-08-25 17:02:35 +0200
+message:
+  ver_5.0.18.rc1 repprt
+------------------------------------------------------------
+revno: 47
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2015-06-24 09:32:39 +0200
+message:
+  ver_5.0.18
+------------------------------------------------------------
+revno: 46
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-06-20 11:30:07 +0200
+message:
+  ver_5.0.17.rc1 NotesCreate
+------------------------------------------------------------
+revno: 45
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2015-06-19 18:06:22 +0200
+message:
+  ver_5.0.17
+------------------------------------------------------------
+revno: 44
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2015-06-17 17:23:42 +0200
+message:
+  ver_5.0.16
+------------------------------------------------------------
+revno: 43
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2015-05-20 18:03:01 +0200
+message:
+  ver_5.0.15
+------------------------------------------------------------
+revno: 42
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Thu 2015-04-30 12:16:15 +0200
+message:
+  ver_5.0.14
+------------------------------------------------------------
+revno: 41
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2015-04-24 15:45:12 +0200
+message:
+  ver_5.0.13
+------------------------------------------------------------
+revno: 40
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-04-11 09:29:58 +0200
+message:
+  ver_5.0.12.rc2
+------------------------------------------------------------
+revno: 39
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2015-04-10 17:24:24 +0200
+message:
+  ver_5.0.12.rc1
+------------------------------------------------------------
+revno: 38
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2015-04-10 12:19:18 +0200
+message:
+  ver_5.0.12
+------------------------------------------------------------
+revno: 37
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-04-04 15:03:32 +0200
+message:
+  ver_5.0.11.rc5
+------------------------------------------------------------
+revno: 36
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-04-04 14:56:14 +0200
+message:
+  ver_5.0.11.rc4
+------------------------------------------------------------
+revno: 35
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-04-04 11:29:12 +0200
+message:
+  ver_5.0.11.rc3
+------------------------------------------------------------
+revno: 34
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2015-04-03 10:30:16 +0200
+message:
+  ver_5.0.11.rc2
+------------------------------------------------------------
+revno: 33
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2015-04-03 10:19:00 +0200
+message:
+  ver_5.0.11.rc1
+------------------------------------------------------------
+revno: 32
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Thu 2015-04-02 21:32:07 +0200
+message:
+  ver_5.0.11
+------------------------------------------------------------
+revno: 31
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-03-21 09:40:04 +0200
+message:
+  ver_5.0.10
+------------------------------------------------------------
+revno: 30
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Mon 2015-03-09 18:02:16 +0200
+message:
+  ver_5.0.9
+------------------------------------------------------------
+revno: 29
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2015-03-06 21:01:14 +0200
+message:
+  ver_5.0.8
+------------------------------------------------------------
+revno: 28
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2015-03-04 18:05:59 +0200
+message:
+  ver_5.0.7.rc2 old_sqlite
+------------------------------------------------------------
+revno: 27
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Fri 2015-02-27 13:57:15 +0200
+message:
+  ver_5.0.7.rc1 paye
+------------------------------------------------------------
+revno: 26
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2015-02-25 18:45:19 +0200
+message:
+  ver_5.0.7
+------------------------------------------------------------
+revno: 25
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sun 2015-02-22 11:42:02 +0200
+message:
+  ver_5.0.6
+------------------------------------------------------------
+revno: 24
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2015-02-11 18:45:23 +0200
+message:
+  ver_5.0.5
+------------------------------------------------------------
+revno: 23
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2015-02-07 08:31:11 +0200
+message:
+  ver_5.0.4
+------------------------------------------------------------
+revno: 22
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Thu 2015-01-01 14:48:11 +0200
+message:
+  ver_5.0.3
+------------------------------------------------------------
+revno: 21
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2014-12-30 17:37:38 +0200
+message:
+  ver_5.0.2.rc1 bkmunr
+------------------------------------------------------------
+revno: 20
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2014-12-09 18:32:44 +0200
+message:
+  ver_5.0.2
+------------------------------------------------------------
+revno: 19
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2014-10-01 16:07:50 +0200
+message:
+  ver_5.0.1.rc1 bwltab
+------------------------------------------------------------
+revno: 18
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2014-08-30 14:52:42 +0200
+message:
+  ver_5.0.1
+------------------------------------------------------------
+revno: 17
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2014-08-27 11:27:53 +0200
+message:
+  ver_5.0.0.rc12
+------------------------------------------------------------
+revno: 16
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Wed 2014-08-06 17:44:15 +0200
+message:
+  ver_5.0.0.rc11 ScrollGrid
+------------------------------------------------------------
+revno: 15
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Tue 2014-07-22 18:32:41 +0200
+message:
+  ver_5.0.0.rc10
+------------------------------------------------------------
+revno: 14
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Mon 2014-07-21 19:03:30 +0200
+message:
+  ver_5.0.0.rc9 - setattr and getattr
+------------------------------------------------------------
+revno: 13
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Mon 2014-07-21 13:34:04 +0200
+message:
+  ver_5.0.0.rc8 - New TtkCalendar
+------------------------------------------------------------
+revno: 12
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2014-07-19 09:58:06 +0200
+message:
+  Change to Cut and Paste
+------------------------------------------------------------
+revno: 11
+committer: Paul Malherbe <paul@tartan.co.za>
+branch nick: Tartan-5
+timestamp: Sat 2014-06-14 10:55:57 +0200
+message:
+  duplicate text removed
+------------------------------------------------------------
+revno: 10
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Wed 2014-05-28 16:55:12 +0200
+message:
+  ver_5.0.0.rc7 xrange
+------------------------------------------------------------
+revno: 9
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Fri 2014-05-23 17:24:38 +0200
+message:
+  double_desc
+------------------------------------------------------------
+revno: 8
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Wed 2014-05-21 17:05:50 +0200
+message:
+  rne_source
+------------------------------------------------------------
+revno: 7
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Thu 2014-05-08 19:02:33 +0200
+message:
+  ver_5.0.0.rc7 licecnce
+------------------------------------------------------------
+revno: 6
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Tue 2014-04-29 21:57:51 +0200
+message:
+  ver_5.0.0.rc6 slspos
+------------------------------------------------------------
+revno: 5
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Tue 2014-04-08 14:09:38 +0200
+message:
+  ver_5.0.0.rc5 pycheck
+------------------------------------------------------------
+revno: 4
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Mon 2014-04-07 22:41:10 +0200
+message:
+  ver_5.0.0.rc4 Departments
+------------------------------------------------------------
+revno: 3
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Tue 2014-04-01 17:33:23 +0200
+message:
+  ver_5.0.0.rc3
+------------------------------------------------------------
+revno: 2
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Sun 2014-03-30 17:20:04 +0200
+message:
+  ver_5.0.0.rc2
+------------------------------------------------------------
+revno: 1
+committer: paul@tartan.co.za
+branch nick: Tartan-5
+timestamp: Fri 2014-03-28 09:32:49 +0200
+message:
+  ver_5.0.0.rc1

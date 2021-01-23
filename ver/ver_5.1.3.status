@@ -1,0 +1,87 @@
+removed:
+  csv/ctlare_fld.csv
+  csv/ctlare_idx.csv
+  drs/drc310.py
+  drs/drc320.py
+added:
+  doc/QuickStart.rst
+renamed:
+  drs/drc410.py => drs/drc310.py
+  drs/drc420.py => drs/drc320.py
+  drs/drc510.py => drs/drc410.py
+  drs/drc520.py => drs/drc420.py
+  drs/drc610.py => drs/drc510.py
+  drs/drc620.py => drs/drc520.py
+  drs/drc710.py => drs/drc610.py
+  drs/drc810.py => drs/drc710.py
+modified:
+  bkm/bk1010.py
+  bkm/bk1020.py
+  bwl/bc1010.py
+  bwl/bcc110.py
+  crs/cr2010.py
+  crs/cr3050.py
+  csv/drsmst_fld.csv
+  csv/rnesys.py
+  csv/stdsys.py
+  doc/AR.rst
+  doc/BK.rst
+  doc/CR.rst
+  doc/DR.rst
+  doc/Downloads.rst
+  doc/GL.rst
+  doc/LN.rst
+  doc/MB.rst
+  doc/MD.rst
+  doc/ML.rst
+  doc/RC.rst
+  doc/SI.rst
+  doc/ST.rst
+  doc/WG.rst
+  drs/dr1010.py
+  drs/dr2010.py
+  drs/dr3050.py
+  drs/dr3080.py
+  drs/dr4010.py
+  drs/drc220.py
+  gen/gl1010.py
+  gen/gl2030.py
+  gen/gl6060.py
+  lon/ln2010.py
+  lon/ln3030.py
+  lon/ln3040.py
+  mem/ml2010.py
+  mem/ml3060.py
+  men/posmen.py
+  men/rnemen.py
+  men/stdmen.py
+  mst/ms0000.py
+  mst/ms1040.py
+  mst/msc000.py
+  mst/msc110.py
+  rca/rcc110.py
+  sls/si2010.py
+  std/TartanClasses.py
+  std/tartanFunctions.py
+  str/st1010.py
+  str/st2010.py
+  str/st2030.py
+  str/st2040.py
+  str/st3030.py
+  str/st3120.py
+  str/st5030.py
+  str/st6030.py
+  tab/tb1020.py
+  uty/pkgprg.py
+  wag/wg2020.py
+  drs/drc310.py
+  drs/drc320.py
+  drs/drc410.py
+  drs/drc420.py
+  drs/drc510.py
+  drs/drc520.py
+  drs/drc610.py
+  drs/drc710.py
+unknown:
+  errors.txt
+  sqltab.py

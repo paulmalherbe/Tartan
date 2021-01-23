@@ -1,0 +1,1553 @@
+=== modified file 'ass/arc110.py'
+--- ass/arc110.py	2014-12-30 15:37:38 +0000
++++ ass/arc110.py	2015-06-18 15:41:05 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ import time
+-from TartanClasses import Sql, TartanDialog
++from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class arc110:
+     def __init__(self, **opts):
+@@ -24,7 +24,7 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["assctl", "chglog"],
++        self.sql = Sql(self.opts["mf"].dbm, ["assctl", "ctlctl", "chglog"],
+             prog=__name__)
+         if self.sql.error:
+             return
+@@ -35,16 +35,33 @@
+             self.acc = [self.opts["conum"], "N", "N"]
+         else:
+             self.new = False
++        gc = GetCtl(self.opts["mf"])
++        ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++        self.ctl = [["ass_sls", "Sale of Assets", 0]]
++        for num, ctl in enumerate(self.ctl):
++            if ctl[0] in ctlctl:
++                self.ctl[num][2] = ctlctl[ctl[0]]
+         return True
+ 
+     def drawDialog(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+                 "Asset Register Control File Maintenance (%s)" % __name__)
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "G/L-Num"),
++                ("glm_desc", "", 30, "Description")),
++            "where": [
++                ("glm_cono", "=", self.opts["conum"])]}
+         r1s = (("Yes","Y"),("No","N"))
+         self.fld = (
+             (("T",0,0,0),("IRB",r1s),0,"G/L Integration","",
+-                self.acc[1],"N",None,None,None,None),
+-            (("T",0,1,0),("IRB",r1s),0,"Receiver Dep","Receiver Depreciation",
++                self.acc[1],"N",self.doGlint,None,None,None),
++            (("T",0,1,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[0][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,1,0),"ONA",30,""),
++            (("T",0,2,0),("IRB",r1s),0,"Receiver Dep","Receiver Depreciation",
+                 self.acc[2],"N",None,None,None,None))
+         but = (("Quit",None,self.doExit,1,None,None),)
+         tnd = ((self.doEnd,"Y"),)
+@@ -52,21 +69,67 @@
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+             butt=but, tend=tnd, txit=txt)
+         if not self.new:
++            s = 0
+             for n, f in enumerate(self.acc[1:]):
+-                self.df.loadEntry("T", 0, n, data=f)
++                self.df.loadEntry("T", 0, s, data=f)
++                s += 1
++                if not n:
++                    for c in self.ctl:
++                        self.df.loadEntry("T", 0, s, data=c[2])
++                        s += 1
++                        self.df.loadEntry("T", 0, s, data=self.getDes(c[2]))
++                        s += 1
++            self.df.focusField("T", 0, 1, clr=False)
++
++    def doGlint(self, frt, pag, r, c, p, i, w):
++        if w == "N":
++            for x in renge(1, 3):
++                self.df.loadEntry(frt, pag, p+x, data="")
++                self.df.loadEntry(frt, pag, p+x, data="")
++            return "nd"
++
++    def doGenAcc(self, frt, pag, r, c, p, i, w):
++        des = self.getDes(w)
++        if not des:
++            return "Invalid Account Number"
++        self.df.loadEntry(frt, pag, p+1, data=des)
++
++    def getDes(self, acno):
++        acc = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++            where=[("glm_cono", "=", self.opts["conum"]),
++            ("glm_acno", "=", acno)], limit=1)
++        if acc:
++            return acc[0]
++        else:
++            return ""
+ 
+     def doEnd(self):
+         data = [self.opts["conum"]]
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            data.append(self.df.t_work[0][0][x])
++        for x, d in enumerate(self.df.t_work[0][0]):
++            if x in (1,):
++                y = (x - 1) / 2
++                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
++                    self.opts["conum"]), ("ctl_code", "=", self.ctl[y][0])],
++                    limit=1)
++                if chk:
++                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
++                        where=[("ctl_cono", "=", self.opts["conum"]),
++                        ("ctl_code", "=", self.ctl[y][0])])
++                else:
++                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
++                        self.ctl[y][0], self.ctl[y][1], d, "", "N", "N"])
++            elif x in (2,):
++                continue
++            else:
++                data.append(d)
+         if self.new:
+             self.sql.insRec("assctl", data=data)
+-        elif data != self.acc:
++        elif not data == self.acc:
+             self.sql.updRec("assctl", data=data,
+                 where=[("cta_cono", "=", self.opts["conum"])])
+             dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+             for num, dat in enumerate(self.acc):
+-                if dat != data[num]:
++                if not dat == data[num]:
+                     self.sql.insRec("chglog", data=["assctl", "U",
+                         "%03i" % self.opts["conum"], self.sql.assctl_col[num],
+                         dte, self.opts["capnm"], str(dat), str(data[num]), 0])
+
+=== modified file 'bkm/bkc110.py'
+--- bkm/bkc110.py	2014-12-30 15:37:38 +0000
++++ bkm/bkc110.py	2015-06-18 15:41:13 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ import time
+-from TartanClasses import Sql, TartanDialog
++from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class bkc110:
+     def __init__(self, **opts):
+@@ -24,8 +24,8 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["bkmctl", "tplmst", "chglog"],
+-            prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["bkmctl", "tplmst", "ctlctl",
++            "chglog"], prog=__name__)
+         if self.sql.error:
+             return
+         self.acc = self.sql.getRec(tables="bkmctl", where=[("cbk_cono", "=",
+@@ -36,11 +36,29 @@
+                 "booking_invoice", "booking_statement", ""]
+         else:
+             self.new = False
++        gc = GetCtl(self.opts["mf"])
++        ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++        self.ctl = [
++            ["bkm_ctl", "Bookings Control", 0],
++            ["bkm_chq", "Cheques Received", 0],
++            ["bkm_csh", "Cash Received", 0],
++            ["bkm_ccg", "Cancellation Fee", 0]]
++        for num, ctl in enumerate(self.ctl):
++            if ctl[0] in ctlctl:
++                self.ctl[num][2] = ctlctl[ctl[0]]
+         return True
+ 
+     def drawDialog(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+                 "Bookings Control File Maintenance (%s)" % __name__)
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "G/L-Num"),
++                ("glm_desc", "", 30, "Description")),
++            "where": [
++                ("glm_cono", "=", self.opts["conum"])]}
+         tpb = {
+             "stype": "R",
+             "tables": ("tplmst",),
+@@ -80,14 +98,26 @@
+         r1s = (("Yes","Y"),("No","N"))
+         self.fld = (
+             (("T",0,0,0),("IRB",r1s),0,"G/L Integration","",
+-                self.acc[1],"N",None,None,None,None),
+-            (("T",0,1,0),"INA",20,"Booking Template","",
++                self.acc[1],"N",self.doGlint,None,None,None),
++            (("T",0,1,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[0][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,1,0),"ONA",30,""),
++            (("T",0,2,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[1][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,2,0),"ONA",30,""),
++            (("T",0,3,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[2][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,3,0),"ONA",30,""),
++            (("T",0,4,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[3][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,4,0),"ONA",30,""),
++            (("T",0,5,0),"INA",20,"Booking Template","",
+                 self.acc[2],"N",self.doBkgTpl,tpb,None,None),
+-            (("T",0,2,0),"INA",20,"Invoice Template","",
++            (("T",0,6,0),"INA",20,"Invoice Template","",
+                 self.acc[3],"N",self.doInvTpl,tpi,None,None),
+-            (("T",0,3,0),"INA",20,"Statement Template","",
++            (("T",0,7,0),"INA",20,"Statement Template","",
+                 self.acc[4],"N",self.doStaTpl,tps,None,None),
+-            (("T",0,4,0),"ITX",50,"Terms and Conditions","",
++            (("T",0,8,0),"ITX",50,"Terms and Conditions","",
+                 self.acc[5],"N",None,trm,None,("fle","blank")))
+         but = (("Quit",None,self.doExit,1,None,None),)
+         tnd = ((self.doEnd,"Y"),)
+@@ -95,8 +125,39 @@
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+             butt=but, tend=tnd, txit=txt)
+         if not self.new:
++            s = 0
+             for n, f in enumerate(self.acc[1:]):
+-                self.df.loadEntry("T", 0, n, data=f)
++                self.df.loadEntry("T", 0, s, data=f)
++                s += 1
++                if not n:
++                    for c in self.ctl:
++                        self.df.loadEntry("T", 0, s, data=c[2])
++                        s += 1
++                        self.df.loadEntry("T", 0, s, data=self.getDes(c[2]))
++                        s += 1
++            self.df.focusField("T", 0, 1, clr=False)
++
++    def doGlint(self, frt, pag, r, c, p, i, w):
++        self.glint = w
++        if self.glint == "N":
++            for x in range(1, 9):
++                self.df.loadEntry(frt, pag, p+x, data="")
++            return "sk8"
++
++    def doGenAcc(self, frt, pag, r, c, p, i, w):
++        des = self.getDes(w)
++        if not des:
++            return "Invalid Account Number"
++        self.df.loadEntry(frt, pag, p+1, data=des)
++
++    def getDes(self, acno):
++        acc = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++            where=[("glm_cono", "=", self.opts["conum"]),
++            ("glm_acno", "=", acno)], limit=1)
++        if acc:
++            return acc[0]
++        else:
++            return ""
+ 
+     def doBkgTpl(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables="tplmst", where=[("tpm_tname", "=", w),
+@@ -118,8 +179,23 @@
+ 
+     def doEnd(self):
+         data = [self.opts["conum"]]
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            data.append(self.df.t_work[0][0][x])
++        for x, d in enumerate(self.df.t_work[0][0]):
++            if x in (1, 3, 5, 7):
++                y = (x - 1) / 2
++                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
++                    self.opts["conum"]), ("ctl_code", "=", self.ctl[y][0])],
++                    limit=1)
++                if chk:
++                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
++                        where=[("ctl_cono", "=", self.opts["conum"]),
++                        ("ctl_code", "=", self.ctl[y][0])])
++                else:
++                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
++                        self.ctl[y][0], self.ctl[y][1], d, "", "N", "N"])
++            elif x in (2, 4, 6, 8):
++                continue
++            else:
++                data.append(d)
+         if self.new:
+             self.sql.insRec("bkmctl", data=data)
+         elif data != self.acc:
+
+=== modified file 'crs/crc110.py'
+--- crs/crc110.py	2015-06-17 15:23:42 +0000
++++ crs/crc110.py	2015-06-18 15:41:22 +0000
+@@ -38,12 +38,12 @@
+             self.new = False
+         gc = GetCtl(self.opts["mf"])
+         ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
+-        self.ctl = []
+-        for ctl in ("crs_ctl", "dis_rec"):
+-            if ctl in ctlctl:
+-                self.ctl.append(ctlctl[ctl])
+-            else:
+-                self.ctl.append(0)
++        self.ctl = [
++            ["crs_ctl", "Creditors Control", 0],
++            ["dis_rec", "Discount Received", 0]]
++        for num, ctl in enumerate(self.ctl):
++            if ctl[0] in ctlctl:
++                self.ctl[num][2] = ctlctl[ctl[0]]
+         return True
+ 
+     def drawDialog(self):
+@@ -86,11 +86,11 @@
+         self.fld = (
+             (("T",0,0,0),("IRB",r1s),0,"G/L Integration","",
+                 self.acc[1],"N",self.doGlint,None,None,None),
+-            (("T",0,1,0),"IUI",7,"Control Account","",
+-                self.ctl[0],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,1,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[0][2],"N",self.doGenAcc,glm,None,("efld",)),
+             (("T",0,1,0),"ONA",30,""),
+-            (("T",0,2,0),"IUI",7,"Discount Received","",
+-                self.ctl[0],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,2,0),"IUI",7,self.ctl[1][1],"",
++                self.ctl[1][2],"N",self.doGenAcc,glm,None,("efld",)),
+             (("T",0,2,0),"ONA",30,""),
+             (("T",0,3,0),("IRB",r2s),0,"G/L Input Method","",
+                 self.acc[2],"N",None,None,None,None),
+@@ -116,18 +116,17 @@
+                 s += 1
+                 if not n:
+                     for c in self.ctl:
+-                        self.df.loadEntry("T", 0, s, data=c)
+-                        s += 1
+-                        self.df.loadEntry("T", 0, s, data=self.getDes(c))
+-                        s += 1
++                        self.df.loadEntry("T", 0, s, data=c[2])
++                        s += 1
++                        self.df.loadEntry("T", 0, s, data=self.getDes(c[2]))
++                        s += 1
++            self.df.focusField("T", 0, 1, clr=False)
+ 
+     def doGlint(self, frt, pag, r, c, p, i, w):
+         self.glint = w
+         if self.glint == "N":
+-            self.df.loadEntry(frt, pag, p+1, data="")
+-            self.df.loadEntry(frt, pag, p+2, data="")
+-            self.df.loadEntry(frt, pag, p+3, data="")
+-            self.df.loadEntry(frt, pag, p+4, data="")
++            for x in range(1, 5):
++                self.df.loadEntry(frt, pag, p+x, data="")
+             self.df.loadEntry(frt, pag, p+5, data="E")
+             return "sk5"
+ 
+@@ -167,31 +166,20 @@
+             return "Invalid Template"
+ 
+     def doEnd(self):
+-        ctls = []
+         data = [self.opts["conum"]]
+         for x, d in enumerate(self.df.t_work[0][0]):
+-            if x == 1:
+-                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono",
+-                    "=", self.opts["conum"]), ("ctl_code", "=", "crs_ctl")],
+-                    limit=1)
+-                if chk:
+-                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
+-                        where=[("ctl_cono", "=", self.opts["conum"]),
+-                        ("ctl_code", "=", "crs_ctl")])
+-                else:
+-                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
+-                        "crs_ctl", "Creditors Control", d, "", "N", "N"])
+-            elif x == 3:
+-                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono",
+-                    "=", self.opts["conum"]), ("ctl_code", "=", "dis_all")],
+-                    limit=1)
+-                if chk:
+-                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
+-                        where=[("ctl_cono", "=", self.opts["conum"]),
+-                        ("ctl_code", "=", "dis_all")])
+-                else:
+-                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
+-                        "dis_all", "Creditors Control", d, "", "N", "N"])
++            if x in (1, 3):
++                y = (x - 1) / 2
++                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
++                    self.opts["conum"]), ("ctl_code", "=", self.ctl[y][0])],
++                    limit=1)
++                if chk:
++                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
++                        where=[("ctl_cono", "=", self.opts["conum"]),
++                        ("ctl_code", "=", self.ctl[y][0])])
++                else:
++                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
++                        self.ctl[y][0], self.ctl[y][1], d, "", "N", "N"])
+             elif x in (2, 4):
+                 continue
+             else:
+@@ -203,7 +191,7 @@
+                 self.opts["conum"])])
+             dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+             for num, dat in enumerate(self.acc):
+-                if dat != data[num]:
++                if not dat == data[num]:
+                     self.sql.insRec("chglog", data=["crsctl", "U",
+                         "%03i" % self.opts["conum"], self.sql.crsctl_col[num],
+                         dte, self.opts["capnm"], str(dat), str(data[num]), 0])
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-06-17 15:23:42 +0000
++++ doc/Downloads.rst	2015-06-19 16:06:12 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.16 and was released on the 17th June, 2015.
++The latest version of Tartan is 5.0.17 and was released on the 19th June, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.16.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.17.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.16.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.17.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.16.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.16.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.16.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.16.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.0.17.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.0.17.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.0.17.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.0.17.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2015-06-17 15:23:42 +0000
++++ doc/MB.rst	2015-06-19 16:06:12 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.0.16
++:Version:   5.0.17
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-06-17 15:23:42 +0000
++++ doc/MD.rst	2015-06-19 16:06:12 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.16
++:Version:   5.0.17
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'drs/drc110.py'
+--- drs/drc110.py	2014-12-30 15:37:38 +0000
++++ drs/drc110.py	2015-06-18 15:53:42 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ import time
+-from TartanClasses import Sql, TartanDialog
++from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class drc110:
+     def __init__(self, **opts):
+@@ -24,8 +24,8 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["drsctl", "tplmst", "chglog"],
+-            prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlctl", "drsctl", "tplmst",
++            "chglog"], prog=__name__)
+         if self.sql.error:
+             return
+         self.acc = self.sql.getRec(tables="drsctl", where=[("ctd_cono", "=",
+@@ -35,11 +35,27 @@
+             self.acc = [self.opts["conum"], "N", "E", "N", "statement", "Y"]
+         else:
+             self.new = False
++        gc = GetCtl(self.opts["mf"])
++        ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++        self.ctl = [
++            ["drs_ctl", "Debtors Control", 0],
++            ["drs_all", "Discount Allowed", 0]]
++        for num, ctl in enumerate(self.ctl):
++            if ctl[0] in ctlctl:
++                self.ctl[num][2] = ctlctl[ctl[0]]
+         return True
+ 
+     def drawDialog(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+                 "Debtors Control File Maintenance (%s)" % __name__)
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "G/L-Num"),
++                ("glm_desc", "", 30, "Description")),
++            "where": [
++                ("glm_cono", "=", self.opts["conum"])]}
+         tpm = {
+             "stype": "R",
+             "tables": ("tplmst",),
+@@ -56,13 +72,19 @@
+         self.fld = (
+             (("T",0,0,0),("IRB",r1s),0,"G/L Integration","",
+                 self.acc[1],"N",self.doGlint,None,None,None),
+-            (("T",0,1,0),("IRB",r2s),0,"G/L Input Method","",
++            (("T",0,1,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[0][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,1,0),"ONA",30,""),
++            (("T",0,2,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[1][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,2,0),"ONA",30,""),
++            (("T",0,3,0),("IRB",r2s),0,"G/L Input Method","",
+                 self.acc[2],"N",None,None,None,None),
+-            (("T",0,2,0),("IRB",r1s),0,"Chain Stores","",
++            (("T",0,4,0),("IRB",r1s),0,"Chain Stores","",
+                 self.acc[3],"N",None,None,None,None),
+-            (("T",0,3,0),"INA",20,"Statement Template","",
++            (("T",0,5,0),"INA",20,"Statement Template","",
+                 self.acc[4],"N",self.doTplNam,tpm,None,None),
+-            (("T",0,4,0),("IRB",r1s),0,"Statement Ageing","",
++            (("T",0,6,0),("IRB",r1s),0,"Statement Ageing","",
+                 self.acc[5],"N",None,None,None,None))
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
+@@ -72,13 +94,39 @@
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+             butt=but, tend=tnd, txit=txt)
+         if not self.new:
++            s = 0
+             for n, f in enumerate(self.acc[1:]):
+-                self.df.loadEntry("T", 0, n, data=f)
++                self.df.loadEntry("T", 0, s, data=f)
++                s += 1
++                if not n:
++                    for c in self.ctl:
++                        self.df.loadEntry("T", 0, s, data=c[2])
++                        s += 1
++                        self.df.loadEntry("T", 0, s, data=self.getDes(c[2]))
++                        s += 1
++            self.df.focusField("T", 0, 1, clr=False)
+ 
+     def doGlint(self, frt, pag, r, c, p, i, w):
+         if w == "N":
+-            self.df.loadEntry(frt, pag, p+1, data="E")
+-            return "sk1"
++            for x in range(1, 5):
++                self.df.loadEntry(frt, pag, p+x, data="")
++            self.df.loadEntry(frt, pag, p+6, data="E")
++            return "sk5"
++
++    def doGenAcc(self, frt, pag, r, c, p, i, w):
++        des = self.getDes(w)
++        if not des:
++            return "Invalid Account Number"
++        self.df.loadEntry(frt, pag, p+1, data=des)
++
++    def getDes(self, acno):
++        acc = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++            where=[("glm_cono", "=", self.opts["conum"]),
++            ("glm_acno", "=", acno)], limit=1)
++        if acc:
++            return acc[0]
++        else:
++            return ""
+ 
+     def doTplNam(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables="tplmst", where=[("tpm_tname", "=", w),
+@@ -88,11 +136,26 @@
+ 
+     def doEnd(self):
+         data = [self.opts["conum"]]
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            data.append(self.df.t_work[0][0][x])
++        for x, d in enumerate(self.df.t_work[0][0]):
++            if x in (1, 3):
++                y = (x - 1) / 2
++                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
++                    self.opts["conum"]), ("ctl_code", "=", self.ctl[y][0])],
++                    limit=1)
++                if chk:
++                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
++                        where=[("ctl_cono", "=", self.opts["conum"]),
++                        ("ctl_code", "=", self.ctl[y][0])])
++                else:
++                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
++                        self.ctl[y][0], self.ctl[y][1], d, "", "N", "N"])
++            elif x in (2, 4):
++                continue
++            else:
++                data.append(d)
+         if self.new:
+             self.sql.insRec("drsctl", data=data)
+-        elif data != self.acc:
++        elif not data == self.acc:
+             self.sql.updRec("drsctl", data=data, where=[("ctd_cono", "=",
+                 self.opts["conum"])])
+             dte = long("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+
+=== modified file 'gen/gl3050.py'
+--- gen/gl3050.py	2015-06-17 15:23:42 +0000
++++ gen/gl3050.py	2015-06-19 12:44:36 +0000
+@@ -829,13 +829,14 @@
+         self.expheads.append("TYPE")
+         self.expcolsh = [[]]
+         self.expforms = []
++        colsl = self.colsl[:]
+         if self.typ == "S":
+             for h in self.colss:
+                 self.expcolsh[0].append(self.titles[h][0])
+                 self.expforms.append(self.titles[h][1:])
+         elif self.typ == "L":
+             if self.num == "Y":
+-                self.colsl.insert(0, 1)
++                colsl.insert(0, 1)
+                 self.expcolsh = [["", "", ["************** Current-Month "\
+                     "**************", 2, 5], ["************** Year-to-Date "\
+                     "**************", 6, 9], ""], []]
+@@ -843,7 +844,7 @@
+                 self.expcolsh = [["", ["************** Current-Month "\
+                     "**************", 1, 4], ["************** Year-to-Date "\
+                     "**************", 5, 8], ""], []]
+-            for h in self.colsl:
++            for h in colsl:
+                 self.expcolsh[1].append(self.titles[h][0])
+                 self.expforms.append(self.titles[h][1:])
+         elif self.typ == "M":
+
+=== modified file 'gen/glc110.py'
+--- gen/glc110.py	2014-12-30 15:37:38 +0000
++++ gen/glc110.py	2015-06-18 14:57:10 +0000
+@@ -69,7 +69,7 @@
+                     ("bkm_ctl", "Bookings Control"),
+                     ("bkm_chq", "Cheques Received"),
+                     ("bkm_csh", "Cash Received"),
+-                    ("bkm_ccg", "Cancellation Charge")])
++                    ("bkm_ccg", "Cancellation Fee")])
+                 if not mod.count("DR"):
+                     self.glctrl.extend([
+                         ("dis_all", "Discount Allowed")])
+@@ -83,15 +83,21 @@
+             if drsctl and drsctl["ctd_glint"] == "Y":
+                 self.glctrl.extend([
+                     ("dis_all", "Discount Allowed")])
++        if mod.count("ML"):
++            memctl = gc.getCtl("memctl", self.opts["conum"], error=False)
++            if memctl and memctl["mcm_glint"] == "Y":
++                self.glctrl.extend([
++                    ("mem_ctl", "Members Control"),
++                    ("mem_pen", "Members Penalties")])
+         if mod.count("RC"):
+             rcactl = gc.getCtl("rcactl", self.opts["conum"], error=False)
+             if rcactl and rcactl["cte_glint"] == "Y":
+                 self.glctrl.extend([
+                     ("rca_com", "Commission Raised"),
+-                    ("rca_dep", "Deposit Control"),
+-                    ("rca_fee", "Contract Fees Raised"),
++                    ("rca_dep", "Deposits Control"),
++                    ("rca_fee", "Contract Fees"),
++                    ("rca_own", "Owners Control"),
+                     ("rca_orx", "Owners Charges"),
+-                    ("rca_own", "Owners Control"),
+                     ("rca_tnt", "Tenants Control"),
+                     ("rca_trx", "Tenants Charges")])
+         if mod.count("ST"):
+@@ -113,12 +119,6 @@
+                     ("wag_ctl", "Salaries Control"),
+                     ("wag_slc", "Staff Loans Control"),
+                     ("wag_sli", "Staff Loans Interest")])
+-        if mod.count("ML"):
+-            memctl = gc.getCtl("memctl", self.opts["conum"], error=False)
+-            if memctl and memctl["mcm_glint"] == "Y":
+-                self.glctrl.extend([
+-                    ("mem_ctl", "Members Control"),
+-                    ("mem_pen", "Members Penalties")])
+         return True
+ 
+     def drawDialog(self):
+
+=== modified file 'mem/mlc110.py'
+--- mem/mlc110.py	2014-12-30 15:37:38 +0000
++++ mem/mlc110.py	2015-06-18 15:58:16 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ import os, time
+-from TartanClasses import Dbase, Sql, TartanDialog
++from TartanClasses import Dbase, GetCtl, Sql, TartanDialog
+ 
+ class mlc110:
+     def __init__(self, **opts):
+@@ -24,8 +24,8 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["memctl", "tplmst", "chglog"],
+-            prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["memctl", "tplmst", "ctlctl",
++            "chglog"], prog=__name__)
+         if self.sql.error:
+             return
+         self.acc = self.sql.getRec(tables="memctl", where=[("mcm_cono", "=",
+@@ -37,11 +37,27 @@
+                 "", "", "", "member_cards", "", "statement_member"]
+         else:
+             self.new = False
++        gc = GetCtl(self.opts["mf"])
++        ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++        self.ctl = [
++            ["mem_ctl", "Members Control", 0],
++            ["mem_pen", "Members Penalties", 0]]
++        for num, ctl in enumerate(self.ctl):
++            if ctl[0] in ctlctl:
++                self.ctl[num][2] = ctlctl[ctl[0]]
+         return True
+ 
+     def drawDialog(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "Members Ledger Control File Maintenance (%s)" % __name__)
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "G/L-Num"),
++                ("glm_desc", "", 30, "Description")),
++            "where": [
++                ("glm_cono", "=", self.opts["conum"])]}
+         pth = {
+             "stype":  "F",
+             "types":  "dir",
+@@ -75,33 +91,39 @@
+         r1s = (("Yes","Y"),("No","N"))
+         self.fld = (
+             (("T",0,0,0),("IRB",r1s),0,"G/L Integration","",
+-                self.acc[1],"N",None,None,None,None),
+-            (("T",0,1,0),"IUI",2,"Bonus Days","",
++                self.acc[1],"N",self.doGlint,None,None,None),
++            (("T",0,1,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[0][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,1,0),"ONA",30,""),
++            (("T",0,2,0),"IUI",7,self.ctl[1][1],"",
++                self.ctl[1][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,2,0),"ONA",30,""),
++            (("T",0,3,0),"IUI",2,"Bonus Days","",
+                 self.acc[2],"N",None,None,None,("between",0,30)),
+-            (("T",0,2,0),"ID1",10,"Last Month End","",
++            (("T",0,4,0),"ID1",10,"Last Month End","",
+                 self.acc[3],"N",None,None,None,("efld",)),
+-            (("T",0,3,0),"IFF",50,"Photo's Path","",
++            (("T",0,5,0),"IFF",50,"Photo's Path","",
+                 self.acc[4],"N",None,pth,None,("dir",),None,
+                 "The Directory where Photographs are Stored."),
+-            (("T",0,4,0),("IRB",r1s),0,"Access Control","",
++            (("T",0,6,0),("IRB",r1s),0,"Access Control","",
+                 self.acc[5],"N",self.doAccess,None,None,None),
+-            (("T",0,5,0),"INA",20,"Access Host","",
++            (("T",0,7,0),"INA",20,"Access Host","",
+                 self.acc[6],"N",None,None,None,None),
+-            (("T",0,6,0),"ITX",50,"Access Database","",
++            (("T",0,8,0),"ITX",50,"Access Database","",
+                 self.acc[7],"N",None,None,None,None),
+-            (("T",0,7,0),"ITX",50,"Access Directory","",
++            (("T",0,9,0),"ITX",50,"Access Directory","",
+                 self.acc[8],"N",None,None,None,None),
+-            (("T",0,8,0),"INA",20,"Access Username","",
++            (("T",0,10,0),"INA",20,"Access Username","",
+                 self.acc[9],"N",None,None,None,None),
+-            (("T",0,9,0),"IHA",20,"Access Password","",
++            (("T",0,11,0),"IHA",20,"Access Password","",
+                 self.acc[10],"N",None,None,None,None),
+-            (("T",0,10,0),"ITX",50,"Club Logo Image","",
++            (("T",0,12,0),"ITX",50,"Club Logo Image","",
+                 self.acc[11],"N",None,fle,None,None),
+-            (("T",0,11,0),"INA",20,"Card Front Template","",
++            (("T",0,13,0),"INA",20,"Card Front Template","",
+                 self.acc[12],"N",self.doCTpl,tpc,None,("notblank",)),
+-            (("T",0,12,0),"INA",20,"Card Back Template","",
++            (("T",0,14,0),"INA",20,"Card Back Template","",
+                 self.acc[13],"N",self.doCTpl,tpc,None,None),
+-            (("T",0,13,0),"INA",20,"Statement Template","",
++            (("T",0,15,0),"INA",20,"Statement Template","",
+                 self.acc[14],"N",self.doSTpl,tps,None,("notblank",)))
+         but = (("Quit",None,self.doExit,1,None,None),)
+         tnd = ((self.doEnd,"Y"),)
+@@ -109,17 +131,44 @@
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+             butt=but, tend=tnd, txit=txt)
+         if not self.new:
++            s = 0
+             for n, f in enumerate(self.acc[1:]):
+-                self.df.loadEntry("T", 0, n, data=f)
++                self.df.loadEntry("T", 0, s, data=f)
++                s += 1
++                if not n:
++                    for c in self.ctl:
++                        self.df.loadEntry("T", 0, s, data=c[2])
++                        s += 1
++                        self.df.loadEntry("T", 0, s, data=self.getDes(c[2]))
++                        s += 1
++            self.df.focusField("T", 0, 1, clr=False)
++
++    def doGlint(self, frt, pag, r, c, p, i, w):
++        if w == "N":
++            for x in range(1, 5):
++                self.df.loadEntry(frt, pag, p+x, data="")
++            return "sk4"
++
++    def doGenAcc(self, frt, pag, r, c, p, i, w):
++        des = self.getDes(w)
++        if not des:
++            return "Invalid Account Number"
++        self.df.loadEntry(frt, pag, p+1, data=des)
++
++    def getDes(self, acno):
++        acc = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++            where=[("glm_cono", "=", self.opts["conum"]),
++            ("glm_acno", "=", acno)], limit=1)
++        if acc:
++            return acc[0]
++        else:
++            return ""
+ 
+     def doAccess(self, frt, pag, r, c, p, i, w):
+         self.acs = w
+         if self.acs == "N":
+-            self.df.loadEntry(frt, pag, p+1, data="")
+-            self.df.loadEntry(frt, pag, p+2, data="")
+-            self.df.loadEntry(frt, pag, p+3, data="")
+-            self.df.loadEntry(frt, pag, p+4, data="")
+-            self.df.loadEntry(frt, pag, p+5, data="")
++            for x in range(1, 6):
++                self.df.loadEntry(frt, pag, p+x, data="")
+             return "sk5"
+ 
+     def doCTpl(self, frt, pag, r, c, p, i, w):
+@@ -157,8 +206,23 @@
+                     err="Failed to Connect to Server")
+                 return
+         data = [self.opts["conum"]]
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            data.append(self.df.t_work[0][0][x])
++        for x, d in enumerate(self.df.t_work[0][0]):
++            if x in (1, 3):
++                y = (x - 1) / 2
++                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
++                    self.opts["conum"]), ("ctl_code", "=", self.ctl[y][0])],
++                    limit=1)
++                if chk:
++                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
++                        where=[("ctl_cono", "=", self.opts["conum"]),
++                        ("ctl_code", "=", self.ctl[y][0])])
++                else:
++                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
++                        self.ctl[y][0], self.ctl[y][1], d, "", "N", "N"])
++            elif x in (2, 4):
++                continue
++            else:
++                data.append(d)
+         if self.new:
+             self.sql.insRec("memctl", data=data)
+         elif data != self.acc:
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-06-17 15:23:42 +0000
++++ mst/ms0000.py	2015-06-19 16:06:12 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 16)
++    VERSION = (5, 0, 17)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2015-06-17 15:23:42 +0000
++++ mst/msc000.py	2015-06-18 16:53:22 +0000
+@@ -197,6 +197,8 @@
+             print("Fpdf     Version: %s" % fpdf.__version__)
+             if XLRD:
+                 print("Xlrd     Version: %s" % xlrd.info.__VERSION__)
++            if XLWT:
++                print("Xlwt     Version: %s" % xlwt.__VERSION__)
+             if PYCHART:
+                 from pychart import version as pyver
+                 print("Pychart  Version: %s" % pyver.version)
+
+=== modified file 'rca/rcc110.py'
+--- rca/rcc110.py	2014-12-30 15:37:38 +0000
++++ rca/rcc110.py	2015-06-18 15:41:35 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ import time
+-from TartanClasses import Sql, TartanDialog
++from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class rcc110:
+     def __init__(self, **opts):
+@@ -24,8 +24,8 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["rcactl", "chglog", "tplmst"],
+-            prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["rcactl", "ctlctl", "chglog",
++            "tplmst"], prog=__name__)
+         if self.sql.error:
+             return
+         self.acc = self.sql.getRec(tables="rcactl", where=[("cte_cono", "=",
+@@ -36,11 +36,32 @@
+                 "statement_tenant"]
+         else:
+             self.new = False
++        gc = GetCtl(self.opts["mf"])
++        ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++        self.ctl = [
++            ["rca_com", "Commission Raised", 0],
++            ["rca_dep", "Deposits Control", 0],
++            ["rca_fee", "Contract Fees", 0],
++            ["rca_own", "Owners Control", 0],
++            ["rca_orx", "Owners Charges", 0],
++            ["rca_tnt", "Tenants Control", 0],
++            ["rca_trx", "Tenants Charges", 0]]
++        for num, ctl in enumerate(self.ctl):
++            if ctl[0] in ctlctl:
++                self.ctl[num][2] = ctlctl[ctl[0]]
+         return True
+ 
+     def drawDialog(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+                 "Rental System Control File Maintenance (%s)" % __name__)
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "G/L-Num"),
++                ("glm_desc", "", 30, "Description")),
++            "where": [
++                ("glm_cono", "=", self.opts["conum"])]}
+         ctl = {
+             "stype": "R",
+             "tables": ("ctlctl", "genmst"),
+@@ -68,13 +89,34 @@
+         self.fld = (
+             (("T",0,0,0),("IRB",r1s),0,"G/L Integration","",
+                 self.acc[1],"N",self.doGlint,None,None,None),
+-            (("T",0,1,0),"IUI",7,"G/L Bank Account","",
++            (("T",0,1,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[0][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,1,0),"ONA",30,""),
++            (("T",0,2,0),"IUI",7,self.ctl[1][1],"",
++                self.ctl[1][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,2,0),"ONA",30,""),
++            (("T",0,3,0),"IUI",7,self.ctl[2][1],"",
++                self.ctl[2][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,3,0),"ONA",30,""),
++            (("T",0,4,0),"IUI",7,self.ctl[3][1],"",
++                self.ctl[3][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,4,0),"ONA",30,""),
++            (("T",0,5,0),"IUI",7,self.ctl[4][1],"",
++                self.ctl[4][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,5,0),"ONA",30,""),
++            (("T",0,6,0),"IUI",7,self.ctl[5][1],"",
++                self.ctl[5][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,6,0),"ONA",30,""),
++            (("T",0,7,0),"IUI",7,self.ctl[6][1],"",
++                self.ctl[6][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,7,0),"ONA",30,""),
++            (("T",0,8,0),"IUI",7,"G/L Bank Account","",
+                 self.acc[2],"N",self.doGlbnk,ctl,None,("efld",)),
+-            (("T",0,2,0),"ID1",10,"Last Month End","",
++            (("T",0,9,0),"ID1",10,"Last Month End","",
+                 self.acc[3],"N",None,None,None,("efld",)),
+-            (("T",0,3,0),"INA",20,"Owner Template","",
++            (("T",0,10,0),"INA",20,"Owner Template","",
+                 self.acc[4],"N",self.doTplNam,tpm,None,None),
+-            (("T",0,4,0),"INA",20,"Tenant Template","",
++            (("T",0,11,0),"INA",20,"Tenant Template","",
+                 self.acc[5],"N",self.doTplNam,tpm,None,None))
+         but = (("Quit",None,self.doExit,1,None,None),)
+         tnd = ((self.doEnd,"Y"),)
+@@ -82,13 +124,38 @@
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+             butt=but, tend=tnd, txit=txt)
+         if not self.new:
++            s = 0
+             for n, f in enumerate(self.acc[1:]):
+-                self.df.loadEntry("T", 0, n, data=f)
++                self.df.loadEntry("T", 0, s, data=f)
++                s += 1
++                if not n:
++                    for c in self.ctl:
++                        self.df.loadEntry("T", 0, s, data=c[2])
++                        s += 1
++                        self.df.loadEntry("T", 0, s, data=self.getDes(c[2]))
++                        s += 1
++            self.df.focusField("T", 0, 1, clr=False)
+ 
+     def doGlint(self, frt, pag, r, c, p, i, w):
+         if w == "N":
+-            self.df.loadEntry(frt, pag, p+1, data=0)
+-            return "sk1"
++            for x in range(1, 16):
++                self.df.loadEntry(frt, pag, p+x, data="")
++            return "sk15"
++
++    def doGenAcc(self, frt, pag, r, c, p, i, w):
++        des = self.getDes(w)
++        if not des:
++            return "Invalid Account Number"
++        self.df.loadEntry(frt, pag, p+1, data=des)
++
++    def getDes(self, acno):
++        acc = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++            where=[("glm_cono", "=", self.opts["conum"]),
++            ("glm_acno", "=", acno)], limit=1)
++        if acc:
++            return acc[0]
++        else:
++            return ""
+ 
+     def doGlbnk(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables=["ctlctl", "genmst"], cols=["glm_desc"],
+@@ -99,7 +166,7 @@
+             return "Invalid Bank Account Number"
+ 
+     def doTplNam(self, frt, pag, r, c, p, i, w):
+-        if c == 4:
++        if c == 18:
+             typ = "O"
+         else:
+             typ = "T"
+@@ -111,8 +178,23 @@
+ 
+     def doEnd(self):
+         data = [self.opts["conum"]]
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            data.append(self.df.t_work[0][0][x])
++        for x, d in enumerate(self.df.t_work[0][0]):
++            if x in (1, 3, 5, 7, 9, 11, 13):
++                y = (x - 1) / 2
++                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
++                    self.opts["conum"]), ("ctl_code", "=", self.ctl[y][0])],
++                    limit=1)
++                if chk:
++                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
++                        where=[("ctl_cono", "=", self.opts["conum"]),
++                        ("ctl_code", "=", self.ctl[y][0])])
++                else:
++                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
++                        self.ctl[y][0], self.ctl[y][1], d, "", "N", "N"])
++            elif x in (2, 4, 6, 8, 10, 12, 14):
++                continue
++            else:
++                data.append(d)
+         if self.new:
+             self.sql.insRec("rcactl", data=data)
+         elif data != self.acc:
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-06-17 15:23:42 +0000
++++ std/TartanClasses.py	2015-06-19 11:01:16 +0000
+@@ -766,15 +766,15 @@
+ 
+     class MyMessageBox:
+         def __init__(self, parent, dtype, title, mess, butt=None, dflt=None, plc=True):
+-            if not parent:
+-                geom = True
+-                parent = tk.Tk()
+-                parent.withdraw()
++            self.parent = parent
++            if not self.parent:
++                self.geom = True
++                self.parent = MkWindow(decor=False).newwin
+             else:
+-                geom = False
++                self.geom = False
+             style = ttk.Style()
+             style.configure("MFrame.TFrame", background="black")
+-            self.frame = MyFrame(parent, bg="black", borderwidth=5,
++            self.frame = MyFrame(self.parent, bg="black", borderwidth=5,
+                 relief="ridge", style="MFrame.TFrame")
+             if plc:
+                 self.frame.place(anchor="center", relx=0.5, rely=0.5)
+@@ -782,16 +782,8 @@
+             self.topbinds = unbindAllWidgets(self.frame)
+             tit = MyLabel(self.frame, text=title, anchor="c", relief="raised")
+             tit.pack(fill="x", expand="yes", ipadx=2, ipady=5)
+-            try:
+-                image = Image.open(os.path.join(getPrgPath(), "img",
+-                    "%s.png" % dtype))
+-                image = image.resize((48, 48))
+-                tkimg = ImageTk.PhotoImage(image)
+-                self.tkimg = tkimg
+-            except:
+-                tkimg = None
+-            if not geom:
+-                wrap = parent.winfo_width() * .9
++            if not self.geom:
++                wrap = self.parent.winfo_width() * .9
+                 if wrap < 400:
+                     wrap = 400
+                 elif wrap > 800:
+@@ -799,23 +791,33 @@
+             else:
+                 wrap = 400
+             self.binds = []
+-            label = MyLabel(self.frame, image=tkimg, compound="left",
+-                text=mess, padding=5, anchor="w", justify="left",
+-                color=False, foreground="black", background="white",
+-                wraplength=wrap)
++            label = MyLabel(self.frame, text=mess, padding=5, anchor="w",
++                justify="left", color=False, foreground="black",
++                background="white", wraplength=wrap)
++            try:
++                image = os.path.join(getPrgPath(), "img", "%s.png" % dtype)
++                if os.path.isfile(image):
++                    image = Image.open(image)
++                    image = image.resize((48, 48))
++                    tkimg = ImageTk.PhotoImage(image)
++                    self.tkimg = tkimg
++                    label.configure(image=tkimg, compound="left")
++            except:
++                pass
+             label.pack(fill="both", expand="yes")
+             bbox = ButtonBox(self.frame, row=1)
+             self.butts = []
+             if dtype in ("error", "info", "warning"):
+-                butt = (("Close", self.choice),)
++                butt = (("Close", self.doChoice),)
+                 dflt = "Close"
+             elif dtype == "question":
+-                butt = (("Yes", (self.choice, "yes")),
+-                    ("No", (self.choice, "no")))
++                butt = (
++                    ("Yes", (self.doChoice, "yes")),
++                    ("No", (self.doChoice, "no")))
+             for num, but in enumerate(butt):
+                 if type(but[1]) in (int, str):
+                     but = list(but)
+-                    but[1] = (self.choice, but[1])
++                    but[1] = (self.doChoice, but[1])
+                 b = bbox.addButton(but[0], but[1])
+                 for bind in b.bind():
+                     if "<Key-Alt_L>" in bind:
+@@ -831,17 +833,16 @@
+             if self.frame.winfo_toplevel().state() == "withdrawn":
+                 self.frame.winfo_toplevel().deiconify()
+             self.frame.update_idletasks()
+-            if geom:
++            if self.geom:
+                 x = int(self.frame.winfo_screenwidth()) / 2 - 200
+                 y = int(self.frame.winfo_screenheight()) / 2 - 150
+                 w = self.frame.winfo_reqwidth()
+                 h = self.frame.winfo_reqheight()
+-                parent.geometry("%dx%d+%d+%d" % (w, h, x, y))
++                self.parent.geometry("%dx%d+%d+%d" % (w, h, x, y))
+             if plc:
+-                self.frame.grab_set()
+                 self.frame.mainloop()
+ 
+-        def choice(self, answer=None):
++        def doChoice(self, answer=None):
+             self.answer = answer
+             # Clear frame bindings
+             for bind in self.binds:
+@@ -852,6 +853,8 @@
+             self.frame.destroy()
+             self.frame.update()
+             self.frame.quit()
++            if self.geom:
++                self.parent.destroy()
+ 
+         def navigate(self, event, num):
+             if event.keysym == "Left":
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2015-06-17 15:23:42 +0000
++++ std/tartanFunctions.py	2015-06-19 12:41:39 +0000
+@@ -139,7 +139,7 @@
+         "prn": ["/usr/bin/lpr", os.path.join(prgdir, "uty",
+                 "SumatraPDF.exe")],
+         "cnv": ["", ""],
+-        "exp": ["/usr/bin/libreoffice", ""],
++        "exp": ["", ""],
+         "geo": [0],
+         "plc": ["C"],
+         "img": ["Y"],
+@@ -1427,26 +1427,40 @@
+     import os, sys
+ 
+     def viewFile(name, wait):
+-        if not args["rcdic"] or not args["rcdic"]["exp"]:
++        if args["rcdic"] and args["rcdic"]["exp"]:
++            exe, cmd = parsePrg(args["rcdic"]["exp"])
++            if not os.path.isfile(exe):
++                exe = None
++        else:
++            exe = None
++        if not exe:
++            err = False
+             if sys.platform == "win32":
+                 try:
+                     os.startfile(name)
+                 except:
+-                    showError(None, "Error", "No Export Application")
+-                    return
+-            elif os.path.isfile("/usr/bin/ooffice"):
+-                os.spawnv(wait, "/usr/bin/ooffice",
+-                    ("ooffice", name))
+-            elif os.path.isfile("/usr/bin/libreoffice"):
+-                os.spawnv(wait, "/usr/bin/libreoffice",
+-                    ("libreoffice", name))
++                    err = True
++            else:
++                try:
++                    os.spawnv(wait, "xdg-open %s" % name)
++                except:
++                    if os.path.isfile("/usr/bin/ooffice"):
++                        os.spawnv(wait, "/usr/bin/ooffice",
++                            ("ooffice", name))
++                    elif os.path.isfile("/usr/bin/libreoffice"):
++                        os.spawnv(wait, "/usr/bin/libreoffice",
++                            ("libreoffice", name))
++                    else:
++                        err = True
++            if err:
++                showError(None, "Error", "No Valid Export Application")
+             return
+         try:
+-            exe, cmd = parsePrg(args["rcdic"]["exp"])
+             cmd.append(name)
+             os.spawnv(wait, exe, tuple(cmd))
+         except:
+-            showError(None, "Error", "%s Not Found or Not Accessible" % exe)
++            showError(None, "Error", "The Application"\
++                "\n\n%s\n\nIs Not Found or Not Accessible" % exe)
+             return
+ 
+     if not "view" in args:
+
+=== modified file 'str/stc110.py'
+--- str/stc110.py	2014-12-30 15:37:38 +0000
++++ str/stc110.py	2015-06-18 15:41:42 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ import time
+-from TartanClasses import Sql, TartanDialog
++from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class stc110:
+     def __init__(self, **opts):
+@@ -25,7 +25,7 @@
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["strctl", "strloc", "tplmst",
+-            "chglog"], prog=__name__)
++            "ctlctl", "chglog"], prog=__name__)
+         if self.sql.error:
+             return
+         self.acc = self.sql.getRec(tables="strctl", where=[("cts_cono", "=",
+@@ -35,11 +35,27 @@
+             self.acc = [self.opts["conum"], "N", "N", 1, "N", "purchase_order"]
+         else:
+             self.new = False
++        gc = GetCtl(self.opts["mf"])
++        ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++        self.ctl = [
++            ["stk_soh", "Stock on Hand", 0],
++            ["stk_susp", "Stock Reconciliation", 0]]
++        for num, ctl in enumerate(self.ctl):
++            if ctl[0] in ctlctl:
++                self.ctl[num][2] = ctlctl[ctl[0]]
+         return True
+ 
+     def drawDialog(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "Stores Control File Maintenance (%s)" % __name__)
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "G/L-Num"),
++                ("glm_desc", "", 30, "Description")),
++            "where": [
++                ("glm_cono", "=", self.opts["conum"])]}
+         tpm = {
+             "stype": "R",
+             "tables": ("tplmst",),
+@@ -54,14 +70,20 @@
+         r1s = (("Yes","Y"),("No","N"))
+         self.fld = (
+             (("T",0,0,0),("IRB",r1s),0,"G/L Integration","",
+-                self.acc[1],"N",None,None,None,None),
+-            (("T",0,1,0),("IRB",r1s),0,"Multiple Locations","",
++                self.acc[1],"N",self.doGlint,None,None,None),
++            (("T",0,1,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[0][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,1,0),"ONA",30,""),
++            (("T",0,2,0),"IUI",7,self.ctl[1][1],"",
++                self.ctl[1][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,2,0),"ONA",30,""),
++            (("T",0,3,0),("IRB",r1s),0,"Multiple Locations","",
+                 self.acc[2],"N",self.doLocs,None,None,None),
+-            (("T",0,2,0),"IUI",1,"Number of Price Levels","",
++            (("T",0,4,0),"IUI",1,"Number of Price Levels","",
+                 self.acc[3],"N",None,None,None,("between",1,5)),
+-            (("T",0,3,0),("IRB",r1s),0,"Automatic Markup","",
++            (("T",0,5,0),("IRB",r1s),0,"Automatic Markup","",
+                 self.acc[4],"N",None,None,None,None),
+-            (("T",0,4,0),"INA",20,"Orders Template","",
++            (("T",0,6,0),"INA",20,"Orders Template","",
+                 self.acc[5],"N",self.doTplNam,tpm,None,None))
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
+@@ -71,12 +93,41 @@
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+             butt=but, tend=tnd, txit=txt)
+         if not self.new:
++            s = 0
+             for n, f in enumerate(self.acc[1:]):
++                self.df.loadEntry("T", 0, s, data=f)
++                s += 1
++                if not n:
++                    for c in self.ctl:
++                        self.df.loadEntry("T", 0, s, data=c[2])
++                        s += 1
++                        self.df.loadEntry("T", 0, s, data=self.getDes(c[2]))
++                        s += 1
+                 if n == 1:
+                     self.locs = f
+-                self.df.loadEntry("T", 0, n, data=f)
+             self.df.focusField("T", 0, 1, clr=False)
+ 
++    def doGlint(self, frt, pag, r, c, p, i, w):
++        if w == "N":
++            for x in range(1, 5):
++                self.df.loadEntry(frt, pag, p+x, data="")
++            return "sk4"
++
++    def doGenAcc(self, frt, pag, r, c, p, i, w):
++        des = self.getDes(w)
++        if not des:
++            return "Invalid Account Number"
++        self.df.loadEntry(frt, pag, p+1, data=des)
++
++    def getDes(self, acno):
++        acc = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++            where=[("glm_cono", "=", self.opts["conum"]),
++            ("glm_acno", "=", acno)], limit=1)
++        if acc:
++            return acc[0]
++        else:
++            return ""
++
+     def doLocs(self, frt, pag, r, c, p, i, w):
+         self.locs = w
+ 
+@@ -88,8 +139,23 @@
+ 
+     def doEnd(self):
+         data = [self.opts["conum"]]
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            data.append(self.df.t_work[0][0][x])
++        for x, d in enumerate(self.df.t_work[0][0]):
++            if x in (1, 3):
++                y = (x - 1) / 2
++                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
++                    self.opts["conum"]), ("ctl_code", "=", self.ctl[y][0])],
++                    limit=1)
++                if chk:
++                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
++                        where=[("ctl_cono", "=", self.opts["conum"]),
++                        ("ctl_code", "=", self.ctl[y][0])])
++                else:
++                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
++                        self.ctl[y][0], self.ctl[y][1], d, "", "N", "N"])
++            elif x in (2, 4):
++                continue
++            else:
++                data.append(d)
+         if self.new:
+             self.sql.insRec("strctl", data=data)
+         elif data != self.acc:
+
+=== modified file 'wag/wgc110.py'
+--- wag/wgc110.py	2014-12-30 15:37:38 +0000
++++ wag/wgc110.py	2015-06-18 15:41:49 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ import time
+-from TartanClasses import Sql, TartanDialog
++from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class wgc110:
+     def __init__(self, **opts):
+@@ -24,8 +24,8 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["wagctl", "tplmst", "chglog"],
+-            prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["wagctl", "tplmst", "ctlctl",
++            "chglog"], prog=__name__)
+         if self.sql.error:
+             return
+         self.acc = self.sql.getRec("wagctl", where=[("ctw_cono", "=",
+@@ -36,11 +36,28 @@
+                 0, 0, "", 61, "payslip"]
+         else:
+             self.new = False
++        gc = GetCtl(self.opts["mf"])
++        ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
++        self.ctl = [
++            ["wag_ctl", "Salaries Control", 0],
++            ["wag_slc", "Staff Loans Control", 0],
++            ["wag_sli", "Staff Loans Interest", 0]]
++        for num, ctl in enumerate(self.ctl):
++            if ctl[0] in ctlctl:
++                self.ctl[num][2] = ctlctl[ctl[0]]
+         return True
+ 
+     def drawDialog(self):
+         tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+                 "Wages Control File Maintenance (%s)" % __name__)
++        glm = {
++            "stype": "R",
++            "tables": ("genmst",),
++            "cols": (
++                ("glm_acno", "", 0, "G/L-Num"),
++                ("glm_desc", "", 30, "Description")),
++            "where": [
++                ("glm_cono", "=", self.opts["conum"])]}
+         tpm = {
+             "stype": "R",
+             "tables": ("tplmst",),
+@@ -71,16 +88,25 @@
+             (("T",0,7,0),("IRB",r1s),0,"Diplomatic Immunity","",
+                 self.acc[8],"N",None,None,None,None),
+             (("T",0,8,0),("IRB",r1s),0,"G/L Integration","",
+-                self.acc[9],"N",None,None,None,None),
+-            (("T",0,9,0),"IUD",6.2,"S/L Interest Rate","",
++                self.acc[9],"N",self.doGlint,None,None,None),
++            (("T",0,9,0),"IUI",7,self.ctl[0][1],"",
++                self.ctl[0][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,9,0),"ONA",30,""),
++            (("T",0,10,0),"IUI",7,self.ctl[1][1],"",
++                self.ctl[1][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,10,0),"ONA",30,""),
++            (("T",0,11,0),"IUI",7,self.ctl[2][1],"",
++                self.ctl[2][2],"N",self.doGenAcc,glm,None,("efld",)),
++            (("T",0,11,0),"ONA",30,""),
++            (("T",0,12,0),"IUD",6.2,"S/L Interest Rate","",
+                 self.acc[10],"N",None,None,None,("efld",)),
+-            (("T",0,10,0),"Id1",10,"Last Interest Date","",
++            (("T",0,13,0),"Id1",10,"Last Interest Date","",
+                 self.acc[11],"N",None,None,None,("efld",)),
+-            (("T",0,11,0),"INA",4,"Best Account Code","",
++            (("T",0,14,0),"INA",4,"Best Account Code","",
+                 self.acc[12],"N",None,None,None,("efld",)),
+-            (("T",0,12,0),"IUI",2,"Best Account Type","",
++            (("T",0,15,0),"IUI",2,"Best Account Type","",
+                 self.acc[13],"N",None,None,None,("efld",)),
+-            (("T",0,13,0),"INA",20,"Payslip Template","",
++            (("T",0,16,0),"INA",20,"Payslip Template","",
+                 self.acc[14],"N",self.doTplNam,tpm,None,("efld",)))
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
+@@ -90,10 +116,39 @@
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+             butt=but, tend=tnd, txit=txt)
+         if not self.new:
++            s = 0
+             for n, f in enumerate(self.acc[1:]):
+-                self.df.loadEntry("T", 0, n, data=f)
++                self.df.loadEntry("T", 0, s, data=f)
++                s += 1
++                if n == 8:
++                    for c in self.ctl:
++                        self.df.loadEntry("T", 0, s, data=c[2])
++                        s += 1
++                        self.df.loadEntry("T", 0, s, data=self.getDes(c[2]))
++                        s += 1
+             self.df.focusField("T", 0, 1, clr=False)
+ 
++    def doGlint(self, frt, pag, r, c, p, i, w):
++        if w == "N":
++            for x in range(1, 7):
++                self.df.loadEntry(frt, pag, p+x, data="")
++            return "sk6"
++
++    def doGenAcc(self, frt, pag, r, c, p, i, w):
++        des = self.getDes(w)
++        if not des:
++            return "Invalid Account Number"
++        self.df.loadEntry(frt, pag, p+1, data=des)
++
++    def getDes(self, acno):
++        acc = self.sql.getRec(tables="genmst", cols=["glm_desc"],
++            where=[("glm_cono", "=", self.opts["conum"]),
++            ("glm_acno", "=", acno)], limit=1)
++        if acc:
++            return acc[0]
++        else:
++            return ""
++
+     def doTplNam(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec(tables="tplmst", where=[("tpm_tname", "=", w),
+             ("tpm_type", "=", "P"), ("tpm_system", "=", "WAG")], limit=1)
+@@ -102,8 +157,23 @@
+ 
+     def doEnd(self):
+         data = [self.opts["conum"]]
+-        for x in xrange(0, len(self.df.t_work[0][0])):
+-            data.append(self.df.t_work[0][0][x])
++        for x, d in enumerate(self.df.t_work[0][0]):
++            if x in (9, 11, 13):
++                y = (x - 9) / 2
++                chk = self.sql.getRec(tables="ctlctl", where=[("ctl_cono", "=",
++                    self.opts["conum"]), ("ctl_code", "=", self.ctl[y][0])],
++                    limit=1)
++                if chk:
++                    self.sql.updRec("ctlctl", cols=["ctl_conacc"], data=[d],
++                        where=[("ctl_cono", "=", self.opts["conum"]),
++                        ("ctl_code", "=", self.ctl[y][0])])
++                else:
++                    self.sql.insRec("ctlctl", data=[self.opts["conum"],
++                        self.ctl[y][0], self.ctl[y][1], d, "", "N", "N"])
++            elif x in (10, 12, 14):
++                continue
++            else:
++                data.append(d)
+         if self.new:
+             self.sql.insRec("wagctl", data=data)
+         elif data != self.acc:
+

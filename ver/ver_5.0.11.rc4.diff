@@ -1,0 +1,140 @@
+=== modified file 'bwl/bc2070.py'
+--- bwl/bc2070.py	2015-02-07 06:31:11 +0000
++++ bwl/bc2070.py	2015-04-04 12:07:43 +0000
+@@ -182,8 +182,6 @@
+                         where=[("bcg_cono", "=", self.opts["conum"]),
+                         ("bcg_ccod", "=", self.ccod), ("bcg_game", "=",
+                         self.gcod)])
+-                    self.opts["mf"].dbm.commitDbase()
+-                    return "xt"
+                 elif ok == 3:
+                     self.sql.updRec("bwlgme", cols=["bcg_ocod", "bcg_rink",
+                         "bcg_shots_for", "bcg_shots_agt", "bcg_points",
+@@ -192,8 +190,8 @@
+                         where=[("bcg_cono", "=", self.opts["conum"]),
+                         ("bcg_ccod", "=", self.ccod), ("bcg_game", "=",
+                         self.gcod)])
+-                    self.opts["mf"].dbm.commitDbase()
+-                    return "xt"
++                self.opts["mf"].dbm.commitDbase()
++                return "xt"
+             ok = askQuestion(self.opts["mf"].body, head="Shortened",
+                 mess="Was This Game Shortened?", default="no")
+             if ok == "no":
+@@ -324,7 +322,7 @@
+                 where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+                 self.ccod), ("bcg_scod", "=", self.opp), ("bcg_game", "=",
+                 self.gcod)])
+-            #self.opts["mf"].dbm.commitDbase()
++            self.opts["mf"].dbm.commitDbase()
+             if self.reenter:
+                 self.doLoadCards()
+             else:
+@@ -402,18 +400,16 @@
+                         err="Missing Score Card for Skips %s and %s" % (scod,
+                         ocod))
+                     return
+-            self.opts["mf"].dbm.commitDbase()
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+ 
+     def doQuit(self, event=None):
+         ok = askQuestion(self.opts["mf"].body, "Quit Capture",
+-            "Are You Sure that you would like to Quit and Lose "\
+-            "These Captured Results?", default="no")
++            "Are You Sure that you would like to Quit before "\
++            "capturing All Results?", default="no")
+         if ok == "no":
+             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+             return
+-        self.opts["mf"].dbm.rollbackDbase()
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+ 
+
+=== modified file 'bwl/bc3100.py'
+--- bwl/bc3100.py	2014-12-30 15:37:38 +0000
++++ bwl/bc3100.py	2015-04-04 12:24:41 +0000
+@@ -99,13 +99,22 @@
+                     break
+             if not self.game:
+                 return "No Completed Games"
++            self.df.loadEntry(frt, pag, p, data=self.game)
+         else:
+-            chk = self.sql.getRec(tables="bwlgme", cols=["sum(bcg_points)"],
+-                where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+-                self.ccod), ("bcg_game", "=", w)], group="bcg_game", limit=1)
+-            if not chk or not chk[0]:
+-                return "Game Results Not Yet Entered or Abandoned"
+             self.game = w
++        chk = self.sql.getRec(tables="bwlgme", cols=["count(*)"],
++            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod",
++            "=", self.ccod), ("bcg_game", "=", self.game),
++            ("bcg_points", "=", 0), ("bcg_aflag", "=", "")],
++            group="bcg_game", limit=1)
++        if chk and chk[0]:
++            return "%s Result(s) Not Yet Entered" % (chk[0] / 2)
++        chk = self.sql.getRec(tables="bwlgme", cols=["count(*)"],
++            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod",
++            "=", self.ccod), ("bcg_game", "=", self.game), ("bcg_aflag",
++            "=", "A")], group="bcg_aflag", limit=1)
++        if chk and chk[0]:
++            return "Game Abandoned"
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+
+=== modified file 'bwl/bc3110.py'
+--- bwl/bc3110.py	2015-04-02 19:32:07 +0000
++++ bwl/bc3110.py	2015-04-04 12:29:18 +0000
+@@ -99,12 +99,17 @@
+         self.df.loadEntry(frt, pag, p+2, data=self.game)
+ 
+     def doLstGam(self, frt, pag, r, c, p, i, w):
+-        chk = self.sql.getRec(tables="bwlgme", cols=["bcg_game", "bcg_aflag",
+-            "sum(bcg_points)"], where=[("bcg_cono", "=", self.opts["conum"]),
+-            ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", w)],
+-            group="bcg_game, bcg_aflag", limit=1)
+-        if not chk or (not chk[1] == "A" and not chk[2]):
+-            return "Game Results Not Yet Entered"
++        chk = self.sql.getRec(tables="bwlgme", cols=["count(*)"],
++            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod",
++            "=", self.ccod), ("bcg_game", "=", w), ("bcg_aflag", "=", "A")],
++            limit=1)
++        if not chk[0]:
++            chk = self.sql.getRec(tables="bwlgme", cols=["count(*)"],
++                where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod",
++                "=", self.ccod), ("bcg_game", "=", w), ("bcg_points", "=",
++                0), ("bcg_aflag", "<>", "S")], limit=1)
++            if chk[0]:
++                return "%s Game Result(s) Not Yet Entered" % (chk[0] / 2)
+         self.lastgam = w
+         if self.lastgam == self.games and self.groups == "Y":
+             return
+
+=== modified file 'men/bwlmen.py'
+--- men/bwlmen.py	2015-02-07 06:31:11 +0000
++++ men/bwlmen.py	2015-04-04 11:39:57 +0000
+@@ -179,7 +179,7 @@
+     ["PYNN","bc_cc","bc2050",0,"Competiton Draw"],
+     ["PYNN","bc_cc","bc3090",0,"Draw Summary"],
+     ["PYNN","bc_cc","bc2060",0,"Change Draw"],
+-    ["PYNN","bc_cc","bc2070",0,"Capture Results"],
++    ["PYNN","bc_cc","bc2070",0,"Capture Game Results"],
+     ["PYNN","bc_cc","bc3100",0,"Game Results Report"],
+     ["PYNN","bc_cc","bc3110",0,"Match Results Report"],
+     ["PYNN","bc_cc","bc3120",0,"Contact Request Forms"],
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2015-02-11 16:45:23 +0000
++++ men/stdmen.py	2015-04-04 11:40:04 +0000
+@@ -480,7 +480,7 @@
+     ["PYNN","bc_cc","bc2050",0,"Competiton Draw"],
+     ["PYNN","bc_cc","bc3090",0,"Draw Summary"],
+     ["PYNN","bc_cc","bc2060",0,"Change Draw"],
+-    ["PYNN","bc_cc","bc2070",0,"Capture Results"],
++    ["PYNN","bc_cc","bc2070",0,"Capture Game Results"],
+     ["PYNN","bc_cc","bc3100",0,"Game Results Report"],
+     ["PYNN","bc_cc","bc3110",0,"Match Results Report"],
+     ["PYNN","bc_cc","bc3120",0,"Contact Request Forms"],
+

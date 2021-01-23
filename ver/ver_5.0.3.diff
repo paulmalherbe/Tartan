@@ -1,0 +1,1128 @@
+=== modified file '.bzrignore'
+--- .bzrignore	2014-12-30 15:37:38 +0000
++++ .bzrignore	2014-12-30 15:39:22 +0000
+@@ -55,3 +55,4 @@
+ wag/wg3030.old
+ web
+ uty/SumatraPDF-settings.txt
++doc/bkmdoc.py
+
+=== modified file 'bkm/bk1010.py'
+--- bkm/bk1010.py	2014-12-30 15:37:38 +0000
++++ bkm/bk1010.py	2014-12-30 19:53:50 +0000
+@@ -50,8 +50,8 @@
+         ender = projectDate(starter, 365)
+         days = dateDiff(starter, ender, "days") + 1
+         units = self.sql.getRec(tables="bkmunm", where=[("bum_cono",
+-            "=", self.opts["conum"]), ("bum_multi", "=", "N")],
+-            order="bum_type, bum_code")
++            "=", self.opts["conum"]), ("bum_room", "<>", 999)],
++            order="bum_btyp, bum_code")
+         udics = {}
+         for unit in units:
+             if unit[1] == "A" and unit[2] == "ALL":
+
+=== modified file 'bkm/bk1020.py'
+--- bkm/bk1020.py	2014-12-30 15:37:38 +0000
++++ bkm/bk1020.py	2014-12-31 08:08:16 +0000
+@@ -353,23 +353,41 @@
+         col = self.sql.bkmunm_col
+         where = [("bum_cono", "=", self.opts["conum"])]
+         if self.btype == "O":
+-            where.append(("bum_type", "=", self.btype))
+-        self.aunits = self.sql.getRec(tables="bkmunm", where=where,
+-            order="bum_type, bum_code")
+-        test = copy.deepcopy(self.aunits)
++            where.append(("bum_btyp", "=", self.btype))
++        recs = self.sql.getRec(tables="bkmunm", where=where,
++            order="bum_btyp, bum_code")
++        self.aunits = {}
+         whole = False
+-        for unit in test:
+-            if not unit[col.index("bum_type")] == "A":
+-                continue
+-            if unit[col.index("bum_code")] == "ALL":
+-                self.aunits.remove(unit)
+-                whole = unit
+-        book = self.sql.getRec(tables="bkmmst", cols=["bkm_arrive",
+-            "bkm_depart", "bkm_units"], where=[("bkm_cono", "=",
+-            self.opts["conum"]), ("bkm_number", "<>", self.number),
+-            ("bkm_state", "<>", "X")], order="bkm_arrive")
++        for rec in recs:
++            typ = rec[col.index("bum_btyp")]
++            cod = rec[col.index("bum_code")]
++            des = rec[col.index("bum_desc")]
++            rms = rec[col.index("bum_room")]
++            qty = rec[col.index("bum_maxg")]
++            unt = "%s-%s" % (typ, cod)
++            if cod == "ALL":
++                whole = [des, qty]
++            else:
++                self.aunits[unt] = {"desc": des, "qty": qty, "rms": {}}
++                for r in range(1, rms+1):
++                    self.aunits[unt]["rms"][r] = True
++        bks = self.sql.getRec(tables=["bkmmst", "bkmrtt"],
++            cols=[
++                "bkm_arrive",
++                "bkm_depart",
++                "brt_utype",
++                "brt_ucode",
++                "brt_uroom",
++                "brt_quant"],
++            where=[
++                ("bkm_cono", "=", self.opts["conum"]),
++                ("bkm_number", "<>", self.number),
++                ("bkm_state", "<>", "X"),
++                ("brt_cono=bkm_cono",),
++                ("brt_number=bkm_number",)],
++            order="bkm_arrive, brt_utype, brt_ucode, brt_uroom")
+         self.used = []
+-        for bk in book:
++        for bk in bks:
+             u = False
+             if self.btype == "A":
+                 if bk[0] < self.depart and self.arrive < bk[1]:
+@@ -377,38 +395,35 @@
+             else:
+                 if bk[0] <= self.depart and self.arrive <= bk[1]:
+                     u = True
+-            if u:
+-                un = bk[2].split(":")
+-                for u in un:
+-                    self.used.append(u.split("-"))
+-                    if whole and u[0] == "A":
+-                        whole = False
+-        test = copy.deepcopy(self.aunits)
+-        for unit in test:
+-            cod = [
+-                unit[col.index("bum_type")],
+-                unit[col.index("bum_code")]]
+-            if cod[0] == "A" and ["A", "ALL"] in self.used:
+-                self.aunits.remove(unit)
+-                whole = False
+-            elif cod in self.used and unit[col.index("bum_multi")] == "N":
+-                self.aunits.remove(unit)
++            if u and not bk[4] == 999:
++                cod = "%s-%s" % (bk[2], bk[3])
++                if bk[2] == "A" and bk[4]:
++                    self.aunits[cod]["qty"] -= bk[5]
++                    if not self.aunits[cod]["qty"]:
++                        del self.aunits[cod]
++                    else:
++                        self.aunits[cod]["rms"][bk[4]] = False
++                else:
++                    del self.aunits[cod]
++                if whole and bk[2] == "A":
++                    whole = False
+         if whole:
+-            self.aunits.insert(0, whole)
++            self.aunits["A-ALL"] = {"desc": whole[0], "qty": whole[1],
++                "rms": {}}
+         if not self.aunits:
+             showError(self.opts["mf"].window, "No Vacancies",
+                 "There are No Available Units for this Booking")
+             self.df.focusField("T", 1, 5)
+             return
+-        beds = 0
+-        for unit in self.aunits:
+-            if unit[self.sql.bkmunm_col.index("bum_type")] == self.btype:
+-                beds += unit[self.sql.bkmunm_col.index("bum_guests")]
+-        if beds < self.guests:
+-            showError(self.opts["mf"].window, "Capacity Shortage",
+-                "There is Not Enough Capacity for this Booking")
+-            self.df.focusField("T", 1, 5)
+-            return
++        #beds = 0
++        #for unit in self.aunits:
++        #    if unit[self.sql.bkmunm_col.index("bum_btyp")] == self.btype:
++        #        beds += unit[self.sql.bkmunm_col.index("bum_maxg")]
++        #if beds < self.guests:
++        #    showError(self.opts["mf"].window, "Capacity Shortage",
++        #        "There is Not Enough Capacity for this Booking")
++        #    self.df.focusField("T", 1, 5)
++        #    return
+         # Enter Units
+         tit = "Select Units and Rates"
+         unt = {
+@@ -429,15 +444,18 @@
+                 "r","Y",self.doUUnit,unt,None,("notblank",)),
+             (("C",0,0,1),"ITX",25,"Description","",
+                 "","N",self.doUDesc,None,None,("notblank",)),
+-            (("C",0,0,2),"IUI",4,"Rate","Rate Code",
++            (("C",0,0,2),"IUI",3,"Rme","Room Number",
++                0,"N",self.doURme,None,None,("efld",),None,
++                "Enter the room number or 0 for the whole unit"),
++            (("C",0,0,3),"IUI",3,"Rte","Rate Code",
+                 "r","N",self.doURate,rte,self.doUDelete,("efld",)),
+-            (("C",0,0,3),"OTX",25,"Description"),
+-            (("C",0,0,4),"OUD",10.2,"Normal-Rte"),
+-            (("C",0,0,5),"IUI",3,"Qty","",
++            (("C",0,0,4),"OTX",25,"Description"),
++            (("C",0,0,5),"OUD",10.2,"Normal-Rte"),
++            (("C",0,0,6),"IUI",3,"Qty","",
+                 0,"N",self.doUQty,None,self.doUDelete,("notzero",)),
+-            (("C",0,0,6),"IUD",6.2,"Disc-%","",
++            (("C",0,0,7),"IUD",6.2,"Disc-%","",
+                 0,"N",self.doUDisc,None,None,None),
+-            (("C",0,0,7),"IUD",10.2,"Applied-Rt","Applied Rate",
++            (("C",0,0,8),"IUD",10.2,"Applied-Rt","Applied Rate",
+                 0,"N",self.doUAmount,None,None,("efld",)))
+         but = (
+             ("Clear",None,self.doUClear,0,("C",0,1),("C",0,2),
+@@ -484,18 +502,18 @@
+     def getUnits(self):
+         data = []
+         for unit in self.aunits:
+-            typ = unit[self.sql.bkmunm_col.index("bum_type")]
+-            cod = unit[self.sql.bkmunm_col.index("bum_code")]
+-            des = unit[self.sql.bkmunm_col.index("bum_desc")]
+-            qty = unit[self.sql.bkmunm_col.index("bum_guests")]
++            typ, cod = unit.split("-")
++            des = self.aunits[unit]["desc"]
++            qty = self.aunits[unit]["qty"]
+             bkt = self.sql.getRec(tables="bkmrtt", cols=["sum(brt_quant)"],
+                 where=[("brt_cono", "=", self.opts["conum"]), ("brt_number",
+                 "=", self.number), ("brt_utype", "=", typ), ("brt_ucode", "=",
+                 cod)], limit=1)
+             if not bkt or not bkt[0]:
+                 bkt = [0]
+-            data.append(["%s-%-6s" % (typ, cod), des,
+-                CCD(qty, "UI", 3).disp, CCD(bkt[0], "UI", 3).disp])
++            data.append([unit, des, CCD(qty, "UI", 3).disp,
++                CCD(bkt[0], "UI", 3).disp])
++        data.sort()
+         opts = {
+             "stype": "C",
+             "titl": "Select the Required Unit",
+@@ -506,41 +524,50 @@
+ 
+     def doUUnit(self, frt, pag, r, c, p, i, w):
+         tp, cd = w.split("-")
+-        rec = self.sql.getRec(tables="bkmunm", cols=["bum_desc", "bum_multi",
+-            "bum_guests"], where=[("bum_cono", "=", self.opts["conum"]),
+-            ("bum_type", "=", tp), ("bum_code", "=", cd)], limit=1)
++        rec = self.sql.getRec(tables="bkmunm", cols=["bum_desc", "bum_maxg"],
++            where=[("bum_cono", "=", self.opts["conum"]), ("bum_btyp", "=", tp),
++            ("bum_code", "=", cd)], limit=1)
+         if not rec:
+             return "Invalid Unit Code"
+-        found = False
+-        for unit in self.aunits:
+-            typ = unit[self.sql.bkmunm_col.index("bum_type")]
+-            cod = unit[self.sql.bkmunm_col.index("bum_code")]
+-            if typ == tp and cod == cd:
+-                found = True
+-                break
+-        if not found:
++        if not w in self.aunits:
+             return "Unit Not Available"
+-        if tp == "A" and cd == "ALL":
+-            for unit in self.used:
+-                if unit[0] == "A":
+-                    return "Units Already Allocated in his Period"
+         self.ucod = w
+         self.udes = rec[0]
+-        self.uqty = rec[2]
++        self.uqty = rec[1]
+         self.rt.loadEntry(frt, pag, p+1, data=self.udes)
+-        self.rt.colf[0][2][8]["where"] = [
++        self.rt.colf[0][3][8]["where"] = [
+             ("brm_cono", "=", self.opts["conum"]),
+             ("brm_type", "=", tp)]
++        if tp == "A":
++            return "sk1"
+ 
+     def doUDesc(self, frt, pag, r, c, p, i, w):
+         self.udes = w
++        if not self.ucod[0] == "A":
++            self.urme = 1
++            self.df.loadEntry(frt, pag, p+1, data=self.urme)
++            return "sk1"
++
++    def doURme(self, frt, pag, r, c, p, i, w):
++        if not w:
++            for room in self.aunits[self.ucod]["rms"]:
++                if not self.aunits[self.ucod]["rms"][room]:
++                    return "Unit Partly Booked"
++        elif not self.aunits[self.ucod]["rms"][w]:
++            return "Room Already Booked"
++        self.urme = w
+ 
+     def doURate(self, frt, pag, r, c, p, i, w):
+         tp, cd = self.ucod.split("-")
+-        unit = self.sql.getRec(tables="bkmrtt", where=[("brt_cono", "=",
+-            self.opts["conum"]), ("brt_number", "=", self.number),
+-            ("brt_utype", "=", tp), ("brt_ucode", "=", cd), ("brt_rcode",
+-            "=", w)], limit=1)
++        unit = self.sql.getRec(tables="bkmrtt",
++            where=[
++                ("brt_cono", "=", self.opts["conum"]),
++                ("brt_number", "=", self.number),
++                ("brt_utype", "=", tp),
++                ("brt_ucode", "=", cd),
++                ("brt_uroom", "=", self.urme),
++                ("brt_rcode", "=", w)],
++            limit=1)
+         if unit:
+             # Existing bkmrtt Record
+             self.found = True
+@@ -627,9 +654,9 @@
+                 ("brt_ucode", "=", cd), ("brt_rcode", "=", self.rcode)])
+         else:
+             self.sql.insRec("bkmrtt", data=[self.opts["conum"], self.number,
+-                tp, cd, self.udes, self.rcode, self.rdesc, self.rbase,
+-                self.nrate, self.rqty, self.rdisc, self.arate, 0, 0, 0, 0,
+-                self.opts["capnm"], self.sysdtw, 0])
++                tp, cd, self.udes, self.urme, self.rcode, self.rdesc,
++                self.rbase, self.nrate, self.rqty, self.rdisc, self.arate,
++                0, 0, 0, 0, self.opts["capnm"], self.sysdtw, 0])
+         self.doLoadUnits()
+ 
+     def doLoadUnits(self):
+@@ -643,11 +670,12 @@
+             self.rt.focusField("C", 0, 1)
+             return
+         for num, rec in enumerate(recs):
+-            pos = num * 8
++            pos = num * 9
+             ut = rec[self.sql.bkmrtt_col.index("brt_utype")]
+             uc = rec[self.sql.bkmrtt_col.index("brt_ucode")]
+             uc = "%s-%s" % (ut, uc)
+             ud = rec[self.sql.bkmrtt_col.index("brt_udesc")]
++            rm = rec[self.sql.bkmrtt_col.index("brt_uroom")]
+             rc = rec[self.sql.bkmrtt_col.index("brt_rcode")]
+             rd = rec[self.sql.bkmrtt_col.index("brt_rdesc")]
+             nr = rec[self.sql.bkmrtt_col.index("brt_nrate")]
+@@ -656,18 +684,19 @@
+             ar = rec[self.sql.bkmrtt_col.index("brt_arate")]
+             self.rt.loadEntry("C", 0, pos, data=uc)
+             self.rt.loadEntry("C", 0, pos+1, data=ud)
+-            self.rt.loadEntry("C", 0, pos+2, data=rc)
+-            self.rt.loadEntry("C", 0, pos+3, data=rd)
+-            self.rt.loadEntry("C", 0, pos+4, data=nr)
+-            self.rt.loadEntry("C", 0, pos+5, data=qt)
+-            self.rt.loadEntry("C", 0, pos+6, data=ds)
+-            self.rt.loadEntry("C", 0, pos+7, data=ar)
++            self.rt.loadEntry("C", 0, pos+2, data=rm)
++            self.rt.loadEntry("C", 0, pos+3, data=rc)
++            self.rt.loadEntry("C", 0, pos+4, data=rd)
++            self.rt.loadEntry("C", 0, pos+5, data=nr)
++            self.rt.loadEntry("C", 0, pos+6, data=qt)
++            self.rt.loadEntry("C", 0, pos+7, data=ds)
++            self.rt.loadEntry("C", 0, pos+8, data=ar)
+             if ut == "A":
+                 self.aqty += qt
+             if num == self.rt.rows[0] - 1:
+                 self.rt.scrollScreen(0)
+             else:
+-                col = ((num + 1) * 8) + 1
++                col = ((num + 1) * 9) + 1
+                 self.rt.focusField("C", 0, col)
+ 
+     def doUExit(self):
+@@ -1503,7 +1532,7 @@
+         nd["%s_C%02i" % (t, s)][tc.index("tpd_text")] = self.guests
+         # Booked facilities
+         rtt = self.sql.getRec(tables="bkmrtt", cols=["brt_utype", "brt_ucode",
+-            "brt_udesc", "brt_rbase", "brt_quant", "brt_arate"],
++            "brt_udesc", "brt_uroom", "brt_rbase", "brt_quant", "brt_arate"],
+             where=[("brt_cono", "=", self.opts["conum"]), ("brt_number", "=",
+             self.number)], order="brt_utype, brt_udesc")
+         text = ""
+@@ -1514,16 +1543,17 @@
+             else:
+                 txt = ""
+             nd["%s_T%02i" % (t, s)][tc.index("tpd_text")] = txt
+-            bas = u[3]
+-            qty = CCD(u[4], "UI", 3)
+-            rte = CCD(u[5], "UD", 10.2)
++            if u[0] == "A" and u[3]:
++                u[2] = "%-s Room %3s" % (u[2], u[3])
++            bas = u[4]
++            qty = CCD(u[5], "UI", 3)
++            rte = CCD(u[6], "UD", 10.2)
+             if rte.work:
+-                txt = "%1s - %-28s %-3s @ R%10s" % (u[0], u[2],
+-                    qty.disp, rte.disp)
++                txt = "%-39s %-3s @ R%10s" % (u[2], qty.disp, rte.disp)
+                 if bas in ("A", "C"):
+                     txt += " pd"
+             else:
+-                txt = "%1s - %-28s" % (u[0], u[2])
++                txt = "%-39s" % u[2]
+             nd["%s_C%02i" % (t, s)][tc.index("tpd_text")] = txt
+         # Special
+         if bd[13]:
+@@ -1535,7 +1565,7 @@
+                     nd["%s_T%02i" % (t, s)][tc.index("tpd_text")] = "Remarks:"
+                 nd["%s_C%02i" % (t, s)][tc.index("tpd_text")] = line
+         # Values
+-        s += 1
++        s += 2
+         nd["%s_T%02i" % (t, s)][tc.index("tpd_text")] = "Value of Booking:"
+         if not bd[7]:
+             nd["%s_C%02i" % (t, s)][tc.index("tpd_text")] = "N/C" + bd[7]
+
+=== modified file 'bkm/bk2010.py'
+--- bkm/bk2010.py	2014-12-30 15:37:38 +0000
++++ bkm/bk2010.py	2014-12-30 19:47:12 +0000
+@@ -175,7 +175,7 @@
+                 rate = trn[self.sql.bkmrtt_col.index("brt_arate")]
+                 days = trn[self.sql.bkmrtt_col.index("brt_bdays")]
+                 umst = self.sql.getRec(tables="bkmunm", where=[("bum_cono",
+-                    "=", self.opts["conum"]), ("bum_type", "=", utyp),
++                    "=", self.opts["conum"]), ("bum_btyp", "=", utyp),
+                     ("bum_code", "=", ucod)], limit=1)
+                 vatc = umst[self.sql.bkmunm_col.index("bum_vatc")]
+                 if not vatc:
+
+=== modified file 'bkm/bk3030.py'
+--- bkm/bk3030.py	2014-12-30 15:37:38 +0000
++++ bkm/bk3030.py	2014-12-31 12:58:08 +0000
+@@ -232,8 +232,7 @@
+             group = rec[self.sql.bkmmst_col.index("bkm_group")]
+             arrive = rec[self.sql.bkmmst_col.index("bkm_arrive")]
+             depart = rec[self.sql.bkmmst_col.index("bkm_depart")]
+-            units = rec[self.sql.bkmmst_col.index("bkm_units")]
+-            if units.count("A-"):
++            if btype == "A":
+                 if depart <= self.start or arrive >= self.end:
+                     continue
+             elif depart <= self.start or arrive > self.end:
+@@ -247,18 +246,32 @@
+             names = con[self.sql.bkmcon_col.index("bkc_names")]
+             name = "%s %s" % (names.split()[0], sname)
+             if group:
+-                name = "%-20s %s" % (name, group)
++                name = "%-25s %s" % (name, group)
+             bal = self.sql.getRec(tables="bkmtrn", cols=["sum(bkt_tramt)"],
+                 where=[("bkt_cono", "=", self.opts["conum"]), ("bkt_number",
+                 "=", number)], limit=1)
+-            units = self.sql.getRec(tables="bkmrtt", cols=["brt_udesc",
+-                "sum(brt_quant)"], where=[("brt_cono", "=", self.opts["conum"]),
+-                ("brt_number", "=", number)], group="brt_utype, brt_ucode, "\
+-                "brt_udesc", order="brt_utype, brt_ucode")
+-            namq = len(wrap(name, break_long_words=False, width=20))
++            recs = self.sql.getRec(tables="bkmrtt", cols=["brt_udesc",
++                "brt_uroom", "sum(brt_quant)"], where=[("brt_cono", "=",
++                self.opts["conum"]), ("brt_number", "=", number)],
++                group="brt_utype, brt_ucode, brt_udesc, brt_uroom",
++                order="brt_utype, brt_ucode")
++            units = []
++            rm = False
++            for rec in recs:
++                if rec[1]:
++                    if not rm:
++                        unt = ["%s - Room %s" % (rec[0], rec[1]), rec[2]]
++                        rm = True
++                    else:
++                        unt[0] = "%s,%s" % (unt[0], rec[1])
++                else:
++                    units.append((rec[0], rec[2]))
++            if rm:
++                units.append(unt)
++            namq = len(wrap(name, break_long_words=False, width=25))
+             untq = 0
+             for unit in units:
+-                untq += len(wrap(unit[0], break_long_words=False, width=20))
++                untq += len(wrap(unit[0], break_long_words=False, width=25))
+             if untq > namq:
+                 hh = [(untq * 8.0) / namq, 8, untq * 8]
+             elif namq > untq:
+@@ -267,7 +280,7 @@
+                 hh = [8, 8, 8]
+             if not self.fpdf.page or self.fpdf.get_y() + hh[0] > 280:
+                 self.fpdf.add_page()
+-                oldnm = None
++            oldnm = None
+             for unit in units:
+                 if name == oldnm:
+                     name = ""
+@@ -280,7 +293,7 @@
+                     d = datetime.date(yr, mt, dy)
+                     arr = d.strftime("%a")
+                 else:
+-                    arr = "Res"
++                    arr = "<--"
+                 if depart <= self.end:
+                     yr = depart / 10000
+                     mt = depart / 100 % 100
+@@ -288,7 +301,7 @@
+                     e = datetime.date(yr, mt, dy)
+                     dep = e.strftime("%a")
+                 else:
+-                    dep = "Res"
++                    dep = "-->"
+                 if not last == number and bal[0]:
+                     amt = CCD(bal[0], "SD", 11.2).disp
+                 else:
+@@ -298,18 +311,17 @@
+         self.opts["mf"].dbm.commitDbase()
+ 
+     def doHKeeping(self):
+-        recs = self.sql.getRec(tables="bkmunm", where=[("bum_cono", "=",
+-            self.opts["conum"]), ("bum_multi", "=", "N")],
+-            order="bum_type, bum_code")
++        recs = self.sql.getRec(tables="bkmunm", cols=["bum_btyp", "bum_code",
++            "bum_desc"], where=[("bum_cono", "=", self.opts["conum"]),
++            ("bum_room", "<>", 999)], order="bum_btyp, bum_code")
+         for rec in recs:
+             col = ["bkm_number", "bkm_btype", "bkm_group", "bkc_sname",
+-                "bkc_names", "bkm_arrive", "bkm_depart", "sum(brt_quant)",
+-                "bkc_sname", "bkc_names"]
++                "bkc_names", "bkm_arrive", "bkm_depart", "sum(brt_quant)"]
+             bks = self.sql.getRec(tables=["bkmmst", "bkmrtt", "bkmcon"],
+                 cols=col, where=[("bkm_cono", "=", self.opts["conum"]),
+                 ("bkm_state", "in", ("C", "S")), ("brt_cono=bkm_cono",),
+-                ("brt_number=bkm_number",), ("brt_utype", "=", rec[1]),
+-                ("brt_ucode", "=", rec[2]), ("bkc_cono=bkm_cono",),
++                ("brt_number=bkm_number",), ("brt_utype", "=", rec[0]),
++                ("brt_ucode", "=", rec[1]), ("bkc_cono=bkm_cono",),
+                 ("bkc_ccode=bkm_ccode",)], order="bkm_arrive")
+             nme = ""
+             qty = ""
+@@ -341,7 +353,7 @@
+                     dt = datetime.date(yr, mt, dy)
+                     arrive = dt.strftime("%a")
+                 else:
+-                    arrive = "Res"
++                    arrive = "<--"
+                 if depart <= self.end:
+                     yr = depart / 10000
+                     mt = depart / 100 % 100
+@@ -349,27 +361,42 @@
+                     dt = datetime.date(yr, mt, dy)
+                     depart = dt.strftime("%a")
+                 else:
+-                    depart = "Res"
++                    depart = "-->"
++                rms = self.sql.getRec(tables="bkmrtt",
++                    cols=["brt_uroom"],
++                    where=[
++                        ("brt_cono", "=", self.opts["conum"]),
++                        ("brt_number", "=", number),
++                        ("brt_utype", "=", rec[0]),
++                        ("brt_ucode", "=", rec[1])])
++                rm = False
++                for r in rms:
++                    if not r[0]:
++                        continue
++                    if not rm:
++                        name = "%s - Room %s" % (name, r[0])
++                        rm = True
++                    else:
++                        name = "%s,%s" % (name, r[0])
+                 quant = bk[7]
+                 bal = self.sql.getRec(tables="bkmtrn", cols=["sum(bkt_tramt)"],
+                     where=[("bkt_cono", "=", self.opts["conum"]), ("bkt_number",
+                     "=", number)], limit=1)
+-                namq = len(wrap(name, break_long_words=False, width=20))
++                namq = len(wrap(name, break_long_words=False, width=25))
+                 totq += namq
+                 hh[2] = namq * 8
+-                nme = name
+                 qty = CCD(quant, "UI", 3).disp
+                 arr = CCD(arrive, "NA", 3).disp
+                 dep = CCD(depart, "NA", 3).disp
+                 amt = CCD(bal[0], "SD", 11.2).disp
+-                lines.append([nme, qty, arr, dep, amt, hh])
++                lines.append([name, qty, arr, dep, amt, hh[:]])
+             if not self.fpdf.page or self.fpdf.get_y() + (totq * 8) > 280:
+                 self.fpdf.add_page()
+-            untq = len(wrap(rec[3], break_long_words=False, width=20))
++            untq = len(wrap(rec[2], break_long_words=False, width=25))
+             if not lines:
+                 hh[1] = hh[2] = 8.0 * untq
+                 self.y = self.fpdf.get_y()
+-                self.printLine(rec[3], "", "", "", "", "", hh)
++                self.printLine(rec[2], "", "", "", "", "", hh)
+                 self.fpdf.set_y(self.y)
+                 self.printLine(None, "", "", "", "", "", hh)
+             else:
+@@ -380,7 +407,7 @@
+                 else:
+                     hh[2] = totq * 8
+                 self.y = self.fpdf.get_y()
+-                self.printLine(rec[3], "", "", "", "", "", hh)
++                self.printLine(rec[2], "", "", "", "", "", hh)
+                 self.fpdf.set_y(self.y)
+                 for l in lines:
+                     self.printLine(None, l[0], l[1], l[2], l[3], l[4], l[5])
+@@ -408,7 +435,7 @@
+             rate = rec[self.sql.bkmrtt_col.index("brt_arate")]
+             days = rec[self.sql.bkmrtt_col.index("brt_bdays")]
+             umst = self.sql.getRec(tables="bkmunm", where=[("bum_cono", "=",
+-                self.opts["conum"]), ("bum_type", "=", utyp), ("bum_code", "=",
++                self.opts["conum"]), ("bum_btyp", "=", utyp), ("bum_code", "=",
+                 ucod)], limit=1)
+             vatc = umst[self.sql.bkmunm_col.index("bum_vatc")]
+             if not vatc:
+@@ -486,14 +513,14 @@
+                 ides = "Invoices Not Generated"
+             self.fpdf.drawText()
+             self.fpdf.drawText(ides, x=7, font=["courier", "B", 16])
+-            self.fpdf.drawText(font=["courier", "B", 14])
+-            self.printLine("%-20s" % "Name or Group",
+-                "%-20s" % "Unit Description", "Qty", "Arr",
++            self.fpdf.drawText(font=["courier", "B", 12])
++            self.printLine("%-25s" % "Name or Group",
++                "%-25s" % "Unit Description", "Qty", "Arr",
+                 "Dep", "   Balance ", (8, 8, 8), fill=1)
+         else:
+-            self.fpdf.drawText(font=["courier", "B", 14])
+-            self.printLine("%-20s" % "Unit Description",
+-                "%-20s" % "Name or Group", "Qty", "Arr",
++            self.fpdf.drawText(font=["courier", "B", 12])
++            self.printLine("%-25s" % "Unit Description",
++                "%-25s" % "Name or Group", "Qty", "Arr",
+                 "Dep", "   Balance ", (8, 8, 8), fill=1)
+ 
+     def getDate(self, date):
+@@ -514,9 +541,9 @@
+             ctyp = "M"
+         else:
+             ctyp = "S"
+-        ft = ["courier", "B", 14]
++        ft = ["courier", "B", 12]
+         self.fpdf.set_font(ft[0], ft[1], ft[2])
+-        w = self.fpdf.get_string_width("X"*21)
++        w = self.fpdf.get_string_width("X"*26)
+         x = 7
+         y = self.fpdf.get_y()
+         if a:
+@@ -525,7 +552,7 @@
+             if self.rtyp == "H" and not fill:
+                 return
+         x += w
+-        w = self.fpdf.get_string_width("X"*21)
++        w = self.fpdf.get_string_width("X"*26)
+         self.fpdf.drawText(b, x=x, y=y, w=w, h=hh[1], border=bdr,
+             fill=fill, ctyp=ctyp, font=ft)
+         x += w
+
+=== modified file 'bkm/bk3040.py'
+--- bkm/bk3040.py	2014-12-30 15:37:38 +0000
++++ bkm/bk3040.py	2014-12-31 08:49:36 +0000
+@@ -84,7 +84,6 @@
+             self.statusd = "Cancelled"
+ 
+     def doEnd(self):
+-        print self.opts["mf"].dbm.dbopen
+         self.df.closeProcess()
+         whr = [("bkm_cono", "=", self.opts["conum"])]
+         if not self.status == "A":
+
+=== modified file 'bkm/bk3080.py'
+--- bkm/bk3080.py	2014-12-30 15:37:38 +0000
++++ bkm/bk3080.py	2014-12-31 09:18:03 +0000
+@@ -75,6 +75,7 @@
+                 ("bkc_ccode=bkm_ccode",))}
+         r1s = (("Yes","Y"), ("Range","R"), ("Singles","S"))
+         r2s = (("Number","N"),("Name","M"),("Postal Code","P"))
++        r3s = (("Yes","Y"), ("No","N"))
+         fld = (
+             (("T",0,0,0),"INA",20,"Template Name","",
+                 self.stpl,"Y",self.doTplNam,tpm,None,None),
+@@ -84,7 +85,7 @@
+                 "","N",self.doAcc,bkm,None,None),
+             (("T",0,3,0),"IUI",7,"To Booking","",
+                 "","N",self.doAcc,bkm,None,None),
+-            (("T",0,4,0),("IRB",r1s),0,"Include Cancellations","",
++            (("T",0,4,0),("IRB",r3s),0,"Include Cancellations","",
+                 "Y","N",self.doCancel,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+@@ -283,7 +284,6 @@
+                     exec "%s = CCD(trans[btc.index(cod)], "\
+                         "self.form.tptp[cod][0][1], "\
+                         "self.form.tptp[cod][0][2])" % cod
+-                    exec "print %s.err" % cod
+             line_paid = 0
+             line_balance = bkt_tramt.work
+             self.tbal = float(ASD(self.tbal) + ASD(bkt_tramt.work))
+
+=== modified file 'bkm/bkc210.py'
+--- bkm/bkc210.py	2014-12-30 15:37:38 +0000
++++ bkm/bkc210.py	2014-12-31 13:53:49 +0000
+@@ -44,13 +44,13 @@
+             "cols": [
+                 ("bum_code", "", 0, "Code"),
+                 ("bum_desc", "", 0, "Description"),
+-                ("bum_multi", "", 0, "M"),
+-                ("bum_guests", "", 0, "Qty"),
++                ("bum_room", "", 0, "Rms"),
++                ("bum_maxg", "", 0, "Qty"),
+                 ("bum_vatc", "", 0, "V")],
+             "where": [
+                 ("bum_cono", "=", self.opts["conum"])],
+-            "whera": (("T", "bum_type", 0, 0),),
+-            "order": "bum_type, bum_code"}
++            "whera": (("T", "bum_btyp", 0, 0),),
++            "order": "bum_btyp, bum_code"}
+         if self.glint == "Y":
+             unm["cols"].append(("bum_slsa", "", 0, "Acc-Num"))
+         vtm = {
+@@ -68,19 +68,18 @@
+                 ("glm_desc", "", 0, "Description", "Y")),
+             "where": [("glm_cono", "=", self.opts["conum"])]}
+         r1s = (("Accomodation","A"), ("Other","O"))
+-        r2s = (("Yes","Y"), ("No","N"))
+         self.fld = [
+-            (("T",0,0,0),("IRB",r1s),0,"Type","",
+-                "A","N",self.doType,None,None,None),
+-            (("T",0,1,0),"IUA",6,"Code","",
+-                "","N",self.doCode,unm,None,("notblank",)),
++            (("T",0,0,0),("IRB",r1s),0,"Booking Type","",
++                "A","N",self.doBtype,None,None,None),
++            (("T",0,1,0),"IUA",6,"Unit Code","",
++                "","N",self.doUcode,unm,None,("notblank",)),
+             (("T",0,2,0),"ITX",30,"Description","",
+                 "","N",None,None,self.doDelete,("notblank",)),
+-            (("T",0,3,0),("IRB",r2s),0,"Multiple","Multiple Bookings Allowed",
+-                "N","N",None,None,None,None),
+-            (("T",0,4,0),"IUA",3,"Capacity","",
+-                "","N",None,None,None,("notzero",)),
+-            (("T",0,5,0),"IUA",1,"Vat Code","",
++            (("T",0,3,0),"IUI",3,"Number of Rooms","",
++                0,"N",self.doURooms,None,None,("efld",)),
++            (("T",0,4,0),"IUI",3,"Total Capacity","",
++                0,"N",None,None,None,("notzero",)),
++            (("T",0,5,0),"IUA",1,"V.A.T. Code","",
+                 "","N",self.doVat,vtm,None,("notblank",))]
+         if self.glint == "Y":
+             self.fld.extend([
+@@ -93,27 +92,27 @@
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=self.fld,
+             butt=but, tend=tnd, txit=txt)
+ 
+-    def doType(self, frt, pag, r, c, p, i, w):
+-        self.utyp = w
++    def doBtype(self, frt, pag, r, c, p, i, w):
++        self.btyp = w
+ 
+-    def doCode(self, frt, pag, r, c, p, i, w):
++    def doUcode(self, frt, pag, r, c, p, i, w):
+         self.ucod = w
+         acc = self.sql.getRec(tables="bkmunm", where=[("bum_cono",
+-            "=", self.opts["conum"]), ("bum_type", "=", self.utyp),
++            "=", self.opts["conum"]), ("bum_btyp", "=", self.btyp),
+             ("bum_code", "=", self.ucod)], limit=1)
+         if not acc:
+             self.new = True
+         else:
+             self.new = False
+             des = acc[self.sql.bkmunm_col.index("bum_desc")]
+-            mul = acc[self.sql.bkmunm_col.index("bum_multi")]
+-            qty = acc[self.sql.bkmunm_col.index("bum_guests")]
+-            cod = acc[self.sql.bkmunm_col.index("bum_vatc")]
++            rms = acc[self.sql.bkmunm_col.index("bum_room")]
++            qty = acc[self.sql.bkmunm_col.index("bum_maxg")]
++            vcd = acc[self.sql.bkmunm_col.index("bum_vatc")]
+             sls = acc[self.sql.bkmunm_col.index("bum_slsa")]
+             self.df.loadEntry(frt, pag, p+1, data=des)
+-            self.df.loadEntry(frt, pag, p+2, data=mul)
++            self.df.loadEntry(frt, pag, p+2, data=rms)
+             self.df.loadEntry(frt, pag, p+3, data=qty)
+-            self.df.loadEntry(frt, pag, p+4, data=cod)
++            self.df.loadEntry(frt, pag, p+4, data=vcd)
+             if self.glint == "Y":
+                 self.df.loadEntry(frt, pag, p+5,data=sls)
+                 des = self.getGenDesc(sls)
+@@ -122,6 +121,9 @@
+                 else:
+                     self.df.loadEntry(frt,pag,p+6,data=des[0])
+ 
++    def doURooms(self, frt, pag, r, c, p, i, w):
++        self.urms = w
++
+     def doVat(self, frt, pag, r, c, p, i, w):
+         vat = self.sql.getRec(tables="ctlvmf", cols=["vtm_desc"],
+             where=[("vtm_cono", "=", self.opts["conum"]), ("vtm_code", "=",
+@@ -148,10 +150,10 @@
+             unt = bkm[0].split(":")
+             for un in unt:
+                 u = un.split(",")
+-                if u[0] == self.utyp and u[1] == self.ucod:
++                if u[0] == self.btyp and u[1] == self.ucod:
+                     return "Unit Used, Not Deleted"
+         self.sql.delRec("bkmunm", where=[("bum_cono", "=", self.opts["conum"]),
+-            ("bum_type", "=", self.utyp), ("bum_code", "=", self.ucod)])
++            ("bum_btyp", "=", self.btyp), ("bum_code", "=", self.ucod)])
+         self.opts["mf"].dbm.commitDbase()
+         self.df.focusField("T", 0, 1)
+ 
+@@ -167,7 +169,7 @@
+             self.sql.insRec("bkmunm", data=data)
+         else:
+             self.sql.updRec("bkmunm", data=data, where=[("bum_cono", "=",
+-                self.opts["conum"]), ("bum_type", "=", self.utyp),
++                self.opts["conum"]), ("bum_btyp", "=", self.btyp),
+                 ("bum_code", "=", self.ucod)])
+         self.opts["mf"].dbm.commitDbase()
+         self.df.focusField("T", 0, 1)
+
+=== modified file 'csv/bkmrtt_fld.csv'
+--- csv/bkmrtt_fld.csv	2014-12-30 15:37:38 +0000
++++ csv/bkmrtt_fld.csv	2014-12-30 12:27:27 +0000
+@@ -3,17 +3,18 @@
+ 2,"brt_utype","UA","1.0","Unit Type","T"
+ 3,"brt_ucode","UA","6.0","Unit Code","Unit-Cod"
+ 4,"brt_udesc","TX","30.0","Unit Description","Unit-Description"
+-5,"brt_rcode","UI","3.0","Rate Code","Cod"
+-6,"brt_rdesc","TX","30.0","Rate Description","Rate-Description"
+-7,"brt_rbase","UA","1.0","Rate Base","B"
+-8,"brt_nrate","UD","10.2","Normal Rate","Normal-Rte"
+-9,"brt_quant","UI","3.0","Quantity","Qty"
+-10,"brt_discp","UD","6.2","Discount Percentage","Disc-%"
+-11,"brt_arate","UD","10.2","Applied Rate","Applied-Rt"
+-12,"brt_bdays","UI","3.0","Booked Days","Bkd"
+-13,"brt_invno","UI","9.0","Invoice Number","Invoice-N"
+-14,"brt_invdt","UI","9.0","Invoice Date","Invoice-Dt"
+-15,"brt_vrate","UD","5.2","V.A.T. Rate","VAT-R"
+-16,"brt_capnm","TX","20.0","Capture Name","Capture-Name"
+-17,"brt_capdt","d1","10.0","Capture Date","Capture-Dt"
+-18,"brt_seq","US","10.0","Sequence","Sequence"
++5,"brt_uroom","UI","3.0","Room Number","Num"
++6,"brt_rcode","UI","3.0","Rate Code","Cod"
++7,"brt_rdesc","TX","30.0","Rate Description","Rate-Description"
++8,"brt_rbase","UA","1.0","Rate Base","B"
++9,"brt_nrate","UD","10.2","Normal Rate","Normal-Rte"
++10,"brt_quant","UI","3.0","Quantity","Qty"
++11,"brt_discp","UD","6.2","Discount Percentage","Disc-%"
++12,"brt_arate","UD","10.2","Applied Rate","Applied-Rt"
++13,"brt_bdays","UI","3.0","Booked Days","Bkd"
++14,"brt_invno","UI","9.0","Invoice Number","Invoice-N"
++15,"brt_invdt","UI","9.0","Invoice Date","Invoice-Dt"
++16,"brt_vrate","UD","5.2","V.A.T. Rate","VAT-R"
++17,"brt_capnm","TX","20.0","Capture Name","Capture-Name"
++18,"brt_capdt","d1","10.0","Capture Date","Capture-Dt"
++19,"brt_seq","US","10.0","Sequence","Sequence"
+
+=== modified file 'csv/bkmrtt_idx.csv'
+--- csv/bkmrtt_idx.csv	2014-07-19 07:58:06 +0000
++++ csv/bkmrtt_idx.csv	2014-12-31 06:00:23 +0000
+@@ -1,2 +1,2 @@
+ "Bookings Rate Transactions",1,"U","brt_seq"
+-"",2,"U","brt_cono","brt_number","brt_utype","brt_ucode","brt_rcode"
++"",2,"U","brt_cono","brt_number","brt_utype","brt_ucode","brt_uroom","brt_rcode"
+
+=== modified file 'csv/bkmunm_fld.csv'
+--- csv/bkmunm_fld.csv	2014-12-09 16:32:44 +0000
++++ csv/bkmunm_fld.csv	2014-12-31 05:21:22 +0000
+@@ -1,8 +1,8 @@
+ 0,"bum_cono","UI","3.0","Company Number","Coy"
+-1,"bum_type","UA","1.0","Unit Type","T"
++1,"bum_btyp","UA","1.0","Booking Type","T"
+ 2,"bum_code","UA","6.0","Unit Code","U-Code"
+ 3,"bum_desc","TX","30.0","Description","Description"
+-4,"bum_multi","UA","1.0","Multiple Bookings","M"
+-5,"bum_guests","UI","3.0","Maximum Guests","Qty"
++4,"bum_room","UI","3.0","Number of Rooms","Rms"
++5,"bum_maxg","UI","3.0","Maximum Guests","Qty"
+ 6,"bum_vatc","UA","1.0","Vat Code","V"
+ 7,"bum_slsa","UI","7.0","G/L Sales Account","Acc-Num"
+
+=== modified file 'csv/bkmunm_idx.csv'
+--- csv/bkmunm_idx.csv	2014-07-19 07:58:06 +0000
++++ csv/bkmunm_idx.csv	2014-12-30 19:13:16 +0000
+@@ -1,1 +1,1 @@
+-"Bookings Units Masterfile",1,"U","bum_cono","bum_type","bum_code"
++"Bookings Units Masterfile",1,"U","bum_cono","bum_btyp","bum_code"
+
+=== modified file 'csv/tpldet.dat'
+--- csv/tpldet.dat	2014-12-30 15:37:38 +0000
++++ csv/tpldet.dat	2014-12-31 13:47:09 +0000
+@@ -12,7 +12,7 @@
+ booking_form|12.0|C|A|N|||0||||||||0.0|0|0.0|0.0|0.0|0.0|booking_date|helvetica|14|#000000|Y|N|N|R||N|140.0|17|199.0|48.0|54.0|1|1
+ booking_form|13.0|C|A|N|||0||||||||0.0|0|0.0|0.0|0.0|0.0|booking_letter|helvetica|12|#000000|N|N|N|L||N|10.0|66|201.0|60.0|65.0|6|1
+ booking_form|14.0|T|B||Booking Details|helvetica|12|#000000|Y|N|N|L|TLRB|Y|10.0|66|201.0|100.0|106.0|0.0|||0||||||||0.0|0|0.0|0.0|0.0|0|0
+-booking_form|15.0|C|B|L||helvetica|10|#000000|Y|N|N|L||N|10.0|30|83.0|107.0|111.0|0.0|booking_details|courier|10|#000000|N|N|N|L||N|83.0|35|168.0|107.0|111.0|1|35
++booking_form|15.0|C|B|L||helvetica|10|#000000|Y|N|N|L||N|10.0|25|71.0|107.0|111.0|0.0|booking_details|courier|10|#000000|N|N|N|L||N|71.0|45|168.0|107.0|111.0|1|35
+ booking_form|16.0|T|D||Banking Details|helvetica|12|#000000|Y|N|N|L|TLRB|Y|10.0|66|201.0|250.0|256.0|0.0|||0||||||||0.0|0|0.0|0.0|0.0|0|0
+ booking_form|17.0|C|D|L|Account Name:|helvetica|12|#000000|Y|N|N|L|L|N|10.0|20|69.0|256.0|262.0|0.0|company_name|helvetica|12|#000000|N|N|N|L|R|N|69.0|45|201.0|256.0|262.0|1|1
+ booking_form|18.0|C|D|L|Bank Name:|helvetica|12|#000000|Y|N|N|L|L|N|10.0|20|69.0|262.0|268.0|0.0|ctm_b_name|helvetica|12|#000000|N|N|N|L|R|N|69.0|45|201.0|262.0|268.0|1|1
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2014-12-09 16:32:44 +0000
++++ doc/Downloads.rst	2015-01-01 12:48:11 +0000
+@@ -11,16 +11,16 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.2 and was released on the 9th December, 2014.
++The latest version of Tartan is 5.0.3 and was released on the 1st January, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.2.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.3.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.10.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.2.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.3.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.10.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2014-12-30 15:37:38 +0000
++++ doc/MD.rst	2015-01-01 12:48:11 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.2
++:Version:   5.0.3
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -76,7 +76,7 @@
+ 
+ or
+ 
+-+ Mysql >= 5.0.2
+++ Mysql >= 5.0.3
+ + Mysql-python >= 1.2.0
+ 
+ Download the following file from ftp://ftp.tartan.co.za
+
+=== removed file 'img/apply.png'
+Binary files img/apply.png	2014-03-28 07:32:49 +0000 and img/apply.png	1970-01-01 00:00:00 +0000 differ
+=== removed file 'img/cancel.png'
+Binary files img/cancel.png	2014-03-28 07:32:49 +0000 and img/cancel.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'img/no.png'
+Binary files img/no.png	2014-03-28 07:32:49 +0000 and img/no.png	2014-12-31 04:39:07 +0000 differ
+=== modified file 'img/yes.png'
+Binary files img/yes.png	2014-03-28 07:32:49 +0000 and img/yes.png	2014-12-31 04:36:52 +0000 differ
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2014-12-30 15:37:38 +0000
++++ mst/ms0000.py	2015-01-01 12:48:11 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 2)
++    VERSION = (5, 0, 3)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2014-12-30 15:37:38 +0000
++++ std/TartanClasses.py	2014-12-31 12:12:08 +0000
+@@ -91,14 +91,16 @@
+     for img in glob.glob(os.path.join(imgdir, "*.png")):
+         images[os.path.basename(img).lower().replace(".png", "")] = img
+     aliases = {
+-        "accept": os.path.join(imgdir, "apply.png"),
++        "accept": os.path.join(imgdir, "yes.png"),
++        "apply": os.path.join(imgdir, "yes.png"),
++        "arrivals": os.path.join(imgdir, "print.png"),
+         "back": os.path.join(imgdir, "left.png"),
+-        "arrivals": os.path.join(imgdir, "print.png"),
++        "cancel": os.path.join(imgdir, "no.png"),
+         "chgpwd": os.path.join(imgdir, "users.png"),
+         "change": os.path.join(imgdir, "convert.png"),
+         "chgusr": os.path.join(imgdir, "users.png"),
+         "contacts": os.path.join(imgdir, "users.png"),
+-        "continue": os.path.join(imgdir, "apply.png"),
++        "continue": os.path.join(imgdir, "yes.png"),
+         "crop/print": os.path.join(imgdir, "print.png"),
+         "crsmaint": os.path.join(imgdir, "edit.png"),
+         "crsquery": os.path.join(imgdir, "question.png"),
+@@ -138,7 +140,7 @@
+         "toggle": os.path.join(imgdir, "convert.png"),
+         "transact": os.path.join(imgdir, "edit.png"),
+         "view": os.path.join(imgdir, "preview.png"),
+-        "void": os.path.join(imgdir, "cancel.png")}
++        "void": os.path.join(imgdir, "no.png")}
+ 
+     def unbindAllWidgets(widget):
+         binds = []
+@@ -850,6 +852,7 @@
+ 
+     class MyRadioButton(ttk.Radiobutton):
+         def __init__(self, parent, cmd=None, **kwargs):
++            self.parent = parent
+             ttk.Radiobutton.__init__(self, parent, **kwargs)
+             self.event_add("<<myradio>>", "<F5>", "<Escape>")
+             self.bind("<Return>", lambda event: event.widget.invoke())
+@@ -862,10 +865,16 @@
+                 self.configure(command=ecmd)
+ 
+         def goLeft(self, event):
+-            event.widget.tk_focusPrev().focus_set()
++            if self.focus_get() == self.parent.winfo_children()[0]:
++                return
++            self.tk_focusPrev().focus_set()
++            return "break"
+ 
+         def goRight(self, event):
+-            event.widget.tk_focusNext().focus_set()
++            if self.focus_get() == self.parent.winfo_children()[-1]:
++                return
++            self.tk_focusNext().focus_set()
++            return "break"
+ 
+     class MyText(tk.Text):
+         def __init__(self, parent, **kwargs):
+@@ -1342,11 +1351,11 @@
+             foreground=[
+                 ("active", self.rcdic["ffg"]),
+                 ("disabled", self.rcdic["dfg"]),
+-                ("focus", "white")],
++                ("focus", self.rcdic["ffg"])],
+             background=[
+                 ("active", self.rcdic["fbg"]),
+                 ("disabled", self.rcdic["dbg"]),
+-                ("focus", "green")])
++                ("focus", self.rcdic["fbg"])])
+         self.style.map("TCheckbutton",
+             foreground=[
+                 ("focus", "black")],
+@@ -4407,11 +4416,11 @@
+     def drawNoteBook(self, page):
+         # Create images for enabled and disabled
+         nbeimg = Image.open(os.path.join(self.mf.rcdic["prgdir"], "img",
+-            "apply.png"))
++            "yes.png"))
+         nbeimg = nbeimg.resize((20, 20), 0)
+         self.nbeimg = ImageTk.PhotoImage(nbeimg)
+         nbdimg = Image.open(os.path.join(self.mf.rcdic["prgdir"], "img",
+-            "cancel.png"))
++            "no.png"))
+         nbdimg = nbdimg.resize((20, 20), 0)
+         self.nbdimg = ImageTk.PhotoImage(nbdimg)
+         # Create notebook
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2014-12-30 15:37:38 +0000
++++ tab/tb1020.py	2014-12-31 13:52:19 +0000
+@@ -416,8 +416,22 @@
+                         new = old[olddic[csf[2]][0]]
+                     elif self.table == "asstrn" and csf[2] == "ast_capnm":
+                         new = "Unknown"
+-                    elif self.table == "bkmunm" and csf[2] == "bum_multi":
+-                        new = "N"
++                    elif self.table == "bkmrtt" and csf[2] == "brt_uroom":
++                        new = 0
++                    elif self.table == "bkmunm" and csf[2] == "bum_btyp":
++                        new = old[olddic["bum_type"][0]]
++                    elif self.table == "bkmunm" and csf[2] == "bum_maxg":
++                        if not old[olddic["bum_guests"][0]]:
++                            new = 1
++                        else:
++                            new = old[olddic["bum_guests"][0]]
++                    elif self.table == "bkmunm" and csf[2] == "bum_room":
++                        if old[olddic["bum_multi"][0]] == "Y":
++                            new = 999
++                        elif old[olddic["bum_type"][0]] == "A":
++                            new = old[olddic["bum_guests"][0]] / 2
++                        else:
++                            new = 0
+                     elif self.table == "bwlctl" and csf[2] == "ctb_dbase":
+                         new = "C"
+                     elif self.table == "bwlctl" and csf[2] == "ctb_order":
+
+=== modified file 'uty/bm1010.py'
+--- uty/bm1010.py	2014-12-30 15:37:38 +0000
++++ uty/bm1010.py	2015-01-01 12:43:04 +0000
+@@ -29,14 +29,9 @@
+ except:
+     XLRD = False
+ try:
+-    import gfx as GFX
++    import ghostscript as GHS
++except:
+     GHS = False
+-except:
+-    GFX = False
+-    try:
+-        import ghostscript as GHS
+-    except:
+-        GHS = False
+ 
+ from TartanClasses import GetCtl, ShowEmail, SplashScreen, Sql, TartanDialog
+ from tartanFunctions import askQuestion, getSingleRecords, sendMail, showError
+@@ -613,7 +608,7 @@
+             w = w.split(",")
+             pdf = []
+             for f in w:
+-                if f.split(".")[-1].lower() == "pdf" and (GHS or GFX):
++                if f.split(".")[-1].lower() == "pdf" and GHS:
+                     pdf.append(f)
+                     continue
+                 if not imghdr.what(f):
+@@ -624,7 +619,7 @@
+ gif   GIF 87a and 89a Files
+ jpeg  JPEG data in JFIF or Exif formats
+ pbm   Portable Bitmap Files
+-pdf   Portable Document Format (If gfx or gs is installed)
++pdf   Portable Document Format (If ghostscript is installed)
+ pgm   Portable Graymap Files
+ png   Portable Network Graphics
+ ppm   Portable Pixmap Files
+@@ -641,10 +636,7 @@
+                 "Converting PDF to Images\n\nPlease Wait")
+             for fnam in pdf:
+                 try:
+-                    if GHS:
+-                        self.doGhostscript(fnam)
+-                    else:
+-                        self.doGfx(fnam)
++                    self.doGhostscript(fnam)
+                 except:
+                     pass
+             sp.closeSplash()
+@@ -655,8 +647,8 @@
+                 try:
+                     img = PIL.open(i)
+                     siz = img.size
+-                    if siz[0] > 800:
+-                        new = img.resize((800, siz[1]*800/siz[0]), 1)
++                    if siz[0] > 1024:
++                        new = img.resize((1024, siz[1]*1024/siz[0]), 1)
+                         i = os.path.join(self.opts["mf"].rcdic["wrkdir"],
+                             os.path.basename(i))
+                         new.save(i)
+@@ -684,29 +676,6 @@
+         for nam in fls:
+             self.embed.insert(idx, nam)
+ 
+-    def doGfx(self, fnam):
+-        b = os.path.basename(fnam.replace(" ", "_"))
+-        e = b.split(".")[-1]
+-        o = os.path.join(self.opts["mf"].rcdic["wrkdir"],
+-            b.replace(".%s" % e, ""))
+-        doc = GFX.open(e, fnam)
+-        fls = []
+-        for pagenr in xrange(1, doc.pages+1):
+-            page = doc.getPage(pagenr)
+-            img = GFX.ImageList()
+-            img.setparameter("antialise", "9")  # turn on antialising
+-            img.startpage(page.width, page.height)
+-            page.render(img)
+-            img.endpage()
+-            ofl = "%s_%03i.png" % (o, pagenr)
+-            img.save(ofl)
+-            fls.append(ofl)
+-        fls = sorted(fls, reverse=True)
+-        idx = self.embed.index(fnam)
+-        self.embed.remove(fnam)
+-        for nam in fls:
+-            self.embed.insert(idx, nam)
+-
+     def doAttach(self, frt, pag, r, c, p, i, w):
+         self.attach = w.split(",")
+ 
+@@ -1057,7 +1026,6 @@
+         sent = []
+         for num, acc in enumerate(accs):
+             mail = acc[0].strip().replace(" ", "").split(",")
+-            print acc[0], mail
+             for add in mail:
+                 if add in sent:
+                     mail.remove(add)
+

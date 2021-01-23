@@ -1,0 +1,1024 @@
+=== modified file 'bks/bs1010.py'
+--- bks/bs1010.py	2017-02-25 14:03:05 +0000
++++ bks/bs1010.py	2017-03-15 09:32:11 +0000
+@@ -110,7 +110,12 @@
+             self.old = self.sql.getRec(tables="bksmst", where=[("bmf_code",
+                 "=", self.bcode)], limit=1)
+             if not self.old:
+-                return "Invalid Code"
++                ok = askQuestion(self.opts["mf"].body, "Code",
++                    "Is This a Manual Code?", default="no")
++                if ok == "no":
++                    return "Invalid Code"
++                self.newbk = True
++                return
+             col = 0
+             self.newbk = False
+             for num, dat in enumerate(self.old):
+
+=== modified file 'bwl/bc2040.py'
+--- bwl/bc2040.py	2017-02-25 14:03:05 +0000
++++ bwl/bc2040.py	2017-03-24 07:11:55 +0000
+@@ -309,6 +309,9 @@
+                 if self.erase:
+                     self.sql.delRec("bwlgme", where=[("bcg_cono", "=",
+                         self.opts["conum"]), ("bcg_ccod", "=", self.ccod)])
++                    if self.cfmat in ("D", "K"):
++                        self.sql.delRec("bwlrnd", where=[("bcr_cono", "=",
++                            self.opts["conum"]), ("bcr_ccod", "=", self.ccod)])
+                     if self.cfmat in ("T", "X"):
+                         recs = self.sql.getRec(tables="bwlent",
+                             cols=["bce_scod"], where=[("bce_cono",
+
+=== modified file 'bwl/bc2050.py'
+--- bwl/bc2050.py	2017-02-25 14:03:05 +0000
++++ bwl/bc2050.py	2017-03-25 12:45:09 +0000
+@@ -216,7 +216,7 @@
+                 teams = self.doDrawTeams(copyList(teams))
+             # Populate bwlgme records
+             data = [self.opts["conum"], self.ccod, 0, 0, "D", 0, 0, "",
+-                0, 0, 0, 0, 0, 0, 0, "", 0, 0]
++                0, 0, 0, 0, 0, 0, 0, "", 0, 1]
+             if self.cfmat in ("D", "K"):
+                 games = 1
+             else:
+@@ -946,8 +946,20 @@
+             self.colsh = [[], []]
+             self.forms = []
+             for rnd in xrange(self.rnds):
+-                self.colsh[0].append(("Complete By", "centre"))
+-                self.colsh[1].append((self.cdates[rnd], "centre"))
++                if self.comtyp == "V":
++                    txt1 = "Complete By"
++                    txt2 = self.cdates[rnd]
++                elif self.cdates[rnd] == "9999-12-31":
++                    txt1 = "To Be"
++                    txt2 = "Announced"
++                else:
++                    txt1 = self.cdates[rnd]
++                    if self.ctimes[rnd] <= "12:00":
++                        txt2 = "%s AM" % self.ctimes[rnd]
++                    else:
++                        txt2 = "%s PM" % self.ctimes[rnd]
++                self.colsh[0].append((txt1, "centre"))
++                self.colsh[1].append((txt2, "centre"))
+                 self.forms.append(("NA", 18))
+             self.colsh[0].append(("", "centre"))
+             self.colsh[1].append(("Winner", "centre"))
+@@ -1051,10 +1063,10 @@
+                         p2 = temp[x]
+                     temp.remove(p1)
+                     temp.remove(p2)
+-                    self.sql.updRec("bwlgme", cols=["bcg_date", "bcg_ocod"],
+-                        data=[self.date, p2], where=[("bcg_cono", "=",
+-                        self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
+-                        ("bcg_scod", "=", p1), ("bcg_game", "=", self.game)])
++                    self.sql.updRec("bwlgme", cols=["bcg_ocod"], data=[p2],
++                        where=[("bcg_cono", "=", self.opts["conum"]),
++                        ("bcg_ccod", "=", self.ccod), ("bcg_scod", "=", p1),
++                        ("bcg_game", "=", self.game)])
+                     self.sql.delRec("bwlgme", where=[("bcg_cono", "=",
+                         self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
+                         ("bcg_scod", "=", p2), ("bcg_game", "=", self.game)])
+@@ -1388,6 +1400,7 @@
+         nm = 18
+         l1 = 0
+         l2 = 1
++        rd = 1
+         n1 = nm + l1
+         n2 = nm + l1 + l2
+         nx = (nm * 2) + l1 + l2
+@@ -1407,7 +1420,8 @@
+                 self.fpdf.drawText(self.getSkip(skip[0], skip[2]), x+(cwth*n2),
+                     w=(cwth*nm), border="TLRB")
+             else:
+-                self.fpdf.drawText("", x+(cwth*n2), w=(cwth*nm), border="LRB")
++                self.fpdf.drawText(self.getWinner(rd, grp, skip), x+(cwth*n2),
++                    w=(cwth*nm), border="LRB")
+             if not last or last == "up":
+                 self.drawLink(cwth,l1,l2, x+(cwth*nx), y+(chgt/2),
+                     y+(chgt*2.5))
+@@ -1434,19 +1448,21 @@
+             lasty = self.fpdf.get_y()
+         inc = 4
+         for aa in xrange(self.rnds - 3):
++            rd += 1
+             bb = []
+             for rnd in xrange(0, len(rnds), 2):
+                 x = rnds[rnd][0]
+                 y = rnds[rnd][1]
+-                self.fpdf.drawText("", x+(cwth*(l1+l2)), y, w=(cwth*nm),
++                self.fpdf.drawText(self.getWinner(rd, grp, 0, rnd+1),
++                    x+(cwth*(l1+l2)), y, w=(cwth*nm),
+                     border="LRB")
+                 inc1 = inc + .5
+                 self.drawLink(cwth,l1,l2,x+(cwth*n2),y+(chgt/2),y+(chgt*inc1))
+                 bb.append([x+(cwth*n2), y+(chgt*(4 * (aa + 1)))])
+                 x = rnds[rnd+1][0]
+                 y = rnds[rnd+1][1]
+-                self.fpdf.drawText("", x+(cwth*(l1+l2)), y, w=(cwth*nm),
+-                    border="LRB")
++                self.fpdf.drawText(self.getWinner(rd, grp, 0, rnd+2),
++                    x+(cwth*(l1+l2)), y, w=(cwth*nm), border="LRB")
+                 inc1 -= 1
+                 self.drawLink(cwth,l1,l2,x+(cwth*n2),y+(chgt/2),y-(chgt*inc1))
+             inc = inc * 2
+@@ -1454,22 +1470,25 @@
+         x = rnds[0][0]
+         y = rnds[0][1]
+         if self.rnds == 2:
++            rd += 1
+             if grp == 1:
+-                self.fpdf.drawText("", x+(cwth*(l1+l2)), y, w=(cwth*nm),
+-                    border="LRB")
++                self.fpdf.drawText(self.getWinner(rd, grp, 0, 1),
++                    x+(cwth*(l1+l2)), y, w=(cwth*nm), border="LRB")
+         else:
++            rd += 1
+             if self.rnds > 5:
+                 y += (chgt*4)
+-            self.fpdf.drawText("", x+(cwth*(l1+l2)), y, w=(cwth*nm),
+-                border="LRB")
++            self.fpdf.drawText(self.getWinner(rd, grp, 0, 1),
++                x+(cwth*(l1+l2)), y, w=(cwth*nm), border="LRB")
+             if grp == 1:
+                 inc += .5
+                 self.drawLink(cwth,l1,l2,x+(cwth*n2),y+(chgt/2),y+(chgt*inc))
+             else:
++                rd += 1
+                 x1 = x + (cwth*(l1+l2+nm))
+                 y1 = y - (chgt*inc)
+-                self.fpdf.drawText("", x1+(cwth*(l1+l2)), y1, w=(cwth*nm),
+-                    border="LRB")
++                self.fpdf.drawText(self.getWinner(rd, grp, 0, 1),
++                    x1+(cwth*(l1+l2)), y1, w=(cwth*nm), border="LRB")
+                 inc = 0 - inc + .5
+                 self.drawLink(cwth,l1,l2,x+(cwth*n2),y+(chgt/2),y+(chgt*inc))
+         if grp == 1 and self.totskp > 32:
+@@ -1574,6 +1593,44 @@
+                         self.datas[num][1][rnd] = ["", "R"]
+                     qq += 1
+ 
++    def getWinner(self, rnd, grp, skip, num=0):
++        if skip:
++            whr = [
++                ("bcg_cono", "=", self.opts["conum"]),
++                ("bcg_ccod", "=", self.ccod),
++                ("bcg_game", "=", rnd),
++                ("bcg_group", "=", grp),
++                ("bcg_scod", "=", skip[0])]
++            wins = self.sql.getRec(tables="bwlgme", cols=["bcg_shots_for",
++                "bcg_shots_agt"], where=whr, limit=1)
++            if not wins[0] and not wins[1]:
++                return ""
++            elif wins[0] > wins[1]:
++                return self.getSkip(skip[0], skip[2])
++            else:
++                return self.getSkip(skip[1], skip[2])
++        col = [
++            "bcg_scod",
++            "bcg_ocod",
++            "bcg_shots_for",
++            "bcg_shots_agt",
++            "bcg_seed"]
++        whr = [
++            ("bcg_cono", "=", self.opts["conum"]),
++            ("bcg_ccod", "=", self.ccod),
++            ("bcg_game", "=", rnd),
++            ("bcg_group", "=", grp),
++            ("bcg_pair", "=", num)]
++        skip = self.sql.getRec(tables="bwlgme", cols=col, where=whr, limit=1)
++        if not skip:
++            return ""
++        if not skip or (not skip[2] and not skip[3]):
++            return ""
++        elif skip[2] > skip[3]:
++            return self.getSkip(skip[0], skip[4])
++        else:
++            return self.getSkip(skip[1], skip[4])
++
+     def getSkip(self, skip, seed):
+         if skip > 900000:
+             return "Bye"
+
+=== modified file 'bwl/bc2070.py'
+--- bwl/bc2070.py	2017-02-25 14:03:05 +0000
++++ bwl/bc2070.py	2017-03-25 12:55:43 +0000
+@@ -14,7 +14,7 @@
+ """
+ 
+ from TartanClasses import ASD, TartanDialog, Sql
+-from tartanFunctions import askChoice, askQuestion
++from tartanFunctions import askChoice, askQuestion, copyList
+ 
+ class bc2070:
+     def __init__(self, **opts):
+@@ -58,10 +58,7 @@
+                 ("btb_tab", "", 0, "Cod"),
+                 ("btb_surname", "", 0, "Surame", "Y"),
+                 ("btb_names", "", 0, "Names"),
+-                ("bcg_rink", "", 0, "RK"),
+-                ("bcg_shots_for", "", 0, "For"),
+-                ("bcg_shots_agt", "", 0, "Agt"),
+-                ("bcg_points", "", 0, "Pts")),
++                ("bcg_rink", "", 0, "RK")),
+             "where": [
+                 ("bce_cono", "=", self.opts["conum"]),
+                 ("btb_cono=bce_cono",),
+@@ -116,22 +113,30 @@
+         bwltyp = self.sql.getRec(tables="bwltyp", where=[("bct_cono", "=",
+             self.opts["conum"]), ("bct_code", "=", com[1])], limit=1)
+         self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
+-        if self.cfmat in ("D", "K"):
+-            return "Knockout Competition, Results Capturing Not Supported"
+-        elif self.cfmat == "R":
++        if self.cfmat == "R":
+             self.games = self.sql.getRec(tables="bwlent", cols=["count(*)"],
+                 where=[("bce_cono", "=", self.opts["conum"]), ("bce_ccod", "=",
+                 self.ccod)], limit=1)[0] - 1
++        elif self.cfmat in ("D", "K"):
++            totskp = self.sql.getRec(tables="bwlent", cols=["count(*)"],
++                where=[("bce_cono", "=", self.opts["conum"]),
++                ("bce_ccod", "=", self.ccod)], limit=1)[0]
++            pwrs = 2
++            self.games = 1
++            while pwrs < totskp:
++                self.games += 1
++                pwrs = pwrs * 2
+         else:
+             self.games = bwltyp[self.sql.bwltyp_col.index("bct_games")]
+         self.ends = bwltyp[self.sql.bwltyp_col.index("bct_ends")]
+         chk = self.sql.getRec(tables="bwlgme", cols=["bcg_game",
+-            "sum(bcg_points)"], where=[("bcg_cono", "=", self.opts["conum"]),
+-            ("bcg_ccod", "=", self.ccod), ("bcg_aflag", "in", ("", "D"))],
++            "sum(bcg_shots_for)", "sum(bcg_shots_agt)", "sum(bcg_points)"],
++            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
++            self.ccod), ("bcg_aflag", "in", ("", "D"))],
+             group="bcg_game", order="bcg_game")
+         for game in chk:
+             self.gcod = game[0]
+-            if not game[1]:
++            if not game[1] and not game[2] and not game[3]:
+                 self.df.loadEntry(frt, pag, p + 2, data=self.gcod)
+                 break
+         self.df.loadEntry(frt, pag, p + 3, data=self.ends)
+@@ -250,11 +255,18 @@
+             self.df.loadEntry(frt, pag, p + 2, data=chk[3])
+         self.df.loadEntry(frt, pag, p + 3, data=chk[5])
+         self.df.loadEntry(frt, pag, p + 4, data=self.opp)
+-        chk = self.sql.getRec(tables=["bwlgme", "bwltab"], cols=["btb_surname",
+-            "btb_names", "bcg_shots_for", "bcg_shots_agt", "bcg_points"],
+-            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+-            self.ccod), ("bcg_scod", "=", self.opp), ("bcg_game", "=",
+-            self.gcod), ("btb_tab=bcg_scod",)], limit=1)
++        if self.cfmat in ("D", "K"):
++            opp = self.sql.getRec(tables="bwltab", cols=["btb_surname",
++                "btb_names"], where=[("btb_cono", "=", self.opts["conum"]),
++                ("btb_tab", "=", self.opp)], limit=1)
++            chk = opp + [chk[4], chk[3], 0]
++        else:
++            chk = self.sql.getRec(tables=["bwlgme", "bwltab"],
++                cols=["btb_surname", "btb_names", "bcg_shots_for",
++                "bcg_shots_agt", "bcg_points"], where=[("bcg_cono",
++                "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
++                ("bcg_scod", "=", self.opp), ("bcg_game", "=", self.gcod),
++                ("btb_tab=bcg_scod",)], limit=1)
+         if chk[1]:
+             name = "%s, %s" % tuple(chk[:2])
+         else:
+@@ -270,12 +282,20 @@
+     def doShots(self, frt, pag, r, c, p, i, w):
+         if i == 2:
+             self.s_for = w
++            if self.cfmat in ("D", "K"):
++                self.p_for = 0
++                self.df.loadEntry(frt, pag, p + 1, data=0)
++                return "sk1"
+             if not self.s_for or (not self.totpts and not self.bonus == "Y"):
+                 self.p_for = w
+                 self.df.loadEntry(frt, pag, p + 1, data=0)
+                 return "sk1"
+         else:
+             self.s_agt = w
++            if self.cfmat in ("D", "K"):
++                self.p_agt = 0
++                self.df.loadEntry(frt, pag, p + 1, data=0)
++                return "sk1"
+             if not self.s_agt or (not self.totpts and not self.bonus == "Y"):
+                 self.p_agt = w
+                 self.df.loadEntry(frt, pag, p + 1, data=0)
+@@ -334,20 +354,25 @@
+                 aflag = "S"
+             else:
+                 aflag = ""
+-            self.sql.updRec("bwlgme", cols=["bcg_shots_for", "bcg_shots_agt",
+-                "bcg_points", "bcg_a_shots_for", "bcg_a_shots_agt",
+-                "bcg_a_points", "bcg_aflag"], data=[self.s_for, self.s_agt,
++            col = [
++                "bcg_shots_for", "bcg_shots_agt", "bcg_points",
++                "bcg_a_shots_for", "bcg_a_shots_agt", "bcg_a_points",
++                "bcg_aflag"]
++            whr = [
++                ("bcg_cono", "=", self.opts["conum"]),
++                ("bcg_ccod", "=", self.ccod),
++                ("bcg_game", "=", self.gcod)]
++            w = whr[:]
++            w.append(("bcg_scod", "=", self.skp))
++            self.sql.updRec("bwlgme", cols=col, data=[self.s_for, self.s_agt,
+                 self.p_for, self.s_for, self.s_agt, self.p_for, aflag],
+-                where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+-                self.ccod), ("bcg_scod", "=", self.skp), ("bcg_game", "=",
+-                self.gcod)])
+-            self.sql.updRec("bwlgme", cols=["bcg_shots_for", "bcg_shots_agt",
+-                "bcg_points", "bcg_a_shots_for", "bcg_a_shots_agt",
+-                "bcg_a_points", "bcg_aflag"], data=[self.s_agt, self.s_for,
+-                self.p_agt, self.s_agt, self.s_for, self.p_agt, aflag],
+-                where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+-                self.ccod), ("bcg_scod", "=", self.opp), ("bcg_game", "=",
+-                self.gcod)])
++                where=w)
++            if self.cfmat not in ("D", "K"):
++                w = whr[:]
++                w.append(("bcg_scod", "=", self.opp))
++                self.sql.updRec("bwlgme", cols=col, data=[self.s_agt,
++                    self.s_for, self.p_agt, self.s_agt, self.s_for,
++                    self.p_agt, aflag], where=w)
+             self.opts["mf"].dbm.commitDbase()
+             if self.reenter:
+                 self.doLoadCards()
+@@ -359,7 +384,7 @@
+             ("bcg_cono", "=", self.opts["conum"]),
+             ("bcg_ccod", "=", self.ccod),
+             ("bcg_game", "=", self.gcod)]
+-        if self.ponly:
++        if self.ponly == "Y":
+             whr.append(("bcg_points", ">", 0))
+         else:
+             whr.append(("(", "bcg_shots_for", ">", 0, "or",
+@@ -376,9 +401,11 @@
+             if rec[0] in skips:
+                 continue
+             skips.extend(rec)
++            col = [
++                "btb_surname", "btb_names",
++                "bcg_shots_for", "bcg_shots_agt", "bcg_points"]
+             skp = self.sql.getRec(tables=["bwlgme", "bwltab"],
+-                cols=["btb_surname", "btb_names", "bcg_shots_for",
+-                "bcg_points"], where=[("bcg_cono", "=", self.opts["conum"]),
++                cols=col, where=[("bcg_cono", "=", self.opts["conum"]),
+                 ("bcg_ccod", "=", self.ccod), ("bcg_scod", "=", rec[0]),
+                 ("bcg_game", "=", self.gcod), ("btb_tab=bcg_scod",)], limit=1)
+             idx = seq * 8
+@@ -389,12 +416,18 @@
+                 name = skp[0]
+             self.df.loadEntry("C", 0, idx + 1, data=name)
+             self.df.loadEntry("C", 0, idx + 2, data=skp[2])
+-            self.df.loadEntry("C", 0, idx + 3, data=skp[3])
+-            opp = self.sql.getRec(tables=["bwlgme", "bwltab"],
+-                cols=["btb_surname", "btb_names", "bcg_shots_for",
+-                "bcg_points"], where=[("bcg_cono", "=", self.opts["conum"]),
+-                ("bcg_ccod", "=", self.ccod), ("bcg_scod", "=", rec[1]),
+-                ("bcg_game", "=", self.gcod), ("btb_tab=bcg_scod",)], limit=1)
++            self.df.loadEntry("C", 0, idx + 3, data=skp[4])
++            if self.cfmat in ("D", "K"):
++                tab = self.sql.getRec(tables="bwltab", cols=col[:2],
++                    where=[("btb_cono", "=", self.opts["conum"]),
++                    ("btb_tab", "=", rec[1])], limit=1)
++                opp = tab + [skp[3], skp[4], 0]
++            else:
++                opp = self.sql.getRec(tables=["bwlgme", "bwltab"],
++                    cols=col, where=[("bcg_cono", "=", self.opts["conum"]),
++                    ("bcg_ccod", "=", self.ccod), ("bcg_scod", "=", rec[1]),
++                    ("bcg_game", "=", self.gcod), ("btb_tab=bcg_scod",)],
++                    limit=1)
+             self.df.loadEntry("C", 0, idx + 4, data=rec[1])
+             if opp[1]:
+                 name = "%s, %s" % tuple(opp[:2])
+@@ -402,7 +435,7 @@
+                 name = opp[0]
+             self.df.loadEntry("C", 0, idx + 5, data=name)
+             self.df.loadEntry("C", 0, idx + 6, data=opp[2])
+-            self.df.loadEntry("C", 0, idx + 7, data=opp[3])
++            self.df.loadEntry("C", 0, idx + 7, data=opp[4])
+             self.df.advanceLine(0)
+             if seq < 17:
+                 seq += 1
+@@ -432,6 +465,60 @@
+                         err="Missing Score Card for Skips %s and %s" % (scod,
+                         ocod))
+                     return
++            if self.cfmat in ("D", "K") and not self.gcod == self.games:
++                # Delete Next Round's Records
++                whr = [
++                    ("bcg_cono", "=", self.opts["conum"]),
++                    ("bcg_ccod", "=", self.ccod)]
++                w = whr[:]
++                w.append(("bcg_game", ">", self.gcod))
++                self.sql.delRec("bwlgme", where=w)
++                # Create Next Round's Records
++                whr.append(("bcg_game", "=", self.gcod))
++                odr = "bcg_group, bcg_pair, bcg_scod"
++                g = self.sql.bwlgme_col
++                for grp in range(1, 3):
++                    w = whr[:]
++                    w.append(("bcg_group", "=", grp))
++                    recs = self.sql.getRec(tables="bwlgme", where=w, order=odr)
++                    for num in range(0, len(recs), 2):
++                        pair = (num / 2) + 1
++                        rec1 = copyList(recs[num])
++                        if len(recs) == 1:
++                            w = whr[:]
++                            w.append(("bcg_group", "=", 2))
++                            rec2 = self.sql.getRec(tables="bwlgme", where=w,
++                                order=odr, limit=1)
++                            grp = 2
++                        else:
++                            rec2 = copyList(recs[num + 1])
++                        skp1 = rec1[g.index("bcg_scod")]
++                        opp1 = rec1[g.index("bcg_ocod")]
++                        for1 = rec1[g.index("bcg_shots_for")]
++                        agt1 = rec1[g.index("bcg_shots_agt")]
++                        skp2 = rec2[g.index("bcg_scod")]
++                        opp2 = rec2[g.index("bcg_ocod")]
++                        for2 = rec2[g.index("bcg_shots_for")]
++                        agt2 = rec2[g.index("bcg_shots_agt")]
++                        if opp1 > 900000:
++                            pl1 = skp1
++                        elif for1 > agt1:
++                            pl1 = skp1
++                        else:
++                            pl1 = opp1
++                        if opp2 > 900000:
++                            pl2 = skp2
++                        elif for2 > agt2:
++                            pl2 = skp2
++                        else:
++                            pl2 = opp2
++                        dat = [self.opts["conum"], self.ccod, pl1,
++                            self.gcod + 1, "D", 0, pl2, "", grp, 0,
++                            0, 0.0, 0, 0, 0.0, "", 0, pair]
++                        self.sql.insRec("bwlgme", data=dat)
++                    if len(recs) == 1:
++                        break
++                self.opts["mf"].dbm.commitDbase()
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+ 
+
+=== modified file 'csv/scpsys.py'
+--- csv/scpsys.py	2015-08-25 15:02:35 +0000
++++ csv/scpsys.py	2017-03-08 08:29:14 +0000
+@@ -3,7 +3,5 @@
+     "ctllog", "ctlmst", "ctlnot", "ctlpwm", "ctlpwu", "ctlpwr", "ctlsys",
+     # Sectional Competitions
+     "scpclb", "scpcmp", "scpent", "scpgme", "scpmem", "scprnd", "scpsec",
+-    # Telephone
+-    "telcon", "telgrp", "telmst",
+     # Other
+     "chglog", "emllog", "verupd"]
+
+=== modified file 'doc/BKS.rst'
+--- doc/BKS.rst	2017-02-25 14:03:05 +0000
++++ doc/BKS.rst	2017-03-25 15:17:38 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Book Clubs
+ =============================
+ 
+-:Version:   5.2.8
++:Version:   5.3.0
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWM.rst'
+--- doc/BWM.rst	2017-02-25 14:03:05 +0000
++++ doc/BWM.rst	2017-03-25 15:17:38 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.2.8
++:Version:   5.3.0
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2017-02-25 14:03:05 +0000
++++ doc/Downloads.rst	2017-03-25 15:17:38 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.2.8 and was released on the 25th February, 2017.
++The latest version of Tartan is 5.3.0 and was released on the 25th March, 2017.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.8.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.3.0.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.8.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.3.0.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.8.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.8.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.8.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.8.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.3.0.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.3.0.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.3.0.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.3.0.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/GEN.rst'
+--- doc/GEN.rst	2016-12-30 14:10:51 +0000
++++ doc/GEN.rst	2017-02-28 09:51:16 +0000
+@@ -553,6 +553,7 @@
+ 
+ + **Copy From Company** - The company number from which to copy.
+ + **Include ...** - Select what additional data is to be copied.
+++ **Equalise Year Ends** - Select whether to equalise year ends.
+ 
+ Integrated Controls Report (GL)
+ +++++++++++++++++++++++++++++++
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2017-02-25 14:03:05 +0000
++++ doc/MST.rst	2017-03-25 15:17:38 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.2.8
++:Version:   5.3.0
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SEC.rst'
+--- doc/SEC.rst	2017-02-25 14:03:05 +0000
++++ doc/SEC.rst	2017-03-25 15:17:38 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Sectional Competitions
+ ========================================
+ 
+-:Version:   5.2.8
++:Version:   5.3.0
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/STR.rst'
+--- doc/STR.rst	2016-07-10 11:57:24 +0000
++++ doc/STR.rst	2017-03-14 06:13:47 +0000
+@@ -50,7 +50,7 @@
+     + **Unit of Issue** - The unit of issue code relating to the item.
+     + **Units Per Pack** - The number of units making up the pack. If applicable, the price for a single item would be the purchase or selling price divided by this number.
+     + **Value Indicator** - Select the cost price value indicator as follows:
+-      + **Average** - The cost price will be the total value divided quantity.
++      + **Average** - The cost price will be the value divided by the quantity.
+       + **Standard** - The cost will be a fixed cost price.
+       + **None** - The item will not have a cost print. This is normally used for goods which are not purchased and are not standard e.g. recipes, travelling, labour etc.
+     + **VAT Code** - The default vat code for the item.
+
+=== modified file 'gen/gl6020.py'
+--- gen/gl6020.py	2017-02-25 14:03:05 +0000
++++ gen/gl6020.py	2017-02-28 10:00:16 +0000
+@@ -14,6 +14,7 @@
+ """
+ 
+ from TartanClasses import ProgressBar, Sql, TartanDialog
++from tartanFunctions import callModule, getPeriods
+ 
+ class gl6020:
+     def __init__(self, **opts):
+@@ -23,9 +24,9 @@
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlctl", "ctlmst", "genbud",
+-            "genbal", "gendtm", "gendtt", "genjlm", "genjlt", "genmst",
+-            "gentrn", "genrpt", "genstr"], prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlctl", "ctlmst", "ctlynd",
++            "genbud", "genbal", "gendtm", "gendtt", "genjlm", "genjlt",
++            "genmst", "gentrn", "genrpt", "genstr"], prog=__name__)
+         if self.sql.error:
+             return
+         return True
+@@ -43,23 +44,25 @@
+         r1s = (("Yes", "Y"), ("No", "N"))
+         fld = (
+             (("T",0,0,0),"IUI",3,"Copy From Company","",
+-                "","N",self.doCoyNum,coy,None,("notzero",)),
+-            (("T",0,1,0),("IRB",r1s),1,"Include Control Records",
+-                "Include Control Records","N","N",None,None,None,None),
+-            (("T",0,2,0),("IRB",r1s),1,"Include Opening Balances",
+-                "Include Opening Balances","N","N",None,None,None,None),
+-            (("T",0,3,0),("IRB",r1s),1,"Include Transactions",
+-                "Include Transactions","N","N",None,None,None,None),
++                0,"N",self.doCoyNum,coy,None,("notzero",)),
++            (("T",0,1,0),("IRB",r1s),1,"Include Control Records","",
++                "N","N",None,None,None,None),
++            (("T",0,2,0),("IRB",r1s),1,"Include Opening Balances","",
++                "N","N",None,None,None,None),
++            (("T",0,3,0),("IRB",r1s),1,"Include Transactions","",
++                "N","N",None,None,None,None),
+             (("T",0,4,0),("IRB",r1s),1,"Include Budgets","",
+                 "N","N",None,None,None,None),
+-            (("T",0,5,0),("IRB",r1s),1,"Include Standard Journals",
+-                "Include Standard Journals","N","N",None,None,None,None),
++            (("T",0,5,0),("IRB",r1s),1,"Include Standard Journals","",
++                "N","N",None,None,None,None),
+             (("T",0,6,0),("IRB",r1s),1,"Include Reports","",
+                 "N","N",None,None,None,None),
+-            (("T",0,7,0),("IRB",r1s),1,"Include Detail Records",
+-                "Include Detail Records","N","N",None,None,None,None),
+-            (("T",0,8,0),("IRB",r1s),1,"Include Stream Records",
+-                "Include Stream Records","N","N",None,None,None,None))
++            (("T",0,7,0),("IRB",r1s),1,"Include Detail Records","",
++                "N","N",None,None,None,None),
++            (("T",0,8,0),("IRB",r1s),1,"Include Stream Records","",
++                "N","N",None,None,None,None),
++            (("T",0,9,0),("IRB",r1s),1,"Equalise Year Ends","",
++                "N","N",None,None,None,None))
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld, tend=tnd,
+@@ -114,6 +117,23 @@
+                     acc[col.index(coy)] = self.opts["conum"]
+                     self.sql.insRec(tab, data=acc)
+                 p.closeProgress()
++        if self.df.t_work[0][0][9] == "Y":
++            self.sql.delRec("ctlynd", where=[("cye_cono", "=",
++                self.opts["conum"])])
++            ynds = self.sql.getRec(tables="ctlynd", where=[("cye_cono",
++                "=", self.oldco), ("cye_period", "in", (0, 1))],
++                order="cye_period")
++            for ynd in ynds:
++                ynd[0] = self.opts["conum"]
++                self.sql.insRec("ctlynd", data=ynd)
++            mxp = self.sql.getRec(tables="ctlynd", cols=["max(cye_period)"],
++                where=[("cye_cono", "=", self.oldco)], limit=1)
++            for p in range(1, mxp[0]):
++                pr = getPeriods(self.opts["mf"], self.oldco, p)
++                per = (p, (pr[0].work, pr[0].disp), (pr[1].work, pr[1].disp))
++                callModule(self.opts["mf"], None, "msy010",
++                    coy=(self.opts["conum"], self.opts["conam"]),
++                    period=per, user=self.opts["capnm"], args=pr[2])
+         self.opts["mf"].dbm.commitDbase(ask=True)
+         self.opts["mf"].closeLoop()
+ 
+
+=== modified file 'men/cshmen.py'
+--- men/cshmen.py	2016-05-21 12:42:32 +0000
++++ men/cshmen.py	2017-02-28 07:47:51 +0000
+@@ -103,7 +103,7 @@
+     ["PYYN","gl_rp","gl3080",1,"Bank Reconciliation"],
+     ["PYNN","gl_rp","gl3090",1,"Imported Bank Statements"],
+     ["PYNN","gl_tb","gl6010",5,"Change Account Numbers"],
+-    ["PYNN","gl_tb","gl6020",5,"Copy Masterfile Records"],
++    ["PYNY","gl_tb","gl6020",5,"Copy Masterfile Records"],
+     ["PYYN","gl_tb","gl6030",1,"Integrated Controls Report"],
+     ["PYYN","gl_tb","gl6040",1,"Intercompany Accounts Report"],
+     ["PYNN","gl_tb","gl6050",2,"Initialise Bank Reconciliation"],
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2016-11-07 16:11:53 +0000
++++ men/rnemen.py	2017-02-28 07:48:10 +0000
+@@ -127,7 +127,7 @@
+     ["PNNN","gl_rp","gl3120",1,"Quick Trading Results"],
+     ["PNNN","gl_rp","gl3130",1,"Preliminary Results"],
+     ["PYNN","gl_tb","gl6010",5,"Change Account Numbers"],
+-    ["PYNN","gl_tb","gl6020",5,"Copy Masterfile Records"],
++    ["PYNY","gl_tb","gl6020",5,"Copy Masterfile Records"],
+     ["PYYN","gl_tb","gl6030",1,"Integrated Controls Report"],
+     ["PYYN","gl_tb","gl6040",1,"Intercompany Accounts Report"],
+     ["PYNN","gl_tb","gl6050",2,"Initialise Bank Reconciliation"],
+
+=== modified file 'men/stdmen.py'
+--- men/stdmen.py	2017-02-25 14:03:05 +0000
++++ men/stdmen.py	2017-02-28 07:48:16 +0000
+@@ -131,7 +131,7 @@
+     ["PYYN","gl_rp","gl3080",1,"Bank Reconciliation"],
+     ["PYNN","gl_rp","gl3090",1,"Imported Bank Statements"],
+     ["PYNN","gl_tb","gl6010",5,"Change Account Numbers"],
+-    ["PYNN","gl_tb","gl6020",5,"Copy Masterfile Records"],
++    ["PYNY","gl_tb","gl6020",5,"Copy Masterfile Records"],
+     ["PYYN","gl_tb","gl6030",1,"Integrated Controls Report"],
+     ["PYYN","gl_tb","gl6040",1,"Intercompany Accounts Report"],
+     ["PYNN","gl_tb","gl6050",2,"Initialise Bank Reconciliation"],
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2017-02-25 14:03:05 +0000
++++ mst/ms0000.py	2017-03-25 15:17:38 +0000
+@@ -38,7 +38,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 2, 8)
++    VERSION = (5, 3, 0)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/ms1010_rne.py'
+--- mst/ms1010_rne.py	2017-02-25 14:03:05 +0000
++++ mst/ms1010_rne.py	2017-02-28 07:13:16 +0000
+@@ -337,10 +337,10 @@
+ 
+     def doFinPeriod(self):
+         tit = ("Initial Financial Period",)
+-        self.bye = self.sql.getRec(tables="ctlynd", cols=["cye_start",
+-            "cye_end"], where=[("cye_cono", "=", 1),
+-            ("cye_period", "=", 1)], limit=1)
+-        if self.bye:
++        if self.new and not self.opts["conum"] == 1:
++            self.bye = self.sql.getRec(tables="ctlynd", cols=["cye_start",
++                "cye_end"], where=[("cye_cono", "=", 1),
++                ("cye_period", "=", 1)], limit=1)
+             self.doStartPer("T", 0, 0, 1, 0, 0, self.bye[0])
+             self.doEndPer("T", 0, 0, 2, 1, 1, self.bye[1])
+             self.doPerEnd()
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2017-02-25 14:03:05 +0000
++++ mst/msc000.py	2017-02-28 07:51:01 +0000
+@@ -877,7 +877,8 @@
+                 "cols": (
+                     ("cye_period", "", 0, "Prd"),
+                     ("cye_start", "", 0, "Start"),
+-                    ("cye_end", "", 0, "End")),
++                    ("cye_end", "", 0, "End"),
++                    ("cye_final", "", 0, "F")),
+                 "where": []}
+             fld.append(
+                 [["T",0,2,0],"IUI",3,"Financial Period","",
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2017-02-25 14:03:05 +0000
++++ std/TartanClasses.py	2017-03-23 15:55:48 +0000
+@@ -1883,16 +1883,18 @@
+         self.mf.head.configure(text="Tartan Systems Menu (%s)" % self.usr,
+             style="MLabel.TLabel")
+         self.menubar = MyFrame(self.mf.body)
+-        self.labs = {}
+-        self.buts = []
++        labs = {}
++        buts = []
+         mwth = 0
+         column = 0
+         font = tkfont.Font(font=(self.mf.rcdic["mft"], self.mf.rcdic["mfs"]))
+         for m in self.menus:
+             if m[0] == "MM":
+-                if not "mbar" in self.labs:
+-                    self.labs["mbar"] = []
+-                m[2], pos = getUnderline(blist=self.labs["mbar"], text=m[2])
++                if not "mbar" in labs:
++                    labs["mbar"] = []
++                m[2], pos = getUnderline(blist=labs["mbar"], text=m[2])
++                if not m[2][pos] in labs["mbar"]:
++                    labs["mbar"].append(m[2][pos])
+                 m[2] = m[2].split()
+                 nm = m[2][0].split("'")[0]
+                 if len(m[2]) == 1:
+@@ -1908,29 +1910,33 @@
+                     "font=font, tearoff=False)" % (m[1], nm)
+                 exec "%s['menu'] = %s" % (nm, m[1])
+                 exec "mwth += %s.winfo_reqwidth()" % nm
+-                self.buts.append(nm)
++                buts.append(nm)
+                 column += 1
+             elif m[0] == "CM":
+-                if not m[1] in self.labs:
+-                    self.labs[m[1]] = []
++                if not m[1] in labs:
++                    labs[m[1]] = []
+                 exec "%s = tk.Menu(%s, fg='black', bg='white', "\
+                     "activeforeground=fg, activebackground=bg, "\
+                     "font=font, tearoff=False)" % (m[2], m[1])
+-                m[3], pos = getUnderline(blist=self.labs[m[1]], text=m[3])
++                m[3], pos = getUnderline(blist=labs[m[1]], text=m[3])
++                if not m[3][pos] in labs[m[1]]:
++                    labs[m[1]].append(m[3][pos])
+                 exec '%s.add("cascade", label="%s", menu=%s, font=font, '\
+                     'underline=pos)' % (m[1], m[3], m[2])
+         for m in self.mod:
+             if m[3] > self.lvl:
+                 continue
+-            if not m[1] in self.labs:
+-                self.labs[m[1]] = []
++            if not m[1] in labs:
++                labs[m[1]] = []
+             if m[0][0] == "P" and len(m) == 6:
+                 rtn = int(m[5])
+             else:
+                 rtn = None
+             if m[4] == "Quit":
+                 exec "%s.add_separator()" % m[1]
+-            m[4], pos = getUnderline(blist=self.labs[m[1]], text=m[4])
++            m[4], pos = getUnderline(blist=labs[m[1]], text=m[4])
++            if not m[4][pos] in labs[m[1]]:
++                labs[m[1]].append(m[4][pos])
+             cmd = (self.menubar.register(self.cmd), m[0], m[2], m[4], rtn)
+             stk = m[2].lower().split()[0]
+             if stk in images:
+@@ -1954,7 +1960,7 @@
+             self.mf.rcdic["mfs"] = int(self.mf.rcdic["mfs"]) - 1
+             self.mf.setThemeFont()
+             font = tkfont.Font(font="TkMenuFont")
+-            for but in self.buts:
++            for but in buts:
+                 exec "%s.configure(font=font)" % but
+             self.menubar.update_idletasks()
+         self.menubar.pack(anchor="nw", fill="x", expand="yes")
+@@ -2161,7 +2167,7 @@
+             elif self.dbase == "SQLite":
+                 self.dbmod = "sqlite3"
+                 from sqlite3 import dbapi2 as engine
+-                if engine.sqlite_version < "3.8.0":
++                if engine.sqlite_version.split(".")[1] < 8:
+                     self.mrecs = False
+                 self.dbf = "?"
+             else:
+@@ -2857,16 +2863,20 @@
+                 if self.dbm.mrecs:
+                     ndat.append(tdat[seq])
+             if not self.dbm.mrecs:
++                # Single record insert
+                 nrem.sort(reverse=True)
+                 for seq in nrem:
+                     del tdat[seq]
+-                ndat.append(tdat)
+-            elif not tfmt:
++                self.sqlRec(("Insert into %s (%s) values (%s)" %
++                    (table, nfld, nfmt), [tdat]))
++                continue
++            # Multiple record inserts
++            if not tfmt:
+                 tfmt = "(%s)" % nfmt
+             else:
+                 tfmt = "%s, (%s)" % (tfmt, nfmt)
+-            if onum and not onum % 499:
+-                # Limit write to a maximum of 500 records at a time
++            if ndat and len(ndat) > 500:
++                # Limit write to a maximum of 500 fields at a time
+                 # This particularly applies to sqlite
+                 if pbar:
+                     pbar.displayProgress(onum)
+@@ -2874,11 +2884,9 @@
+                     self.sqlRec(("Insert into %s (%s) values %s" %
+                         (table, nfld, tfmt), ndat))
+                     tfmt = ""
+-                else:
+-                    self.sqlRec(("Insert into %s (%s) values (%s)" %
+-                        (table, nfld, nfmt), ndat))
+                 ndat = []
+         if ndat:
++            # Multiple record inserts remainder
+             if pbar:
+                 pbar.displayProgress(onum)
+             if self.dbm.mrecs:
+@@ -16161,13 +16169,15 @@
+         for num in xrange(0, len(self.impcol), 2):
+             pad = " " * (maxs - len(self.impcol[num][0]))
+             self.impfld.append((("T", 0, idx, 0),"IUI",3,
+-                "%s%s - Column" % (self.impcol[num][0], pad),"",0,"N",
++                "%s%s - Column" % (self.impcol[num][0], pad),
++                "%s Column" % self.impcol[num][0],0,"N",
+                 self.doImpCol,None,None,("efld",),None,
+                 "This is the Column Number in the File Starting with Zero"))
+             if not num == (len(self.impcol) - 1):
+                 pad = " " * (maxs - len(self.impcol[num+1][0]))
+                 self.impfld.append((("T", 0, idx, 46),"IUI",3,
+-                    "%s%s - Column" % (self.impcol[num+1][0], pad),"",0,"N",
++                    "%s%s - Column" % (self.impcol[num+1][0], pad),
++                    "%s Column" % self.impcol[num+1][0],0,"N",
+                     self.doImpCol,None,None,("efld",)))
+             idx += 1
+         but = (
+
+=== modified file 'str/st2010.py'
+--- str/st2010.py	2017-02-25 14:03:05 +0000
++++ str/st2010.py	2017-03-14 06:21:19 +0000
+@@ -172,9 +172,12 @@
+                 ("st1_group", "", 0, "Grp"),
+                 ("st1_code", "", 0, "Product-Code"),
+                 ("st1_desc", "", 0, "Description","Y")),
+-            "where": [],
+-            "order": "st1_group, st1_code",
+-            "index": 1}
++            "where": [
++                ("st1_cono", "=", self.opts["conum"]),
++                ("st1_type", "not", "in", ("J", "R")),
++                ("st1_value_ind", "<>", "N")],
++            "whera": [("C", "st1_group", 0)],
++            "order": "st1_group, st1_code"}
+         r1s = (
+             ("New", "N"),
+             ("Amend", "A"),
+@@ -439,11 +442,6 @@
+         if not acc:
+             return "Invalid Group Code"
+         self.grp = w
+-        self.df.colf[pag][1][8]["where"] = [
+-            ("st1_cono", "=", self.opts["conum"]),
+-            ("st1_group", "=", self.grp),
+-            ("st1_type", "not", "in", ("J", "R")),
+-            ("st1_value_ind", "<>", "N")]
+ 
+     def doCod(self, frt, pag, r, c, p, i, w):
+         strmf1 = self.sql.getRec(tables="strmf1", where=[("st1_cono", "=",
+
+=== modified file 'str/st2030.py'
+--- str/st2030.py	2017-02-25 14:03:05 +0000
++++ str/st2030.py	2017-03-13 15:51:38 +0000
+@@ -303,9 +303,10 @@
+         self.df.loadEntry("C", pag, p+1, data=chk[0])
+ 
+     def doTrnDet(self, frt, pag, r, c, p, i, w):
+-        self.trndet = w
+-        if not self.trndet:
+-            self.trndet = "Stores Issues"
++        if not w:
++            self.trndet = self.desc
++        else:
++            self.trndet = w
+ 
+     def endPage0(self):
+         self.df.focusField("C", 0, 1)
+
+=== modified file 'str/st3080.py'
+--- str/st3080.py	2017-02-25 14:03:05 +0000
++++ str/st3080.py	2017-03-13 19:21:34 +0000
+@@ -203,8 +203,8 @@
+             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], __name__,
+                 self.opts["conum"], ext="pdf")
+             self.fpdf.output(pdfnam, "F")
+-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+-                head=self.tit, repprt=self.df.repprt,
++            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
++                pdfnam=pdfnam, head=self.tit, repprt=self.df.repprt,
+                 repeml=self.df.repeml)
+ 
+     def getValues(self, data):
+@@ -213,11 +213,15 @@
+         code = CCD(data[1], "NA", 20)
+         desc = CCD(data[2], "NA", 30)
+         uoi = CCD(data[3], "NA", 10)
+-        bal = self.sql.getRec(tables="strtrn",
+-            cols=["round(sum(stt_qty), 2)", "round(sum(stt_cost), 2)"],
+-            where=[("stt_cono", "=", self.opts["conum"]), ("stt_group", "=",
+-            grp.work), ("stt_code", "=", code.work), ("stt_loc", "=",
+-            self.loc), ("stt_curdt", "<=", self.curdt)], limit=1)
++        whr = [
++            ("stt_cono", "=", self.opts["conum"]),
++            ("stt_group", "=", grp.work),
++            ("stt_code", "=", code.work)]
++        if self.loc:
++            whr.append(("stt_loc", "=", self.loc))
++        whr.append(("stt_curdt", "<=", self.curdt))
++        bal = self.sql.getRec(tables="strtrn", cols=["round(sum(stt_qty), 2)",
++            "round(sum(stt_cost), 2)"], where=whr, limit=1)
+         if not bal[0]:
+             bal[0] = 0
+         if not bal[1]:
+
+=== modified file 'tab/tb1020.py'
+--- tab/tb1020.py	2017-02-25 14:03:05 +0000
++++ tab/tb1020.py	2017-03-08 08:35:02 +0000
+@@ -607,6 +607,8 @@
+                     ("rptord", "rpo_rnam", "rpo_column"))
+                 for tab in tabs:
+                     sql = Sql(self.dbm, tab[0], prog=__name__)
++                    if sql.error:
++                        continue
+                     dat = sql.getRec(tables=tab[0], cols=[tab[1], tab[2]])
+                     for d in dat:
+                         for col in cols:
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2017-02-25 14:03:05 +0000
++++ uty/pkgprg.py	2017-03-25 15:15:50 +0000
+@@ -671,12 +671,12 @@
+             "no2pigstash@hotmail.com",
+             "paul@tartan.co.za",
+             "paulabergh@mweb.co.za",
+-            "peetneethling.vdm@gmail.com",
+             "rob@itennis.co.za",
+             "rene@agfin.co.za",
+             "ruthmiles52@gmail.com",
+             "tyron@i-volt.net",
+             "yolande@acsaccounting.co.za"]
++            #"peetneethling.vdm@gmail.com",
+         for addr in addrs:
+             if addr == "deonk@spargs.co.za":
+                 sendMail(serv, mfrm, addr, subj)
+

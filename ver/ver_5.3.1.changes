@@ -1,0 +1,15 @@
+1) Added the facility for each system to have its own return email address
+   e.g. Debtor's could have its own email address and so could Creditors etc.
+   These email addresses are entered in the respective Control Records.
+2) Added the facility to allocate directly to rental accounts from the
+   general ledger data capture i.e. receipts, payments, manual journals and
+   bank statements.
+3) Fixed the facility to create new import records in general ledger bank
+   statement capturing.
+4) Fixed an error in the Notes module.
+5) Made numerous python 3 compatible changes.
+6) Made some other enhancements and bug fixes.
+
+NB:
+--
+You can only upgrade to this version if your current version is 4.1.10 or later.

@@ -1,0 +1,791 @@
+=== modified file 'bwl/bc1010.py'
+--- bwl/bc1010.py	2015-02-07 06:31:11 +0000
++++ bwl/bc1010.py	2015-02-23 17:16:43 +0000
+@@ -476,6 +476,7 @@
+                 prtnam=self.cf.repprt[0][2], mail=self.cf.repprt[1][2])
+         self.df.setWidget(self.df.mstFrame, state="show")
+         self.df.enableButtonsTags(state=state)
++        self.df.window.focus_force()
+         self.df.focusField("T", 0, 1)
+ 
+     def doCGroup(self, frt, pag, r, c, p, i, w):
+
+=== modified file 'doc/Changes.rst'
+--- doc/Changes.rst	2015-02-22 09:42:02 +0000
++++ doc/Changes.rst	2015-02-22 09:42:10 +0000
+@@ -1,4 +1,4 @@
+-ver_5.0.5
++ver_5.0.6
+ =========
+ This version, 5.0.5 has been in production since April 2013 and is a Major
+ Version Change implementing, amongst many others, the following:
+@@ -30,7 +30,8 @@
+     Control --> System Records routine.
+ 14) Improved the bulk mail utility to include additional systems and telephone
+     directory contacts.
+-15) Added a new system i.e. 'Booking's Manager' which is a system for managing
++15) Implemented netbios file name resolution and access under linux.
++16) Added a new system i.e. 'Booking's Manager' which is a system for managing
+     short term bookings and letting of facilities like accomodation, functions
+     and conferences.
+ 
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2015-02-22 09:42:02 +0000
++++ doc/Downloads.rst	2015-02-25 16:45:14 +0000
+@@ -11,16 +11,16 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.0.6 and was released on the 22nd February, 2015.
++The latest version of Tartan is 5.0.7 and was released on the 25th February, 2015.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.6.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.0.7.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.6.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.0.7.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+
+=== modified file 'doc/GL.rst'
+--- doc/GL.rst	2014-03-28 07:32:49 +0000
++++ doc/GL.rst	2015-02-24 09:54:24 +0000
+@@ -241,7 +241,7 @@
+ .................
+ Opening Balances (GL)
+ +++++++++++++++++++++
+-Use this routine to capture initial opening balances and budgets for a specific financial period.
++Use this routine to capture initial opening balances. You can also import these balances by selecting the `Import File` button in which case the file must be in `csv` or `xls` format and must contain the account number and balance fields.
+ 
+ * **Acc-Num** - The account number.
+ * **Balance** - The opening balance.
+@@ -255,8 +255,8 @@
+ * **Period** - If `M` was selected then enter the period i.e. YYYYMM.
+ * **Budget** - The budget value.
+ 
+-Sales, Payments, Petty Cash, Purchases and Receipts
+-+++++++++++++++++++++++++++++++++++++++++++++++++++
++Sales, Payments, Petty Cash, Purchases and Receipts (GL)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ These data capture routines are similar in operation and therefore I will handle them together. Please note that if subsidiary books are integrated i.e. creditors and debtors, purchases and sales will not be available and an error message will be displayed if you attempt to access them.
+ 
+ As with most data capture routines you will first have to enter the `Batch Details`_ after which the following screens and fields apply:
+@@ -290,6 +290,9 @@
+     + **M** - The transaction type i.e. New purchase, improvement, write off, depreciation or sale of asset.
+     + **Amount** - The amount of the allocation.
+     + **Details** - The description of the allocation.
+++ **Books - This only applies if the `Acc-Num` is the bookings control account.
++    + **Bkm-Num** - The booking number.
++    + **Amount** - The amount of the allocation.
+ 
+ If you have allocated the transaction to a creditor's or debtor's account you might be required to age the amount as described in `Ageing Transactions`_ above.
+ 
+@@ -352,7 +355,7 @@
+     + **Amount** - Enter the transaction amount.
+     + **Details** - The details for this transaction.
+ 
+-    You will then be asked to confirm your entry and if you do so you will be able to allocate the transaction as in `Sales, Payments, Petty Cash, Purchases and Receipts`_ above.
++    You will then be asked to confirm your entry and if you do so you will be able to allocate the transaction as in `Sales, Payments, Petty Cash, Purchases and Receipts (GL)`_ above.
+ 
+ Reporting (GL)
+ ..............
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2015-02-22 09:42:02 +0000
++++ doc/MD.rst	2015-02-25 16:45:14 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.0.6
++:Version:   5.0.7
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'gen/gl2010.py'
+--- gen/gl2010.py	2014-12-30 15:37:38 +0000
++++ gen/gl2010.py	2015-02-24 09:53:05 +0000
+@@ -67,7 +67,7 @@
+             (("C",0,0,2),"ISD",13.2,"Balance","Balance Value",
+                 "","N",self.doBal,None,self.doDelAcc,None))
+         but = (
+-            ("Import",None,self.doImport,0,("C",0,1),("C",0,2),
++            ("Import File",None,self.doImport,0,("C",0,1),("C",0,2),
+                 "Import Opening Balances from a CSV or XLS File."),
+             ("All Entries", sel_all, None, 1, ("C", 0, 1), None,
+                 "Display All Existing Balances"),
+
+=== modified file 'gen/gl3050.py'
+--- gen/gl3050.py	2015-02-22 09:42:02 +0000
++++ gen/gl3050.py	2015-02-24 08:06:32 +0000
+@@ -50,8 +50,8 @@
+             return
+         self.gldep = ctlsys["sys_gl_dep"]
+         self.gldig = ctlsys["sys_gl_dig"]
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctldep", "gendtm",
+-            "genrpt", "genrpc", "genstr"], prog=__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctldep", "genbud",
++            "gendtm", "genrpt", "genrpc", "genstr"], prog=__name__)
+         if self.sql.error:
+             return
+         t = time.localtime()
+@@ -170,6 +170,13 @@
+             mthnam[((yed.work % 10000) / 100)][1], yed.work / 10000)
+         self.cyr = "  %4s" % (self.end / 100)
+         self.pyr = "  %4s" % ((self.end / 100) - 1)
++        bud = self.sql.getRec(tables="genbud", where=[("glb_cono", "=",
++            self.opts["conum"]), ("glb_curdt", "between", self.s_per,
++            self.end)])
++        if bud:
++            self.df.topf[pag][10][5] = "B"
++        else:
++            self.df.topf[pag][10][5] = "P"
+ 
+     def doRepStr(self, frt, pag, r, c, p, i, w):
+         self.strm = w
+@@ -411,7 +418,7 @@
+     def doCoyCmd(self, frt, pag, r, c, p, i, w):
+         c = ""
+         for co in w:
+-            if int(co) != 0:
++            if int(co):
+                 c = c + str(int(co)) + ","
+         if len(c) > 1:
+             c = c[:-1]
+@@ -483,7 +490,7 @@
+     def doDepCmd(self, frt, pag, r, c, p, i, w):
+         c = ""
+         for co in w:
+-            if int(co) != 0:
++            if int(co):
+                 c = c + str(int(co)) + ","
+         if len(c) > 1:
+             c = c[:-1]
+@@ -1118,40 +1125,40 @@
+             if self.typ == "L":
+                 mth = CCD(line[8][2], "SD", 14.2)
+                 bud = CCD(long(line[8][3]), "SL", 11)
+-                if typ != "P":
+-                    if sgn == "N":
++                if typ == "P":
++                    vmt = CCD(0, "NA", 11)
++                    vmtper = CCD(0, "NA", 7)
++                else:
++                    if sgn == "N" or (self.var == "P" and bud.work < 0):
+                         vmt = long(long(mth.work) - bud.work)
+                     else:
+                         vmt = long(bud.work - long(mth.work))
+                     vmt = CCD(vmt, "SL", 11)
+-                    if bud.work != 0:
++                    if bud.work:
+                         vmtper = round(vmt.work * 100.0 / bud.work, 2)
+                     else:
+                         vmtper = 0
+                     vmtper = CCD(vmtper, "SD", 7.2)
+                     if vmtper.err:
+                         vmtper = CCD(999.99, "SD", 7.2)
+-                else:
+-                    vmt = CCD(0, "NA", 10)
+-                    vmtper = CCD(0, "NA", 7)
+             ytd = CCD(line[8][4], "SD", 14.2)
+             btd = CCD(long(line[8][5]), "SL", 11)
+-            if typ != "P":
+-                if sgn == "N":
++            if typ == "P":
++                vtd = CCD(0, "NA", 11)
++                vtdper = CCD(0, "NA", 7)
++            else:
++                if sgn == "N" or (self.var == "P" and btd.work < 0):
+                     vtd = long(long(ytd.work) - btd.work)
+                 else:
+                     vtd = long(btd.work - long(ytd.work))
+                 vtd = CCD(vtd, "SL", 11)
+-                if btd.work != 0:
++                if btd.work:
+                     vtdper = round(vtd.work * 100.0 / btd.work, 2)
+                 else:
+                     vtdper = 0
+                 vtdper = CCD(vtdper, "SD", 7.2)
+                 if vtdper.err:
+                     vtdper = CCD(999.99, "SD", 7.2)
+-            else:
+-                vtd = CCD(0, "NA", 10)
+-                vtdper = CCD(0, "NA", 7)
+         else:
+             for x in xrange(0, 14):
+                 if self.val == "X" and sgn == "N":
+@@ -1238,7 +1245,7 @@
+                         exec "a = mx%s.work" % x
+                     else:
+                         exec "a = mp%s.work" % x
+-                    if a != 0:
++                    if a:
+                         p = "y"
+             else:
+                 p = "y"
+
+=== modified file 'gen/glc210.py'
+--- gen/glc210.py	2014-12-30 15:37:38 +0000
++++ gen/glc210.py	2015-02-24 08:17:36 +0000
+@@ -56,7 +56,7 @@
+                 ("glm_acno", "", 0, "Acc-Num"),
+                 ("glm_desc", "", 0, "Description", "Y")),
+             "whera": [["T", "glm_cono", 0, 0]]}
+-        data = self.sql.getRec(tables=["genint", "genmst"], cols=["gli_cono",
++        data = self.sql.getRec(tables=["genint", "genmst"], cols=["cti_cono",
+             "glm_name"], where=[("cti_cono", "=", self.opts["conum"]),
+             ("glm_cono=cti_inco",)], order="cti_inco")
+         self.gl3 = {
+@@ -160,7 +160,7 @@
+             self.sql.updRec("genint", data=data2, where=[("cti_cono", "=",
+                 self.cono2), ("cti_inco", "=", self.opts["conum"])])
+         self.opts["mf"].dbm.commitDbase()
+-        data = self.sql.getRec(tables=["genint", "genmst"], cols=["gli_cono",
++        data = self.sql.getRec(tables=["genint", "genmst"], cols=["cti_cono",
+             "glm_name"], where=[("cti_cono", "=", self.opts["conum"]),
+             ("glm_cono=cti_inco",)], order="cti_inco")
+         self.gl3["data"] = data
+
+=== modified file 'img/about.png'
+Binary files img/about.png	2014-03-28 07:32:49 +0000 and img/about.png	2015-02-25 11:06:03 +0000 differ
+=== removed file 'img/blank.png'
+Binary files img/blank.png	2014-04-29 19:57:51 +0000 and img/blank.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'img/bottom.png'
+Binary files img/bottom.png	2014-03-28 07:32:49 +0000 and img/bottom.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/calendar.png'
+Binary files img/calendar.png	2014-07-21 11:34:04 +0000 and img/calendar.png	2015-02-25 11:06:03 +0000 differ
+=== removed file 'img/choice.png'
+Binary files img/choice.png	2014-03-30 15:20:04 +0000 and img/choice.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'img/clear.png'
+Binary files img/clear.png	2014-03-28 07:32:49 +0000 and img/clear.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/close.png'
+Binary files img/close.png	2014-03-28 07:32:49 +0000 and img/close.png	2015-02-25 14:06:48 +0000 differ
+=== modified file 'img/connect.png'
+Binary files img/connect.png	2014-03-28 07:32:49 +0000 and img/connect.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/convert.png'
+Binary files img/convert.png	2014-03-28 07:32:49 +0000 and img/convert.png	2015-02-25 11:06:05 +0000 differ
+=== modified file 'img/copy.png'
+Binary files img/copy.png	2014-03-28 07:32:49 +0000 and img/copy.png	2015-02-25 11:06:05 +0000 differ
+=== modified file 'img/cut.png'
+Binary files img/cut.png	2014-03-28 07:32:49 +0000 and img/cut.png	2015-02-25 11:06:05 +0000 differ
+=== modified file 'img/delete.png'
+Binary files img/delete.png	2014-03-28 07:32:49 +0000 and img/delete.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/disconnect.png'
+Binary files img/disconnect.png	2014-03-28 07:32:49 +0000 and img/disconnect.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/down.png'
+Binary files img/down.png	2014-03-28 07:32:49 +0000 and img/down.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/edit.png'
+Binary files img/edit.png	2014-03-28 07:32:49 +0000 and img/edit.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/email.png'
+Binary files img/email.png	2014-03-28 07:32:49 +0000 and img/email.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/execute.png'
+Binary files img/execute.png	2014-03-28 07:32:49 +0000 and img/execute.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/exit.png'
+Binary files img/exit.png	2014-03-28 07:32:49 +0000 and img/exit.png	2015-02-25 11:06:03 +0000 differ
+=== removed file 'img/file.png'
+Binary files img/file.png	2014-03-28 07:32:49 +0000 and img/file.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'img/filter.png'
+Binary files img/filter.png	2014-03-28 07:32:49 +0000 and img/filter.png	2015-02-25 11:06:05 +0000 differ
+=== modified file 'img/find.png'
+Binary files img/find.png	2014-03-28 07:32:49 +0000 and img/find.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/first.png'
+Binary files img/first.png	2014-03-28 07:32:49 +0000 and img/first.png	2015-02-25 11:06:03 +0000 differ
+=== removed file 'img/floppy.png'
+Binary files img/floppy.png	2014-03-28 07:32:49 +0000 and img/floppy.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'img/gnu-head.png'
+Binary files img/gnu-head.png	2014-03-28 07:32:49 +0000 and img/gnu-head.png	2015-02-25 11:06:05 +0000 differ
+=== modified file 'img/greencash.png'
+Binary files img/greencash.png	2014-04-29 19:57:51 +0000 and img/greencash.png	2015-02-25 11:06:05 +0000 differ
+=== modified file 'img/groups.png'
+Binary files img/groups.png	2014-04-29 19:57:51 +0000 and img/groups.png	2015-02-25 11:06:06 +0000 differ
+=== removed file 'img/harddisk.png'
+Binary files img/harddisk.png	2014-03-28 07:32:49 +0000 and img/harddisk.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'img/help.png'
+Binary files img/help.png	2014-03-28 07:32:49 +0000 and img/help.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/home.png'
+Binary files img/home.png	2014-03-28 07:32:49 +0000 and img/home.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/import.png'
+Binary files img/import.png	2014-03-28 07:32:49 +0000 and img/import.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/info.png'
+Binary files img/info.png	2014-03-28 07:32:49 +0000 and img/info.png	2015-02-25 14:08:18 +0000 differ
+=== modified file 'img/insert.png'
+Binary files img/insert.png	2014-03-30 15:20:04 +0000 and img/insert.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/last.png'
+Binary files img/last.png	2014-03-28 07:32:49 +0000 and img/last.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/left.png'
+Binary files img/left.png	2014-03-28 07:32:49 +0000 and img/left.png	2015-02-25 11:06:03 +0000 differ
+=== added file 'img/message.png'
+Binary files img/message.png	1970-01-01 00:00:00 +0000 and img/message.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/network.png'
+Binary files img/network.png	2014-03-28 07:32:49 +0000 and img/network.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/new.png'
+Binary files img/new.png	2014-03-28 07:32:49 +0000 and img/new.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/no.png'
+Binary files img/no.png	2015-01-01 12:48:11 +0000 and img/no.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/ok.png'
+Binary files img/ok.png	2014-03-28 07:32:49 +0000 and img/ok.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/open.png'
+Binary files img/open.png	2014-03-28 07:32:49 +0000 and img/open.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/paste.png'
+Binary files img/paste.png	2014-03-30 15:20:04 +0000 and img/paste.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/populate.png'
+Binary files img/populate.png	2014-04-29 19:57:51 +0000 and img/populate.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/postgresql.png'
+Binary files img/postgresql.png	2014-03-28 07:32:49 +0000 and img/postgresql.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/preferences.png'
+Binary files img/preferences.png	2014-03-28 07:32:49 +0000 and img/preferences.png	2015-02-25 14:47:34 +0000 differ
+=== modified file 'img/preview.png'
+Binary files img/preview.png	2014-03-28 07:32:49 +0000 and img/preview.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/print.png'
+Binary files img/print.png	2014-03-28 07:32:49 +0000 and img/print.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/process.png'
+Binary files img/process.png	2014-03-28 07:32:49 +0000 and img/process.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/properties.png'
+Binary files img/properties.png	2014-03-28 07:32:49 +0000 and img/properties.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/quit.png'
+Binary files img/quit.png	2014-03-28 07:32:49 +0000 and img/quit.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/refund.png'
+Binary files img/refund.png	2014-04-29 19:57:51 +0000 and img/refund.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/reorder.png'
+Binary files img/reorder.png	2014-03-28 07:32:49 +0000 and img/reorder.png	2015-02-25 11:06:06 +0000 differ
+=== removed file 'img/revert.png'
+Binary files img/revert.png	2014-03-28 07:32:49 +0000 and img/revert.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'img/ribbon.png'
+Binary files img/ribbon.png	2014-03-28 07:32:49 +0000 and img/ribbon.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/right.png'
+Binary files img/right.png	2014-03-28 07:32:49 +0000 and img/right.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/save.png'
+Binary files img/save.png	2014-03-28 07:32:49 +0000 and img/save.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/send.png'
+Binary files img/send.png	2014-03-28 07:32:49 +0000 and img/send.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/show.png'
+Binary files img/show.png	2014-03-28 07:32:49 +0000 and img/show.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/stop.png'
+Binary files img/stop.png	2014-03-28 07:32:49 +0000 and img/stop.png	2015-02-25 11:06:03 +0000 differ
+=== added file 'img/tarupd.png'
+Binary files img/tarupd.png	1970-01-01 00:00:00 +0000 and img/tarupd.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/top.png'
+Binary files img/top.png	2014-03-28 07:32:49 +0000 and img/top.png	2015-02-25 11:06:03 +0000 differ
+=== removed file 'img/trash.png'
+Binary files img/trash.png	2014-03-28 07:32:49 +0000 and img/trash.png	1970-01-01 00:00:00 +0000 differ
+=== modified file 'img/truck.png'
+Binary files img/truck.png	2014-03-28 07:32:49 +0000 and img/truck.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/undo.png'
+Binary files img/undo.png	2014-04-29 19:57:51 +0000 and img/undo.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/up.png'
+Binary files img/up.png	2014-03-28 07:32:49 +0000 and img/up.png	2015-02-25 11:06:03 +0000 differ
+=== modified file 'img/update.png'
+Binary files img/update.png	2014-06-14 08:55:57 +0000 and img/update.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'img/warning.png'
+Binary files img/warning.png	2014-03-28 07:32:49 +0000 and img/warning.png	2015-02-25 14:41:22 +0000 differ
+=== modified file 'img/yes.png'
+Binary files img/yes.png	2015-01-01 12:48:11 +0000 and img/yes.png	2015-02-25 11:06:06 +0000 differ
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2015-02-22 09:42:02 +0000
++++ mst/ms0000.py	2015-02-25 16:45:14 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 0, 6)
++    VERSION = (5, 0, 7)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2015-02-22 09:42:02 +0000
++++ std/TartanClasses.py	2015-02-25 15:07:57 +0000
+@@ -105,9 +105,10 @@
+         "arrivals": os.path.join(imgdir, "print.png"),
+         "back": os.path.join(imgdir, "left.png"),
+         "cancel": os.path.join(imgdir, "no.png"),
++        "change": os.path.join(imgdir, "convert.png"),
+         "chgpwd": os.path.join(imgdir, "users.png"),
+-        "change": os.path.join(imgdir, "convert.png"),
+         "chgusr": os.path.join(imgdir, "users.png"),
++        "choice": os.path.join(imgdir, "question.png"),
+         "contacts": os.path.join(imgdir, "users.png"),
+         "continue": os.path.join(imgdir, "yes.png"),
+         "crop/print": os.path.join(imgdir, "print.png"),
+@@ -116,8 +117,8 @@
+         "deladd": os.path.join(imgdir, "truck.png"),
+         "deposits": os.path.join(imgdir, "print.png"),
+         "doabout": os.path.join(imgdir, "about.png"),
+-        "domanual": os.path.join(imgdir, "info.png"),
+-        "doquick": os.path.join(imgdir, "info.png"),
++        "domanual": os.path.join(imgdir, "help.png"),
++        "doquick": os.path.join(imgdir, "help.png"),
+         "drsmaint": os.path.join(imgdir, "edit.png"),
+         "drsquery": os.path.join(imgdir, "question.png"),
+         "edi": os.path.join(imgdir, "import.png"),
+@@ -127,24 +128,22 @@
+         "interrogate": os.path.join(imgdir, "question.png"),
+         "logout": os.path.join(imgdir, "quit.png"),
+         "maintain": os.path.join(imgdir, "edit.png"),
+-        "message": os.path.join(imgdir, "info.png"),
+         "movements": os.path.join(imgdir, "question.png"),
+         "notes": os.path.join(imgdir, "edit.png"),
+         "payment": os.path.join(imgdir, "greencash.png"),
+         "reprint": os.path.join(imgdir, "print.png"),
+         "re-seq": os.path.join(imgdir, "reorder.png"),
+         "reset": os.path.join(imgdir, "clear.png"),
+-        "search": os.path.join(imgdir, "info.png"),
++        "search": os.path.join(imgdir, "find.png"),
+         "showcal": os.path.join(imgdir, "calendar.png"),
+         "show": os.path.join(imgdir, "show.png"),
+         "strmaint": os.path.join(imgdir, "edit.png"),
+         "strquery": os.path.join(imgdir, "question.png"),
+         "sysend": os.path.join(imgdir, "quit.png"),
+         "sysupd": os.path.join(imgdir, "network.png"),
+-        "tarbck": os.path.join(imgdir, "save.png"),
++        "tarbck": os.path.join(imgdir, "backup.png"),
+         "tarcfg": os.path.join(imgdir, "preferences.png"),
+-        "tarres": os.path.join(imgdir, "revert.png"),
+-        "tarupd": os.path.join(imgdir, "convert.png"),
++        "tarres": os.path.join(imgdir, "restore.png"),
+         "tarusr": os.path.join(imgdir, "users.png"),
+         "tb1040": os.path.join(imgdir, "copy.png"),
+         "toggle": os.path.join(imgdir, "convert.png"),
+@@ -1407,34 +1406,35 @@
+                 ("active", self.rcdic["fbg"]),
+                 ("disabled", self.rcdic["dbg"]),
+                 ("focus", self.rcdic["fbg"])])
+-        self.style.map("TCheckbutton",
+-            foreground=[
+-                ("focus", "black")],
+-            background=[
+-                ("focus", "light gray")],
+-            indicatorbackground=[
+-                ("focus", "white"),
+-                ("disabled", "white"),
+-                ("pressed", "white")],
+-            indicatorcolor=[
+-                ("focus", "black"),
+-                ("pressed", "black"),
+-                ("selected", "black")],
+-            focuscolor=[("focus", self.rcdic["fbg"])])
+-        self.style.map("TRadiobutton",
+-            foreground=[
+-                ("focus", "black")],
+-            background=[
+-                ("focus", "light gray")],
+-            indicatorbackground=[
+-                ("focus", "white"),
+-                ("disabled", "white"),
+-                ("pressed", "white")],
+-            indicatorcolor=[
+-                ("focus", "black"),
+-                ("pressed", "black"),
+-                ("selected", "black")],
+-            focuscolor=[("focus", self.rcdic["fbg"])])
++        if tk.TkVersion > 8.5:
++            self.style.map("TCheckbutton",
++                foreground=[
++                    ("focus", "black")],
++                background=[
++                    ("focus", "light gray")],
++                indicatorbackground=[
++                    ("focus", "white"),
++                    ("disabled", "white"),
++                    ("pressed", "white")],
++                indicatorcolor=[
++                    ("focus", "black"),
++                    ("pressed", "black"),
++                    ("selected", "black")],
++                focuscolor=[("focus", self.rcdic["fbg"])])
++            self.style.map("TRadiobutton",
++                foreground=[
++                    ("focus", "black")],
++                background=[
++                    ("focus", "light gray")],
++                indicatorbackground=[
++                    ("focus", "white"),
++                    ("disabled", "white"),
++                    ("pressed", "white")],
++                indicatorcolor=[
++                    ("focus", "black"),
++                    ("pressed", "black"),
++                    ("selected", "black")],
++                focuscolor=[("focus", self.rcdic["fbg"])])
+         self.style.configure("TEntry",
+             selectforeground="black",
+             selectbackground="light gray")
+@@ -1974,6 +1974,7 @@
+         for key in self.rcdic:
+             setattr(self, key, self.rcdic[key])
+         self.screen = screen
++        self.tooold = False
+         if self.dbase in ("FBird", "SQLite"):
+             if self.dbdir:
+                 self.dbdsn = os.path.join(self.dbdir, self.dbname)
+@@ -1997,8 +1998,14 @@
+                 import psycopg2 as engine
+                 self.dbf = "%s"
+             elif self.dbase == "SQLite":
+-                dbmod = "pysqlite2"
+-                from pysqlite2 import dbapi2 as engine
++                dbmod = "sqlite"
++                try:
++                    from pysqlite2 import dbapi2 as engine
++                except:
++                    from sqlite3 import dbapi2 as engine
++                if engine.version < "2.6.0":
++                    # Does not support multiple row inserts
++                    self.tooold = True
+                 self.dbf = "?"
+             else:
+                 raise Exception("Invalid Database Type (%s)" % self.dbase)
+@@ -2009,7 +2016,7 @@
+         except:
+             self.err = True
+             showException(self.screen, self.wrkdir,
+-                "DBAPI Error - Missing Database Module (%s)" % dbmod)
++                "DBAPI Error - Database Module (%s)" % dbmod)
+ 
+     def setVariables(self):
+         if self.dbase == "FBird":
+@@ -2544,12 +2551,15 @@
+                     ret = self.dbm.cu.fetchmany(limit)
+                     return retList(ret)
+                 raise Exception("Missing sql statement")
+-            if type(state) not in (list, tuple):
++            if type(state) == str:
+                 comm = state.split()
+                 self.dbm.cu.execute(state)
+             else:
+                 comm = state[0].split()
+-                self.dbm.cu.execute(state[0], state[1])
++                if comm[0].lower() == "insert" and self.dbm.tooold:
++                    self.dbm.cu.executemany(state[0], state[1])
++                else:
++                    self.dbm.cu.execute(state[0], state[1])
+             if comm[0].lower() == "select" or comm[0].lower() == "show":
+                 if fetch:
+                     return
+@@ -2607,15 +2617,13 @@
+                 nfmt = "%s, %s" % (nfmt, self.dbm.dbf)
+         # Format data
+         if not type(data[0]) in (list, tuple):
+-            # Single record
++            # Single row
+             data = [data]
+         else:
+-            # Cannot test for unique with multple records
++            # Not testing for unique with multple rows
+             unique = None
+         ndat = []
+         for onum, odat in enumerate(data):
+-            if pbar:
+-                pbar.displayProgress(onum)
+             tdat = list(odat[:])
+             if not len(tdat) == len(col):
+                 showError(None, "insRec Error",
+@@ -2692,18 +2700,32 @@
+                     fd = CCD(tdat[seq], dic[nam][2], dic[nam][3])
+                     if not fd.err:
+                         tdat[seq] = fd.work
+-                ndat.append(tdat[seq])
+-            if not tfmt:
++                if not self.dbm.tooold:
++                    ndat.append(tdat[seq])
++            if self.dbm.tooold:
++                nrem.sort(reverse=True)
++                for seq in nrem:
++                    del tdat[seq]
++                    ndat.append(tdat)
++            elif not tfmt:
+                 tfmt = "(%s)" % nfmt
+             else:
+                 tfmt = "%s, (%s)" % (tfmt, nfmt)
+             if onum and not onum % 499:
+                 # Limit write to a maximum of 500 records at a time
+-                self.sqlRec(("Insert into %s (%s) values %s" % (table, nfld,
+-                    tfmt), ndat), excp=excp)
+-                tfmt = ""
++                if pbar:
++                    pbar.displayProgress(onum)
++                if self.dbm.tooold:
++                    self.sqlRec(("Insert into %s (%s) values %s" % (table,
++                        nfld, nfmt), ndat), excp=excp)
++                else:
++                    self.sqlRec(("Insert into %s (%s) values %s" % (table,
++                        nfld, tfmt), ndat), excp=excp)
++                    tfmt = ""
+                 ndat = []
+         if ndat:
++            if pbar:
++                pbar.displayProgress(onum)
+             self.sqlRec(("Insert into %s (%s) values %s" % (table, nfld,
+                 tfmt), ndat), excp=excp)
+ 
+@@ -9536,6 +9558,7 @@
+                 X = Variance to Budgets
+                 D = Details
+     dcode    = The detail code to be used if vcode = "D"
++    varcd    = The value to use for variances, B=Budget, P=Previous Year
+     consol   = A tuple or list of Company Numbers to Consolidate or
+                 "Y" for All or "N" for None
+     depart   = The department code to print else 0 for None
+@@ -10097,16 +10120,13 @@
+                     cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono",
+                     "=", self.s_cono), ("glt_acno", "%", bas, "=", acc),
+                     ("glt_curdt", "=", curdt)], limit=1)[0]
+-                if self.varcd == "B":
++                if self.varcd == "P":
++                    bud = lyr
++                else:
+                     bud = self.sql.getRec(tables="genbud",
+                         cols=["sum(glb_tramt)"], where=[("glb_cono",
+                         "=", self.s_cono), ("glb_acno", "%", bas, "=", acc),
+                         ("glb_curdt", "=", curdt)], limit=1)[0]
+-                else:
+-                    bud = self.sql.getRec(tables="gentrn",
+-                        cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
+-                        "=", self.s_cono), ("glt_acno", "%", bas, "=", acc),
+-                        ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+             else:
+                 lyr = self.sql.getRec(tables="gentrn",
+                     cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono",
+@@ -10116,16 +10136,13 @@
+                     cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono",
+                     "=", self.s_cono), ("glt_acno", "=", self.s_acno),
+                     ("glt_curdt", "=", curdt)], limit=1)[0]
+-                if self.varcd == "B":
++                if self.varcd == "P":
++                    bud = lyr
++                else:
+                     bud = self.sql.getRec(tables="genbud",
+                         cols=["sum(glb_tramt)"], where=[("glb_cono",
+                         "=", self.s_cono), ("glb_acno", "=", self.s_acno),
+                         ("glb_curdt", "=", curdt)], limit=1)[0]
+-                else:
+-                    bud = self.sql.getRec(tables="gentrn",
+-                        cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
+-                        "=", self.s_cono), ("glt_acno", "=", self.s_acno),
+-                        ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+         elif self.sysdp[0] == "Y" and not self.depart:
+             bas = 10 ** (7 - self.sysdp[1])
+             acc = self.s_acno % bas
+@@ -10137,15 +10154,12 @@
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
+                 self.consol), ("glt_acno", "%", bas, "=", acc),
+                 ("glt_curdt", "=", curdt)], limit=1)[0]
+-            if self.varcd == "B":
++            if self.varcd == "P":
++                bud = lyr
++            else:
+                 bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
+                     where=[("glb_cono", "in", self.consol), ("glb_acno", "%",
+                     bas, "=", acc), ("glb_curdt", "=", curdt)], limit=1)[0]
+-            else:
+-                bud = self.sql.getRec(tables="gentrn",
+-                    cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
+-                    "in", self.consol), ("glt_acno", "%", bas, "=", acc),
+-                    ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+         else:
+             lyr = self.sql.getRec(tables="gentrn",
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
+@@ -10155,15 +10169,12 @@
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
+                 self.consol), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+                 "=", curdt)], limit=1)[0]
+-            if self.varcd == "B":
++            if self.varcd == "P":
++                bud = lyr
++            else:
+                 bud = self.sql.getRec(tables="genbud", cols=["sum(glb_tramt)"],
+                     where=[("glb_cono", "in", self.consol), ("glb_acno", "=",
+                     self.s_acno), ("glb_curdt", "=", curdt)], limit=1)[0]
+-            else:
+-                bud = self.sql.getRec(tables="gentrn",
+-                    cols=["round(sum(glt_tramt), 0)"], where=[("glt_cono",
+-                    "in", self.consol), ("glt_acno", "=", self.s_acno),
+-                    ("glt_curdt", "=", (curdt - 100))], limit=1)[0]
+         if not lyr:
+             lyr = 0
+         else:
+@@ -15741,7 +15752,7 @@
+         self.widget.bind("<FocusOut>", self.hideTip)
+ 
+     def showTip(self, event=None):
+-        "Display text in tooltip window if widget active"
++        # Display text in tooltip window if widget active
+         if self.tipwindow:
+             return
+         try:
+
+=== modified file 'uty/td1010.py'
+--- uty/td1010.py	2015-02-22 09:42:02 +0000
++++ uty/td1010.py	2015-02-23 10:43:10 +0000
+@@ -50,7 +50,7 @@
+                 ("tdm_telno", "TX", 20, "Telephone"),
+                 ("tdm_mobile", "TX", 20, "Mobile"),
+                 ("tdm_email", "TX", 50, "Email-Address"),
+-                ("tdm_group", "UA", 3, "Grp")),
++                ("tdm_group", "UA", 12, "Grp")),
+             "order": "tdm_name",
+             "autoc": autoc,
+             "sort": "n"}
+@@ -303,6 +303,11 @@
+             col = sql.bkmcon_col
+             recs = sql.getRec(tables="bkmcon")
+             for rec in recs:
++                if not rec[col.index("bkc_telno")] and not \
++                        rec[col.index("bkc_faxno")] and not \
++                        rec[col.index("bkc_celno")] and not \
++                        rec[col.index("bkc_email")]:
++                    continue
+                 nam = "%s, %s" % (rec[col.index("bkc_sname")],
+                     rec[col.index("bkc_names")].split()[0])
+                 data = [
+@@ -324,6 +329,40 @@
+                     self.sql.updRec("telmst", data=data, where=[("tdm_name",
+                         "=", data[0])])
+             grp.append(("BKM", "Guests"))
++        bwl = sql.getRec(tables="ftable", where=[("ft_tabl", "=", "bwltab")],
++            cols=["count(*)"], limit=1)
++        if bwl and bwl[0]:
++            commit = True
++            sql = Sql(self.opts["mf"].dbm, tables="bwltab", prog=__name__)
++            col = sql.bwltab_col
++            recs = sql.getRec(tables="bwltab")
++            for rec in recs:
++                if not rec[col.index("btb_home")] and not \
++                        rec[col.index("btb_work")] and not \
++                        rec[col.index("btb_cell")] and not \
++                        rec[col.index("btb_mail")]:
++                    continue
++                nam = "%s, %s" % (rec[col.index("btb_surname")],
++                    rec[col.index("btb_names")].split()[0])
++                data = [
++                    nam,
++                    rec[col.index("btb_add1")],
++                    rec[col.index("btb_add2")],
++                    rec[col.index("btb_add3")],
++                    rec[col.index("btb_pcod")],
++                    rec[col.index("btb_home")],
++                    rec[col.index("btb_work")],
++                    rec[col.index("btb_cell")],
++                    rec[col.index("btb_mail")],
++                    "BWL"]
++                chk = self.sql.getRec(tables="telmst", cols=["count(*)"],
++                    where=[("tdm_name", "=", nam)], limit=1)
++                if not chk[0]:
++                    self.sql.insRec("telmst", data=data)
++                else:
++                    self.sql.updRec("telmst", data=data,
++                        where=[("tdm_name", "=", data[0])])
++            grp.append(("BWL", "Bowls"))
+         crs = sql.getRec(tables="ftable", where=[("ft_tabl", "=", "crsmst")],
+             cols=["count(*)"], limit=1)
+         if crs and crs[0]:
+

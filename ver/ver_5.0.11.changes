@@ -1,0 +1,10 @@
+1) Added the facility to produce and email invoices with debtor's recurring
+   charges.
+2) Some improvements to the general ledger integration with the booking's
+   manager and staff loan systems.
+3) The manual has some further updates.
+4) Some general bug fixes.
+
+Note:
+-----
+You can only upgrade to this version if your current version is 4.1.10 or later.

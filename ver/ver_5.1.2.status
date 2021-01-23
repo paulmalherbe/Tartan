@@ -1,0 +1,13 @@
+added:
+  str/st6030.py
+modified:
+  doc/Downloads.rst
+  doc/MB.rst
+  doc/MD.rst
+  gen/gl2030.py
+  mem/ml1010.py
+  men/stdmen.py
+  mst/ms0000.py
+  sls/si2010.py
+unknown:
+  mst/errors.txt

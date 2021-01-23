@@ -1,0 +1,9 @@
+1) The manual has some further updates.
+2) Fixed an error in G/L data capture module.
+3) Fixed an error in G/L reporting stream regarding variances.
+4) Fixed an error in Stores revaluation module.
+5) Some non-critical bug fixes.
+
+Note:
+-----
+You can only upgrade to this version if your current version is 4.1.10 or later.

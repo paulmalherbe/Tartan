@@ -1,0 +1,1084 @@
+=== modified file 'bwl/bc1010.py'
+--- bwl/bc1010.py	2019-07-03 13:49:08 +0000
++++ bwl/bc1010.py	2019-10-12 07:58:19 +0000
+@@ -36,8 +36,9 @@
+         if self.setVariables():
+             self.mainProcess()
+             if "args" in self.opts:
+-                self.newtab = True
++                self.tabcvt = False
+                 self.gentab = False
++                self.newtab = True
+                 self.tab = self.opts["args"]
+                 self.df.loadEntry("T", 0, 0, data=self.tab)
+                 self.df.focusField("T", 0, 2)
+
+=== modified file 'bwl/bc2010.py'
+--- bwl/bc2010.py	2019-07-03 13:49:08 +0000
++++ bwl/bc2010.py	2019-10-12 08:24:18 +0000
+@@ -80,8 +80,11 @@
+     ----------
+     self.alltabs: {"tab": [surname, names, gender, position, rating, paid]}
+     self.adraw1: [[rink, rate, [tab, nam, rte] x 4], []]
+-    self.hist: dictionary of all tabs for the past x weeks as follows:
++    self.dtype: Draw Type R - Randon, S - Strength
++    self.hist: Dictionary of all tabs for the past x weeks as follows:
+         {tab: [[team members], [opponents]], ...}
++    self.tsize = Team Size: Three or Four
++    self.dbase: Draw Basis P - Position, R - Rating, C - Combination
+     self.broken: list of tabs that have been in a broken rink
+     bdt_flag: A - Arranged, B - Broken Rinks, C - Teams, D - Drawn
+     self.dofix: In single gender draws fix broken teams by moving 1 player
+@@ -201,15 +204,20 @@
+             (("T",0,1,0),("IRB",r1s),0,"Time","",
+                 self.stime,"N",self.doTime,None,None,None),
+             (("T",0,2,0),("IRB",r2s),0,"Mixed Gender","",
+-                "Y","N",self.doMixed,None,None,None),
++                "Y","N",self.doMixed,None,None,None,None,"Select whether "\
++                "the draw is Gender based or Mixed."),
+             (("T",0,3,0),("IRB",r2s),0,"Mixed Rating","",
+-                "Y","N",self.doRating,None,None,None),
++                "Y","N",self.doMixedRating,None,None,None,None,"If "\
++                "available, Select whether or not to use the Alternative "\
++                "Gender Ratings."),
+             (("T",0,4,0),("IRB",r2s),0,"Mix Broken","",
+                 "Y","N",self.doBroken,None,None,None,None,"If Both "\
+                 "Genders have an Odd number of tabs, move a Random "\
+                 "tab to the least gender thus eliminating Broken Rinks."),
+             (("T",0,5,0),("IRB",r3s),0,"Draw By","",
+-                self.dbase,"N",self.doBase,None,None,None),
++                self.dbase,"N",self.doBase,None,None,None,None,"If "\
++                "available, Select whether to base the draw on Positions, "\
++                "Ratings or a Combination of both."),
+             (("T",0,6,0),"IUD",5.2,"Fees - Member R","",
+                 self.ratem.work,"N",self.doRate,None,None,("efld",)),
+             (("T",0,6,0),"IUD",5.2," Visitor R","",
+@@ -233,19 +241,19 @@
+                 "Y","N",None,None,self.doDelete,None))
+         but = (
+             ("Bounce",None,self.doBounce,0,("T",1,1),None,
+-                "Enter bounce games",1),
++                "Enter Bounce Games",1),
+             ("Teams",None,self.doTeams,0,("T",1,1),None,
+-                "Enter arranged Teams",1),
++                "Enter Arranged Teams",1),
+             ("Entered",None,self.doEntered,0,("T",1,1),None,
+-                "Display a list of entered tabs",1),
++                "Display a list of Entered Tabs",1),
+             ("Modify",None,self.doModify,0,("T",1,7),None,
+-                "Change existing ratings for this draw",1),
++                "Change the Ratings for this Tab in this Draw",1),
+             ("Draw",None,self.doDraw,0,("T",1,1),None,
+-                "Genetrate a new draw",2),
++                "Genetrate a New Draw",2),
+             ("Edit Draw",None,self.doEdit,0,("T",1,1),None,
+-                "Change the draw",2),
++                "Change the Draw",2),
+             ("Print",None,self.doPrint,0,("T",1,1),None,
+-                "Print the draw",2),
++                "Print the Draw",2),
+             ("Exit",None,self.doExit,1,None,None,None,2))
+         tnd = ((self.doEnd,"y"), (self.doEnd,"n"))
+         txt = (self.doExit, self.doExit)
+@@ -417,7 +425,7 @@
+             self.df.loadEntry(frt, pag, p + 1, data=self.rating)
+             return "sk1"
+ 
+-    def doRating(self, frt, pag, r, c, p, i, w):
++    def doMixedRating(self, frt, pag, r, c, p, i, w):
+         self.rating = w
+         self.dofix = False
+         self.df.loadEntry(frt, pag, p + 1, data="N")
+@@ -1091,13 +1099,10 @@
+         r2s = (("Yes", "Y"), ("No", "N"))
+         r3s = (("Three", "3"), ("Four", "4"))
+         if self.teams:
+-            x = 0
+-            fld = []
+-            self.dtype = "R"
+-            self.dhist = "N"
+-            self.tsize = 4
+-            self.rep42 = "N"
+-            self.needed = self.getNeeded(len(self.alltabs))
++            fld = [
++                (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
++                    "S","N",self.doType,None,None,None)]
++            x = 1
+         elif self.nbase in ("C", "R"):
+             fld = [
+                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
+@@ -1125,7 +1130,8 @@
+                     "3","N",self.doSize,None,None,None),
+                 (("T",0,x + 2,0),("IRB",r2s),0,"Prefer Pairs","",
+                     self.rep42,"N",self.doRep42,None,None,None,None,
+-                    "Whether to Replace teams of Fours with Pairs.")])
++                    "In the case of Trips select whether to Replace "\
++                    "teams of Fours with Pairs.")])
+             x += 3
+         fld.append(
+             (("T",0,x,0),"IUA",40,"Greens","Greens (A,B,C)",
+@@ -1149,10 +1155,14 @@
+ 
+     def doType(self, frt, pag, r, c, p, i, w):
+         self.dtype = w
+-        if self.dtype == "S":
++        if self.teams:
++            self.dhist = "N"
++            self.tsize = 4
++            self.rep42 = "N"
++            self.needed = self.getNeeded(len(self.alltabs))
++        elif self.dtype == "S":
+             self.dhist = "N"
+             self.dw.loadEntry(frt, pag, p+1, data="N")
+-            #return "sk1"
+ 
+     def doPer(self, frt, pag, r, c, p, i, w):
+         self.dper = w
+@@ -1283,7 +1293,10 @@
+                         dat.append([mem] + self.ndict.pop(mem))
+                         dat[1] += dat[-1][5]
+                 temp.append(dat)
+-            temp = sorted(temp, key=itemgetter(1))
++            if self.dtype == "S":
++                temp = sorted(temp, key=itemgetter(1))
++            else:
++                random.shuffle(temp)
+             while temp:
+                 ok = False
+                 rk1 = False
+
+=== modified file 'doc/BKSMST.rst'
+--- doc/BKSMST.rst	2019-08-23 09:04:54 +0000
++++ doc/BKSMST.rst	2019-12-07 11:09:29 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.7
++:Version:   5.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/BWLMST.rst'
+--- doc/BWLMST.rst	2019-08-23 09:04:54 +0000
++++ doc/BWLMST.rst	2019-12-07 11:09:29 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.7
++:Version:   5.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/CSHMST.rst'
+--- doc/CSHMST.rst	2019-08-23 09:04:54 +0000
++++ doc/CSHMST.rst	2019-12-07 11:09:29 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.7
++:Version:   5.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2019-08-23 09:04:54 +0000
++++ doc/Downloads.rst	2019-12-07 11:09:29 +0000
+@@ -11,27 +11,27 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.7 and was released on the 23rd August, 2019.
++The latest version of Tartan is 5.8 and was released on the 7th December, 2019.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Manual: http://www.tartan.co.za/cgi-bin/simple_web.py/Manual
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.7.tgz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.8.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.7.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.8.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.7.tgz
+-.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.7.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.7.tgz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.7.exe
+-.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.7.tgz
+-.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.7.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.7.tgz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.7.exe
++.. _Bksclb-5-lnx: ftp://tartan.co.za/Bksclb_5.8.tgz
++.. _Bksclb-5-win: ftp://tartan.co.za/Bksclb_5.8.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.8.tgz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.8.exe
++.. _Cshana-5-lnx: ftp://tartan.co.za/Cshana_5.8.tgz
++.. _Cshana-5-win: ftp://tartan.co.za/Cshana_5.8.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.8.tgz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.8.exe
+ 
+ |linux| Linux
+ =============
+@@ -43,7 +43,7 @@
+ -----------------------------
+ If your current version is less than 4.1.10 you must upgrade as follows:
+ 
+-    * If your current version is less than 2.5.7
++    * If your current version is less than 2.5.8
+         - Make a backup.
+         - Download the last release of version 2, Tartan-2-lnx_
+         - Extract the downloaded version into your Tartan/prg directory.
+@@ -97,7 +97,7 @@
+ -----------------------------
+ If your current version is less than 5.0.0 you must upgrade as follows:
+ 
+-    * If your current version is less than 2.5.7
++    * If your current version is less than 2.5.8
+         - Make a backup.
+         - Download the last release of version 2, Tartan-2-win_
+         - Execute the downloaded version by double clicking on it.
+
+=== modified file 'doc/MST.rst'
+--- doc/MST.rst	2019-08-23 09:04:54 +0000
++++ doc/MST.rst	2019-12-07 11:09:29 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.7
++:Version:   5.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/SECMST.rst'
+--- doc/SECMST.rst	2019-08-23 09:04:54 +0000
++++ doc/SECMST.rst	2019-12-07 11:09:29 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.7
++:Version:   5.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/STR.rst'
+--- doc/STR.rst	2018-02-17 07:36:43 +0000
++++ doc/STR.rst	2019-10-29 12:57:02 +0000
+@@ -352,7 +352,13 @@
+ 
+ Stock Redundancy (ST)
+ +++++++++++++++++++++
+-Use this routine to flag store's items as redundant, depending on the period of inactivity, or to restore redundant items back to normal.
++Use this routine to flag store's items as redundant. The following buttons are available:
++
+++ **Generate** - Automatically mark items, with a zero balance and are inactive, as redundant.
++    **Months** - The number of months items have been inactive.
+++ **Create** - Mark individual items, which have a zero balance, as redundant.
+++ **Restore** - Mark individual items, which are redundant, as normal.
+++ **Exit** - Exit the routine.
+ 
+ Interrogation (ST)
+ ..................
+
+=== modified file 'drs/dr3110.py'
+--- drs/dr3110.py	2019-01-13 16:38:59 +0000
++++ drs/dr3110.py	2019-12-07 08:28:22 +0000
+@@ -348,6 +348,7 @@
+         self.pglin = 10
+ 
+     def doTotals(self, ttype="G"):
++        self.gtots.reverse()
+         if self.df.repprt[2] == "export":
+             self.expdatas.append(["ULINES"])
+             self.expdatas.append(["TOTAL", ["", "",
+@@ -364,7 +365,7 @@
+             desc = "%s Total" % self.typnam
+         mchart = ["T", desc]
+         salesd = ""
+-        for x in xrange(11,-1,-1):
++        for x in xrange(12):
+             if ttype == "G":
+                 a = CCD(self.gtots[x], "SI", 10)
+             else:
+
+=== modified file 'gen/gl1030.py'
+--- gen/gl1030.py	2019-07-03 13:49:08 +0000
++++ gen/gl1030.py	2019-12-05 09:25:59 +0000
+@@ -27,7 +27,9 @@
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
+-from TartanClasses import GetCtl, RepPrt, SelectChoice, Sql, TartanDialog
++import os
++from TartanClasses import FileDialog, GetCtl, RepPrt, SelectChoice, Sql
++from TartanClasses import TartanDialog
+ from tartanFunctions import askQuestion, showError
+ 
+ class gl1030:
+@@ -308,11 +310,12 @@
+             self.doT2Exit, self.doT2Exit, self.doT2Exit, self.doT2Exit,
+             self.doT2Exit, self.doT2Exit)
+         but = (
++            ("Import",None,self.doImpRpt,0,("T",0,1),("T",0,2)),
++            ("Export",None,self.doExpRpt,0,("T",0,3),(("T",0,2),("T",0,4))),
+             ("Copy",None,self.doCpyRpt,0,("T",0,3),(("T",0,2),("T",0,4))),
+-            ("Re-Sequence",None,self.doReSeq,0,("T",1,1),("T",1,2)),
+-            ("Preview",None,self.doPreview,0,("T",1,1),("T",1,2)),
+-            ("Print",None,self.doPrint,0,("T",1,1),("T",1,2)),
+-            ("Quit",None,self.doT0Exit,1,None,None))
++            ("Re-Sequence",None,self.doReSeq,0,("T",1,1),("T",1,2),None,1),
++            ("Preview",None,self.doPreview,0,("T",1,1),("T",1,2),None,1),
++            ("Print",None,self.doPrint,0,("T",1,1),("T",1,2),None,1))
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld, tend=tnd,
+             txit=txt, tags=tag, butt=but)
+ 
+@@ -340,10 +343,10 @@
+         self.repno = w
+         rep = self.doReadRep(self.selcoy, self.repno, 0)
+         if not rep:
+-            self.newrep = "y"
++            self.newrep = True
+             self.df.setWidget(self.df.B1, "normal")
+         else:
+-            self.newrep = "n"
++            self.newrep = False
+             self.df.setWidget(self.df.B1, "disabled")
+             self.df.loadEntry(frt, pag, p+1, data=rep[3])
+             self.df.loadEntry(frt, pag, p+2, data=rep[4])
+@@ -351,11 +354,63 @@
+     def doRepTyp(self, frt, pag, r, c, p, i, w):
+         self.df.setWidget(self.df.B1, "disabled")
+ 
++    def doImpRpt(self, widget=None):
++        self.df.setWidget(self.df.B0, state="disabled")
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        sel = FileDialog(parent=self.opts["mf"].body, title="Import File",
++            initd=self.opts["mf"].rcdic["wrkdir"], ftype=[("Report", "*.rpt")])
++        nam = sel.askopenfilename()
++        err = None
++        if nam:
++            fle = open(nam, "r")
++            for num, line in enumerate(fle):
++                dat = line.split("|")
++                if not num:
++                    if dat[0] != "genrpt":
++                        err = "This File Does Not Contain a Valid Format"
++                        break
++                    chk = self.sql.getRec(tables="genrpt",
++                        where=[("glr_cono", "=", dat[1]), ("glr_repno", "=",
++                            dat[2]), ("glr_seq", "=", 0)], limit=1)
++                    if chk:
++                        ok = askQuestion(self.opts["mf"].body, "Replace?",
++                            "This Report Already Exists, Would you like "\
++                            "to Replace It?")
++                        if ok == "yes":
++                            self.sql.delRec("genrpt", where=[("glr_cono", "=",
++                                dat[1]), ("glr_repno", "=", dat[2])])
++                        else:
++                            err = "Report Already Exists"
++                            break
++                    self.sql.insRec("genrpt", data=dat[1:])
++                else:
++                    self.sql.insRec(dat[0], data=dat[1:])
++        if not err:
++            self.opts["mf"].dbm.commitDbase(ask=True)
++        else:
++            showError(self.opts["mf"].body, "Invalid Import", err)
++        self.df.setWidget(self.df.mstFrame, "show")
++        self.df.focusField("T", 0, 1)
++
++    def doExpRpt(self, widget=None):
++        fle = open(os.path.join(self.opts["mf"].rcdic["wrkdir"],
++            "C%s_R%s.rpt" % (self.selcoy, self.repno)), "w")
++        rpt = self.sql.getRec(tables="genrpt", where=[("glr_cono", "=",
++            self.selcoy), ("glr_repno", "=", self.repno)], order="glr_seq")
++        for lin in rpt:
++            mes = "genrpt"
++            for dat in lin:
++                mes = "%s|%s" % (mes, str(dat))
++            fle.write("%s\n" % mes)
++        fle.close()
++        self.df.focusField("T", 0, 1)
++
+     def doCpyRpt(self, widget=None):
+-        if self.newrep != "y":
++        if not self.newrep:
+             showError(self.opts["mf"].body, "Invalid Copy Request",
+                 "You can only Copy a report when Creating a New report, "\
+                 "not when Changing an Existing report!")
++            self.df.focusField("T", 0, 3)
+             return
+         tit = ("Copy Existing Report Layout",)
+         coy = {
+@@ -419,7 +474,7 @@
+     def doT0End(self):
+         rtype = self.df.t_work[0][0][2]
+         desc = self.df.t_work[0][0][3]
+-        if self.newrep == "y":
++        if self.newrep:
+             data = [self.selcoy, self.repno, 0, rtype, desc]
+             for x in xrange(5, len(self.genrpt_cl)):
+                 if self.genrpt_fd[self.genrpt_cl[x]][2][1] in ("A", "a"):
+
+=== modified file 'gen/gl1040.py'
+--- gen/gl1040.py	2019-08-20 08:41:08 +0000
++++ gen/gl1040.py	2019-09-05 12:36:18 +0000
+@@ -153,11 +153,14 @@
+         pers = self.sql.getRec(tables="gendtt", cols=["gdt_curdt", "gdt_value"],
+             where=[("gdt_cono", "=", self.opts["conum"]), ("gdt_code", "=",
+             self.code), ("gdt_curdt", "between", self.sper, self.eper)])
+-        for num, per in enumerate(pers):
+-            p = (num * 2)
+-            self.df.loadEntry("C", 0, p, data=per[0])
+-            self.df.loadEntry("C", 0, p+1, data=per[1])
+-        self.col = p + 3
++        if pers:
++            for num, per in enumerate(pers):
++                p = (num * 2)
++                self.df.loadEntry("C", 0, p, data=per[0])
++                self.df.loadEntry("C", 0, p + 1, data=per[1])
++            self.col = p + 3
++        else:
++            self.col = 1
+         if focus:
+             self.df.focusField("C", 0, self.col)
+ 
+
+=== modified file 'gen/gl3130_rne.py'
+--- gen/gl3130_rne.py	2019-07-03 13:49:08 +0000
++++ gen/gl3130_rne.py	2019-11-22 07:55:59 +0000
+@@ -1511,6 +1511,13 @@
+         self.fpdf.setFont(self.font[0], "", self.font[1])
+ 
+     def doBarChart(self, xcol=[], vals=[], tgt=0, fill=False):
++        """
++        cl   - Colours: Target, Line & Fill, Default (Black)
++        xcol - Column names
++        vals - Column values
++        tgt  - Target, if value exists
++        fill - Fill, True or False
++        """
+         if not vals:
+             return
+         # Blank Line and Initial line width
+@@ -1526,6 +1533,8 @@
+                 maxs = val
+         if mins > 0:
+             mins = 0
++        if tgt and maxs < tgt:
++            maxs = tgt
+         vi = 1
+         while True:
+             if int(maxs / vi) <= 20:
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2019-08-23 09:04:54 +0000
++++ mst/ms0000.py	2019-12-07 11:09:29 +0000
+@@ -43,7 +43,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (5, 7)
++    VERSION = (5, 8)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ if __name__ == "__main__":
+     # Run Tartan
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2019-08-20 08:41:08 +0000
++++ mst/msc000.py	2019-12-05 16:17:23 +0000
+@@ -22,7 +22,7 @@
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
+-import cStringIO, fpdf, getpass, gc, glob, os, platform, sys, time
++import fpdf, getpass, gc, glob, io, os, platform, sys, time
+ from TartanClasses import AboutTartan, Dbase, DBCreate, FileDialog
+ from TartanClasses import GetCtl, GUI, MainFrame, MkWindow, PwdConfirm
+ from TartanClasses import ScrollText, SelectChoice, Sql, TarBckRes
+@@ -340,6 +340,7 @@
+             if not self.rcfile:
+                 self.doExit(dbm=False)
+         self.mf = None
++        self.loop = False
+         self.rcdic = None
+         main = "Tartan Systems - Copyright %s 2004-2019 Paul Malherbe" % \
+             unichr(0xa9)
+@@ -536,6 +537,7 @@
+         but = (("Quit", None, self.noUser, 1, None, None),)
+         self.li = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
+             butt=but, tend=((self.endUser, "n"),), txit=(self.noUser,))
++        self.loop = True
+         self.mf.startLoop()
+         if dbopend:
+             self.db.closeDbase()
+@@ -563,6 +565,7 @@
+         self.endUser()
+ 
+     def endUser(self):
++        self.loop = False
+         self.li.closeProcess()
+         self.mf.closeLoop()
+ 
+@@ -1260,7 +1263,10 @@
+         if not self.pwd:
+             self.np.skip[self.np.pag].append(1)
+             self.np.focusField(self.np.frt, self.np.pag, col=2)
+-        self.mf.startLoop()
++        if self.loop:
++            self.np.mstFrame.wait_window()
++        else:
++            self.mf.startLoop()
+ 
+     def doOldPwd(self, frt, pag, r, c, p, i, w):
+         if w == self.pwd or w == b64Convert("decode", self.pwd):
+@@ -1303,12 +1309,14 @@
+         self.user["pwd"] = self.pwd
+         self.user["last"] = dte
+         self.np.closeProcess()
+-        self.mf.closeLoop()
++        if not self.loop:
++            self.mf.closeLoop()
+ 
+     def doPwdExit(self, widget=None):
+         self.new = None
+         self.np.closeProcess()
+-        self.mf.closeLoop()
++        if not self.loop:
++            self.mf.closeLoop()
+ 
+     def tarUsr(self):
+         sss = []
+@@ -1397,12 +1405,8 @@
+ 
+     def doSysChkUpgrade(self):
+         try:
+-            if not self.email:
+-                self.email = "info@tartan.co.za"
+-            flenam = cStringIO.StringIO()
+-            #error = ftpDownload("tartan.co.za", "current", word=self.email,
+-            error = ftpDownload("server", "current", word=self.email,
+-                dest=flenam, close=False)
++            flenam = io.BytesIO()
++            error = ftpDownload("ftp.tartan.co.za", "current", dest=flenam)
+             if error:
+                 raise Exception
+             v = flenam.getvalue().strip().split(".")
+
+=== modified file 'mst/msc110.py'
+--- mst/msc110.py	2019-08-20 08:41:08 +0000
++++ mst/msc110.py	2019-10-09 11:41:22 +0000
+@@ -26,7 +26,7 @@
+ 
+ import time
+ from TartanClasses import Sql, TartanDialog
+-from tartanFunctions import copyList, sendMail, showError
++from tartanFunctions import copyList, sendMail
+ 
+ class msc110:
+     def __init__(self, **opts):
+
+=== modified file 'std/TartanClasses.py'
+--- std/TartanClasses.py	2019-08-23 09:04:54 +0000
++++ std/TartanClasses.py	2019-12-06 11:42:25 +0000
+@@ -143,13 +143,20 @@
+         raise Exception
+ 
+     if sys.version_info.major == 3:
+-        import tkinter.colorchooser as tkcolor
+         import tkinter.filedialog as tkfile
+         import tkinter.font as tkfont
+     else:
+-        import tkColorChooser as tkcolor
+         import tkFileDialog as tkfile
+         import tkFont as tkfont
++    try:
++        from tkcolorpicker import askcolor
++        CPICK = True
++    except:
++        if sys.version_info.major == 3:
++            import tkinter.colorchooser as tkcolor
++        else:
++            import tkColorChooser as tkcolor
++        CPICK = False
+     from PIL import Image, ImageTk
+ 
+     # Stock images and icons and others
+@@ -5566,10 +5573,16 @@
+     def selColour(self, opts):
+         color = self.getWidget().get().rstrip()
+         if color:
+-            return tkcolor.askcolor(parent=self.mstFrame,
+-                initialcolor=color)[1]
++            if CPICK:
++                return askcolor(color, parent=self.mstFrame)[1].lower()
++            else:
++                return tkcolor.askcolor(parent=self.mstFrame,
++                    initialcolor=color)[1]
+         else:
+-            return tkcolor.askcolor(parent=self.mstFrame)[1]
++            if CPICK:
++                return askcolor(parent=self.mstFrame)[1].lower()
++            else:
++                return tkcolor.askcolor(parent=self.mstFrame)[1]
+ 
+     def doKeys(self, event):
+         if str(event.widget.cget("state")) == "disabled":
+@@ -8886,6 +8899,8 @@
+         self.aft = []
+         self.fft = []
+         for font in fonts:
++            if font.lower().count("emoji"):
++                continue
+             if font not in self.aft:
+                 self.aft.append(font)
+             ft = tkfont.Font(font=(font, 10, "normal"))
+@@ -17841,7 +17856,7 @@
+             showError(None, "Error", "Cannot Re-Size PDF File\n\n%s" % e)
+ 
+ class ToolTip(object):
+-    def __init__(self, widget, text, font=None, color=True, pause=5000):
++    def __init__(self, widget, text, font=None, color=("black", "light yellow"), pause=5000):
+         self.widget = widget
+         self.text = text
+         if not font:
+@@ -17906,7 +17921,7 @@
+             height=14, takefocus=False)
+         label.insert("insert", info)
+         link = HyperlinkManager(label)
+-        label.insert("insert", "http://www.tartan.co.za",
++        label.insert("insert", "https://www.tartan.co.za",
+             link.add(self.linkAbout))
+         label.pack()
+         label.tag_add("text", "1.0", "end")
+@@ -17923,7 +17938,7 @@
+ 
+     def linkAbout(self, *args):
+         try:
+-            web = "http://www.tartan.co.za"
++            web = "https://www.tartan.co.za"
+             webbrowser.open(web)
+             self.exitAbout()
+         except:
+
+=== modified file 'std/tartanFunctions.py'
+--- std/tartanFunctions.py	2019-08-20 08:41:08 +0000
++++ std/tartanFunctions.py	2019-12-07 11:07:24 +0000
+@@ -742,7 +742,7 @@
+                     elif flenam.lower() == name.lower():
+                         return os.path.join(root, flenam)
+ 
+-def sendMail(server, ex, to, subj, mess="", attach=[], embed=[], check=False, timeout=25, local=None, err=False):
++def sendMail(server, ex, to, subj, mess="", attach=[], embed=[], check=False, timeout=30, local=None, err=False):
+     """
+     A routine to email a message, embed files and/or attach files.
+ 
+@@ -755,7 +755,7 @@
+         attach  = A list of attachments.
+         embed   = A list of attachments to embed in the body of the message.
+         check   = Check if the mail server is available.
+-        timeout = The number of seconds before timing out defaulting to 25.
++        timeout = The number of seconds before timing out defaulting to 30.
+         local   = The local hostname as fqdn.
+         err     = The widget to display the exception, defaults to False
+     """
+
+=== modified file 'std/tartanWork.py'
+--- std/tartanWork.py	2019-08-20 08:41:08 +0000
++++ std/tartanWork.py	2019-10-22 15:23:04 +0000
+@@ -4250,7 +4250,7 @@
+         ["PYNN","wg_dc","wg2030",2,"Terminations"],
+         ["PNNN","wg_rp","wgc220",1,"Receiver Codes Listing"],
+         ["PYNN","wg_rp","wgc320",1,"Earning and Deduction Codes"],
+-        ["PNNN","wg_rp","wgc420",1,"Payslip Messages Listing"],
++        ["PYNN","wg_rp","wgc420",1,"Payslip Messages Listing"],
+         ["PYNN","wg_rp","wg3010",1,"Employee Master Listing"],
+         ["PYNN","wg_rp","wg3020",1,"Data Capture Listing"],
+         ["PYNN","wg_rp","wg3030",1,"SARS EMP201 Report"],
+
+=== modified file 'str/st6040.py'
+--- str/st6040.py	2019-07-03 13:49:08 +0000
++++ str/st6040.py	2019-10-25 06:35:20 +0000
+@@ -60,27 +60,29 @@
+                 ("gpm_group", "", 0, "Grp"),
+                 ("gpm_desc", "", 0, "Description", "Y")),
+             "where": [("gpm_cono", "=", self.opts["conum"])]}
+-        stm = {
++        self.stm = {
+             "stype": "R",
+             "tables": ("strmf1",),
+             "cols": (
+                 ("st1_code", "", 0, "Product Code"),
+                 ("st1_desc", "", 0, "Description", "Y")),
+-            "where": [
+-                ("st1_cono", "=", self.opts["conum"]),
+-                ("st1_type", "=", "X")],
++            "where": [],
+             "whera": [["T", "st1_group", 0, 0]],
+             "index": 0}
+         fld = [
+             (("T",0,0,0),"INA",3,"Group","Product Group",
+                 "","Y",self.doGroup,grp,None,("notblank",)),
+             (("T",0,1,0),"INA",20,"Code","Product Code",
+-                "","N",self.doCode,stm,None,("notblank",)),
++                "","N",self.doCode,self.stm,None,("notblank",)),
+             (("T",0,2,0),"ONA",30,"Description")]
+         but = (
+-            ("Generate",None,self.doGenerate,1,None,None),
+-            ("Restore",None,self.doRestore,1,None,None),
+-            ("Exit",None,self.exitPage,1,None,None))
++            ("Generate",None,self.doGenerate,1,None,(("T",0,1),("T",0,2)),
++                "Mark zero items, which have been inactive, as redundant"),
++            ("Create",None,self.doCreate,1,None,(("T",0,1),("T",0,2)),
++                "Mark a zero item as redundant"),
++            ("Restore",None,self.doRestore,1,None,(("T",0,1),("T",0,2)),
++                "Mark a redundant item as normal"),
++            ("Exit",None,self.exitPage,1,None,(("T",0,1),("T",0,2))))
+         tnd = ((self.endPage, "y"),)
+         txt = (self.exitPage,)
+         self.df = TartanDialog(self.opts["mf"], title=tit, eflds=fld,
+@@ -88,6 +90,7 @@
+         self.df.setWidget(self.df.B0, state="normal")
+         self.df.setWidget(self.df.B1, state="normal")
+         self.df.setWidget(self.df.B2, state="normal")
++        self.df.setWidget(self.df.B3, state="normal")
+ 
+     def doGenerate(self):
+         tit = "Generate Redundant Items"
+@@ -153,32 +156,64 @@
+     def doMthExit(self):
+         self.mt.closeProcess()
+ 
++    def doCreate(self):
++        self.flag = "C"
++        self.stm["where"] = [
++                ("st1_cono", "=", self.opts["conum"]),
++                ("st1_type", "<>", "X")]
++        self.df.focusField("T", 0, 1)
++
+     def doRestore(self):
++        self.flag = "R"
++        self.stm["where"] = [
++                ("st1_cono", "=", self.opts["conum"]),
++                ("st1_type", "=", "X")]
+         self.df.focusField("T", 0, 1)
+ 
+     def doGroup(self, frt, pag, r, c, p, i, w):
+-        chk = self.sql.getRec(tables="strmf1", where=[("st1_cono",
+-            "=", self.opts["conum"]), ("st1_group", "=", w),
+-            ("st1_type", "=", "X")], limit=1)
++        if self.flag == "C":
++            chk = self.sql.getRec(tables="strmf1", where=[("st1_cono",
++                "=", self.opts["conum"]), ("st1_group", "=", w),
++                ("st1_type", "<>", "X")], limit=1)
++        else:
++            chk = self.sql.getRec(tables="strmf1", where=[("st1_cono",
++                "=", self.opts["conum"]), ("st1_group", "=", w),
++                ("st1_type", "=", "X")], limit=1)
+         if not chk:
+             return "Invalid Group"
+         self.grp = w
+ 
+     def doCode(self, frt, pag, r, c, p, i, w):
++        if self.flag == "C":
++            typ = "<>"
++        else:
++            typ = "="
+         chk = self.sql.getRec(tables="strmf1", where=[("st1_cono",
+             "=", self.opts["conum"]), ("st1_group", "=", self.grp),
+-            ("st1_code", "=", w), ("st1_type", "=", "X")], limit=1)
++            ("st1_code", "=", w), ("st1_type", typ, "X")], limit=1)
+         if not chk:
+             return "Invalid Code"
++        if self.flag == "C":
++            qty = self.sql.getRec(tables="strtrn", cols=["sum(stt_qty)"],
++                where=[("stt_cono", "=", self.opts["conum"]),
++                ("stt_group", "=", self.grp), ("stt_code", "=", w)],
++                limit=1)
++            if qty[0]:
++                return "Balance Exists"
+         self.cod = w
+         self.df.loadEntry(frt, pag, p+1, data=chk[4])
+ 
+     def endPage(self):
+-        self.sql.updRec("strmf1", cols=["st1_type"], data=["N"],
++        if self.flag == "C":
++            typ = "X"
++        else:
++            typ = "N"
++        self.sql.updRec("strmf1", cols=["st1_type"], data=[typ],
+             where=[("st1_cono", "=", self.opts["conum"]),
+             ("st1_group", "=", self.grp), ("st1_code", "=", self.cod)])
+         self.opts["mf"].dbm.commitDbase()
+-        self.df.focusField("T", 0, 1)
++        self.df.clearFrame("T", 0)
++        self.flag = ""
+ 
+     def exitPage(self):
+         self.df.closeProcess()
+
+=== modified file 'tab/tb1030.py'
+--- tab/tb1030.py	2019-07-03 13:49:08 +0000
++++ tab/tb1030.py	2019-12-03 16:10:58 +0000
+@@ -256,15 +256,16 @@
+             conum = self.olddata[0]
+             if self.table == "gentrn":
+                 system = "G"
+-                docnum = CCD(self.olddata[5], "Na", 9).work
++                docno = CCD(self.olddata[5], "Na", 9).work
+                 date = CCD(self.olddata[3], "D1", 10).work
+                 dtyp = CCD(self.olddata[4], "UI", 2).work
+                 gtyp = dtyp
+             elif self.table == "crstrn":
+                 system = "C"
+-                docnum = CCD(self.olddata[3], "Na", 9).work
++                acno = CCD(self.olddata[1], "NA", 7).work
++                dtyp = CCD(self.olddata[2], "UI", 2).work
++                docno = CCD(self.olddata[3], "Na", 9).work
+                 date = CCD(self.olddata[5], "D1", 10).work
+-                dtyp = CCD(self.olddata[2], "UI", 2).work
+                 if dtyp in (1, 4):
+                     gtyp = 5                        # Purchase
+                 elif dtyp == 2:
+@@ -273,13 +274,15 @@
+                     gtyp = 4                        # Journal
+                 elif dtyp == 5:
+                     gtyp = 2                        # Payment
+-                integr = sql.getRec(tables="crsctl", cols=["ctc_glint"],
++                glint = sql.getRec(tables="crsctl", cols=["ctc_glint"],
+                     where=[("ctc_cono", "=", conum)], limit=1)[0]
+             else:
+                 system = "D"
+-                docnum = CCD(self.olddata[4], "Na", 9).work
++                chain = CCD(self.olddata[1], "UI", 3).work
++                acno = CCD(self.olddata[2], "NA", 7).work
++                dtyp = CCD(self.olddata[3], "UI", 2).work
++                docno = CCD(self.olddata[4], "Na", 9).work
+                 date = CCD(self.olddata[6], "D1", 10).work
+-                dtyp = CCD(self.olddata[3], "UI", 2).work
+                 if dtyp in (1, 4):
+                     gtyp = 1                        # Sale
+                 elif dtyp == 2:
+@@ -288,10 +291,13 @@
+                     gtyp = 4                        # Journal
+                 elif dtyp == 5:
+                     gtyp = 2                        # Payment
+-                integr = sql.getRec(tables="drsctl", cols=["ctd_glint"],
++                glint = sql.getRec(tables="drsctl", cols=["ctd_glint"],
+                     where=[("ctd_cono", "=", conum)], limit=1)[0]
+-            sqv = [("vtt_cono", "=", conum), ("vtt_styp", "=", system),
+-                ("vtt_refno", "=", docnum), ("vtt_refdt", "=", date),
++            sqv = [
++                ("vtt_cono", "=", conum),
++                ("vtt_styp", "=", system),
++                ("vtt_refno", "=", docno),
++                ("vtt_refdt", "=", date),
+                 ("vtt_ttyp", "=", dtyp)]
+             recs = sql.getRec("ctlvtf", where=sqv)
+             if len(recs) > 1:
+@@ -302,10 +308,13 @@
+                 texc = float(ASD(texc) + ASD(rec[11]))
+                 ttax = float(ASD(ttax) + ASD(rec[12]))
+             ttot = float(ASD(texc) + ASD(ttax))
+-            ok = "y"
+-            if system == "G" or integr == "Y":
+-                sqg = [("glt_cono", "=", conum), ("glt_refno", "=", docnum),
+-                    ("glt_trdt", "=", date), ("glt_type", "=", gtyp)]
++            ok = "yes"
++            if system == "G" or glint == "Y":
++                sqg = [
++                    ("glt_cono", "=", conum),
++                    ("glt_refno", "=", docno),
++                    ("glt_trdt", "=", date),
++                    ("glt_type", "=", gtyp)]
+                 recs = sql.getRec("gentrn", where=sqg)
+                 gamt = 0
+                 gtax = 0
+@@ -316,46 +325,59 @@
+                     err = "%sctlvtf %s <> gentrn %s\n" % (err, ttax, gtax)
+                 if gamt:
+                     err = "%sgentrn debits <> credits" % err
+-            elif system == "C":
+-                sqc = [("crt_cono", "=", conum), ("crt_ref1", "=", docnum),
+-                    ("crt_trdt", "=", date), ("crt_type", "=", dtyp)]
++            if system == "C":
++                sqc = [
++                    ("crt_cono", "=", conum),
++                    ("crt_acno", "=", acno),
++                    ("crt_ref1", "=", docno),
++                    ("crt_trdt", "=", date),
++                    ("crt_type", "=", dtyp)]
+                 recs = sql.getRec("crstrn", where=sqc)
+                 if len(recs) > 1:
+-                    err = "%scrstrn recs %s" % (err, len(recs))
++                    err = "%scrstrn recs %s\n" % (err, len(recs))
+                 camt = 0
+                 ctax = 0
+                 for rec in recs:
+                     camt = float(ASD(camt) + ASD(rec[7]))
+                     ctax = float(ASD(ctax) + ASD(rec[8]))
+                 if ctax != ttax:
+-                    err = "%sctlvtf %s <> crstrn %s" % (err, ttax, ctax)
++                    err = "%sctlvtf %s <> crstrn %s\n" % (err, ttax, ctax)
+                 if camt != ttot:
+-                    err = "%sctlvtf total <> crstrn total" % err
+-            else:
+-                sqd = [("drt_cono", "=", conum), ("drt_ref1", "=", docnum),
+-                    ("drt_trdt", "=", date), ("drt_type", "=", dtyp)]
++                    err = "%sctlvtf tot %s <> crstrn tot %s" % (err, ttot, camt)
++            if system == "D":
++                sqd = [
++                    ("drt_cono", "=", conum),
++                    ("drt_chain", "=", chain),
++                    ("drt_acno", "=", acno),
++                    ("drt_ref1", "=", docno),
++                    ("drt_trdt", "=", date),
++                    ("drt_type", "=", dtyp)]
+                 recs = sql.getRec("drstrn", where=sqd)
+                 if len(recs) > 1:
+-                    err = "%sdrstrn recs %s" % (err, len(recs))
++                    err = "%sdrstrn recs %s\n" % (err, len(recs))
+                 damt = 0
+                 dtax = 0
+                 for rec in recs:
+-                    damt = float(ASD(damt) + ASD(rec[8]))
+-                    dtax = float(ASD(dtax) + ASD(rec[9]))
++                    damt = float(ASD(damt) - ASD(rec[8]))
++                    dtax = float(ASD(dtax) - ASD(rec[9]))
+                 if dtax != ttax:
+-                    err = "%sctlvtf %s <> drstrn %s" % (err, (ttax, ctax))
++                    err = "%sctlvtf %s <> drstrn %s\n" % (err, (ttax, dtax))
+                 if damt != ttot:
+-                    err = "%sctlvtf total <> drstrn total" % err
++                    err = "%sctlvtf tot %s <> drstrn tot %s" % (err, ttot, damt)
+             if err:
+                 ok = askQuestion(self.opts["mf"].body, "Error",
+                     "%s\n\nDelete transaction (y/n)?" % err)
+             if ok == "yes":
++                print system
++                print sqv
++                print sqg
++                print sqd
+                 sql.delRec("ctlvtf", where=sqv)
+-                if system == "G":
++                if system == "G" or glint == "Y":
+                     sql.delRec("gentrn", where=sqg)
+-                elif system == "C":
++                if system == "C":
+                     sql.delRec("crstrn", where=sqc)
+-                else:
++                if system == "D":
+                     sql.delRec("drstrn", where=sqd)
+         else:
+             self.sql.delRec(self.table, data=self.olddata)
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2019-08-23 09:04:54 +0000
++++ uty/pkgprg.py	2019-08-23 09:41:42 +0000
+@@ -553,7 +553,7 @@
+ if email:
+     chgfle = "%s/ver/ver_%s.%s.changes" % (pypath, ver[0], ver[1])
+     if os.path.isfile(chgfle):
+-        serv = ["mail", 465, 2, 1, "paul", "pakati10"]
++        serv = ["mail", 465, 2, 1, "paul", "Pakati!@"]
+         mfrm = "paul@tartan.co.za"
+         subj = "Tartan Update %s.%s is Available" % tuple(ver)
+         info = open(chgfle, "rb")
+
+=== modified file 'wag/wg2020.py'
+--- wag/wg2020.py	2019-07-03 13:49:08 +0000
++++ wag/wg2020.py	2019-10-11 13:46:40 +0000
+@@ -318,13 +318,13 @@
+             self.loan = True
+             self.doEarnings()
+             self.doDeductions()
+-            dat = (self.opts["conum"], self.empno, self.pgnum, self.rundt,
++            wagtf1 = (self.opts["conum"], self.empno, self.pgnum, self.rundt,
+                 self.freq, self.etype, self.edept, self.erate, self.nhrs,
+                 self.npay, self.taxbl, self.notax, self.rtpay, self.anpay,
+                 self.pspay, self.taxdd, self.nondd, self.psded,
+                 int(self.uifpay), int(self.sdlpay), self.shift,
+                 self.drbal, self.opts["capnm"], self.sysdtw, 0)
+-            self.sql.insRec("wagtf1", data=dat)
++            self.sql.insRec("wagtf1", data=wagtf1)
+             self.doPAYE()
+             if self.loan:
+                 self.doStaffLoans()
+@@ -762,23 +762,6 @@
+         self.taxamt = round((self.taxamt * self.pers / self.base), 2)
+         self.taxamt = float(ASD(self.taxamt) + ASD(ann) + ASD(ret))
+ 
+-    def doCompute(self, inc):
+-        tax = 0
+-        for lvl in self.rates:
+-            if inc > lvl[0]:
+-                tax = round(lvl[1] + (((inc - lvl[0] + 1) * lvl[2]) / 100.0),2)
+-            if tax:
+-                break
+-        prb = self.allow[0]                # Primary Rebate
+-        arb = self.allow[1]                # Over 65 Rebate Extra
+-        if len(self.allow) == 4:
+-            nrb = self.allow[2]            # Over 75 Rebate Extra
+-            rmx = self.allow[3]            # Retrenchment Allowance
+-        else:
+-            nrb = 0                        # Over 75 Rebate Extra
+-            rmx = self.allow[2]            # Retrenchment Allowance
+-        return tax, prb, arb, nrb, rmx
+-
+     def doTaxableIncome(self):
+         ed = self.sql.getRec(tables="wagtf1", cols=["round(sum(wt1_taxbl), 2)",
+             "round(sum(wt1_rtpay), 2)", "round(sum(wt1_anpay), 2)"],
+@@ -819,6 +802,19 @@
+         tot = float(ASD(inc) + ASD(anp))
+         return inc, float(ed[0][1]), tot
+ 
++    def doCompute(self, inc):
++        tax = 0
++        for lvl in self.rates:
++            if inc > lvl[0]:
++                tax = round(lvl[1] + (((inc - lvl[0] + 1) * lvl[2]) / 100.0), 2)
++            if tax:
++                break
++        prb = self.allow[0]                # Primary Rebate
++        arb = self.allow[1]                # Over 65 Rebate Extra
++        nrb = self.allow[2]                # Over 75 Rebate Extra
++        rmx = self.allow[3]                # Retrenchment Allowance
++        return tax, prb, arb, nrb, rmx
++
+     def doStaffLoans(self):
+         if self.ignore == "Y":
+             return
+
+=== modified file 'wag/wg4010.py'
+--- wag/wg4010.py	2019-07-03 13:49:08 +0000
++++ wag/wg4010.py	2019-10-29 12:55:05 +0000
+@@ -118,10 +118,12 @@
+             (("T",2,5,0),"OUA",1,"Voluntary Excess"),
+             (("T",2,6,0),"OUD",6.2,"Fixed Rate"),
+             (("T",2,7,0),"ONA",13,"Directive"),
+-            (("T",3,0,0),("ORB",r4s),1,"Account Type"),
+-            (("T",3,1,0),"OUI",8,"Branch Code"),
+-            (("T",3,2,0),"ONA",16,"Account Number"),
+-            (("T",3,3,0),"ONA",30,"Bank Name"),
++            (("T",3,0,0),("ORB",r4s),0,"Account Type"),
++            (("T",3,1,0),"ONA",30,"Bank Name"),
++            (("T",3,2,0),"OUI",8,"Branch Code"),
++            (("T",3,3,0),"ONA",16,"Account Number"),
++            (("T",3,4,0),"ONA",30,"Holder's Name"),
++            (("T",3,5,0),"OUI",1,"Holder's Relationship"),
+             (("C",4,0,0),"OUI",3,"Cod"),
+             (("C",4,0,1),"ONA",30,"Description"),
+             (("C",4,0,2),"OSD",13.2,"Amnt/Rate"),
+

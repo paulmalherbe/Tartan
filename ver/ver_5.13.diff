@@ -1,0 +1,670 @@
+=== modified file '.bzrignore' (properties changed: +x to -x)
+--- old/.bzrignore	2020-12-12 11:18:25 +0000
++++ new/.bzrignore	2020-12-15 10:39:28 +0000
+@@ -69,3 +69,5 @@
+ uty/newpkg.py
+ doc/dstvreset.txt
+ other
++doc/Manual.rst
++tarchg.py
+
+=== modified file 'TartanClasses.py'
+--- old/TartanClasses.py	2020-12-12 11:18:25 +0000
++++ new/TartanClasses.py	2020-12-16 07:24:51 +0000
+@@ -2616,6 +2616,19 @@
+             # Not testing for unique and format with multple rows
+             unique = False
+             dofmt = False
++        # Multiple inserts
++        def multiples(nfmt, ndat):
++            if type(pbar) in (list, tuple):
++                if pbar[0] == "t":
++                    pbar[1].update()
++                elif pbar[0]:
++                    pbar[1].displayProgress(onum)
++            elif pbar:
++                pbar.displayProgress(onum)
++            self.sqlRec(("Insert into %s %s values %s" %
++                (table, nfld, nfmt), ndat))
++            nfmt = ""
++            ndat = []
+         # Create data
+         ndat = []
+         for onum, odat in enumerate(data):
+@@ -2690,28 +2703,10 @@
+             if len(ndat) > lmt:
+                 # Limit write to a maximum of lmt records at a time
+                 # This particularly applies to sqlite
+-                if type(pbar) in (list, tuple):
+-                    if pbar[0] == "t":
+-                        pbar[1].update()
+-                    elif pbar[0]:
+-                        pbar[1].displayProgress(onum)
+-                elif pbar:
+-                    pbar.displayProgress(onum)
+-                self.sqlRec(("Insert into %s %s values %s" %
+-                    (table, nfld, nfmt), ndat))
+-                nfmt = ""
+-                ndat = []
++                multiples(nfmt, ndat)
+         if ndat:
+-            # Multiple record inserts remainder
+-            if type(pbar) in (list, tuple):
+-                if pbar[0] == "t":
+-                    pbar[1].update()
+-                elif pbar[0]:
+-                    pbar[1].displayProgress(onum)
+-            elif pbar:
+-                pbar.displayProgress(onum)
+-            self.sqlRec(("Insert into %s %s values %s" %
+-                (table, nfld, nfmt), ndat))
++            # Multiple records remainder
++            multiples(nfmt, ndat)
+ 
+     def getRec(self, tables, join=None, cols=None, where=None, group=None, order=None, fetch=False, limit=None):
+         """
+@@ -3736,7 +3731,7 @@
+                 if table == "ctlpwu" and self.put == "i":
+                     sql = Sql(self.dbm, table, prog=__name__)
+                     sql.insRec(table, data=["admin", "System Administrator",
+-                        "", 0, "", "", 9])
++                        "", "", "", 0, "", "", 9])
+             if self.spl:
+                 pg.closeProgress()
+         elif self.spl:
+@@ -14754,21 +14749,25 @@
+                 "","Y",self.doUserName,susr,None,("notblank",)),
+             (("T",0,1,0),"INA",30,"Full Name","",
+                 "","N",self.doFullName,susr,self.doDelUser,("notblank",)),
+-            (("T",0,2,0),"IHA",30,"User Password","",
++            (("T",0,2,0),"ITX",50,"Email Address","",
++                "","N",self.doEmailAddr,None,None,("efld",)),
++            (("T",0,3,0),"ITX",20,"Mobile Number","",
++                "","N",self.doMobile,None,None,("efld",)),
++            (("T",0,4,0),"IHA",30,"User Password","",
+                 "","N",self.doUserPwd1,None,None,None),
+-            (("T",0,3,0),"IHA",30,"Check Password ","",
++            (("T",0,5,0),"IHA",30,"Check Password ","",
+                 "","N",self.doUserPwd2,None,None,None),
+-            (("T",0,4,0),("IRB",r1s),0,"Copy Existing User","",
++            (("T",0,6,0),("IRB",r1s),0,"Copy Existing User","",
+                 "N","N",self.doCopyUser1,None,None,None),
+-            (("T",0,5,0),"INA",20,"Copy User Name","User Name to Copy",
++            (("T",0,7,0),"INA",20,"Copy User Name","User Name to Copy",
+                 "","N",self.doCopyUser2,susr,None,None),
+-            (("T",0,6,0),"ITX",30,"Allowed Companies","",
++            (("T",0,8,0),"ITX",30,"Allowed Companies","",
+                 "All","N",self.doValCoy,None,None,None,None,
+                 "Comma Seperated List of Allowed Companies e.g. 1,2,3"),
+-            (("T",0,7,0),"ITX",30,"Disallowed Companies","",
++            (("T",0,9,0),"ITX",30,"Disallowed Companies","",
+                 "None","N",self.doDisCoy,None,None,None,None,
+                 "Comma Seperated List of Disallowed Companies e.g. 1,2,3"),
+-            (("T",0,8,0),"IUI",1,"Security Level","",
++            (("T",0,10,0),"IUI",1,"Security Level","",
+                 0,"N",self.doSecLvl,slvl,None,("between",0,9)),
+             (("C",0,0,0),"IUI",3,"Coy","Company",
+                 "r","N",self.doCoy,scoy,None,None),
+@@ -14802,22 +14801,26 @@
+         else:
+             self.new_usr = "n"
+             self.fnam = usr[self.sql.ctlpwu_col.index("usr_fnam")]
++            self.emadd = usr[self.sql.ctlpwu_col.index("usr_emadd")]
++            self.celno = usr[self.sql.ctlpwu_col.index("usr_celno")]
+             self.pwd = usr[self.sql.ctlpwu_col.index("usr_pwd")]
+             self.acoy = usr[self.sql.ctlpwu_col.index("usr_acoy")]
+             self.dcoy = usr[self.sql.ctlpwu_col.index("usr_dcoy")]
+             self.lvl = usr[self.sql.ctlpwu_col.index("usr_lvl")]
+             self.df.loadEntry(frt, pag, p+1, data=self.fnam)
+-            self.df.loadEntry(frt, pag, p+2, data=b64Convert("decode",self.pwd))
+-            self.df.loadEntry(frt, pag, p+3, data=b64Convert("decode",self.pwd))
++            self.df.loadEntry(frt, pag, p+2, data=self.emadd)
++            self.df.loadEntry(frt, pag, p+3, data=self.celno)
++            self.df.loadEntry(frt, pag, p+4, data=b64Convert("decode",self.pwd))
++            self.df.loadEntry(frt, pag, p+5, data=b64Convert("decode",self.pwd))
+             if not self.acoy:
+-                self.df.loadEntry(frt, pag, p+6, data="All")
++                self.df.loadEntry(frt, pag, p+8, data="All")
+             else:
+-                self.df.loadEntry(frt, pag, p+6, data=self.acoy)
++                self.df.loadEntry(frt, pag, p+8, data=self.acoy)
+             if not self.dcoy:
+-                self.df.loadEntry(frt, pag, p+7, data="None")
++                self.df.loadEntry(frt, pag, p+9, data="None")
+             else:
+-                self.df.loadEntry(frt, pag, p+7, data=self.dcoy)
+-            self.df.loadEntry(frt, pag, p+8, data=self.lvl)
++                self.df.loadEntry(frt, pag, p+9, data=self.dcoy)
++            self.df.loadEntry(frt, pag, p+10, data=self.lvl)
+             self.doLoadMods(focus=False)
+         if self.unam == "admin":
+             return "sk1"
+@@ -14831,6 +14834,12 @@
+     def doFullName(self, frt, pag, r, c, p, i, w):
+         self.fnam = w
+ 
++    def doEmailAddr(self, frt, pag, r, c, p, i, w):
++        self.emadd = w
++
++    def doMobile(self, frt, pag, r, c, p, i, w):
++        self.celno = w
++
+     def doUserPwd1(self, frt, pag, r, c, p, i, w):
+         if not w and self.pwmust == "Y":
+             return "You Must Have a Password"
+@@ -14921,8 +14930,8 @@
+         else:
+             pwd = ""
+             dte = 0
+-        data = [self.unam, self.fnam, pwd, dte, self.acoy,
+-            self.dcoy, self.lvl]
++        data = [self.unam, self.fnam, self.emadd, self.celno, pwd, dte,
++            self.acoy, self.dcoy, self.lvl]
+         if self.new_usr == "y":
+             self.sql.insRec("ctlpwu", data=data)
+         else:
+@@ -17162,6 +17171,7 @@
+         y = self.widget.winfo_rooty() + self.widget.winfo_height()
+         self.tipwindow = tw = tk.Toplevel(self.widget)
+         tw.wm_overrideredirect(True)
++        self.tipwindow.withdraw()
+         label = MyLabel(tw, color=self.color, text=self.text, justify="left",
+             relief="solid", borderwidth=2, font=self.font, wraplength=400)
+         label.pack(ipadx=1, ipady=2)
+@@ -17170,6 +17180,7 @@
+         if x + ww > label.winfo_screenwidth():
+             x = x - ww
+         tw.wm_geometry("+%d+%d" % (x, y))
++        self.tipwindow.deiconify()
+         if self.pause:
+             label.after(self.pause, self.hideTip)
+ 
+@@ -17682,8 +17693,7 @@
+                 coy = str(c)
+             else:
+                 coy = "%s,%s" % (coy, str(c))
+-        self.sqt.updRec("ctlpwu", cols=["usr_acoy", "usr_lvl"],
+-            data=[coy, 6])
++        self.sqt.updRec("ctlpwu", cols=["usr_acoy", "usr_lvl"], data=[coy, 6])
+         # Create Deletion table
+         self.sqt.sqlRec("Create table if not exists delrec ("\
+             "dd_tab varchar(6), dd_dat %s)" % self.dbm.txt)
+
+=== modified file 'doc/Changes.rst'
+--- old/doc/Changes.rst	2020-12-12 11:18:25 +0000
++++ new/doc/Changes.rst	2020-12-14 06:25:18 +0000
+@@ -1,35 +1,3 @@
+-ver_5.13
+-========
+-Tartan Systems Upgrade (Lockdown)
+----------------------------------
+- 1) Improved the database Export and Merge routines. Greatly increased the
+-    speed of the Merge routine. Please Note that any unmerged exported
+-    databases MUST be merged, before upgrading to this version, otherwise
+-    the old exported databases will NOT be able to be merged.
+- 2) Improved the speed of most database handling routines.
+- 3) Improved and standardised the stores pricing system.
+- 4) Added a routine, Masterfile Changes, to the Control --> Reporting menu.
+- 5) Added a routine, Standard Cost Prices to the Store's Ledger --> File
+-    Maintenance menu.
+- 6) Changed the stores cost and selling price routines to cater for standard
+-    cost prices.
+- 7) Added a built-in document viewer which will be used if no external program
+-    has been set up in the Preferences e.g. evince or SumatraPDF.exe.
+- 8) Added a built-in print routine which will be used if no external program
+-    has been set up in the Preferences e.g. lp or SumatraPDF.exe.
+- 9) Dropped support for Firebird and MySQL databases.
+-10) Dropped pychart in favour of pygal for charting.
+-11) Many other minor changes, fixes and enhancements.
+-
+-NB:
+---
+-As there is now a built-in pdf viewer SumatraPDF is no longer packaged with the
+-Windows version of Tartan.  Should you wish to still use SumtraPDF you will have
+-to download it and set the path to the executable in Tartan Preferences.
+-
+-You can only upgrade to this version if your current version is 5.4 or later.
+-If you have an older version than 5.4 please contact me for assistance.
+-
+ ver_5.12
+ ========
+ Tartan Systems Upgrade (Lockdown)
+
+=== modified file 'doc/Downloads.rst'
+--- old/doc/Downloads.rst	2020-12-12 11:18:25 +0000
++++ new/doc/Downloads.rst	2020-12-16 08:34:36 +0000
+@@ -11,17 +11,17 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.12 and was released on the 12th December, 2020.
++The latest version of Tartan is 5.13 and was released on the 16th December, 2020.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Manual: http://www.tartan.co.za/cgi-bin/simple_web.py/Manual
+-.. _Tartan-5.12-lnx: ftp://tartan.co.za/Tartan_5.12.tgz
++.. _Tartan-5.13-lnx: ftp://tartan.co.za/Tartan_5.13.tgz
+ .. _Tartan-5.5-lnx: ftp://tartan.co.za/Tartan_5.5.tgz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tgz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tgz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tgz
+-.. _Tartan-5.12-win: ftp://tartan.co.za/Tartan_5.12.exe
++.. _Tartan-5.13-win: ftp://tartan.co.za/Tartan_5.13.exe
+ .. _Tartan-5.5-win: ftp://tartan.co.za/Tartan_5.5.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+@@ -31,13 +31,13 @@
+ =============
+ New Installation
+ ----------------
+-Download the latest version of Tartan, Tartan-5.12-lnx_, and then follow the installation instructions in the Manual_.
++Download the latest version of Tartan, Tartan-5.13-lnx_, and then follow the installation instructions in the Manual_.
+ 
+ Upgrade Existing Installation
+ -----------------------------
+ If your current version is less than 4.1.10 you must upgrade as follows:
+ 
+-    * If your current version is less than 2.5.12
++    * If your current version is less than 2.5.13
+         - Make a backup.
+         - Download the last release of version 2, Tartan-2-lnx_
+         - Extract the downloaded version into your Tartan/prg directory.
+@@ -57,7 +57,7 @@
+         - Download version 5.5, Tartan-5.5-lnx_
+         - Extract the downloaded version into your Tartan/prg directory.
+         - Login to Tartan and run `Update File Formats`
+-    * Download the latest version, Tartan-5.12-lnx_
++    * Download the latest version, Tartan-5.13-lnx_
+         - Make a backup.
+         - Extract the downloaded version into your Tartan/prg directory.
+         - Login to Tartan and run `Update File Formats`
+@@ -65,7 +65,7 @@
+ otherwise:
+ 
+     * Make a backup.
+-    * Execute `Upgrade System` from the System menu or download the latest version of Tartan, Tartan-5.12-lnx_, and extract it into your Tartan/prg directory.
++    * Execute `Upgrade System` from the System menu or download the latest version of Tartan, Tartan-5.13-lnx_, and extract it into your Tartan/prg directory.
+     * Login to Tartan and run `Update File Formats`
+ 
+ Old Versions
+@@ -81,13 +81,13 @@
+ 
+ New Installation
+ ----------------
+-Download the latest version of Tartan, Tartan-5.12-win_, and then follow the installation instructions in the Manual_.
++Download the latest version of Tartan, Tartan-5.13-win_, and then follow the installation instructions in the Manual_.
+ 
+ Upgrade Existing Installation
+ -----------------------------
+ If your current version is less than 5.0.0 you must upgrade as follows:
+ 
+-    * If your current version is less than 2.5.12
++    * If your current version is less than 2.5.13
+         - Make a backup.
+         - Download the last release of version 2, Tartan-2-win_
+         - Execute the downloaded version by double clicking on it.
+@@ -107,7 +107,7 @@
+         - Download version 5.5, Tartan-5.5-win_
+         - Execute the downloaded version by double clicking on it.
+         - Login to Tartan and run `Update File Formats`
+-    * Download the latest version, Tartan-5.12-win_
++    * Download the latest version, Tartan-5.13-win_
+         - Make a backup.
+         - Execute the downloaded version by double clicking on it.
+         - Login to Tartan and run `Update File Formats`
+@@ -115,7 +115,7 @@
+ otherwise:
+ 
+     * Make a backup.
+-    * Execute `Upgrade System` from the System menu or download the latest update of Tartan, Tartan-5.12-win_, and run it.
++    * Execute `Upgrade System` from the System menu or download the latest update of Tartan, Tartan-5.13-win_, and run it.
+     * Login to Tartan and run `Update File Formats`
+ 
+ Old Versions
+
+=== modified file 'doc/SYS.rst'
+--- old/doc/SYS.rst	2020-12-12 11:18:25 +0000
++++ new/doc/SYS.rst	2020-12-16 08:34:36 +0000
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   5.12
++:Version:   5.13
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -36,7 +36,7 @@
+ 
+ In 2015, version 5, I replaced PyGtk with Tkinter and ttk.
+ 
+-In 2020, version 5.12, I dropped support for MySQL and Firebird databases.
++In 2020, version 5.13, I dropped support for MySQL and Firebird databases.
+ 
+ .. _Python: http://www.python.org
+ .. _Tkinter: http://www.python.org/topics/tkinter
+@@ -69,7 +69,7 @@
+ + markdown              # Bulk Mail - enable markdown format
+ + odfpy                 # ODS File Reader - file imports
+ + ofxtools              # OFX File Reader - bank statements
+-+ progress              # Curses progressbar
+++ progress              # Curses progress bar
+ + pyaes                 # Password Manager - pm1010
+ + pycrypto              # Password Manager - pm1010
+ + pygal                 # SVG Charts
+@@ -220,6 +220,8 @@
+ 
+ + **User Name** - You must enter the user's login name. In the case of existing users the screen will be populated with existing data.
+ + **Full Name** - The full name of the user.
+++ **Email Address** - The email address of the user.
+++ **Mobile Number** - The mobile number of the user.
+ + **User Password** - It is not necessary to enter passwords as users must change their own using `Change Password`_, after logging in.
+ + **Copy Existing User** - Use this to copy all permissions of an existing user.
+ + **Valid Companies** - The valid company's field is for limiting a user's access to specific companies and is a comma separated list of company numbers e.g. 1,2,3,4.
+
+=== modified file 'ms0000.py'
+--- old/ms0000.py	2020-12-12 11:18:25 +0000
++++ new/ms0000.py	2020-12-16 08:34:36 +0000
+@@ -45,7 +45,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (5, 12)
++    VERSION = (5, 13)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+
+=== modified file 'rca/rc3050.py'
+--- old/rca/rc3050.py	2020-12-12 11:18:25 +0000
++++ new/rca/rc3050.py	2020-12-15 10:11:20 +0000
+@@ -59,8 +59,9 @@
+                 self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlmes", "ctlmst", "rcaowm",
+-            "rcaowt", "rcatnt", "tplmst"], prog=self.__class__.__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlpwu", "ctlmes", "ctlmst",
++            "rcaowm", "rcaowt", "rcatnt", "tplmst"],
++            prog=self.__class__.__name__)
+         if self.sql.error:
+             return
+         gc = GetCtl(self.opts["mf"])
+@@ -68,7 +69,12 @@
+         if not rcactl:
+             return
+         self.stpl = rcactl["cte_tplown"]
+-        self.fromad = rcactl["cte_emadd"]
++        usr = self.sql.getRec("ctlpwu", cols=["usr_emadd"], where=[("usr_name",
++            "=", self.opts["capnm"])], limit=1)
++        if usr[0]:
++            self.fromad = rcactl[usr[0]]
++        else:
++            self.fromad = rcactl["cte_emadd"]
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         return True
+
+=== modified file 'rca/rc3060.py'
+--- old/rca/rc3060.py	2020-12-12 11:18:25 +0000
++++ new/rca/rc3060.py	2020-12-15 10:12:16 +0000
+@@ -61,8 +61,8 @@
+                 self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["ctlmes", "ctlmst", "rcatnm",
+-            "rcatnt", "rcaprm", "rcacon", "tplmst"],
++        self.sql = Sql(self.opts["mf"].dbm, ["ctlpwu", "ctlmes", "ctlmst",
++            "rcatnm", "rcatnt", "rcaprm", "rcacon", "tplmst"],
+                 prog=self.__class__.__name__)
+         if self.sql.error:
+             return
+@@ -71,7 +71,12 @@
+         if not rcactl:
+             return
+         self.stpl = rcactl["cte_tpltnt"]
+-        self.fromad = rcactl["cte_emadd"]
++        usr = self.sql.getRec("ctlpwu", cols=["usr_emadd"], where=[("usr_name",
++            "=", self.opts["capnm"])], limit=1)
++        if usr[0]:
++            self.fromad = rcactl[usr[0]]
++        else:
++            self.fromad = rcactl["cte_emadd"]
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         return True
+
+=== modified file 'tab/tb1020.py'
+--- old/tab/tb1020.py	2020-12-12 11:18:25 +0000
++++ new/tab/tb1020.py	2020-12-16 08:34:16 +0000
+@@ -72,6 +72,9 @@
+                     sql.updRec("verupd", data=[self.opts["ver"], self.sysdtw])
+                 self.dbm.commitDbase()
+             self.doFinal()
++            if self.dbm.dbase == "SQLite":
++                self.dbm.cu.execute("PRAGMA JOURNAL_MODE=DELETE")
++                self.dbm.cu.execute("PRAGMA SYNCHRONOUS=FULL")
+ 
+     def setVariables(self):
+         t = time.localtime()
+@@ -154,8 +157,12 @@
+             "wagtf1": ["wt1_capdt", "wt1_seq"]}
+         if self.dbm.dbase == "PgSQL":
+             self.lmt = 5000
+-        else:
++        elif self.dbm.dbase == "SQLite":
+             self.lmt = 500
++            self.dbm.cu.execute("PRAGMA JOURNAL_MODE=OFF")
++            self.dbm.cu.execute("PRAGMA SYNCHRONOUS=OFF")
++        else:
++            return
+         return True
+ 
+     def doProcessTables(self):
+@@ -205,8 +212,6 @@
+                     nam = "%s_key%s" % (self.table, str(rec[2]))
+                     if self.doCheckIndex(self.table, nam):
+                         self.sql.sqlRec("Drop index %s" % nam)
+-                        if self.dbm.dbname == "FBird":
+-                            self.dbm.commitDbase()
+                 DBCreate(dbm=self.dbm, opts=[
+                     ("-u", self.opts["usr"]),
+                     ("-c", "p"),
+@@ -425,16 +430,17 @@
+                     else:
+                         clm += ",%s" % nam
+                         fmt = "%s,%s" % (fmt, self.dbm.dbf)
+-                for x in range(0, len(ndata), self.lmt):
++                nlim = int(self.lmt / len(self.newfld))
++                for x in range(0, len(ndata), nlim):
+                     if pbar:
+                         p2.displayProgress(x)
+-                    y = x + self.lmt
++                    y = x + nlim
+                     tft = ",".join("(%s)" % fmt for _ in ndata[x:y])
+                     dat = list(chain.from_iterable(ndata[x:y]))
+                     cmd = "Insert into %s (%s) values %s" % (
+                                         self.table, clm, tft)
+                     sql.sqlRec((cmd, dat))
+-                    self.dbm.commitDbase()
++                    #self.dbm.commitDbase()
+             if pbar:
+                 p2.closeProgress()
+             # Update Report Writer for missing columns
+@@ -672,7 +678,7 @@
+                 skip = False
+                 for k in key[4:]:
+                     if k:
+-                        if self.dbm.dbase in ("SQLite", "FBird", "MySQL"):
++                        if self.dbm.dbase == "SQLite":
+                             if self.checkBlob(table, k):
+                                 skip = True
+                                 break
+@@ -698,8 +704,6 @@
+             nam = "%s_key%s" % (tab, str(rec[2]))
+             if self.doCheckIndex(tab, nam):
+                 self.sql.sqlRec("Drop index %s" % nam)
+-                if self.dbm.dbname == "FBird":
+-                    self.dbm.commitDbase()
+ 
+     def doCheckIndex(self, table, index):
+         if self.dbm.dbase == "PgSQL":
+
+=== added file 'tartan.ico'
+Binary files old/tartan.ico	1970-01-01 00:00:00 +0000 and new/tartan.ico	2020-12-13 07:25:30 +0000 differ
+=== modified file 'tartanWork.py'
+--- old/tartanWork.py	2020-12-12 11:18:25 +0000
++++ new/tartanWork.py	2020-12-15 10:09:03 +0000
+@@ -1817,15 +1817,17 @@
+             ['Routines Passwords', 1, 'U', 'pwd_cono', 'pwd_sys', 'pwd_code']]},
+     'ctlpwu': {
+         'fld': [
+-            [0, 'usr_name', 'NA', 20.0, 'User Name', 'User Name'],
+-            [1, 'usr_fnam', 'NA', 30.0, 'Full Name', 'Full Name'],
+-            [2, 'usr_pwd', 'HA', 30.0, 'Password', 'Password'],
+-            [3, 'usr_last', 'd1', 10.0, 'Last Change', 'Last-Chged'],
+-            [4, 'usr_acoy', 'TX', 30.0, 'Allowed Companies',
++            [0, 'usr_name', 'NA', 20.0, 'Login Name', 'Login-Name'],
++            [1, 'usr_fnam', 'NA', 30.0, 'Full Name', 'Full-Name'],
++            [2, 'usr_emadd', 'TX', 50.0, 'Email Address', 'Email-Address'],
++            [3, 'usr_celno', 'TX', 20.0, 'Mobile Number', 'Mobile'],
++            [4, 'usr_pwd', 'HA', 30.0, 'Password', 'Password'],
++            [5, 'usr_last', 'd1', 10.0, 'Last Change', 'Last-Chged'],
++            [6, 'usr_acoy', 'TX', 30.0, 'Allowed Companies',
+                 'Allowed Companies'],
+-            [5, 'usr_dcoy', 'TX', 30.0, 'DisAllowed Companies',
++            [7, 'usr_dcoy', 'TX', 30.0, 'DisAllowed Companies',
+                 'DisAllowed Companies'],
+-            [6, 'usr_lvl', 'UI', 1.0, 'Security Level', 'S']],
++            [8, 'usr_lvl', 'UI', 1.0, 'Security Level', 'S']],
+         'idx': [
+             ['User Passwords', 1, 'U', 'usr_name']]},
+     'ctlrep': {
+@@ -4361,11 +4363,11 @@
+         ["PYNY","rc_fm","rcc310",1,"Interest Rates"],
+         ["PYNN","rc_rp","rc3010",1,"Owners Audit Trail"],
+         ["PYNN","rc_rp","rc3030",1,"Owners Master Listing"],
+-        ["PYNN","rc_rp","rc3050",1,"Owners Statements"],
++        ["PYNY","rc_rp","rc3050",1,"Owners Statements"],
+         ["PYNN","rc_rp","rc3070",1,"Owners Notes Listing"],
+         ["PYNN","rc_rp","rc3020",1,"Tenants Audit Trail"],
+         ["PYNN","rc_rp","rc3040",1,"Tenants Master Listing"],
+-        ["PYNN","rc_rp","rc3060",1,"Tenants Statements"],
++        ["PYNY","rc_rp","rc3060",1,"Tenants Statements"],
+         ["PYNN","rc_rp","rc3080",1,"Tenants Notes Listing"],
+         ["PYNN","rc_rp","rc3090",1,"Tenants Deposit Listing"],
+         ["PNNN","rc_rp","rcc220",1,"Statement Messages"],
+
+=== modified file 'uty/pkgprg.py'
+--- old/uty/pkgprg.py	2020-12-12 11:18:25 +0000
++++ new/uty/pkgprg.py	2020-12-14 06:31:26 +0000
+@@ -84,8 +84,6 @@
+ if not pypath:
+     print("%s/%s directory not found" % (bd, bv))
+     sys.exit()
+-# Change to pypath directory
+-os.chdir(pypath)
+ for d in ("TartanExe", "TartanOld", "TartanSve"):
+     if not os.path.exists(os.path.join(bd, d)):
+         os.makedirs(os.path.join(bd, d))
+@@ -106,11 +104,12 @@
+         sys.exit()
+     for x in range(2):
+         cver[x] = int(cver[x])
++# Change to pypath directory
++os.chdir(pypath)
+ if newver and newver != "%s.%s" % VERSION:
+     if not os.path.isfile("changes.txt"):
+         raw_input("changes.txt File Not Found! Ctl-C to Abort")
+-    #try:
+-    if 'a' == 'a':
++    try:
+         # Change version number in ms0000.py, SYS.rst, Downloads.rst
+         old = open("ms0000.py", "r")
+         lin = old.readlines()
+@@ -224,9 +223,9 @@
+                 push = raw_input("Push Version (y/n): ")
+                 if push == "y":
+                     exeCmd("/usr/bin/git push -u origin master")
+-    #except:
+-    #    print("Error Creating New Version")
+-    #    sys.exit()
++    except:
++        print("Error Creating New Version")
++        sys.exit()
+ # Create a zip of the repository
+ if os.path.exists("%s/tarzip.zip" % bd):
+     os.remove("%s/tarzip.zip" % bd)
+@@ -234,19 +233,18 @@
+     exeCmd("/usr/bin/bzr export --format=zip --root= %s/tarzip.zip" % bd)
+ else:
+     exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
+-# Update the zip with uncommitted files
+-exeCmd("zip -qr %s/tarzip ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py pos/*.py rca/*.py rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py uty/*.py wag/*.py" % bd)
++# Update the zip with tarchg.py tartan.ico and uncommitted files
++exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py pos/*.py rca/*.py rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py uty/*.py wag/*.py" % bd)
+ # Create a new system directory
+-if os.path.exists("%s/tardir" % bd):
+-    shutil.rmtree("%s/tardir" % bd)
+-os.mkdir(os.path.join(bd, "tardir"))
++if os.path.exists("%s/tartan" % bd):
++    shutil.rmtree("%s/tartan" % bd)
++os.mkdir(os.path.join(bd, "tartan"))
++# Change directory to system directory
++os.chdir("%s/tartan" % bd)
+ # Unzip the repository into the system directory
+-os.chdir("%s/tardir" % bd)
+ exeCmd("unzip -qq %s/tarzip" % bd)
+ os.remove("%s/tarzip.zip" % bd)
+ # Rename and/or Remove paths and files
+-if os.path.isfile("readme.md"):
+-    os.remove("readme.md")
+ if os.path.isdir("ver"):
+     shutil.rmtree("ver")
+ # Create tarimp module for pyinstaller
+@@ -263,18 +261,19 @@
+         continue
+     ofl.write("import %s\n" % fle.replace("/", ".").replace(".py", ""))
+ ofl.close()
+-# Create zip file for pyinstaller
+ print("")
++# Change to Base Directory
+ os.chdir(bd)
++# Create zip file for pyinstaller
+ zipfle = "tartan-%s" % vv
+ print("Creating %s.zip in TartanSve directory ..... Please Wait" % zipfle)
+ if os.path.exists("%s/TartanSve/%s.zip" % (bd, zipfle)):
+     os.remove("%s/TartanSve/%s.zip" % (bd, zipfle))
+-if vv == 5:
+-    exeCmd("zip -qr %s/TartanSve/%s tartan --exclude \*.bzr\*" % (bd, zipfle))
+-else:
+-    exeCmd("zip -qr %s/TartanSve/%s tartan --exclude \*.git\*" % (bd, zipfle))
+-#shutil.rmtree("%s/tartan" % bd)
++exeCmd("zip -qr %s/TartanSve/%s tartan" % (bd, zipfle))
++#if vv == 5:
++#    exeCmd("zip -qr %s/TartanSve/%s tartan --exclude \*.bzr\*" % (bd, zipfle))
++#else:
++#    exeCmd("zip -qr %s/TartanSve/%s tartan --exclude \*.git\*" % (bd, zipfle))
+ if windows:
+     # Python windows executable
+     if vv == 5:
+@@ -294,8 +293,9 @@
+             exeCmd("wine3 cmd /c %s/maker.bat tartan" % dd)
+ if publish:
+     # Publish
++    # Change to pypath directory
++    os.chdir(pypath)
+     # Documentation
+-    os.chdir(pypath)
+     man = "doc/Manual.rst"
+     fles = ["doc/SYS.rst", "doc/CTL.rst", "doc/GEN.rst", "doc/ASS.rst",
+             "doc/BKM.rst", "doc/CRS.rst", "doc/DRS.rst", "doc/LON.rst",
+@@ -438,5 +438,6 @@
+                 sendMail(serv, mfrm, addr, subj)
+             else:
+                 sendMail(serv, mfrm, addr, subj, mess=(text, html))
++shutil.rmtree("%s/tartan" % bd)
+ print("DONE")
+ # END
+

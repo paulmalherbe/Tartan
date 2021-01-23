@@ -1,0 +1,10 @@
+Tartan Systems Upgrade
+----------------------
+1) Fixed a problem with the file conversion module.
+2) Added an email address and mobile number to user records.
+3) Some other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.4 or later.
+If you have an older version than 5.4 please contact me for assistance.

@@ -1,0 +1,122 @@
+=== modified file 'doc/Downloads.rst'
+--- doc/Downloads.rst	2016-02-27 13:18:41 +0000
++++ doc/Downloads.rst	2016-03-01 14:42:21 +0000
+@@ -11,23 +11,23 @@
+ 
+ |tartan| Version
+ ================
+-The latest version of Tartan is 5.2.0 and was released on the 27th February, 2016.
++The latest version of Tartan is 5.2.1 and was released on the 1st March, 2016.
+ 
+ Backup and restore functions must only be done with the  same version of Tartan i.e. the version used to restore a backup must be the same as the one used to make the backup.
+ 
+ .. _Documentation: http://www.tartan.co.za/cgi-bin/simple_web.py/Documentation
+-.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.0.tar.gz
++.. _Tartan-5-lnx: ftp://tartan.co.za/Tartan_5.2.1.tar.gz
+ .. _Tartan-4-lnx: ftp://tartan.co.za/Tartan_4.1.14.tar.gz
+ .. _Tartan-3-lnx: ftp://tartan.co.za/Tartan_3.4.51.tar.gz
+ .. _Tartan-2-lnx: ftp://tartan.co.za/Tartan_2.5.29.tar.gz
+-.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.0.exe
++.. _Tartan-5-win: ftp://tartan.co.za/Tartan_5.2.1.exe
+ .. _Tartan-4-win: ftp://tartan.co.za/Tartan_4.1.14.exe
+ .. _Tartan-3-win: ftp://tartan.co.za/Tartan_3.4.51.exe
+ .. _Tartan-2-win: ftp://tartan.co.za/Tartan_2.5.29.exe
+-.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.0.tar.gz
+-.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.0.exe
+-.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.0.tar.gz
+-.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.0.exe
++.. _Bwlclb-5-lnx: ftp://tartan.co.za/Bwlclb_5.2.1.tar.gz
++.. _Bwlclb-5-win: ftp://tartan.co.za/Bwlclb_5.2.1.exe
++.. _Seccmp-5-lnx: ftp://tartan.co.za/Seccmp_5.2.1.tar.gz
++.. _Seccmp-5-win: ftp://tartan.co.za/Seccmp_5.2.1.exe
+ 
+ |linux| Linux
+ =============
+
+=== modified file 'doc/MB.rst'
+--- doc/MB.rst	2016-02-27 13:18:41 +0000
++++ doc/MB.rst	2016-03-01 14:42:21 +0000
+@@ -2,7 +2,7 @@
+  TARTAN SYSTEMS - Bowling Clubs
+ ================================
+ 
+-:Version:   5.2.0
++:Version:   5.2.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'doc/MD.rst'
+--- doc/MD.rst	2016-02-27 13:18:41 +0000
++++ doc/MD.rst	2016-03-01 14:42:21 +0000
+@@ -2,7 +2,7 @@
+  Tartan Systems - User Manual
+ ==============================
+ 
+-:Version:   5.2.0
++:Version:   5.2.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+
+=== modified file 'men/rnemen.py'
+--- men/rnemen.py	2016-02-27 13:18:41 +0000
++++ men/rnemen.py	2016-02-29 06:17:56 +0000
+@@ -162,6 +162,7 @@
+     ["PYYN","cr_rp","cr3350",1,"Purchases by Supplier by Branch"],
+     ["PYNN","cr_rp","cr3360",1,"Remittance Advice Reprint"],
+     ["PYNN","cr_rp","cr3370",1,"Advertising/Incentive Invoices"],
++    ["PYNN","cr_rp","cr3380",1,"Transactions by Branch Groups"],
+     ["PYNN","cr_tb","cr6010",4,"Change Account Numbers"],
+     ["PYNN","cr_tb","cr6020",5,"Transaction Reallocations"],
+     ["PYNY","mm_cr","cr4010",0,"Interrogation"]]
+
+=== modified file 'mst/ms0000.py'
+--- mst/ms0000.py	2016-02-27 13:18:41 +0000
++++ mst/ms0000.py	2016-03-01 14:42:21 +0000
+@@ -37,7 +37,7 @@
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1]), int(temp[2]))
+ else:
+-    VERSION = (5, 2, 0)
++    VERSION = (5, 2, 1)
+ if __name__ == "__main__":
+     # Run Tartan
+     try:
+
+=== modified file 'mst/msc000.py'
+--- mst/msc000.py	2016-02-27 13:18:41 +0000
++++ mst/msc000.py	2016-03-01 12:08:22 +0000
+@@ -394,6 +394,7 @@
+ 
+     def setVariables(self):
+         stdmen = __import__(self.menu)
++        self.vop = []
+         self.sss = {}
+         self.men = []
+         self.mod = []
+
+=== modified file 'uty/pkgprg.py'
+--- uty/pkgprg.py	2016-02-27 13:18:41 +0000
++++ uty/pkgprg.py	2016-03-01 09:58:53 +0000
+@@ -126,8 +126,8 @@
+                 "str", "uty"])
+     custom = ["rne", ["ar6020", "ar6030", "cr1010", "cr2010", "cr2020",
+               "cr2030", "cr3030", "cr3070", "cr3310", "cr3320", "cr3330",
+-              "cr3340", "cr3350", "cr3360", "cr3370", "cr4010", "cr6010",
+-              "gl3100", "gl3110", "gl6060", "ms1010", "tartanWork"]]
++              "cr3340", "cr3350", "cr3360", "cr3370", "cr3380", "cr4010",
++              "cr6010", "gl3100", "gl3110", "gl6060", "ms1010", "tartanWork"]]
+     exclude = ["cr3080", "dr1020", "dr2030", "dr6030", "drc210", "drc220",
+                "drc310", "drc320", "drc510", "drc520", "drc610", "drc620",
+                "drc710", "drc810", "msy020", "si2020", "si3010", "si3070",
+@@ -286,7 +286,7 @@
+     t = x.split("/")
+     if t[1] in ("demos", "docs", "test"):
+         continue
+-    rpt.append(x.replace("\n", ""))
++    rpt.append(x.rstrip())
+ 
+ for pth in dirs:
+     lst = os.listdir(os.path.join(pypath, pth))
+

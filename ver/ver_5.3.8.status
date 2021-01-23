@@ -1,0 +1,11 @@
+modified:
+  doc/BKS.rst
+  doc/BWM.rst
+  doc/Downloads.rst
+  doc/MST.rst
+  doc/SEC.rst
+  gen/gl3140_rne.py
+  mst/ms0000.py
+  mst/ms3010.py
+  sls/si2010.py
+  uty/pkgprg.py

@@ -1,0 +1,39 @@
+added:
+  uty/tdc110.py
+modified:
+  .bzrignore
+  ass/ar4010.py
+  bkm/bk1020.py
+  crs/cr2010.py
+  crs/cr2010_rne.py
+  crs/cr3080.py
+  csh/ca3010.py
+  csv/asterisk.sys
+  csv/bowls.sys
+  csv/cshana.sys
+  csv/cshana_fld.csv
+  csv/teldir.sys
+  doc/Bowls.rst
+  doc/Changes.rst
+  doc/Downloads.rst
+  doc/MD.rst
+  doc/Manual.rst
+  doc/QS.rst
+  doc/WG.rst
+  gen/gl4020.py
+  mem/ml3070.py
+  mem/ml3090.py
+  men/cshmen.py
+  men/rnemen.py
+  men/scpmen.py
+  men/stdmen.py
+  mst/ms0000.py
+  mst/msc000.py
+  rca/rc2010.py
+  sls/si2010.py
+  std/TartanClasses.py
+  str/st2010.py
+  str/st2020.py
+  wag/wg2020.py
+unknown:
+  img/win32.png
