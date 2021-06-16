@@ -107,8 +107,6 @@ if windows:
         stdout=subprocess.PIPE, close_fds=True)
     for l in proc.stdout:
         names.append(l.strip().decode("utf-8"))
-if publish:
-    mkcd = True
 if not os.path.exists(bd):
     print("Invalid Base Directory (%s)" % bd)
     sys.exit()
@@ -389,40 +387,41 @@ if publish:
         exeCmd("rsync -az %s/%s/doc/Changes.rst "\
             "%s:/var/www/tartan.co.za/htdocs/Changes/ "\
             "--progress" % (bd, bv, sv))
-        # Create CD
-        if os.path.isdir("%s/TartanCD" % bd):
-            shutil.rmtree("%s/TartanCD" % bd)
-            exeCmd("mkdir %s/TartanCD" % bd)
-        if os.path.isdir("%s/tempcd" % bd):
-            shutil.rmtree("%s/tempcd" % bd)
-        # Executables
-        exeCmd("mkdir %s/tempcd" % bd)
-        exeCmd("mkdir %s/tempcd/Other" % bd)
-        exeCmd("cp -p %s/%s/Tartan* %s/tempcd/" % (bd, bx, bd))
-        exeCmd("cp -pr %s/%s/* %s/tempcd/Other/" % (bd, bx, bd))
-        exeCmd("rm %s/tempcd/Other/Tartan*" % bd)
-        exeCmd("rm %s/tempcd/Other/Rnehol*" % bd)
-        exeCmd("rm %s/tempcd/Other/??????-[5,6].exe" % bd)
-        auto = open("%s/tempcd/AUTORUN.INF" % bd, "w")
-        auto.write("""[autorun]
+        if mkcd:
+            # Create CD
+            if os.path.isdir("%s/TartanCD" % bd):
+                shutil.rmtree("%s/TartanCD" % bd)
+                exeCmd("mkdir %s/TartanCD" % bd)
+            if os.path.isdir("%s/tempcd" % bd):
+                shutil.rmtree("%s/tempcd" % bd)
+            # Executables
+            exeCmd("mkdir %s/tempcd" % bd)
+            exeCmd("mkdir %s/tempcd/Other" % bd)
+            exeCmd("cp -p %s/%s/Tartan* %s/tempcd/" % (bd, bx, bd))
+            exeCmd("cp -pr %s/%s/* %s/tempcd/Other/" % (bd, bx, bd))
+            exeCmd("rm %s/tempcd/Other/Tartan*" % bd)
+            exeCmd("rm %s/tempcd/Other/Rnehol*" % bd)
+            exeCmd("rm %s/tempcd/Other/??????-[5,6].exe" % bd)
+            auto = open("%s/tempcd/AUTORUN.INF" % bd, "w")
+            auto.write("""[autorun]
     shell\install=&Install
-    shell\install\command=Tartan_%s.%s.exe
+    shell\install\command=Tartan_%s.%s-64.exe
 """ % (cver[0], cver[1]))
-        auto.close()
-        exeCmd("todos -o %s/tempcd/AUTORUN.INF" % bd)
-        exeCmd("chmod a+x %s/tempcd/AUTORUN.INF" % bd)
-        # Add Documentation
-        exeCmd("cp /tmp/Manual.pdf %s/tempcd/Manual.pdf" % bd)
-        # Make CD iso
-        exeCmd("mkisofs -r -J -l -D -V 'Tartan Systems %s.%s' "\
-            "-p 'Paul Malherbe paul@tartan.co.za' -copyright 'Paul Malherbe' "\
-            "-o %s/TartanCD/Tartan.iso -graft-points /\=%s/tempcd" %
-            (cver[0], cver[1], bd, bd))
-        shutil.rmtree("%s/tempcd" % bd)
+            auto.close()
+            exeCmd("todos -o %s/tempcd/AUTORUN.INF" % bd)
+            exeCmd("chmod a+x %s/tempcd/AUTORUN.INF" % bd)
+            # Add Documentation
+            exeCmd("cp /tmp/Manual.pdf %s/tempcd/Manual.pdf" % bd)
+            # Make CD iso
+            exeCmd("mkisofs -r -J -l -D -V 'Tartan Systems %s.%s' "\
+                "-p 'Paul Malherbe paul@tartan.co.za' -copyright 'Paul "\
+                "Malherbe' -o %s/TartanCD/Tartan.iso -graft-points "\
+                "/\=%s/tempcd" % (cver[0], cver[1], bd, bd))
+            shutil.rmtree("%s/tempcd" % bd)
         if verinc and windows:
             # Sourceforge
             os.chdir("%s/%s" % (bd, bx))
-            exeCmd("cp -p %s/doc/readme.md ." % pypath)
+            exeCmd("cp -p %s/readme.md ." % pypath)
             exeCmd("%s/uty/upload.sh %s" % (pypath, newver))
 if email and not test:
     # Email Users
