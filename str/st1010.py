@@ -156,7 +156,7 @@ class st1010(object):
             (("T",1,2,0),"INA",10,"Unit of Issue","",
                 "","N",self.doUoi,unm,None,("notblank",)),
             (("T",1,2,0),"ONA",30,""),
-            (("T",1,3,0),("IRB",r2s),0,"Value Indicator","",
+            (("T",1,3,0),("IRB",r2s),0,"Cost Price Indicator","",
                 "A","N",self.doValInd,None,None,None),
             (("T",1,4,0),"IUA",1,"VAT Code","",
                 "","N",self.doVat,vtm,None,("notblank",)),

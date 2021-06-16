@@ -52,8 +52,7 @@ class st3120(object):
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % (t[0],
             t[1], t[2], t[3], t[4])
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["Grp", "Product-Code", "Description", "U.O.I",
             "Qty-Balance", "Qty-OnOrder", "Qty-BkOrder", "Qty-ToOrder"]
         self.forms = [("UA", 3), ("NA", 20), ("NA", 30), ("NA", 10),
@@ -146,7 +145,7 @@ class st3120(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("Stock to Order Report as at %s" % self.sysdtd)
         self.expheads.append("(Options: Report Date %s)" % self.repdtd)
         self.expheads.append("Location %s  %s" % (self.loc, self.locd))
@@ -177,16 +176,14 @@ class st3120(object):
             chrs -= 2
         else:
             chrs -= 1
-        pad = chrs - 35 - len(self.sysdttm)
-        self.head1 = self.head % (" " * pad + self.sysdttm)
-        self.head2 = "Stock to Order Report as at %s%s" % (self.sysdtd, "%s%s")
-        pad = chrs - len(self.head2) + 4 - 11          # %s%s and ' Page     1'
-        self.head2 = self.head2 % (" " * pad, " Page %5s")
+        self.head1 = self.head
+        self.head2 = "Stock to Order Report as at %s" % self.sysdtd
+        pad = chrs - len(self.head2)
+        self.head2 = self.head2 + (" " * pad)
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head2)
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -250,12 +247,11 @@ class st3120(object):
         return (grp, code, desc, uoi, cbal, obal, bbal, tbal)
 
     def pageHeading(self):
-        self.pgnum += 1
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
         self.fpdf.drawText(self.head1)
         self.fpdf.drawText()
-        self.fpdf.drawText(self.head2 % self.pgnum)
+        self.fpdf.drawText(self.head2)
         self.fpdf.drawText()
         self.fpdf.drawText("%-22s%-10s%-1s" % \
             ("(Options: Report Date-", self.df.t_disp[0][0][0], ")"))
@@ -266,7 +262,7 @@ class st3120(object):
         self.fpdf.drawText("%-3s %-20s %-30s %-10s %11s  %11s  %11s  %11s" % \
             ("Grp", "Product-Code", "Description", "U.O.I", "Qty-Balance",
             "Qty-OnOrder", "Qty-BkOrder", "Qty-ToOrder"))
-        self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head1)))
+        self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head2)))
         self.fpdf.setFont()
         self.pglin = 10
 

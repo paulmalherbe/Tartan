@@ -87,7 +87,10 @@ class pm1010(object):
         txt = (self.doExitSecret,)
         self.sw = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=fld, butt=but, tend=tnd, txit=txt)
-        self.sw.mstFrame.wait_window()
+        self.opts["mf"].startLoop()
+        if self.change:
+            self.change = False
+            self.getSecret()
 
     def doSecret(self, frt, pag, r, c, p, i, w):
         self.doEncrypt(w)
@@ -123,9 +126,7 @@ class pm1010(object):
 
     def doExitSecret(self):
         self.sw.closeProcess()
-        if self.change:
-            self.change = False
-            self.getSecret()
+        self.opts["mf"].closeLoop()
 
     def mainProcess(self):
         pwm = {
@@ -241,7 +242,7 @@ This file will be treated as a Temporary File when Exiting Tartan.""" % fle)
         self.df.focusField("T", 0, self.df.col)
 
     def doPrint(self):
-        self.fpdf = MyFpdf(name="pm1010", head=133, auto=True, foot=True)
+        self.fpdf = MyFpdf(name="pm1010", head=133, auto=True)
         self.fpdf.header = self.doHead
         self.fpdf.add_page()
         codes = list(self.data[self.opts["capnm"]].keys())

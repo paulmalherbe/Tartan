@@ -49,8 +49,6 @@ class sl3030(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -109,12 +107,9 @@ class sl3030(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %77s %6s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-115s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         tot = 0
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -129,6 +124,8 @@ class sl3030(object):
             per = CCD(dat[7], "UD", 6.2)
             ded = CCD(dat[8], "SD", 13.2)
             bal = CCD(dat[9], "SD", 13.2)
+            if self.zero == "Y" and not bal.work:
+                continue
             tot = float(ASD(tot) + ASD(bal.work))
             if self.pglin > self.fpdf.lpp:
                 self.pageHeading()
@@ -151,12 +148,10 @@ class sl3030(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-29s %-10s %72s %5s" % \
-            ("Staff Loans Master List as at", self.sysdtd,
-                "Page", self.pgnum))
+        self.fpdf.drawText("%-29s %-10s" % \
+            ("Staff Loans Master List as at", self.sysdtd))
         self.fpdf.drawText()
         self.fpdf.drawText("%-15s%-1s%-3s%-16s%-1s%-3s%-4s%-1s%-1s" % \
             ("(Options: Sort-", self.df.t_disp[0][0][0], "",

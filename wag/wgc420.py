@@ -47,10 +47,7 @@ class wgc420(object):
             return
         self.fromad = wagctl["ctw_emadd"]
         t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -75,8 +72,7 @@ class wgc420(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%-24s %37s %5s %6s" % ("Tartan Systems", self.sysdttm,
-            "", self.__class__.__name__))
+        self.head = "%-3u %-76s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.pgnum = 0
         self.pglin = 999
@@ -123,8 +119,8 @@ class wgc420(object):
         self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-20s %-10s %37s %5s" %
-            ("Wages Messages as at", self.sysdtd, "Page", self.pgnum))
+        self.fpdf.drawText("%-s %-10s" %
+            ("Salaries and Wages Messages as at", self.sysdtd))
         self.fpdf.drawText()
         self.fpdf.drawText("%-14s %-3s %-10s %-30s" %
             ("", "Num", "", "Message"))

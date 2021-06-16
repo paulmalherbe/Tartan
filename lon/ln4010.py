@@ -52,8 +52,6 @@ class ln4010(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.history = "N"
         return True
 
@@ -287,11 +285,8 @@ class ln4010(object):
     def doPrintOption(self, opt):
         if opt == "N":
             return
-        self.head = ("%03u %-30s %47s %10s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-89s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         if opt != "T":
             self.pageHeading()
@@ -381,12 +376,10 @@ class ln4010(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-31s %-10s %44s %5s" % \
-            ("Staff Loans Interrogation as at", self.sysdtd, "Page",
-            self.pgnum))
+        self.fpdf.drawText("%-31s %-10s" %
+            ("Staff Loans Interrogation as at", self.sysdtd))
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()
         self.pglin = 6

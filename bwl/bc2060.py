@@ -1,6 +1,6 @@
 """
 SYNOPSIS
-    Bowls Competition Match Cards Maintenance.
+    Bowls Competition Draw Maintenance.
 
     This file is part of Tartan Systems (TARTAN).
 

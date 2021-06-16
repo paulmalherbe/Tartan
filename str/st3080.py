@@ -56,8 +56,6 @@ class st3080(object):
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
         self.colsh = ["Grp", "Product-Code", "Description", "U.O.I",
             "Qty-Balance", "Val-Balance"]
         self.forms = [("UA", 3), ("NA", 20), ("NA", 30), ("NA", 10),
@@ -188,7 +186,8 @@ class st3080(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = ["%03u %-30s %s" % (self.opts["conum"],
+            self.opts["conam"], self.sysdttm)]
         self.expheads.append("Stock On Hand Report as at %s" % self.date.disp)
         self.expcolsh = [self.colsh]
         self.expforms = self.forms
@@ -211,12 +210,10 @@ class st3080(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %5s %46s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm))
+        self.head = "%03u %-83s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.stot = 0
         old_grp = ""
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -277,11 +274,10 @@ class st3080(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-26s %-10s %43s %5s" % \
-            ("Stock On Hand Report as at", self.date.disp, "Page", self.pgnum))
+        self.fpdf.drawText("%-26s %-10s" % \
+            ("Stock On Hand Report as at", self.date.disp))
         self.fpdf.drawText()
         self.fpdf.drawText("%-5s %3s      %-8s %s  %s" % ("Group", self.groupd,
             "Location", self.loc, self.locd))

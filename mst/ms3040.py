@@ -1,6 +1,6 @@
 """
 SYNOPSIS
-    Masterfile hanges Log.
+    Masterfile Changes Log.
 
     This file is part of Tartan Systems (TARTAN).
 
@@ -73,11 +73,11 @@ class ms3040(object):
 
     def doDate(self, frt, pag, r, c, p, i, w):
         if p == 0:
-            self.frm = w
-        elif w < self.frm:
+            self.frm = CCD(w, "d1", 10)
+        elif w < self.frm.work:
             return "Invalid Date, Less than Start Date"
         else:
-            self.too = w
+            self.too = CCD(w, "D1", 10)
 
     def doTable(self, frt, pag, r, c, p, i, w):
         self.table = w
@@ -102,9 +102,11 @@ class ms3040(object):
 
     def doEnd(self):
         self.df.closeProcess()
-        frm = CCD(self.frm, "d1", 10)
-        too = CCD(self.too, "D1", 10)
-        hds = "Changes Log Report from %s to %s" % (frm.disp, too.disp)
+        if not self.frm.work:
+            frm = "Beginning"
+        else:
+            frm = self.frm.disp
+        hds = "Changes Log Report from %s to %s" % (frm, self.too.disp)
         col = [
             ("chg_tab", "NA", 6.0, "TabNam"),
             ("chg_act", "UA", 1.0, "A"),
@@ -115,12 +117,12 @@ class ms3040(object):
             ("chg_dte", "TS", 19.0, "Date-&-Time-Changed"),
             ("chg_usr", "NA", 20.0, "User-Login")]
         whr = [
-            ("chg_dte", ">=", str(frm.work * 1000000)),
-            ("chg_dte", "<=", str((too.work * 1000000) + 999999))]
+            ("chg_dte", ">=", str(self.frm.work * 1000000)),
+            ("chg_dte", "<=", str((self.too.work * 1000000) + 999999))]
         if self.byusr == "Y":
-            odr = "chg_tab, chg_dte"
+            odr = "chg_tab, chg_dte desc"
         else:
-            odr = "chg_dte"
+            odr = "chg_dte desc"
         if self.table:
             whr.append(("chg_tab", "=", self.table))
         if self.user:

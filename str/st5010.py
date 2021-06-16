@@ -50,8 +50,6 @@ class st5010(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -185,12 +183,10 @@ class st5010(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %3s %45s %2s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-90s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         count = 0
         old_grp = ""
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -233,11 +229,10 @@ class st5010(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-23s %-10s %41s %5s" % \
-            ("Stock Take Report as at", self.sysdtd, "Page", self.pgnum))
+        self.fpdf.drawText("%-23s %-10s" % \
+            ("Stock Take Report as at", self.sysdtd))
         self.fpdf.drawText()
         self.fpdf.drawText("%-5s %3s      %-8s %s  %s" % \
             ("Group", self.groupd, "Location", self.loc, self.locd))

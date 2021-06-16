@@ -731,12 +731,12 @@ class sc2020(object):
             else:
                 head = (self.rnds * 26) + 25
             self.fpdf = MyFpdf(name=self.__class__.__name__, head=head,
-                font="Helvetica", foot=True)
+                font="Helvetica")
             self.fpdf.def_orientation = "P"
             self.fpdf.font[2] = 5
         else:
             self.fpdf = MyFpdf(name=self.__class__.__name__, head=65,
-                font="Helvetica", foot=True)
+                font="Helvetica")
         recs = self.sql.getRec("scpgme", cols=["scg_snum", "scg_subs"],
             where=self.gwhr, group="scg_snum, scg_subs",
             order="scg_snum, scg_subs")

@@ -57,8 +57,6 @@ class si3020(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
         self.colsh = [["", "", "", "",
             ["*********** Month to Date **********", 4, 7],
             ["*********** Year To Date ***********", 8, 11]]]
@@ -160,7 +158,8 @@ class si3020(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = ["%03u %-30s %s" % (self.opts["conum"],
+            self.opts["conam"], self.sysdttm)]
         self.expheads.append("Sales Report By Product up to %s" % self.cutper)
         self.expcolsh = self.colsh
         self.expforms = self.forms
@@ -185,11 +184,9 @@ class si3020(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %-66s %-40s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm))
+        self.head = "%03u %-138s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         lstgrp = ""
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -288,11 +285,10 @@ class si3020(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-29s %-7s %98s %5s" % \
-            ("Sales Report By Product up to", self.cutper, "Page", self.pgnum))
+        self.fpdf.drawText("%-29s %-7s" % \
+            ("Sales Report By Product up to", self.cutper))
         self.fpdf.drawText()
         acc = self.getGroup(self.grp.work)
         if acc:

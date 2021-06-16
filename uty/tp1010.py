@@ -27,8 +27,8 @@ COPYING
 """
 
 import operator, os
-from TartanClasses import ViewPDF, DrawForm, FileDialog, MyFpdf, RepPrt
-from TartanClasses import Sql, TartanDialog
+from TartanClasses import ViewPDF, DrawForm, FileDialog, RepPrt, Sql
+from TartanClasses import TartanDialog, tkfont
 from tartanFunctions import askQuestion, showError, showInfo
 from tartanWork import allsys, stdtpl, tptrtp
 
@@ -788,7 +788,6 @@ class tp1010(object):
         else:
             self.sql.updRec("tplmst", data=self.df.t_work[0][0],
                 where=[("tpm_tname", "=", self.template)])
-        self.pdf = MyFpdf()
         self.df.selPage("Sequence")
         self.df.focusField("T", 1, 1)
 
@@ -903,7 +902,7 @@ class tp1010(object):
         self.frm.add_page()
         for key in self.frm.newkey:
             line = self.frm.newdic[key]
-            if line[2] in ("C", "I"):
+            if line[self.sql.tpldet_col.index("tpd_type")] in ("C", "I"):
                 mrgcod = line[self.sql.tpldet_col.index("tpd_mrgcod")]
             else:
                 mrgcod = ""
@@ -913,7 +912,8 @@ class tp1010(object):
                 dat = line[self.sql.tpldet_col.index("tpd_text")]
             if not dat:
                 if line[self.sql.tpldet_col.index("tpd_type")] == "I":
-                    dat = "rectangle"
+                    line[self.sql.tpldet_col.index("tpd_type")] = "R"
+                    dat = "Image"
                 else:
                     dat = " "
             line[self.sql.tpldet_col.index("tpd_text")] = dat
@@ -1010,11 +1010,16 @@ class tp1010(object):
             chrs = len(data)
         else:
             chrs = data
-        style = ""
+        style = "normal"
         if bold == "Y":
-            style += "B"
-        self.pdf.set_font(font, style, size)
-        return int(round(self.pdf.get_string_width("X"*(chrs+pad)), 0))
+            style = "bold"
+        txt = tkfont.Font(family=font, size=size, weight=style)
+        width = (txt.measure("X"*(chrs+pad)) / 96) * 25.4
+        if width % 1:
+            width = int(width) + 1
+        else:
+            width = int(width)
+        return width
 
     def doT0Exit(self):
         self.df.closeProcess()

@@ -43,10 +43,7 @@ class gl4010(object):
         if self.sql.error:
             return
         t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.i_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
         df = self.e_per - self.i_per - 87
@@ -357,6 +354,7 @@ class gl4010(object):
             view=("Y","V"), mail=("Y","N"))
         self.pr.mstFrame.wait_window()
         self.df.setWidget(self.df.mstFrame, state="show")
+        self.df.focusField("T", 2, 1)
 
     def doPrtSel(self, frt, pag, r, c, p, i, w):
         self.sel = w
@@ -370,8 +368,7 @@ class gl4010(object):
 
     def doPrtEnd(self):
         self.pr.closeProcess()
-        self.head = ("%03u %-30s %57s %10s" % (self.opts["conum"],
-            self.opts["conam"], self.sysdttm, self.__class__.__name__))
+        self.head = "%03u %-99s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.pgnum = 0
         self.pglin = 999
@@ -463,9 +460,8 @@ class gl4010(object):
                         acctot, detail))
                 RepPrt(self.opts["mf"], name=self.__class__.__name__,
                     conum=self.opts["conum"], conam=self.opts["conam"],
-                    tables=data, heads=heads, cols=cols, gtots=["debit",
-                    "credit"], repprt=self.pr.repprt, repeml=self.pr.repeml,
-                    ttype="D")
+                    tables=data, heads=heads, cols=cols, ttype="D",
+                    repprt=self.pr.repprt, repeml=self.pr.repeml)
 
     def doPrtExit(self):
         self.pr.closeProcess()

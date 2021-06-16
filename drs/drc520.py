@@ -41,10 +41,7 @@ class drc520(object):
         if self.sql.error:
             return
         t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.mtyp = "S"
         return True
 
@@ -83,10 +80,8 @@ class drc520(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%-24s %37s %5s %6s" % \
-            ("Tartan Systems", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%-75s" % "Tartan Systems"
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         old_sys = recs[0][0]
         for num, dat in enumerate(recs):
@@ -128,15 +123,13 @@ class drc520(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         if self.sys.work == "INV":
             desc = "Debtors  Invoice  Messages as at"
         else:
             desc = "Debtors Statement Messages as at"
-        self.fpdf.drawText("%-32s %-10s %25s %5s" % \
-            (desc, self.sysdtd, "Page", self.pgnum))
+        self.fpdf.drawText("%-32s %-42s" % (desc, self.sysdtd))
         self.fpdf.drawText()
         self.fpdf.drawText("%-14s %-3s %-10s %-30s" % ("", "Num",
             "", "Message"))

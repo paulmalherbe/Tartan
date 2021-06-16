@@ -178,7 +178,7 @@ class bcc110(object):
                 r = w - self.mstart
                 g = "Male"
             if r < 200:
-                return "ff3|Invalid Numbers, Too Few %s Tabs. (Minimum 200)" % g
+                return "ff5|Invalid Numbers, Too Few %s Tabs. (Minimum 200)" % g
         self.fstart = w
 
     def doNStart(self, frt, pag, r, c, p, i, w):

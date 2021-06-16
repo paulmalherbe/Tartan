@@ -52,8 +52,6 @@ class si3070(object):
         self.fromad = slsctl["ctv_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.mchart = []
         return True
 
@@ -131,12 +129,10 @@ class si3070(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %48s %33s %48s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-169s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.stots = [0] * 13
         self.ctots = [0] * 13
-        self.pgnum = 0
         self.pglin = 999
         for x1, r1 in enumerate(recs):
             p.displayProgress(x1)
@@ -206,12 +202,11 @@ class si3070(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         per = CCD(self.end, "D2", 7)
-        self.fpdf.drawText("%-29s %-7s %129s %5s" % \
-            ("Salesman's Sales History up to", per.disp, "Page", self.pgnum))
+        self.fpdf.drawText("%-29s %-7s" % \
+            ("Salesman's Sales History up to", per.disp))
         self.fpdf.drawText()
         if self.rep1:
             opt = "(Options: From Rep %s" % self.rep1

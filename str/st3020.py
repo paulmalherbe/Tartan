@@ -54,8 +54,6 @@ class st3020(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
             (t[0], t[1], t[2], t[3], t[4])
-        self.head = ("%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
-            "%s"))
         self.colsh = ["TP", "BatchNo", "Grp", "Product-Code", "L",
             "Reference", "Date", "Remarks", "Acc-Num", "Quantity",
             "Cost-Value", "Sale-Value"]
@@ -185,6 +183,12 @@ class st3020(object):
 
     def doTots(self, frt, pag, r, c, p, i, w):
         self.totsonly = w
+        if self.totsonly == "Y":
+            self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
+            self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+        else:
+            self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
+            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
 
     def doEnd(self):
         self.df.closeProcess()
@@ -207,7 +211,8 @@ class st3020(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = ["%03u %-30s %s" % (self.opts["conum"],
+            self.opts["conam"], self.sysdttm)]
         self.expheads.append("Store's Ledger Audit Trail for Period "\
             "%s to %s" % (self.sperd, self.eperd))
         self.expcolsh = [self.colsh]
@@ -236,13 +241,9 @@ class st3020(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.totsonly == "Y":
-            self.head = ("%03u %-30s %1s %33s %1s %6s" % (self.opts["conum"],
-                self.opts["conam"], "", self.sysdttm, "",
-                    self.__class__.__name__))
+            self.head = "%03u %-75s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %25s %33s %25s %6s" % (self.opts["conum"],
-                self.opts["conam"], "", self.sysdttm, "",
-                    self.__class__.__name__))
+            self.head = "%03u %-123s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.bcnt = 0
         self.bqty = 0
@@ -253,7 +254,6 @@ class st3020(object):
         self.tcst = 0
         self.tsel = 0
         self.trtp = 0
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -333,17 +333,11 @@ class st3020(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        if self.totsonly == "Y":
-            self.fpdf.drawText("%-36s %-10s %-2s %-10s "\
-            "%11s %5s" % ("Stores Ledger Audit Trail for Period",
-            self.sperd, "to", self.eperd, "Page", self.pgnum))
-        else:
-            self.fpdf.drawText("%-36s %-10s %-2s %-10s %59s %5s" % \
+        self.fpdf.drawText("%-36s %-7s %-2s %-7s" % \
             ("Stores Ledger Audit Trail for Period",
-            self.sperd, "to", self.eperd, "Page", self.pgnum))
+            self.sperd, "to", self.eperd))
         self.fpdf.drawText()
         self.pglin = 4
         if self.totind == "N":

@@ -1,5 +1,33 @@
-changes = """ver_5.13
-========
+changes = """ver_6.0
+=======
+Tartan Systems Upgrade
+----------------------
+ 1) Upgraded to Python 3 as Python 2 is no longer supported. As Python 3 is
+    not backward compatible with Python 2 many changes, in addition to those
+    listed below, needed to be done.
+ 2) Upgraded and improved the built-in PDF viewer.
+ 3) Added a module to print application usage history.
+      Control --> Reporting --> Application Usage Report.
+ 4) Added the pay as you earn tax table for 2022.
+ 5) Added banking details to debtor's recurring charges invoices.
+ 6) Changed the default spreadsheet import and export to xlsx.
+ 7) Added balance field to rentals data capture transaction listing.
+ 8) Fixed an error in the exporting of the purchase history report.
+ 9) Fixed an error in the exporting of the sales history report.
+10) Fixed an error in preferences, colour selection.
+11) Fixed an error in bowls round robin competitions.
+12) Added singles and pairs to bowls tabs-in module to cater for Covid.
+13) Added the facilty to run sectional round robin competitions and then
+    generate a knockout competition from the results.
+14) Many other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_5.13 2021-04-14
+===================
 Tartan Systems Upgrade
 ----------------------
 1) Fixed a problem with the file conversion module.
@@ -11,8 +39,8 @@ NB:
 You can only upgrade to this version if your current version is 5.4 or later.
 If you have an older version than 5.4 please contact me for assistance.
 
-ver_5.12
-========
+ver_5.12 2020-12-14
+===================
 Tartan Systems Upgrade (Lockdown)
 ---------------------------------
  1) Improved the database Export and Merge routines. Greatly increased the
@@ -43,8 +71,8 @@ to download it and set the path to the executable in Tartan Preferences.
 You can only upgrade to this version if your current version is 5.4 or later.
 If you have an older version than 5.4 please contact me for assistance.
 
-ver_5.11
-========
+ver_5.11 2020-03-25
+===================
 Tartan Systems Upgrade
 ----------------------
  1) Added a routine to Export a single company or linked companies to a
@@ -62,8 +90,8 @@ NB:
 You can only upgrade to this version if your current version is 5.4 or later.
 If you have an older version than 5.4 please contact me for assistance.
 
-ver_5.10
-========
+ver_5.10 2020-03-07
+===================
 Tartan Systems Upgrade
 ----------------------
  1) Added the 2021 PAYE tax tables.
@@ -86,8 +114,8 @@ NNB:
 As Python version 2 has now been deprecated this will be the last Tartan
 version supporting Python 2. All future upgrades will be for Python 3.
 
-ver_5.9
-=======
+ver_5.9 2020-01-03
+==================
 Tartan Systems Upgrade
 ----------------------
  1) Added a routine to flag creditor's accounts as redundant (Toolbox).
@@ -101,8 +129,8 @@ NB:
 You can only upgrade to this version if your current version is 5.4 or later.
 If you have an older version than 5.4 please contact me for assistance.
 
-ver_5.8
-=======
+ver_5.8 2019-12-12
+==================
 Tartan Systems Upgrade
 ----------------------
  1) Fixed an error with PAYE over 75 rebate.
@@ -117,8 +145,8 @@ NB:
 You can only upgrade to this version if your current version is 5.0 or later.
 If you have an older version than 5.0 please contact me for assistance.
 
-ver_5.7
-=======
+ver_5.7 2019-09-05
+==================
 Tartan Systems Upgrade
 ----------------------
  1) Fixed an error with g/l bank statement data capture.
@@ -129,8 +157,8 @@ NB:
 You can only upgrade to this version if your current version is 5.0 or later.
 If you have an older version than 5.0 please contact me for assistance.
 
-ver_5.6
-=======
+ver_5.6 2019-08-23
+==================
 Tartan Systems Upgrade
 ----------------------
  1) Fixed an error the the g/l detail maintenance module.
@@ -146,8 +174,8 @@ NB:
 You can only upgrade to this version if your current version is 5.0 or later.
 If you have an older version than 5.0 please contact me for assistance.
 
-ver_5.5
-=======
+ver_5.5 2020-12-16
+==================
 Tartan Systems Upgrade
 ----------------------
  1) Improved the execution speed of some modules by removing multiple mainloops.
@@ -161,8 +189,8 @@ NB:
 You can only upgrade to this version if your current version is 5.0 or later.
 If you have an older version than 5.0 please contact me for assistance.
 
-ver_5.4.8
-=========
+ver_5.4.8 2019-06-04
+====================
 Tartan Systems Upgrade
 ----------------------
  1) Fixed an error in the General Ledger Financial Statements History option
@@ -184,8 +212,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.4.7
-=========
+ver_5.4.7 2019-04-18
+====================
 Tartan Systems Upgrade
 ----------------------
  1) Improved the 'Report Stream' utility, as per a user request, by creating a
@@ -197,8 +225,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.4.6
-=========
+ver_5.4.6 2019-04-07
+====================
 Tartan Systems Upgrade
 ----------------------
  1) Added History option to Financial Statements. This will print the previous
@@ -212,8 +240,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.4.5
-=========
+ver_5.4.5 2019-02-24
+====================
 Tartan Systems Upgrade
 ----------------------
  1) Corrected the paye calculation.
@@ -225,8 +253,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.4.4
-=========
+ver_5.4.4 2019-01-23
+====================
 Tartan Systems Upgrade
 ----------------------
  1) Fixed a problem with ofx bank statement importing.
@@ -237,8 +265,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.4.2
-=========
+ver_5.4.2 2019-01-22
+====================
 Tartan Systems Upgrade
 ----------------------
  1) This is a Major Upgrade leading up to Python version 3.
@@ -277,8 +305,8 @@ This will probably be the last release of Tartan using Python 2.
 
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.4.1
-=========
+ver_5.4.1 2019-01-15
+====================
 Tartan Systems Upgrade
 ----------------------
  1) This is a Major Upgrade leading up to Python version 3.
@@ -317,8 +345,8 @@ This will probably be the last release of Tartan using Python 2.
 
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.13
-==========
+ver_5.3.13 2018-09-03
+=====================
 1) Fixed an error in general ledger data capture where the last row in the page
     was freezing.
 
@@ -326,8 +354,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.12
-==========
+ver_5.3.12 2018-08-19
+=====================
 1) Added the facility to add notes to the bowls competition format report.
 2) Changed the method automatic ageing is done in creditors and debtors.
 3) Changed the extended rental system to incorporate basic charges.
@@ -339,8 +367,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.11
-==========
+ver_5.3.11 2018-07-13
+=====================
 1) Added the facility to print crs/drs age analysis strictly according to
    the financial period of the transactions (Curdt).
 2) Fixed an error in the V.A.T. report, exporting to excel.
@@ -350,8 +378,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.10
-==========
+ver_5.3.10 2018-06-18
+=====================
 1) Fixed a bank statement qif import error.
 2) Added disallowed companies on the user's record.
 3) Some other minor bug fixes and improvements.
@@ -360,8 +388,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.9
-=========
+ver_5.3.9 2018-06-01
+====================
 1) Improved the V.A.T. Statement report and spreadsheet.
 2) Updated and improved the creditor's and debtor's toolbox transaction
    re-allocations.
@@ -374,8 +402,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.8
-=========
+ver_5.3.8 2018-05-01
+====================
 1) Fixed a problem when exporting a V.A.T. Statement to xls.
 2) Some other minor bug fixes and improvements.
 
@@ -383,8 +411,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.7
-=========
+ver_5.3.7 2018-04-11
+====================
 1) Fixed a V.A.T. problem with Sales Orders produced before April 2018 but only Supplied and Invoiced in April 2018.
 2) Some other minor bug fixes and improvements.
 
@@ -392,8 +420,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.6
-=========
+ver_5.3.6 2018-04-08
+====================
 1) V.A.T. Records - Changed the V.A.T. Report to show percentages.
 2) Some other minor bug fixes and improvements.
 
@@ -401,8 +429,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.5
-=========
+ver_5.3.5 2018-04-05
+====================
 1) V.A.T. Records - Improved the maintenance module.
 2) Rentals - Fixed a bug in the month-end routine.
 3) Loans - Improved the Rate Change module.
@@ -414,8 +442,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.4
-=========
+ver_5.3.4 2018-03-29
+====================
 1) Updated the personal tax records as per the 2018 budget.
 2) Some minor bug fixes and improvements.
 
@@ -435,8 +463,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.3
-=========
+ver_5.3.3 2018-02-21
+====================
 1) Added a module to the stores toolbox to mark items, with zero balances and without any movements for the past number months, as redundant. The number of months defaults to 24 but can be changed.
 2) Altered all stores modules to ignore redundant items.
 3) Some minor bug fixes and improvements.
@@ -445,8 +473,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.2
-=========
+ver_5.3.2 2017-09-11
+====================
 1) Fixed an error in general ledger postings to subsiduary ledgers.
 2) Fixed an error in general ledger manual journal entries import routine.
 3) Made some other enhancements and bug fixes.
@@ -456,8 +484,8 @@ NB:
 This is a very important update if you are using the general ledger.
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.3.1
-=========
+ver_5.3.1 2017-08-24
+====================
 1) Added the facility for each system to have its own return email address
    e.g. Debtor's could have its own email address and so could Creditors etc.
    These email addresses are entered in the respective Control Records.
@@ -474,8 +502,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.2.8
-=========
+ver_5.2.8 2017-02-25
+====================
 1) Added Orders tag to creditor's interrogation to display outstanding orders.
 2) Included the pycrypto module to enable the password manager utility.
 3) Fixed a bug in the debtor's master listing module.
@@ -491,8 +519,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.2.7
-=========
+ver_5.2.7 2017-01-12
+====================
 1) General Ledger - Added the facility in the toolbox to delete unwanted
    imported bank statement records by date.
 2) Purchase Orders - Inserting the value field for purchase order receipts.
@@ -503,8 +531,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.2.6
-=========
+ver_5.2.6 2016-11-07
+====================
 1) Loans System - Fixed a bug in the loans rate change module.
 2) Stores System - Changed the purchase order module to print cancelled orders.
 3) Bowls System - Added an new competition type for drawn club competitions e.g.
@@ -515,8 +543,8 @@ NB:
 --
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.2.5
-=========
+ver_5.2.5 2016-09-03
+====================
 1) Sales Invoicing - Added the facility to convert a Quotation into a Sales
    Order.
 2) Bowls System - Improved strength v strength Tabs-Inn draws as follows:
@@ -542,8 +570,8 @@ If you require some modifications to Tartan which you think would be beneficial
 please let me know and if feasible I will try and incorporate them with the next
  elease.
 
-ver_5.2.4
-=========
+ver_5.2.4 2016-07-10
+====================
 1) Higlight budgets, with a gray background, when running financial statements
    by month and using combination of actuals and budgets.
 2) Fixed a bug in the financial statements relating to budgets and last year
@@ -555,16 +583,16 @@ Notes:
 ------
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.2.3
-=========
+ver_5.2.3 2016-06-22
+====================
 1) Added extra tag to debtor's interrogation to display outstanding quotations
    and orders. Double-clicking on the document will display the actual document.
 2) Added the facility to do random or strength verses strength tab draws in the
    Bowling Clubs system.
 3) Fixed a bug in the general ledger manual journal module.
 
-ver_5.2.2
-=========
+ver_5.2.2 2016-06-22
+====================
 1) Added a major facility to allocate to subsiduary ledgers when capturing
    general ledger journals.
 2) Make numerous changes to the bowls competition system including the
@@ -577,16 +605,16 @@ Notes:
 ------
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.2.1
-=========
+ver_5.2.1 2016-03-01
+====================
 1) Fixed a bug preventing creation of a new database.
 
 Notes:
 ------
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.1.4
-=========
+ver_5.1.4 2016-02-21
+====================
 1) Fixed creditor's data capture module (Loans).
 2) Fixed debtor's statement module (Range).
 3) Fixed staff loan's masterfile maintenance.
@@ -598,8 +626,8 @@ Notes:
 ------
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.1.3
-=========
+ver_5.1.3 2015-12-09
+====================
 1) Fixed a problem in the creditor's data capture module.
 2) Updated the reference manual.
 3) Some minor bug fixes.
@@ -608,8 +636,8 @@ Notes:
 ------
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.1.2
-=========
+ver_5.1.2 2015-10-21
+====================
 1) Added stores module to Delete outstanding purchase orders.
 2) Minor bug fixes.
 
@@ -617,16 +645,16 @@ Notes:
 ------
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.1.1
-=========
+ver_5.1.1 2015-10-12
+====================
 1) Minor changes to the loans system.
 
 Notes:
 ------
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.0.18
-==========
+ver_5.0.18 2015-10-03
+=====================
 Hi
 
 There is a problem with Tartan 5.0.16 and 5.0.17 versions relating to the
@@ -638,8 +666,8 @@ I apologise for any inconvenience.
 
 Regards
 
-ver_5.0.17
-==========
+ver_5.0.17 2015-06-24
+=====================
 1) Fixed an error with the G/L Financial Report Stream option.
 2) Some minor bug fixes.
 
@@ -650,8 +678,8 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
 Also please note that to enable VAT reports there must be a VAT Number in the
 Company Record.
 
-ver_5.0.16
-==========
+ver_5.0.16 2015-06-19
+=====================
 1) Fixed an error with XLS exports.
 2) Some minor bug fixes and changes required for upgrade to python 3.
 
@@ -659,8 +687,8 @@ Note:
 -----
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.0.15
-==========
+ver_5.0.15 2015-06-17
+=====================
 1) Increased transactions to support up to 999 million as per g/l.
 2) Added file imports for G/L account number changes.
 3) Added file imports for Stores group and code changes.
@@ -671,8 +699,8 @@ Note:
 -----
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.0.14
-==========
+ver_5.0.14 2015-05-19
+=====================
 1) The manual has some further updates.
 2) Fixed an error in G/L data capture module.
 3) Fixed an error in G/L reporting stream regarding variances.
@@ -683,8 +711,8 @@ Note:
 -----
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.0.13
-==========
+ver_5.0.13 2015-04-28
+=====================
 1) The manual has some further updates.
 2) Included works orders in sales invoicing system.
 3) Added export to spreadsheet in stores master listing.
@@ -694,8 +722,8 @@ Note:
 -----
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.0.12
-==========
+ver_5.0.12 2015-04-11
+=====================
 1) Packaged pared down version of bowls system excluding all financial systems.
 2) The manual has some further updates.
 3) Some small bug fixes including adding missing image files and rcfdir error.
@@ -704,8 +732,8 @@ Note:
 -----
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.0.11
-==========
+ver_5.0.11 2015-04-07
+=====================
 1) Added the facility to produce and email invoices with debtor's recurring
    charges.
 2) Some improvements to the general ledger integration with the booking's
@@ -717,8 +745,8 @@ Note:
 -----
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.0.10
-==========
+ver_5.0.10 2015-04-01
+=====================
 1) Included the 2016 P.A.Y.E. rates.
 2) Enhanced the staff loans system.
 3) Further enhancements to the booking's manager.

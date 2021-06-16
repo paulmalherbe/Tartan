@@ -120,11 +120,11 @@ class ml1010(object):
         self.sysdt = ((t[0] * 10000) + (t[1] * 100) + t[2])
         if dateDiff(self.tme, self.sysdt, "months") > 1:
             showError(self.opts["mf"].body, "Date Error",
-                """More than Two Month Ends Have Not Been Run!!!
+                """More than Two Month Ends Have Not Been Run.
 
-This Could Have Serious Date and Transaction Issues!!!
+This Could Have Serious Date and Transaction Issues.
 
-Please Contact your Accounts Manager and Report This!!!""")
+Please Contact your Accounts Manager and Report This.""")
         self.new = False
         self.edit = False
         self.idnum = 0
@@ -454,7 +454,7 @@ Please Contact your Accounts Manager and Report This!!!""")
         self.surname = self.memmst[self.sql.memmst_col.index("mlm_surname")]
         names = self.memmst[self.sql.memmst_col.index("mlm_names")]
         gender = self.memmst[self.sql.memmst_col.index("mlm_gender")]
-        nation = self.memmst[self.sql.memmst_col.index("mlm_nation")]
+        self.nation = self.memmst[self.sql.memmst_col.index("mlm_nation")]
         self.dob = self.memmst[self.sql.memmst_col.index("mlm_dob")]
         self.idnum = self.memmst[self.sql.memmst_col.index("mlm_idnum")]
         self.occup = self.memmst[self.sql.memmst_col.index("mlm_occup")]
@@ -472,8 +472,8 @@ Please Contact your Accounts Manager and Report This!!!""")
         self.df.loadEntry("T", 0, 3, data=self.surname)
         self.df.loadEntry("T", 1, 0, data=names)
         self.df.loadEntry("T", 1, 1, data=gender)
-        self.df.loadEntry("T", 1, 2, data=nation)
-        self.df.loadEntry("T", 1, 3, data=countries[nation][1])
+        self.df.loadEntry("T", 1, 2, data=self.nation)
+        self.df.loadEntry("T", 1, 3, data=countries[self.nation][1])
         self.df.loadEntry("T", 1, 4, data=self.dob)
         if not self.dob:
             self.age = 0
@@ -1401,7 +1401,7 @@ Names:   %s
         if jpg:
             self.image = ShowImage(self.df.nb.Page7, jpg,
                 wrkdir=self.opts["mf"].rcdic["wrkdir"],
-                msiz=int(self.opts["mf"].bh*.75))
+                msiz=int(self.opts["mf"].body.winfo_height()*.75))
 
     def doPrint(self):
         mess = "Select the Required Print Option."
@@ -1500,7 +1500,7 @@ Names:   %s
         fld = (
             (("T",0,0,0),"INA",20,"Template Name - Front","",
                 self.cftpl,"Y",self.doPrtTpl,tpm,None,("notblank",)),
-            (("T",0,0,0),"INA",20,"Template Name - Back","",
+            (("T",0,1,0),"INA",20,"Template Name - Back","",
                 self.cbtpl,"Y",self.doPrtTpl,tpm,None,None))
         self.pf = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=fld, tend=((self.doPrtEnd,"N"),), view=("N","V"))
@@ -1546,7 +1546,7 @@ Names:   %s
             self.df.setWidget(self.df.mstFrame, state="show")
             img = ShowImage(self.df.nb.Page7, jpg,
                 wrkdir=self.opts["mf"].rcdic["wrkdir"],
-                msiz=int(self.opts["mf"].bh*.75), crop=True)
+                msiz=int(self.opts["mf"].body.winfo_height()*.75), crop=True)
             tmp = os.path.join(self.opts["mf"].rcdic["wrkdir"], "temp.jpg")
             siz = img.roi.size
             img.roi.save(tmp)

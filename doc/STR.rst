@@ -54,10 +54,10 @@ Use this routine to create, amend and delete store's ledger records.
     + **Description** - The description of the item.
     + **Unit of Issue** - The unit of issue code relating to the item.
     + **Units Per Pack** - The number of units making up the pack. If applicable, the price for a single item would be the purchase or selling price divided by this number.
-    + **Value Indicator** - Select the cost price value indicator as follows:
+    + **Cost Price Indicator** - Select the cost price value indicator as follows:
         + **Average** - The cost price will be the value divided by the quantity.
         + **Standard** - The cost will be a fixed cost price.
-        + **None** - The item will not have a cost print. This is normally used for goods which are not purchased and are not standard e.g. recipes, travelling, labour etc.
+        + **None** - The item will not have a cost price. This is normally used for goods which are not purchased and are not standard e.g. recipes, travelling, labour etc.
     + **VAT Code** - The default vat code for the item.
     + **Exclusive Chain Store** - If chain stores are enabled in the debtor's ledger and the item is exclusive to a Chain Store, this is the Chain Store code.
     + **Exclusive Account** - If the item is exclusive to a debtor's account, this is the debtor's account number.
@@ -78,9 +78,18 @@ Use this routine to create, amend and delete store's ledger records.
         + **Code** - The product code.
         + **Quantity** - The quantity of the item needed for the recipe.
 
+Standard Cost Prices (ST)
++++++++++++++++++++++++++
+Use this routine to create and amend product standard cost prices.
+
++ **Product Group** - The product group.
++ **Product Code** - The product code.
++ **Location** - The location code, if applicable.
++ **Cost Price** - The cost price.
+
 Fixed Selling Prices (ST)
 +++++++++++++++++++++++++
-Use this routine to create and amend product selling prices. These prices will take preference where automatic markup selling prices have been enabled.
+Use this routine to create and amend product fixed selling prices. These prices will take preference even if they are set to zero.
 
 + **Product Group** - The product group.
 + **Product Code** - The product code.

@@ -38,8 +38,8 @@ class ar2030(object):
             self.args = None
         if self.setVariables():
             if self.args:
-                self.curdt = self.args[0]
-                self.endPage0()
+                if not self.doChkDate(self.args[0]):
+                    self.endPage0()
             else:
                 self.dataHeader()
                 if "wait" in self.opts:
@@ -92,14 +92,19 @@ class ar2030(object):
             txit=txt)
 
     def doTrdate(self, frt, pag, r, c, p, i, w):
-        if w < self.sper or w > self.eper:
+        chk = self.doChkDate(w)
+        if chk:
+            return chk
+
+    def doChkDate(self, date):
+        if date < self.sper or date > self.eper:
             return "Invalid Date, Not in Financial Period"
         if self.lastp and self.lastp < self.sper:
             dte1 = mthendDate(self.lastp * 100)
             dte2 = mthendDate(self.sper * 100)
             if dateDiff(dte1, dte2, "months") > 1:
                 return "Missing Depreciation for Previous Period"
-        self.curdt = w
+        self.curdt = date
 
     def endPage0(self):
         if self.args:
@@ -136,7 +141,17 @@ class ar2030(object):
             self.depacc = grp[self.sql.assgrp_col.index("asg_depacc")]
             self.expacc = grp[self.sql.assgrp_col.index("asg_expacc")]
             self.code = dat[self.sql.assmst_col.index("asm_code")]
-            self.depcod = dat[self.sql.assmst_col.index("asm_depcod")]
+            depcod = dat[self.sql.assmst_col.index("asm_depcod")]
+            # Get Depreciation Record
+            self.dep = self.sql.getRec(tables="assdep",
+                where=[("asd_cono", "=", self.opts["conum"]),
+                ("asd_code", "=", depcod)], limit=1)
+            if not self.dep:
+                showError(self.opts["mf"].body, "Error",
+                    "Depreciation Code %s Does Not Exist.\n\n"\
+                    "Aborting." % depcod)
+                abort = True
+                break
             bals = Balances(self.opts["mf"], "ASS", self.opts["conum"],
                 self.sper, keys=(self.group.work, self.code))
             asset = bals.doAssBals()
@@ -205,10 +220,6 @@ class ar2030(object):
         if years > 6:
             # Maximum of 7 variable rates in assdep record
             years = 6
-        # Get Depreciation Record
-        dep = self.sql.getRec("assdep", where=[("asd_cono", "=",
-            self.opts["conum"]), ("asd_code", "=", self.depcod)], limit=1)
-        #
         # Extract Depreciation up to previous year end
         whr = copyList(where)
         whr.extend([("ast_mtyp", "=", 4), ("ast_curdt", "<", self.sper)])
@@ -233,18 +244,18 @@ class ar2030(object):
             cmd[1] = 0
         if not cmd[2]:
             cmd[2] = 0
-        if dep[self.sql.assdep_col.index("asd_typec")] == "S":
+        if self.dep[self.sql.assdep_col.index("asd_typec")] == "S":
             # Straight Line
             cval = self.cap
-            crat = dep[self.sql.assdep_col.index("asd_rate1c")]
+            crat = self.dep[self.sql.assdep_col.index("asd_rate1c")]
             for x in range(2, years + 2):
-                n = dep[self.sql.assdep_col.index("asd_rate%sc" % x)]
+                n = self.dep[self.sql.assdep_col.index("asd_rate%sc" % x)]
                 if n:
                     crat = n
         else:
             # Depreciating Balance
             cval = float(ASD(self.cap) + ASD(pmd[0]))
-            crat = dep[self.sql.assdep_col.index("asd_rate1c")]
+            crat = self.dep[self.sql.assdep_col.index("asd_rate1c")]
         if cval:
             if cval < 0:
                 cdep = 0
@@ -255,22 +266,22 @@ class ar2030(object):
                 if cbal < 0:
                     cdep = float(ASD(cdep) + ASD(cbal))
                 cdep = float(ASD(0) - ASD(cdep))
-        typer = dep[self.sql.assdep_col.index("asd_typer")]
+        typer = self.dep[self.sql.assdep_col.index("asd_typer")]
         if self.rordp == "N" or typer == "N":
             rdep = 0
         else:
             if typer == "S":
                 # Straight Line
                 rval = self.cap
-                rrat = dep[self.sql.assdep_col.index("asd_rate1r")]
+                rrat = self.dep[self.sql.assdep_col.index("asd_rate1r")]
                 for x in range(2, years + 2):
-                    n = dep[self.sql.assdep_col.index("asd_rate%sr" % x)]
+                    n = self.dep[self.sql.assdep_col.index("asd_rate%sr" % x)]
                     if n:
                         rrat = n
             else:
                 # Depreciating Balance
                 rval = float(ASD(self.cap) + ASD(pmd[1]))
-                rrat = dep[self.sql.assdep_col.index("asd_rate1r")]
+                rrat = self.dep[self.sql.assdep_col.index("asd_rate1r")]
             if rval:
                 if rval < 0:
                     rdep = 0

@@ -25,7 +25,8 @@ COPYING
 """
 
 from TartanClasses import ASD, TartanDialog, Sql
-from tartanFunctions import askChoice, askQuestion, copyList, showError
+from tartanFunctions import askChoice, askQuestion, callModule, copyList
+from tartanFunctions import showError
 
 class bc2070(object):
     def __init__(self, **opts):
@@ -74,6 +75,7 @@ class bc2070(object):
                 ("btb_tab=bce_scod",),
                 ("bcg_cono=bce_cono",),
                 ("bcg_scod=bce_scod",),
+                ("bcg_ocod<900000",),
                 ("bcg_sfor=0 and bcg_sagt=0",)],
             "whera": [
                 ("T", "bce_ccod", 0, 0),
@@ -119,15 +121,25 @@ class bc2070(object):
         self.ccod = w
         self.code = com[1]
         self.df.loadEntry(frt, pag, p + 1, data=com[0])
-        bwltyp = self.sql.getRec("bwltyp", where=[("bct_cono", "=",
-            self.opts["conum"]), ("bct_code", "=", com[1])], limit=1)
+        if not self.code:
+            bwltyp = [self.opts["conum"], 0, "KO", "K", 1, 0, 21,
+                "N", 0, "N", "", 0, 0, "N", "N", ""]
+        else:
+            bwltyp = self.sql.getRec("bwltyp", where=[("bct_cono", "=",
+                self.opts["conum"]), ("bct_code", "=", com[1])], limit=1)
         self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
         self.groups = bwltyp[self.sql.bwltyp_col.index("bct_groups")]
         self.grgame = bwltyp[self.sql.bwltyp_col.index("bct_grgame")]
         if self.cfmat == "R":
-            self.games = self.sql.getRec("bwlent", cols=["count(*)"],
-                where=[("bce_cono", "=", self.opts["conum"]), ("bce_ccod", "=",
-                self.ccod)], limit=1)[0] - 1
+            games = self.sql.getRec("bwlgme", cols=["count(*)"],
+                where=[("bcg_cono", "=", self.opts["conum"]),
+                ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", 1)],
+                group="bcg_group")
+            self.games = 0
+            for gme in games:
+                if gme[0] > self.games:
+                    self.games = gme[0]
+            self.games -= 1
         elif self.cfmat in ("D", "K"):
             totskp = self.sql.getRec("bwlent", cols=["count(*)"],
                 where=[("bce_cono", "=", self.opts["conum"]),
@@ -233,6 +245,9 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
         bwlpts = self.sql.getRec("bwlpts", where=[("bcp_cono",
             "=", self.opts["conum"]), ("bcp_code", "=", self.code),
             ("bcp_ptyp", "=", gtyp)], limit=1)
+        if not bwlpts:
+            bwlpts = [self.opts["conum"], 0, "D", "N", 0, "N",
+                0, 0, 1, "N", 0, 0, ""]
         self.skins = bwlpts[self.sql.bwlpts_col.index("bcp_skins")]
         self.sends = bwlpts[self.sql.bwlpts_col.index("bcp_sends")]
         self.ponly = bwlpts[self.sql.bwlpts_col.index("bcp_p_only")]
@@ -347,7 +362,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
     def doShots(self, frt, pag, r, c, p, i, w):
         if i == 2:
             self.s_for = w
-            if self.cfmat in ("D", "K"):
+            if self.cfmat in ("D", "K", "R"):
                 self.p_for = 0
                 self.df.loadEntry(frt, pag, p + 1, data=0)
                 return "sk1"
@@ -360,6 +375,18 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
             if self.cfmat in ("D", "K"):
                 self.p_agt = 0
                 self.df.loadEntry(frt, pag, p + 1, data=0)
+                return "sk1"
+            if self.cfmat == "R":
+                if self.s_for == self.s_agt:
+                    self.p_for = self.p_agt = .5
+                elif self.s_for > self.s_agt:
+                    self.p_for = 1
+                    self.p_agt = 0
+                else:
+                    self.p_for = 0
+                    self.p_agt = 1
+                self.df.loadEntry(frt, pag, p - 3, data=self.p_for)
+                self.df.loadEntry(frt, pag, p + 1, data=self.p_agt)
                 return "sk1"
             if not self.s_agt or (not self.totpts and self.bonus != "Y"):
                 self.p_agt = w
@@ -584,6 +611,10 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                     if len(recs) == 1:
                         break
                 self.opts["mf"].dbm.commitDbase()
+            if self.cfmat in ("D", "K"):
+                callModule(self.opts["mf"], self.df, "bc2050",
+                    coy=[self.opts["conum"], self.opts["conam"]],
+                    args=self.ccod)
         self.df.closeProcess()
         self.opts["mf"].closeLoop()
 

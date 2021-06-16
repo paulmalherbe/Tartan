@@ -239,11 +239,10 @@ class st3030(object):
         hdr = 77 + (len(self.levs) * 10)
         if self.costs == "Y":
             hdr += 22
-        self.head = ("%03u %-30s" % (self.opts["conum"], self.opts["conam"]))
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=hdr, foot=True)
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=hdr)
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         old_grp = ""
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -276,10 +275,9 @@ class st3030(object):
 
     def printCost(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s" % (self.opts["conum"], self.opts["conam"]))
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=100, foot=True)
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=100)
         old_grp = ""
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -321,7 +319,7 @@ class st3030(object):
         if self.rtype == "C":
             return (grp, code, desc, uoi, qty, acst, lcst)
         # Selling Prices
-        vat = CCD(data[4], "NA", 1)
+        vat = CCD(data[4], "UA", 1)
         rte = 0
         if self.vatinc == "Y":
             vatrte = getVatRate(self.sql, self.opts["conum"],
@@ -347,7 +345,6 @@ class st3030(object):
         locd = self.getLoc(self.loc)[0]
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         if self.rtype == "S":

@@ -50,8 +50,6 @@ class rc3040(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -126,11 +124,8 @@ class rc3040(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %125s %10s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-167s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         mst = self.sql.rcatnm_col
         con = self.sql.rcacon_col
@@ -266,11 +261,10 @@ class rc3040(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-34s %-10s %119s %5s" % ("Rental Tenants Master "\
-            "Report as at", self.datd, "Page", self.pgnum))
+        self.fpdf.drawText("%-34s %-10s" % ("Rental Tenants Master "\
+            "Report as at", self.datd))
         self.fpdf.drawText()
         opts = "%-14s %-1s" % ("(Options: Type", self.styp)
         if self.styp == "E":

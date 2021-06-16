@@ -54,8 +54,7 @@ class gl3020(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
-            "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["TP", "BatchNo", "Coy", "Acc-Num", "Description",
             "Reference", "Date", "Debits", "Credits", "Tax-Amount", "T",
             "Remarks"]
@@ -312,7 +311,7 @@ class gl3020(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("General Ledger Audit Trail for Period "\
             "%s to %s" % (self.sperd, self.eperd))
         self.expcolsh = [self.colsh]
@@ -341,11 +340,11 @@ class gl3020(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.totsonly == "Y":
-            self.head = "%03i %-37s %57s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm)
+            self.head = "%03i %-95s" % (self.opts["conum"],
+                self.opts["conam"])
         else:
-            self.head = "%03i %-41s %97s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm)
+            self.head = "%03i %-138s" % (self.opts["conum"],
+                self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.bqty = 0
         self.bdrs = 0
@@ -356,7 +355,6 @@ class gl3020(object):
         self.tcrs = 0
         self.tvat = 0
         self.trtp = 0
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -441,17 +439,16 @@ class gl3020(object):
 
     def pageHeading(self):
         self.fpdf.add_page()
-        self.pgnum += 1
         self.fpdf.drawText(self.head, font=["B"])
         self.fpdf.drawText()
         if self.totsonly == "Y":
-            self.fpdf.drawText("%-37s %-7s %-2s %-7s %36s %5s" %
+            self.fpdf.drawText("%-37s %-7s %-2s %-50s" %
                 ("General Ledger Audit Trail for Period", self.sperd,
-                "to", self.eperd, "Page", self.pgnum))
+                "to", self.eperd))
         else:
-            self.fpdf.drawText("%-37s %-7s %-2s %-7s %80s %5s" %
+            self.fpdf.drawText("%-37s %-7s %-2s %-94s" %
                 ("General Ledger Audit Trail for Period", self.sperd,
-                "to", self.eperd, "Page", self.pgnum))
+                "to", self.eperd))
         self.fpdf.drawText()
         self.pglin = 4
         if self.totind == "N":

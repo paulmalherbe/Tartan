@@ -86,7 +86,7 @@ class sc3010(object):
         recs = self.sql.getRec(tables=["scpent", "scpmem", "scpclb"], cols=col,
             where=whr, order="scm_surname")
         if recs:
-            self.fpdf = MyFpdf(auto=True, name="sc3010", head=90, foot=True)
+            self.fpdf = MyFpdf(auto=True, name="sc3010", head=90)
             self.fpdf.header = self.doHead
             self.fpdf.add_page()
             cwth = self.fpdf.cwth

@@ -53,12 +53,6 @@ class cr6020(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.curdt = int(self.sysdtw / 100)
-        check = self.sql.sqlRec("Select cra_acno from crsage where cra_acno "\
-            "in (Select cra_acno from crsage group by cra_acno having "\
-            "sum(cra_amnt) <> 0) group by cra_acno")
-        for self.acno in check:
-            self.doReAgeAuto()
-            self.opts["mf"].dbm.commitDbase()
         if "args" not in self.opts:
             self.agevar = tk.BooleanVar()
             self.agevar.set(False)

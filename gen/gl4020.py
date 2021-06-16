@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from operator import itemgetter
 from TartanClasses import ASD, GetCtl, ScrollGrid, SplashScreen, Sql, SRec
 from TartanClasses import TartanDialog
@@ -63,9 +62,6 @@ class gl4020(object):
             self.cons = False
         else:
             self.cons = True
-        t = time.localtime()
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.s_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
         if self.opts["period"][0]:

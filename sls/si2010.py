@@ -44,9 +44,9 @@ class si2010(object):
         tables = [
             "ctlsys", "ctlmst", "ctlmes", "ctlrep", "ctlvrf", "ctlvtf",
             "drschn", "drsmst", "drstrn", "drsdel", "genmst", "gentrn",
-            "strgrp", "strmf1", "strmf2", "strprc", "strgmu", "strcmu",
-            "strrcp", "strtrn", "struoi", "slsctl", "slsiv1", "slsiv2",
-            "slsiv3", "tplmst"]
+            "strgrp", "strmf1", "strmf2", "strgmu", "strcmu", "strrcp",
+            "strtrn", "struoi", "slsctl", "slsiv1", "slsiv2", "slsiv3",
+            "tplmst"]
         self.sql = Sql(self.opts["mf"].dbm, tables,
             prog=self.__class__.__name__)
         if self.sql.error:
@@ -127,7 +127,7 @@ class si2010(object):
         self.pr = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=fld, tend=((self.doPrtClose,"y"),), txit=(self.doPrtExit,),
             view=("N","P"), mail=("N","Y","Y"))
-        self.pr.mstFrame.wait_window()
+        self.opts["mf"].startLoop()
 
     def doTplNam(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w),
@@ -153,6 +153,7 @@ class si2010(object):
 
     def doPrtClose(self):
         self.pr.closeProcess()
+        self.opts["mf"].closeLoop()
 
     def mainProcess(self):
         rep = {
@@ -1096,7 +1097,7 @@ class si2010(object):
             eflds=fld, tend=((self.doDelEnd,"y"),), txit=(self.doDelExit,),
             focus=False)
         if self.drsdel:
-            self.doLoadDel("y")
+            self.doLoadDel(True)
         else:
             self.da.focusField("T", 0, 1)
         self.da.mstFrame.wait_window()
@@ -1113,7 +1114,7 @@ class si2010(object):
             return "nd"
 
     def doLoadDel(self, focus=False):
-        for n, m in enumerate(self.drsdel):
+        for n, m in enumerate(self.drsdel[:-1]):
             self.da.loadEntry("T", 0, n, data=m)
         if focus:
             self.da.focusField("T", 0, 2, clr=False)
@@ -1704,7 +1705,9 @@ class si2010(object):
                     self.oldline)])
                 for item in items:
                     quan = item[6] * qty
-                    cost = item[7] * quan
+                    icost = getCost(self.sql, self.opts["conum"], item[4],
+                        item[5], loc=self.loc, qty=1, ind="I")
+                    cost = icost * quan
                     data = [self.opts["conum"], item[4], item[5], self.loc,
                         self.trdt, 6, self.othno, self.batch, ref2, quan, cost,
                         0, self.curdt, self.name, self.chain, self.acno,

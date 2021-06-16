@@ -85,9 +85,11 @@ The following *Buttons* are available:
 
 + **Bounce** - Use this button to enter bounce games.
 + **Teams** - Use this button to enter arranged teams.
+    **Team Size** - Enter the required team size.
+    + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
 + **Entered** - Use this button to display all entered players.
 + **Modify** - Use this button to change the player's position/ratings for this draw only.
-+ **Draw** - Use this button to make the draw once all tabs have been entered. You will have to enter the following:
++ **Draw** - Use this button to make the draw once all tabs/teams and bounce games have been entered. In the case of *Teams* if there are any tabs that have been entered and have not been allocated to teams you will be prompted to either *Generate*, *Delete* or *Exit*. If *Generate* is selected the programme will try to allocate the unallocated tabs into teams.
     + **Draw Type** - The type of draw i.e. Random or Strength v Strength.
     + **Apply Percentages** - This is only available if the basis of the draw is Combined. Select whether to apply percentages to position changes e.g. A player moving up in position would lose 10% of their rating and a player moving down in position would gain 10% of their rating.
     + **Apply History** - Whether or not to take previous draws into consideration when making the current draw.
@@ -122,20 +124,20 @@ All the tab numbers, names and ratings are stored in a relational database.
 
 When a draw is made the following takes place:
 
-+ **Required Positions** - Based on the number of entered players and the selected team size i.e. 3 or 4, we now calculate the number of skips, thirds, seconds and leads required. This takes into consideration split rinks as well.
++ **Required Positions** - Based on the number of entered players and the selected team size i.e. 3 or 4, we now calculate the number of skips, thirds, seconds and leads required. This takes split rinks into consideration as well.
 + **Ratings Only** - If only ratings are being used, i.e. no positions, the required number of players by position will be allocated by strength i.e. the required number of skips will be the highest rated players and the required number of thirds the next highest rated etc.
 + **Positions Only** - If only positions are being used, i.e. no ratings, and the required number of players, by position, is short the additional players will be randomly selected from the lower positions, in order.
-+ **Combination** - If a combination of positions and ratings is used and the required number of players, by position, is short the additional players will be the highest rated from the lower positions, in order. All players elevated to a higher position loses 10% of their rating, by position, for the current draw e.g. a third rated 18 could become a skip rated 16 or a second rated 20 could theoretically become a skip rated 16.
++ **Combination** - If a combination of positions and ratings is used and the required number of players, by position, is short the additional players will be the highest rated from the lower positions, in order. If `Apply Percentages` has been selected, all players elevated to a higher position lose 10% of their rating, by position, for the current draw e.g. a third rated 18 could become a skip rated 16 or a second rated 20 could become a skip rated 16. The reverse also applies i.e. players can gain 10%, by position, if demoted to a lower position.
 + **Draw**
     + **Random** - 5,000 *RANDOM* draws are now generated and the one with the least number of anomalies is selected.
         + **Teams** - Teams are created by randomly selecting a skip, third, second and lead. This is repeated until all players have been placed.
         + **Anomalies**
             + **When applying history** - If *Apply History* was selected the history period is the period entered on the bowls control record under *Weeks Between Draws* e.g. 4 weeks which equals 28 days.
-                + Skips that have played against each other during the history period
-                + Players that have played with the same players during the history period
-                + Players that have played in a broken rink during the history period
+                + *Skips that have played against each other during the history period*
+                + *Players that have played with the same players during the history period*
+                + *Players that have played in a broken rink during the history period*
             + **Always**
-                + Difference in team strengths
+                + *Difference in team strengths*
     + **Strength v Strength** - A single draw is generated as follows:
         + **Teams** - Teams are created by placing the highest rated skip with the highest rated third with the highest rated second with the highest rated lead. This is repeated until all players have been placed.
         + **Balance** - Teams are then paired and balanced i.e. players might be moved from one team to another to try and equalise the team strengths.
@@ -313,7 +315,9 @@ Competition Draw (BC)
 Use this routine to create a draw and, if relevant, print match cards as follows:
 
 + **Tournament, Teams and Round Robin**
-    + **Competition Code** - The relevant competition code.
+    + **Competition Code** - The relevant competition code. If the competition is a new competition and is a Round Robin competition you will have the facility to sectionalise it.
+        + **Sections** - Select Yes or No.
+        + **Entries per Section** - Enter the number of entries per section.
     + **Game Number** - The relevant game number.
     + **Game Date** - The date of the game.
     + **Pair Home with Away Skips** - This only applies to the first drawn game.
@@ -324,6 +328,9 @@ Use this routine to create a draw and, if relevant, print match cards as follows
     + **Greens** - The greens to be used, comma separated e.g. A,B,C will default to 6 rinks per green. You can default a green to seven by entering A7,B7,C which would give us 20 rinks. You can also exclude rinks by entering rinks to be used e.g. A2345,B345 which would give us 7 rinks.
     + **Group per Green** - Whether to allocate greens to groups. This only applies to the final game.
     + **Print Cards** - Whether or not to print score cards.
+    + **Card Type** - If available, select the type of scorecard to print.
+        + **Ends** - A scorecard showing all ends.
+        + **Totals** - A scorecard showing only game totals.
     + **All Cards** - If cards were selected to be printed, whether to print all cards or only selected ones.
 
 + **Knockout**
@@ -381,6 +388,8 @@ If the last game of the competition is being printed, enter the following:
     + **EFT Forms** - Whether to print EFT Forms in which case you will be required to enter the total value of each prize.
 
 Results are ranked in the order of most points, largest shot difference and then least shots conceded.
+
+If the competition type is a Sectional Round Robin you will be asked whether you want to generate and print a Play-Off draw. Should you decide not to do so at this stage you can do so at another time by reprinting this report.
 
 Contact Request Forms (BC)
 ++++++++++++++++++++++++++

@@ -64,8 +64,6 @@ class si3040(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
         self.forms = [("UA",3),("NA",20),("NA",30),("NA",10)] + [("SI",10)]*12
         self.stots = [0] * 12
         self.gtots = [0] * 12
@@ -218,7 +216,8 @@ class si3040(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = ["%03u %-30s %s" % (self.opts["conum"],
+            self.opts["conam"], self.sysdttm)]
         self.expheads.append("Stores Sales History for the 12 Month Period "\
             "to %s" % self.coffd)
         self.expcolsh = [self.colsh]
@@ -233,20 +232,19 @@ class si3040(object):
             if not vals:
                 continue
             cod, dsc, uoi, amt, purchd, purchw = vals
-            line = ["BODY", [self.grp.work,cod.work,dsc.work,uoi.work]+purchw]
+            line = ["BODY", [self.grp.work, cod.work, dsc.work, uoi.work]]
+            line[1].extend(purchw)
             self.expdatas.append(line)
         p.closeProgress()
         self.grandTotal()
-        doWriteExport(xtype=self.df.repprt[1], name=expnam,
-            heads=self.expheads, colsh=self.expcolsh, forms=self.expforms,
-            datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
+        doWriteExport(xtype=self.df.repprt[1], name=expnam, heads=self.expheads,
+            colsh=self.expcolsh, forms=self.expforms, datas=self.expdatas,
+            rcdic=self.opts["mf"].rcdic)
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %110s %40s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm))
+        self.head = "%03u %-182s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         self.lstgrp = ""
         for num, dat in enumerate(recs):
@@ -323,12 +321,10 @@ class si3040(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-47s %-7s %124s %5s" % \
-            ("Stores Sales History for the 12 Month Period to", self.coffd,
-            "Page", self.pgnum))
+        self.fpdf.drawText("%-47s %-7s" % \
+            ("Stores Sales History for the 12 Month Period to", self.coffd))
         self.fpdf.drawText()
         acc = self.getGroup(self.grp.work)
         if acc:
@@ -376,8 +372,10 @@ class si3040(object):
     def grandTotal(self):
         if self.df.repprt[2] == "export":
             self.expdatas.append(["ULINES"])
-            self.expdatas.append(["TOTAL",
-                ["", "", "Grand Totals", ""] + self.gtots])
+            datas = ["TOTAL", ["", "", "Grand Totals", ""]]
+            for x in range(11,-1,-1):
+                datas[1].append(CCD(self.gtots[x], "SI", 10).work)
+            self.expdatas.append(datas)
             self.expdatas.append(["ULINED"])
             return
         purchd = ""

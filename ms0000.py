@@ -45,14 +45,14 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (5, 13)
+    VERSION = (6, 0)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
     def __init__(self, opts, args):
         self.cv = [VERSION, "%s.%s" % VERSION]
         default = [
-            ("altered", False),
+            ("altered", True),
             ("bpwd", ""),
             ("conum", None),
             ("debug", False),
@@ -77,7 +77,7 @@ class ms0000(object):
             setattr(self, arg, val)
         for o, v in opts:
             if o in ("-a", "--altered"):
-                self.altered = True
+                self.altered = False
             if o in ("-b", "--bpwd"):
                 self.bpwd = v
             elif o in ("-c", "--conum"):
@@ -146,9 +146,6 @@ class ms0000(object):
                 self.xdisplay = False
             elif o in ("-z", "--zerobar"):
                 self.zerobar = True
-        if self.script:
-            exec("import %s" % self.script)
-            self.doExit(dbm=False)
         if self.output:
             # Redirect stdout
             for pid in range(1000):
@@ -164,6 +161,9 @@ class ms0000(object):
                         break
                 except:
                     pass
+        if self.script:
+            exec("import %s" % self.script)
+            self.doExit(dbm=False)
         if self.help:
             print("""
 Tartan Systems Help
@@ -171,7 +171,7 @@ Tartan Systems Help
 Usage:      python ms0000.py [options]
 
 Options:
-            -a, --altered           Check for Altered Tables
+            -a, --altered           Toggle Check for Altered Tables
             -b, --bpwd=             The backup password
             -c, --conum=            The company number
             -d, --debug             Enter debug/trace mode
@@ -202,7 +202,7 @@ Options:
             elif not self.user:
                 print("xdisplay False but No User Name")
                 self.doExit(dbm=False)
-        # Check for required modules are installed
+        # Check that required modules are installed
         mods = [
             ("fpdf", "fpdf", "__version__"),
             ("PIL", "pillow", "__version__")]
@@ -220,35 +220,38 @@ Options:
             if errs:
                 self.doExit(dbm=False)
         else:
-            # Print/Display installed versions
+            # Print/Display all dependancies
             nm = platform.uname()
             print("%-16s: %s" % ("Tartan", self.cv[1]))
             print("%-16s: %s, %s, %s" % ("O/System", nm[0], nm[2], nm[4]))
-            print("%-16s: %s" % ("python", sys.version.split()[0]))
+            if sys.maxsize > 2**32:
+                py = "python 64bit"
+            else:
+                py = "python 32bit"
+            print("%-16s: %s" % (py, sys.version.split()[0]))
             from TartanClasses import tk
             print("%-16s: %s" % ("tcl/tk",
                 tk.Tcl().eval("info patchlevel")))
             mods.extend([
-                ("Crypto", "pycryptodome", "__version__"),
-                ("escpos", "python-escpos", ("version", "version")),
+                ("sqlite3", "pysqlite", "version"),
+                ("sqlite3", "sqlite3", "sqlite_version"),
                 ("fitz", "pymupdf", "version"),
                 ("markdown", "markdown", "__version__"),
                 ("ofxtools", "ofxtools", "__version__"),
+                ("openpyxl", "openpyxl", "__version__"),
                 ("progress", "progress", "__version__"),
                 ("psycopg2", "psycopg2", "__version__"),
                 ("pyaes", "pyaes", "VERSION"),
-                ("pyexcel_ods", "pyexcel-ods", None),
                 ("pygal", "pygal", "__version__"),
+                ("Crypto", "pycryptodome", "__version__"),
+                ("pyexcel", "pyexcel", "__version__"),
+                ("pyexcel_ods", "pyexcel-ods", None),
+                ("smb", "pysmb", None),
                 ("requests", "requests", "__version__"),
                 ("send2trash", "send2trash", None),
-                ("smb", "pysmb", None),
-                ("sqlite3", "pysqlite", "version"),
-                ("sqlite3", "sqlite3", "sqlite_version"),
                 ("svglib", "svglib", ("svglib", "__version__")),
                 ("tkcolorpicker", "tkcolorpicker", None),
-                ("tkinterhtml", "tkinterhtml", None),
-                ("xlrd", "xlrd", "__VERSION__"),
-                ("xlwt", "xlwt", "__VERSION__")])
+                ("tkinterhtml", "tkinterhtml", None)])
             for mod in mods:
                 ver = chkMod(mod[0])
                 if not ver:
@@ -274,10 +277,10 @@ Options:
         if self.debug:
             # Set trace mode
             import trace
+            igd = [sys.prefix, sys.exec_prefix]
             igm = ["__init__"]
             if self.exclude:
                 igm.extend(self.exclude)
-            igd = [sys.prefix, sys.exec_prefix]
             os.environ["TARTANDB"] = "1"
             self.tracer = trace.Trace(ignoredirs=igd, ignoremods=igm,
                 trace=1, count=0)
@@ -309,7 +312,6 @@ Options:
                 if self.mf.rcdic == "error":
                     self.doExit(dbm=False)
                 self.mf.dbm = None
-                self.mf.window.deiconify()
                 cfg = TartanConfig(self.mf, rcfile=self.rcfile,
                     rcdic=self.rcdic, level=9)
                 if not cfg.rcfile:
@@ -322,16 +324,17 @@ Options:
             if self.mf.rcdic == "error":
                 self.doExit(dbm=False)
         if self.xdisplay:
+            # Display the main title
             titl = "%s - (%s - %s@%s)" % (main, self.rcdic["dbase"],
                 self.rcdic["dbname"], self.rcdic["dbhost"])
             self.mf.window.title(titl)
             self.mf.head.configure(text="Tartan Systems")
         # Try connecting to the database and create if missing
-        self.db = Dbase(rcdic=self.rcdic, screen=self.mf.body)
-        if self.db.err:
+        self.dbm = Dbase(rcdic=self.rcdic, screen=self.mf.body)
+        if self.dbm.err:
             self.doExit(dbm=False)
-        self.mf.dbm = self.db
-        chk = self.db.checkDbase()
+        self.mf.dbm = self.dbm
+        chk = self.dbm.checkDbase()
         if chk not in (True, False):
             showError(self.mf.window, "Database", chk)
             self.doExit()
@@ -353,11 +356,11 @@ Options:
                     ("-p", self.rcdic["dbpwd"]),
                     ("-v", self.cv[1]),
                     ("-x", True)]
-                DBCreate(dbm=self.db, opts=opts)
+                DBCreate(dbm=self.dbm, opts=opts)
                 self.tarUpd(True)
         if not self.nocheck:
             # Open the database
-            self.db.openDbase()
+            self.dbm.openDbase()
             # Check for ctlsys and if missing call msc110
             err = self.doCheckSys()
             if not err:
@@ -367,7 +370,10 @@ Options:
                 # If error, exit
                 self.doExit()
             # Close dbase
-            self.db.closeDbase()
+            self.dbm.closeDbase()
+        if not self.program or self.program != "tarUpd":
+            # Check Tartan version and File Formats
+            self.doVersionCheck()
         if self.user:
             # Check if user details supplied are valid
             self.userReadCheck(user=self.user["name"], pwd=self.user["pwd"],
@@ -381,9 +387,6 @@ Options:
         if not self.user:
             # Exit if not valid user
             self.doExit()
-        if not self.program or self.program != "tarUpd":
-            # Check tartan version
-            self.doVersionCheck()
         if self.query:
             # Excecute sql query
             if self.user["lvl"] == 9:
@@ -392,7 +395,7 @@ Options:
                 err = "Invalid Security Level"
             if err:
                 if self.xdisplay:
-                    showError(self.mf.body, "Data Base Error",
+                    showError(self.mf.window, "Data Base Error",
                         "\nDbCommand Error: %s\n" % err)
                 else:
                     print("Data Base Error", "DbCommand Error: %s\n" % err)
@@ -414,12 +417,10 @@ Options:
                             found = True
                             break
             if found:
-                if self.xdisplay and self.program != "ps2010":
-                    self.mf.window.deiconify()
                 self.execCommand(mod[0], self.program, mod[4], rtn=self.tcode,
                     menu=False)
             else:
-                print("Invalid Module (%s) or Missing Options e,g, "\
+                print("Invalid Module (%s) or Missing Options e.g. "\
                     "(-c, -f or -t)" % self.program)
             self.doExit()
         if self.itoggle:
@@ -438,9 +439,8 @@ Options:
         self.tarmen = TartanMenu(mf=self.mf, usr=self.user["name"],
             men=self.usrmen, mod=self.usrmod, lvl=self.user["lvl"],
             cmd=self.execCommand, img=self.image)
-        if not self.doVersionCheck():
-            # Check for notes
-            self.checkNotes()
+        # Check for notes
+        self.checkNotes()
         # Display the tartan menu
         self.tarmen.drawMenu()
 
@@ -465,9 +465,83 @@ Options:
         self.tarmen = None
         self.email = None
 
+    def doVersionCheck(self):
+        if self.xdisplay:
+            scrn = self.mf.window
+        else:
+            scrn = "text"
+        self.dbm.openDbase()
+        sql = Sql(self.dbm, ["ftable", "ffield", "verupd"])
+        chk = sql.getRec("verupd", limit=1)
+        if not chk:
+            showError(scrn, "Version Error", "Missing verupd Table")
+            self.doExit()
+        v = chk[0].split(".")
+        ov = (int(v[0]), int(v[1].rstrip()))
+        if ov < (5, 5):
+            showError(scrn, "Version Error",
+                """The Version of the Data, %s.%s, is too Old.
+
+Please follow the upgrade instructions at http://www.tartan.co.za/Downloads
+
+or
+
+Email paul@tartan.co.za, with your version number, for assistance.""" % ov)
+            self.doExit()
+        if ov > self.cv[0]:
+            self.dbm.closeDbase()
+            ok = askQuestion(scrn, "Version Error",
+                """Your Version of TARTAN (%s) Is Older than the File Formats!
+
+Do You Want to Upgrade TARTAN Now?""" % self.cv[1], default="yes")
+            if ok == "yes":
+                self.sysUpd()
+            self.doExit()
+        err = bool(ov != self.cv[0])
+        chg = False
+        if not err and self.altered:
+            # Check for Altered Tables
+            for tb in tabdic:
+                for ext in ("fld", "idx"):
+                    lines = tabdic[tb][ext]
+                    f1 = []
+                    for line in lines:
+                        f1.append(line)
+                    if ext == "fld":
+                        fle = sql.getRec("ffield", where=[("ff_tabl",
+                            "=", tb)], order="ff_seq")
+                        f2 = []
+                        for f in fle:
+                            tp = [int(f[1]), f[2], f[3], float(f[4])]
+                            tp.extend(f[5:])
+                            f2.append(tp)
+                    else:
+                        fle = sql.getRec("ftable", where=[("ft_tabl",
+                            "=", tb)], order="ft_seq")
+                        f2 = []
+                        for f in fle:
+                            tp = [f[1], int(f[2]), f[3]]
+                            for t in f[4:]:
+                                if t:
+                                    tp.append(t)
+                            f2.append(tp)
+                    if f1 != f2:
+                        chg = True
+                        break
+        self.dbm.closeDbase()
+        if chg or err:
+            ok = askQuestion(scrn, "Version Error",
+                """Your File Formats Need Updating,
+
+Do You Want to Update Your Files?""", default="yes")
+            if ok == "yes":
+                self.tarUpd(True)
+            else:
+                self.doExit()
+
     def userLogin(self):
-        if not self.db.dbopen:
-            self.db.openDbase()
+        if not self.dbm.dbopen:
+            self.dbm.openDbase()
             dbopend = True
         else:
             dbopend = False
@@ -475,7 +549,7 @@ Options:
             self.userReadCheck()
             if self.user and not self.user["pwd"]:
                 if dbopend:
-                    self.db.closeDbase()
+                    self.dbm.closeDbase()
                 return
         if self.user:
             login = self.user["name"]
@@ -500,7 +574,7 @@ Options:
         self.loop = True
         self.mf.startLoop()
         if dbopend:
-            self.db.closeDbase()
+            self.dbm.closeDbase()
 
     def usrNam(self, frt, pag, r, c, p, i, w):
         self.userReadCheck(w)
@@ -530,12 +604,12 @@ Options:
         self.mf.closeLoop()
 
     def userReadCheck(self, user=None, userchk=False, pwd=None, pwdchk=False):
-        if not self.db.dbopen:
-            self.db.openDbase()
+        if not self.dbm.dbopen:
+            self.dbm.openDbase()
             dbopend = True
         else:
             dbopend = False
-        sql = Sql(self.db, ["ctlmst", "ctlpwu", "ctlpwm"], prog="ms0000")
+        sql = Sql(self.dbm, ["ctlmst", "ctlpwu", "ctlpwm"], prog="ms0000")
         if not user:
             chk = sql.getRec("ctlpwu")
             if len(chk) == 1:
@@ -544,7 +618,7 @@ Options:
             limit=1)
         if userchk:
             if dbopend:
-                self.db.closeDbase()
+                self.dbm.closeDbase()
             return usr
         if not usr:
             self.user = {}
@@ -633,7 +707,7 @@ Options:
                             nop.remove([sss, mod])
             # Generate dictionary of financial companies
             self.fcoy = {}
-            sql = Sql(self.db, ["ctlmst", "ctlynd"], prog="ms0000")
+            sql = Sql(self.dbm, ["ctlmst", "ctlynd"], prog="ms0000")
             jon = "Left outer join ctlynd on cye_cono=ctm_cono"
             col = ["ctm_cono", "max(cye_period)"]
             grp = "ctm_cono"
@@ -673,7 +747,7 @@ Options:
                 if add:
                     self.usrmod.append(mod)
         if dbopend:
-            self.db.closeDbase()
+            self.dbm.closeDbase()
 
     def userCheckPwd(self, pwd):
         try:
@@ -718,25 +792,16 @@ Options:
 
     def execCommand(self, typ, prg, tit="", rtn=None, menu=True, password=True):
         if menu:
+            self.tarmen.closeMenu()
             if self.program and prg == "ps2010":
                 self.mf.window.iconify()
-            self.tarmen.closeMenu()
-        if prg not in ("sysUpd", "sysEnd"):
-            if prg == "tarUpd":
-                vtype = "upd"
-            else:
-                vtype = "chk"
-            if self.doVersionCheck(vtype):
-                if menu:
-                    self.tarmen.drawMenu()
-                return
         if rtn is not None:
             try:
                 rtn = int(rtn)
             except:
                 rtn = None
-        if not self.db.dbopen:
-            self.db.openDbase()
+        if not self.dbm.dbopen:
+            self.dbm.openDbase()
             dbopend = True
         else:
             dbopend = False
@@ -767,12 +832,12 @@ System --> Change Password""")
                                 self.mf.head, self.mf.body, self.mf.status):
                             wgt.destroy()
                     showException(self.mf.body, self.rcdic["wrkdir"],
-                        "Function %s Error %s" % (prg, err), dbm=self.db)
+                        "Function %s Error %s" % (prg, err), dbm=self.dbm)
                 else:
                     showException(None, self.rcdic["wrkdir"],
-                        "Function %s Error" % prg, dbm=self.db)
+                        "Function %s Error" % prg, dbm=self.dbm)
                 if dbopend:
-                    self.db.closeDbase()
+                    self.dbm.closeDbase()
                 self.doExit()
         elif typ[0] == "P":
             self.mf.updateStatus("")
@@ -809,7 +874,7 @@ System --> Change Password""")
                             if per == (None, None, None):
                                 error = True
                             elif rtn and per[2] == "Y":
-                                showError(self.mf.body, "Period Error",
+                                showError(self.mf.window, "Period Error",
                                     "This Period Has Already Been Finalised")
                                 error = True
                             else:
@@ -823,7 +888,7 @@ System --> Change Password""")
                         if not self.conum:
                             error = True
                     if mcoy and self.conum != mcoy:
-                        showError(self.mf.body, "Company Error",
+                        showError(self.mf.window, "Company Error",
                             "This Company, Module Combination "\
                             "is Not Allowed for This User")
                         error = True
@@ -850,12 +915,12 @@ System --> Change Password""")
         if dbopend:
             try:
                 # Rollback any uncommitted transactions
-                self.db.rollbackDbase()
+                self.dbm.rollbackDbase()
             except:
                 pass
             try:
                 # Close the database
-                self.db.closeDbase()
+                self.dbm.closeDbase()
             except:
                 pass
         if menu:
@@ -866,8 +931,9 @@ System --> Change Password""")
                 self.tarmen.men = self.usrmen
                 self.tarmen.mod = self.usrmod
                 self.tarmen.setVariables()
-            if not self.doVersionCheck():
-                self.checkNotes()
+            # Check for Notes
+            self.checkNotes()
+            # Draw the Menu
             self.tarmen.drawMenu()
         elif self.xdisplay:
             self.mf.head.configure(text="Tartan Systems")
@@ -898,7 +964,7 @@ System --> Change Password""")
     def getCompany(self, prg=None, period=None):
         self.prg = prg
         self.pertyp = period
-        sql = Sql(self.db, "ctlmst", prog="ms0000")
+        sql = Sql(self.dbm, "ctlmst", prog="ms0000")
         if self.acoy:
             whr = [("ctm_cono", "in", tuple(self.acoy))]
         else:
@@ -998,13 +1064,13 @@ System --> Change Password""")
         self.cp.topf[0][2][5] = self.finper
 
     def getLastPeriod(self):
-        sql = Sql(self.db, "ctlynd", prog="ms0000")
+        sql = Sql(self.dbm, "ctlynd", prog="ms0000")
         p = sql.getRec("ctlynd", cols=["max(cye_period)"],
             where=[("cye_cono", "=", self.conum)])
         self.finper = int(p[0][0])
 
     def finPeriod(self, frt, pag, r, c, p, i, w):
-        sql = Sql(self.db, "ctlynd", prog="ms0000")
+        sql = Sql(self.dbm, "ctlynd", prog="ms0000")
         r = sql.getRec("ctlynd", cols=["cye_period"],
             where=[("cye_cono", "=", self.conum), ("cye_period", "=", w)],
             limit=1)
@@ -1031,10 +1097,10 @@ System --> Change Password""")
                 pass
         try:
             rtn = popt.get("rtn", 0)
-            sql = Sql(self.db, ["ffield", "ctllog"], prog="ms0000")
+            sql = Sql(self.dbm, ["ffield", "ctllog"], prog="ms0000")
             if not sql.error:
                 chk = sql.getRec("ffield", where=[("ff_tabl", "=", "ctllog")])
-            if not sql.error and len(chk) == 7:
+            if not sql.error and len(chk) == 8:
                 if not self.user:
                     name = "admin"
                 else:
@@ -1054,7 +1120,7 @@ System --> Change Password""")
                 logd.append(int(
                     "%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3]))
                 sql.insRec("ctllog", data=logd)
-                self.db.commitDbase()
+                self.dbm.commitDbase()
             err = runModule(prg[0], **popt)
             if err:
                 raise Exception(err)
@@ -1064,20 +1130,20 @@ System --> Change Password""")
                     if wgt not in (self.mf.head, self.mf.body, self.mf.status):
                         wgt.destroy()
                 showException(self.mf.body, self.rcdic["wrkdir"],
-                    "%s\n\nMod: %s\nArg: %s" % (err, prg, popt), dbm=self.db)
+                    "%s\n\nMod: %s\nArg: %s" % (err, prg, popt), dbm=self.dbm)
             else:
                 showException(None, self.rcdic["wrkdir"],
-                    "%s\nMod: %s\nArg: %s" % (err, prg, popt), dbm=self.db)
+                    "%s\nMod: %s\nArg: %s" % (err, prg, popt), dbm=self.dbm)
 
     def checkNotes(self):
-        if not self.db.dbopen:
-            self.db.openDbase()
+        if not self.dbm.dbopen:
+            self.dbm.openDbase()
             dbopend = True
         else:
             dbopend = False
         t = time.localtime()
         self.cdate = ((t[0] * 10000) + (t[1] * 100) + t[2])
-        self.sql = Sql(self.db, ["ctlnot", "ctlpwu"], prog="ms0000")
+        self.sql = Sql(self.dbm, ["ctlnot", "ctlpwu"], prog="ms0000")
         chk = self.sql.getRec("ctlnot", where=[("(", "not_user", "=",
             self.user["name"], "or", "not_auser", "=", self.user["name"],
             ")"), ("not_adate", ">", 0), ("not_adate", "<=", self.cdate),
@@ -1089,7 +1155,7 @@ System --> Change Password""")
             if ok == "yes":
                 self.showNotes(chk)
         if dbopend:
-            self.db.closeDbase()
+            self.dbm.closeDbase()
 
     def showNotes(self, notes):
         data = []
@@ -1174,7 +1240,7 @@ System --> Change Password""")
         self.sql.updRec("ctlnot", cols=["not_aflag", "not_adate", "not_auser"],
             data=[self.chgflag, self.chgdate, self.chguser], where=[("not_seq",
             "=", self.nseq)])
-        self.db.commitDbase()
+        self.dbm.commitDbase()
         self.doNExit()
 
     def doNExit(self):
@@ -1182,23 +1248,23 @@ System --> Change Password""")
         self.mf.closeLoop()
 
     def chgUsr(self):
-        if not self.db.dbopen:
-            self.db.openDbase()
+        if not self.dbm.dbopen:
+            self.dbm.openDbase()
             dbopend = True
         else:
             dbopend = False
-        sql = Sql(self.db, "ctlpwu", prog=self.__class__.__name__)
+        sql = Sql(self.dbm, "ctlpwu", prog=self.__class__.__name__)
         cnt = sql.getRec("ctlpwu", cols=["count(*)"],
             where=[("usr_name", "<>", self.user["name"])], limit=1)
         if not cnt[0]:
             showError(self.mf.window, "Change", "There are No Other Users")
             if dbopend:
-                self.db.closeDbase()
+                self.dbm.closeDbase()
             return
         self.userLogout()
         self.userLogin()
         if dbopend:
-            self.db.closeDbase()
+            self.dbm.closeDbase()
         if not self.user:
             self.doExit()
         self.tarmen.usr = self.user["name"]
@@ -1261,10 +1327,10 @@ System --> Change Password""")
             return
         t = time.localtime()
         dte = (t[0] * 10000) + (t[1] * 100) + t[2]
-        sql = Sql(self.db, "ctlpwu", prog="ms0000")
+        sql = Sql(self.dbm, "ctlpwu", prog="ms0000")
         sql.updRec("ctlpwu", cols=["usr_pwd", "usr_last"], data=[self.pwd,
             dte], where=[("usr_name", "=", self.user["name"])])
-        self.db.commitDbase()
+        self.dbm.commitDbase()
         self.user["pwd"] = self.pwd
         self.user["last"] = dte
         self.np.closeProcess()
@@ -1312,18 +1378,7 @@ System --> Change Password""")
 
     def doSysLoc(self, frt, pag, r, c, p, i, w):
         self.updtyp = w
-        self.upgsys = ""
-        for mod in self.mods:
-            if mod == ["BC"] and self.upgsys != "Tartan":
-                self.upgsys = "Bwlclb"
-            elif mod == ["BS"] and self.upgsys != "Tartan":
-                self.upgsys = "Bksclb"
-            elif mod == ["CS"] and self.upgsys != "Tartan":
-                self.upgsys = "Cshana"
-            elif mod == ["SC"] and self.upgsys != "Tartan":
-                self.upgsys = "Seccmp"
-            else:
-                self.upgsys = "Tartan"
+        self.upgsys = "Tartan"
         if self.updtyp == "I":
             err = self.doSysChkUpgrade()
             if err:
@@ -1380,11 +1435,9 @@ System --> Change Password""")
                 return
             return ("Upgrade Error", "No Upgrade Available")
         except:
-            return ("Connection Error",
-                """Please Ensure that You Are Connected to the Internet.
-
-
-If Not, Please Connect and then Try Again!""")
+            return ("Connection Error", "Please Ensure that You Are "\
+                "Connected to the Internet. If Not, Please Connect "\
+                "and then Try Again!""")
 
     def doSysUpgrade(self):
         self.su.closeProcess()
@@ -1413,7 +1466,10 @@ If Not, Please Connect and then Try Again!""")
         try:
             if self.updtyp == "I":
                 if sys.platform == "win32":
-                    nam = self.upgsys + "_%s.%s.exe" % self.nv
+                    if sys.maxsize > 2**32:
+                        nam = self.upgsys + "_%s.%s-64.exe" % self.nv
+                    else:
+                        nam = self.upgsys + "_%s.%s-32.exe" % self.nv
                 else:
                     nam = self.upgsys + "_%s.%s.%s.tgz" % self.nv
                 fle = os.path.join(self.mf.rcdic["upgdir"], nam)
@@ -1453,9 +1509,9 @@ If Not, Please Connect and then Try Again!""")
         elif self.xdisplay:
             self.mf.head.configure(text="Update File Formats (tarUpd)")
             self.mf.updateStatus("")
-        dbopen = self.db.dbopen
+        dbopen = self.dbm.dbopen
         if not dbopen:
-            self.db.openDbase()
+            self.dbm.openDbase()
         popt = {
             "mf": self.mf,
             "bar": True,
@@ -1467,90 +1523,7 @@ If Not, Please Connect and then Try Again!""")
             "ver": self.cv[1]}
         self.doRunModule("tb1020", **popt)
         if not dbopen:
-            self.db.closeDbase()
-
-    def doVersionCheck(self, vtype="chk"):
-        if not self.db.dbopen:
-            self.db.openDbase()
-            dbopend = True
-        else:
-            dbopend = False
-        if self.xdisplay:
-            scrn = self.mf.window
-        else:
-            scrn = "text"
-        sql = Sql(self.db, ["ftable", "ffield", "verupd"])
-        chk = sql.getRec("verupd", limit=1)
-        if not chk:
-            showError(scrn, "Version Error", "Missing verupd Table")
-            self.doExit()
-        v = chk[0].split(".")
-        ov = (int(v[0]), int(v[1].rstrip()))
-        if ov < (5, 5):
-            showError(scrn, "Version Error",
-                """The Version of the Data, %s.%s, is too Old.
-
-Please follow the upgrade instructions at http://www.tartan.co.za/Downloads
-
-or
-
-Email paul@tartan.co.za, with your version number, for assistance.""" % ov)
-            self.doExit()
-        if ov > self.cv[0]:
-            if dbopend:
-                self.db.closeDbase()
-            ok = askQuestion(scrn, "Version Error",
-                """Your Version of TARTAN (%s) Is Older than the File Formats!
-
-Do You Want to Upgrade TARTAN Now?""" % self.cv[1], default="yes")
-            if ok == "yes":
-                self.sysUpd()
-            self.doExit()
-        if vtype == "upd":
-            if dbopend:
-                self.db.closeDbase()
-            return
-        err = bool(ov != self.cv[0])
-        chg = False
-        if self.altered:
-            for tb in tabdic:
-                for ext in ("fld", "idx"):
-                    lines = tabdic[tb][ext]
-                    f1 = []
-                    for line in lines:
-                        f1.append(line)
-                    if ext == "fld":
-                        fle = sql.getRec("ffield", where=[("ff_tabl",
-                            "=", tb)], order="ff_seq")
-                        f2 = []
-                        for f in fle:
-                            tp = [int(f[1]), f[2], f[3], float(f[4])]
-                            tp.extend(f[5:])
-                            f2.append(tp)
-                    else:
-                        fle = sql.getRec("ftable", where=[("ft_tabl",
-                            "=", tb)], order="ft_seq")
-                        f2 = []
-                        for f in fle:
-                            tp = [f[1], int(f[2]), f[3]]
-                            for t in f[4:]:
-                                if t:
-                                    tp.append(t)
-                            f2.append(tp)
-                    if not f1 == f2:
-                        chg = True
-                        break
-        if dbopend:
-            self.db.closeDbase()
-        if chg or err:
-            ok = askQuestion(scrn, "Version Error",
-                """Your File Formats Need Updating,
-
-Do You Want to Update Your Files?""", default="yes")
-            if ok == "yes":
-                self.tarUpd(True)
-            else:
-                self.doExit()
+            self.dbm.closeDbase()
 
     def tarExp(self):
         from TartanClasses import ExportDbase
@@ -1569,12 +1542,12 @@ Do You Want to Update Your Files?""", default="yes")
 
     def tarBck(self):
         from TartanClasses import TarBckRes
-        self.db.openDbase()
+        self.dbm.openDbase()
         cf = PwdConfirm(self.mf, conum=0, system="MST", code="TarBck",
             passwd=self.bpwd)
         if cf.flag == "ok":
             try:
-                sql = Sql(self.db, ["ctlmst", "ctlsys"], prog="ms0000")
+                sql = Sql(self.dbm, ["ctlmst", "ctlsys"], prog="ms0000")
                 if sql.error:
                     raise Exception
                 csys = sql.getRec("ctlsys", cols=["sys_budays",
@@ -1588,7 +1561,7 @@ Do You Want to Update Your Files?""", default="yes")
                 TarBckRes(self.mf, mode="B", csys=csys, pbar=False)
             else:
                 TarBckRes(self.mf, mode="B", csys=csys)
-        else:
+        elif cf.flag == "no":
             if self.xdisplay:
                 scrn = self.mf.window
             else:
@@ -1612,8 +1585,6 @@ Do You Want to Update Your Files?""", default="yes")
             showError(None, "Error", "Invalid Preferences File (%s)\n\n%s"
                 % (self.rcfile, self.rcdic))
             self.doExit(dbm=False)
-        geo = self.rcdic["geo"].split("x")
-        self.mf.geo = [int(geo[0]), int(geo[1])]
         self.mf.resizeChildren()
 
     def sysEnd(self):
@@ -1677,7 +1648,7 @@ Do You Want to Update Your Files?""", default="yes")
     def doHousekeeping(self):
         fles = []
         for tp in ("csv", "gif", "html", "jpg", "odt", "pdf", "png", \
-                                        "ps", "svg", "xls", "xml"):
+                                    "ps", "svg", "xls", "xlsx", "xml"):
             fles.extend(glob.glob(os.path.join(self.rcdic["wrkdir"],
                 "*.%s" % tp)))
         if fles:
@@ -1717,8 +1688,8 @@ Do You Want to Update Your Files?""", default="yes")
                         pass
 
     def doExit(self, dbm=True, sysexit=True):
-        if dbm and self.db.dbopen:
-            self.db.closeDbase()
+        if dbm and self.dbm.dbopen:
+            self.dbm.closeDbase()
         if self.debug:
             sys.settrace(None)
         if self.output:
@@ -1737,7 +1708,7 @@ Do You Want to Update Your Files?""", default="yes")
                     mess = ""
                     for x in range(maxi):
                         mess = "%s%s" % (mess, lines[x - maxi])
-                    if self.help or self.version:
+                    if self.help or self.script or self.version:
                         scrn = None
                     else:
                         scrn = self.mf.body
@@ -1765,7 +1736,7 @@ Do You Want to Update Your Files?""", default="yes")
             sys.exit()
 
     def doCheckSys(self):
-        sql = Sql(self.db, "ctlsys", prog=self.__class__.__name__)
+        sql = Sql(self.dbm, "ctlsys", prog=self.__class__.__name__)
         if sql.error:
             return "error"
         rec = sql.getRec("ctlsys", limit=1)
@@ -1779,7 +1750,7 @@ Do You Want to Update Your Files?""", default="yes")
                 rec = [0, "N", 0, 0, 0, "", 0, 0, 0, "", "", "N",
                     "", "", "N", 0]
                 sql.insRec("ctlsys", rec)
-                self.db.commitDbase()
+                self.dbm.commitDbase()
         if not rec:
             return "error"
 
@@ -1828,7 +1799,7 @@ Do You Want to Update Your Files?""", default="yes")
 
     def getCtlSys(self, cols):
         try:
-            sql = Sql(self.db, "ctlsys", prog="ms0000")
+            sql = Sql(self.dbm, "ctlsys", prog="ms0000")
             if sql.error:
                 raise Exception
             sss = sql.getRec("ctlsys", cols=cols, limit=1)
@@ -1853,7 +1824,7 @@ Do You Want to Update Your Files?""", default="yes")
                 flenam = open(name, "r")
             else:
                 return "Invalid Query File (%s)" % name
-        self.db.openDbase()
+        self.dbm.openDbase()
         for line in flenam:
             line = line.rstrip()
             if not line or line[0] == "#":
@@ -1875,9 +1846,9 @@ Do You Want to Update Your Files?""", default="yes")
                         break
             try:
                 if comm[0] == "commit":
-                    self.db.commitDbase()
+                    self.dbm.commitDbase()
                 else:
-                    sq = Sql(self.db)
+                    sq = Sql(self.dbm)
                     if sel:
                         ret = sq.sqlRec(line, limit=qty)
                         self.mess = ""
@@ -1891,7 +1862,6 @@ Do You Want to Update Your Files?""", default="yes")
                             else:
                                 self.mess = self.mess + "\n" + r
                         if self.xdisplay and self.output:
-                            self.mf.window.deiconify()
                             self.mf.head.configure(text="SQL Query")
                             but = ([("Save", self.doSave)])
                             ScrollText(scrn=self.mf.body, mess=self.mess,
@@ -1901,9 +1871,9 @@ Do You Want to Update Your Files?""", default="yes")
                     else:
                         sq.sqlRec(line)
             except:
-                self.db.closeDbase()
+                self.dbm.closeDbase()
                 return "Error in SQL Statement\n\n%s" % line
-        self.db.closeDbase()
+        self.dbm.closeDbase()
 
     def doSave(self):
         fle = open(os.path.join(self.rcdic["wrkdir"], "query.txt"), "w")
@@ -1925,7 +1895,7 @@ if __name__ == "__main__":
         epath = "%s%s%s" % (os.environ["PATH"], os.pathsep, ppath)
         os.environ["PATH"] = epath
     # Ubuntu Unity uses the Global Menu which breaks Tartan's Menu
-    if sys.platform == "linux2":
+    if sys.platform in ("linux", "linux2"):
         os.environ["UBUNTU_MENUPROXY"] = "0"
     # Load options
     try:

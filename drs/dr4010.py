@@ -58,8 +58,6 @@ class dr4010(object):
         self.paidup = "N"
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.curdt = int(self.sysdtw / 100)
         return True
 
@@ -561,7 +559,6 @@ class dr4010(object):
                     else:
                         dat.append(rec[col.index(nam)])
                 data.append(dat)
-            gtots = ["drt_tramt", "paid", "balance"]
             if repprt:
                 prtdia = False
             else:
@@ -569,8 +566,8 @@ class dr4010(object):
             rp = RepPrt(self.opts["mf"], conum=self.opts["conum"],
                 conam=self.opts["conam"], name=self.__class__.__name__,
                 ttype="D", tables=data, heads=heads, cols=cols,
-                trtp=["drt_type", drtrtp], gtots=gtots, prtdia=prtdia,
-                repprt=repprt, repeml=repeml, fromad=self.fromad)
+                trtp=["drt_type", drtrtp], prtdia=prtdia, repprt=repprt,
+                repeml=repeml, fromad=self.fromad)
         self.df.setWidget(self.df.mstFrame, state="show")
         self.df.enableButtonsTags(state=state)
 

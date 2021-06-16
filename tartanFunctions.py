@@ -32,6 +32,93 @@ def importTkinter():
     except:
         return None, None
 
+def unbindAllWidgets(widget):
+    binds = []
+    for bind in widget.winfo_toplevel().bind():
+        if "<Key-Alt_L>" in bind:
+            binds.append((bind, widget.winfo_toplevel().bind(bind)))
+            widget.winfo_toplevel().unbind(bind)
+    return binds
+
+def getManager(widget):
+    # Window Manager
+    try:
+        children = widget.winfo_children()
+        if not children:
+            mgr = "pack"
+        else:
+            mgr = ""
+            for c in children:
+                if c.winfo_manager():
+                    mgr = c.winfo_manager()
+                    break
+    except:
+        mgr = "pack"
+    return mgr
+
+def placeWindow(window, parent=None, place="C", size=None, expose=False):
+    # Window Placement
+    window.update_idletasks()
+    if window.winfo_class().lower() == "tk":
+        parent = None
+    if parent:
+        if parent.winfo_class() != "Toplevel":
+            parent = parent.winfo_toplevel()
+        parent.update_idletasks()
+    if size:
+        ww, wh = size
+    else:
+        ww = window.winfo_reqwidth()
+        wh = window.winfo_reqheight()
+    if parent:
+        wx = int(parent.winfo_x() + (parent.winfo_width() / 2) - (ww / 2))
+        wy = int(parent.winfo_y() + (parent.winfo_height() / 2) - (wh / 2))
+    else:
+        if place == "L":
+            wx = 0
+        elif place == "R":
+            wx = window.winfo_screenwidth() - ww
+        elif place in ("C", "M"):
+            wx = int((window.winfo_screenwidth() - ww) / 2)
+        if place == "M":
+            wy = int((window.winfo_screenheight() - wh) / 2)
+        else:
+            wy = 0
+    window.geometry("%dx%d+%d+%d" % (ww, wh, wx, wy))
+    if expose and window.state() == "withdrawn":
+        window.deiconify()
+    window.update_idletasks()
+
+def cutpasteMenu(event):
+    # Cut, copy and paste menu
+    from TartanClasses import tk, tkfont
+    wid = event.widget
+    font = tkfont.Font(font=("Arial", 10))
+    wid.menu = tk.Menu(wid, tearoff=False, takefocus=0, font=font)
+    image = getImage("Cut", (20, 20))
+    wid.menu.add_command(label="Cut", image=image, compound="left",
+        accelerator="Ctl-X", font=font)
+    wid.menu.i1 = image
+    image = getImage("Copy", (20, 20))
+    wid.menu.add_command(label="Copy", image=image, compound="left",
+        accelerator="Ctl-C", font=font)
+    wid.menu.i2 = image
+    image = getImage("Paste", (20, 20))
+    wid.menu.add_command(label="Paste", image=image, compound="left",
+        accelerator="Ctl-V", font=font)
+    wid.menu.i3 = image
+    wid.menu.add_separator()
+    wid.menu.add_command(label="Select all")
+    wid.menu.entryconfigure("Cut", command=lambda:
+        wid.focus_force() or wid.event_generate("<<Cut>>"))
+    wid.menu.entryconfigure("Copy", command=lambda:
+        wid.focus_force() or wid.event_generate("<<Copy>>"))
+    wid.menu.entryconfigure("Paste", command=lambda:
+        wid.focus_force() or wid.event_generate("<<Paste>>"))
+    wid.menu.entryconfigure("Select all", command=wid.select_all)
+    wid.menu.tk_popup(event.x_root + 40, event.y_root + 10, entry="0")
+    return "break"
+
 def getPrgPath():
     import os, sys
     prgdir = os.path.realpath(sys.path[0])
@@ -102,7 +189,7 @@ def getFontSize(tk=None, width=None, height=None, font=10):
             if rh <= height:
                 break
             font -= 1
-    return width, height, font
+    return width, height, font - 1
 
 def loadRcFile(rcfile=None, default=False):
     """
@@ -301,7 +388,7 @@ def showException(scrn, path, mess, maxTB=None, xits=None, dbm=None):
     dbm   = The database class
     """
     import getpass, os, platform, sys, time, traceback
-    from TartanClasses import ScrollText, Sql
+    from TartanClasses import ScrollText
 
     def doSaveExc():
         t = time.localtime()
@@ -329,14 +416,11 @@ def showException(scrn, path, mess, maxTB=None, xits=None, dbm=None):
             else:
                 opened = False
             try:
-                tab = ["ctlmst", "ctlsys", "verupd"]
-                sql = Sql(dbm, tables=tab, prog=__name__)
-                if sql.error:
-                    raise Exception
-                smtp = sql.getRec(tables=tab, cols=["ctm_name", "sys_msvr",
-                    "sys_mprt", "sys_msec", "sys_maut", "sys_mnam", "sys_mpwd",
-                    "ctm_email", "ver_version"], where=[("ctm_cono", "=", 1)],
-                    limit=1)
+                dbm.cu.execute("Select ctm_name, sys_msvr, sys_mprt, "\
+                    "sys_msec, sys_maut, sys_mnam, sys_mpwd, ctm_email, "\
+                    "ver_version from ctlmst, ctlsys, verupd where "\
+                    "ctm_cono = 1")
+                smtp = dbm.cu.fetchone()
                 if not smtp or not smtp[1]:
                     raise Exception
                 if sendMail(smtp[1:7], smtp[7], ["errors@tartan.co.za"],
@@ -509,7 +593,7 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
      attach = A list of attachments
      skip   = Skip mail errors
      """
-    import os, subprocess, sys, time
+    import os, subprocess, time
     from TartanClasses import Dbase, ViewPDF, SplashScreen, Sql
 
     # Email Document
@@ -578,6 +662,8 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
                     att = [pdfnam] + copyList(attach)
                 ok = sendMail(smtp[0:6], fromad, toad, subj, mess, attach=att,
                     wrkdir=mf.rcdic["wrkdir"])
+                if splash:
+                    sp.closeSplash()
                 if not ok:
                     if skip:
                         ok = "SKIPPED"
@@ -592,9 +678,9 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
                             ok = "FAILED"
                 else:
                     ok = "OK"
-                if splash:
-                    sp.closeSplash()
-        except:
+        except Exception as err:
+            showException(mf.window.focus_displayof(), mf.rcdic["wrkdir"],
+                "E-Mail Error\n\n%s" % err)
             if not ok:
                 ok = "UNKNOWN"
         # Try and Log the email status into table emllog
@@ -611,12 +697,14 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
             pass
         if repeml[4].lower() == "n":
             return
-    if repprt and (repprt[1].lower() == "x" or repprt[2] == "export"):
+    if repprt is None:
         return
-    if repprt and repprt[2] and repprt[2].lower() == "none":
+    elif repprt[1].lower() == "x" or repprt[2] == "export":
+        return
+    elif repprt[2] and repprt[2].lower() == "none":
         return
     try:
-        if repprt and (repprt[1].lower() == "v" or repprt[2] == "view"):
+        if repprt[1].lower() == "v" or repprt[2] == "view":
             # View Document
             chk = pdfnam.split(".")[-1]
             if chk == "svg":
@@ -630,20 +718,9 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
             sp = SplashScreen(mf.window.focus_displayof(),
                 "Printing the Report\n\nPlease Wait....")
         if repprt[2] == "Default":
-            if sys.platform == "win32":
-                import win32print
-                prt = win32print.GetDefaultPrinter()
-            else:
-                proc = subprocess.Popen("lpstat -d", shell=True, bufsize=0,
-                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE, close_fds=True)
-                prt = proc.stdout.readline()
-                if type(prt) == bytes:
-                    prt = prt.decode("utf-8")
-                prt = prt.strip().split(":")
-                if len(prt) != 2:
-                    raise Exception("No Default Printer")
-                prt = prt[1].strip()
+            prt = getPrinters(donly=True)
+            if not prt:
+                raise Exception("No Default Printer")
         else:
             prt = repprt[2]
         prn = mf.rcdic["prn"]
@@ -781,8 +858,9 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
             smtp.quit()
             return True
     except Exception as chk:
-        showException(err, wrkdir, "Mail Server (%s %s) "\
-            "Invalid or Unavailable\n\n%s" % (host, port, chk))
+        if not check:
+            showException(err, wrkdir, "Mail Server (%s %s) "\
+                "Invalid or Unavailable\n\n%s" % (host, port, chk))
         return
     if type(to) == str:
         to = [to]
@@ -1039,55 +1117,64 @@ def getUnderline(widget=None, blist=None, text=None):
                 break
     return text, pos
 
-def getPrinters(wrkdir="."):
+def getPrinters(wrkdir=".", donly=False):
     """
-    Function to return all avalaible printers.
+    Function to return avalaible printers.
+        donly = True, only return the default printer
+        donly = False, return all printers
     """
     import subprocess, sys
     data = []
+    dflt = None
     try:
-        # Get the default printer
         if sys.platform == "win32":
             import win32print
+            # Get the default printer
             dflt = win32print.GetDefaultPrinter()
+            if not donly:
+                if dflt:
+                    data.append(dflt)
+                from win32print import EnumPrinters
+                lst = EnumPrinters(2)
+                for l in lst:
+                    if l[2].strip() not in data:
+                        data.append(l[2].strip())
         else:
+            # Get the default printer
             proc = subprocess.Popen("lpstat -d", shell=True, bufsize=0,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, close_fds=True)
             prt = proc.stdout.readline()
             if type(prt) == bytes:
                 prt = prt.decode("utf-8")
-            dflt = prt.strip().split(":")[1]
-        if dflt:
-            data.append(dflt)
-    except:
-        pass
-    try:
-        if sys.platform == "win32":
-            from win32print import EnumPrinters
-            lst = EnumPrinters(2)
-            for l in lst:
-                if l[2].strip() not in data:
-                    data.append(l[2].strip())
-        else:
-            import subprocess
-            proc = subprocess.Popen("lpstat -a", shell=True, bufsize=0,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, close_fds=True)
-            lst = proc.stdout.readlines()
-            for l in lst:
-                if type(l) == bytes:
-                    l = l.decode("utf-8")
-                l = l.rstrip().replace('"', "").replace("'", "")
-                if l.count("accepting requests"):
-                    p = l.split()
-                    if p[0].strip() not in data:
-                        data.append(p[0].strip())
-    except:
-        showException(None, wrkdir, "Get Printer Error")
-    if not data:
-        return ["None"]
-    return data
+            dflt = prt.strip().split(":")
+            if len(dflt) != 2:
+                raise Exception("No Default Printer")
+            dflt = dflt[1].strip()
+            if not donly:
+                if dflt:
+                    data.append(dflt)
+                proc = subprocess.Popen("lpstat -a", shell=True, bufsize=0,
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE, close_fds=True)
+                lst = proc.stdout.readlines()
+                for l in lst:
+                    if type(l) == bytes:
+                        l = l.decode("utf-8")
+                    l = l.rstrip().replace('"', "").replace("'", "")
+                    if l.count("accepting requests"):
+                        p = l.split()
+                        if p[0].strip() not in data:
+                            data.append(p[0].strip())
+    except Exception as err:
+        data = []
+        dflt = None
+        showException(None, wrkdir, "Get Printer Error\n\n%s" % err)
+    if donly:
+        return dflt
+    elif data:
+        return data
+    return ["None"]
 
 def removeFunctions(nam, dec=0):
     """removes all aggregate details from a column name
@@ -1422,7 +1509,7 @@ def runModule(mod, **popt):
         exe = getattr(com, mod)
         exe(**popt)
     except Exception as err:
-        return err
+        print("Exception", err)
 
 def doChkCatChg(mf, cono, memno, nxtdt):
     from TartanClasses import Sql
@@ -1486,341 +1573,6 @@ def doChkCatChg(mf, cono, memno, nxtdt):
         or_s = rec[sql.memctc_col.index("mcc_or_s")]
     return ret
 
-def doWriteExport(**args):
-    """
-    Write an Export file using the following arguments:
-        xtype  - C for csv and X for xls or a tuple of both
-        name   - The output file name without an extension
-        heads  - A list of the Report headings. A heading can be a tuple as:
-                    (Text, Column width, Font Size)
-        colsh  - A list of lists of Column headings comprising:
-                    Text
-                    Start Col (Default is current col)
-                    End Col   (Default is current col)
-                or
-                    Text
-                    Alignment
-        forms  - A list of column format details comprising:
-                    Format per CCD
-                    Size   per CCD
-                    Clickable (True or False) - Default is False (ScrollGrid)
-                    Negative colour (ScrollGrid)
-                    Ignore for ULINE[D/S] and TOTAL - Default is False
-        datas  - The column data comprising:
-                    Type of data:
-                        "PAGE"   - A new page/sheet
-                            ["PAGE", (heading, colsh, forms)]
-                        "HEAD"   - A heading in column 0 only
-                        "BODY"   - A body line of columns of data
-                        "BLANK"  - A blank line - skip
-                        "ULINED" - A double underline - skip
-                        "ULINES" - A sigle underline - skip
-                        "TOTAL"  - A total line of columns of data
-                    List of values
-        rcdic  - The tartanrc dictionary
-        view   - Whether to view the report
-        wait   - Whether to wait for the viewer to exit.
-    """
-    import os, sys
-
-    def viewFile(exe, cmd, name, wait):
-        if not cmd:
-            try:
-                if sys.platform == "win32":
-                    os.startfile(name)
-                else:
-                    import subprocess
-                    if wait:
-                        subprocess.call(["xdg-open", name])
-                    else:
-                        subprocess.Popen(["xdg-open", name])
-            except Exception as err:
-                showError(None, err, "No Valid Export Application")
-            return
-        try:
-            import subprocess
-            if wait:
-                subprocess.call(cmd + [name])
-            else:
-                subprocess.Popen(cmd + [name])
-        except Exception as err:
-            showError(None, err, "The Application"\
-                "\n\n%s\n\nIs Not Found or Not Accessible" % exe)
-            return
-
-    if "view" not in args:
-        view = True
-    else:
-        view = args["view"]
-    if view:
-        if args["rcdic"] and args["rcdic"]["exp"]:
-            exe, cmd = parsePrg(args["rcdic"]["exp"])
-            if not os.path.isfile(exe):
-                exe = cmd = None
-        else:
-            exe = cmd = None
-    if "wait" not in args:
-        wait = False
-    else:
-        wait = args["wait"]
-    if type(args["xtype"]) == str:
-        args["xtype"] = [args["xtype"]]
-    types = []
-    for t in args["xtype"]:
-        types.append(t.upper())
-
-    if "C" in types:
-        head = ""
-        name = args["name"] + ".csv"
-        flenam = open(name, "w")
-        for valc in args["colsh"][-1]:
-            if type(valc) in (list, tuple):
-                text = valc[0]
-            else:
-                text = valc
-            if head:
-                head = '%s,"%s"' % (head, text)
-            else:
-                head = '"%s"' % text
-        if head:
-            flenam.write(head + "\n")
-        for valx in args["datas"]:
-            if valx[0] != "BODY":
-                continue
-            if not valx[1] or len(valx[1]) != len(args["forms"]):
-                # Blank line or invalid line length
-                continue
-            line = ""
-            for colc, valc in enumerate(valx[1]):
-                if type(valc) in (list, tuple):
-                    valc = valc[0]
-                if args["forms"][colc][0][0].lower() == "d" or \
-                   args["forms"][colc][0][1].lower() in ("d", "i", "l"):
-                    if line:
-                        line = "%s,%s" % (line, valc)
-                    else:
-                        line = "%s" % valc
-                elif line:
-                    line = '%s,"%s"' % (line, valc)
-                else:
-                    line = '"%s"' % valc
-            flenam.write(line + "\n")
-        # Save the csv file
-        flenam.close()
-        if view and "X" not in types:
-            # View the csv file
-            viewFile(exe, cmd, name, wait)
-        if "X" not in types:
-            return
-
-    styles = {}
-
-    def getStyle(fmt, num=None):
-        if not num:
-            idx = fmt
-        else:
-            idx = fmt + num
-        if idx not in styles:
-            if num:
-                styles[idx] = ezxf(fmt, num_format_str=num)
-            else:
-                styles[idx] = ezxf(fmt)
-        return styles[idx]
-
-    def createSheet(fmt, page):
-        if type(page) == str:
-            sheet = book.add_sheet(page)
-        else:
-            sheet = book.add_sheet("Page %s" % page)
-        # Main headings
-        rowx = 0
-        blank = False
-        for num, valx in enumerate(args["heads"]):
-            if type(valx) in (list, tuple):
-                cols = len(args["colsh"][-1]) - 1
-                hgt, siz = valx[1:]
-                hxf = "font: name arial, height %s, bold on" % siz
-                hxf = getStyle(hxf + "; align: horz centre, vert centre")
-            else:
-                hxf = getStyle(fmt + ", bold on")
-                cols = 0
-            if valx and blank:
-                # Add a blank line
-                blank = False
-                if cols:
-                    sheet.write_merge(rowx, rowx, 0, cols, "", hxf)
-                else:
-                    sheet.write(rowx, 0, "", hxf)
-                rowx += 1
-            if cols:
-                sheet.write_merge(rowx, rowx, 0, cols, valx[0], hxf)
-                sheet.row(num).height = hgt
-            else:
-                sheet.write(rowx, 0, valx, hxf)
-            rowx += 1
-            blank = bool(valx)
-        if blank:
-            rowx += 1
-        # Column headings
-        for colx, valx in enumerate(args["colsh"]):
-            nc = 0
-            for cx, vx in enumerate(valx):
-                # hxf = fmt + ", bold on; pattern: pattern solid"
-                # hxf = hxf + "; pattern: fore_colour gray25"
-                # hxf = hxf + "; borders: top thin"
-                # hxf = hxf + "; borders: left thin"
-                # hxf = hxf + "; borders: right thin"
-                # hxf = hxf + "; borders: bottom thin"
-                hxf = fmt + ", bold on"
-                if type(vx) in (list, tuple) and len(vx) > 1:
-                    if len(vx) == 2:
-                        hxf = getStyle(hxf + "; align: horz %s" % vx[1])
-                    else:
-                        hxf = getStyle(hxf + "; align: horz centre")
-                elif args["forms"][cx][0] in alpha:
-                    hxf = getStyle(hxf + "; align: horz left")
-                else:
-                    hxf = getStyle(hxf + "; align: horz right")
-                if type(vx) in (list, tuple):
-                    if len(vx) == 3:
-                        sheet.write_merge(rowx, rowx, vx[1], vx[2],
-                            vx[0].strip(), hxf)
-                        nc = vx[2]
-                    else:
-                        sheet.write(rowx, nc, vx[0].strip(), hxf)
-                else:
-                    sheet.write(rowx, nc, vx.strip(), hxf)
-                nc += 1
-                sheet.col(cx).width = int(args["forms"][cx][1]) * 300
-            if colx != len(args["colsh"]) - 1:
-                rowx += 1
-        # Freeze the headings
-        sheet.set_panes_frozen(True)        # frozen headings not split panes
-        sheet.set_horz_split_pos(rowx + 1)  # freeze after last row
-        sheet.set_remove_splits(True)       # if unfreezes don't leave split
-        return sheet, rowx
-
-    if "X" in types:
-        import datetime
-        import xlwt
-        ezxf = xlwt.easyxf
-
-        # Variables and Formats
-        fmt = "font: name arial"
-        alpha = ("HA", "LA", "La", "NA", "Na", "TX", "UA", "Ua")
-        xf_map = {
-            "D1": "yyyy-mm-dd",
-            "d1": "yyyy-mm-dd",
-            "D2": "yyyy-mm",
-            "d2": "yyyy-mm",
-            "UI": "########0",
-            "UL": "#0",
-            "CI": "#,##0",
-            "SI": "#0",
-            "SL": "#0",
-            "US": "#0",
-            "CD": "#,##0.00",
-            "SD": "#0.00",
-            "UD": "#0.00"}
-        for an in alpha:
-            xf_map[an] = "@"
-        # Create the Workbook and Worksheet
-        style = xlwt.XFStyle()
-        font = xlwt.Formatting.Font()
-        font.name = "Arial"
-        style.font = font
-        book = xlwt.Workbook(encoding="utf8")
-        book.add_style(style)
-        page = 1
-        if args["datas"][0][0] != "PAGE":
-            sheet, rowx = createSheet(fmt, page)
-            page += 1
-        # Generate the body
-        for num, row in enumerate(args["datas"]):
-            if row[0] == "PAGE":
-                args["heads"] = row[1][0]
-                args["colsh"] = row[1][1]
-                if len(row[1]) > 2:
-                    args["forms"] = row[1][2]
-                if len(row[1]) == 4:
-                    pg = row[1][3]
-                else:
-                    pg = page
-                sheet, rowx = createSheet(fmt, pg)
-                page += 1
-                continue
-            if row[0] in ("ULINES", "ULINED"):
-                continue
-            rowx += 1
-            if row[0] == "BLANK":
-                sheet.write(rowx, 0, "", getStyle(fmt))
-                continue
-            chk = num + 1
-            if chk != len(args["datas"]):
-                if args["datas"][chk][0] == "ULINES":
-                    unl = "s"
-                elif args["datas"][chk][0] == "ULINED":
-                    unl = "d"
-                else:
-                    unl = False
-            else:
-                unl = False
-            for colx, valx in enumerate(row[1]):
-                if type(valx) in (list, tuple):
-                    valx, bord = valx
-                else:
-                    bord = None
-                if row[0] in ("HEAD", "TOTAL"):
-                    hxf = fmt + ", bold on"
-                else:
-                    hxf = fmt
-                if type(valx) == str:
-                    hxf = hxf + "; align: horz left"
-                    if bord:
-                        # if bord == "TLRB":
-                        #     hxf = hxf + "; pattern: pattern solid"
-                        #     hxf = hxf + "; pattern: fore_colour gray25"
-                        if "T" in bord:
-                            hxf = hxf + "; borders: top thin"
-                        if "L" in bord:
-                            hxf = hxf + "; borders: left thin"
-                        if "R" in bord:
-                            hxf = hxf + "; borders: right thin"
-                        if "B" in bord:
-                            hxf = hxf + "; borders: bottom thin"
-                    sheet.write(rowx, colx, valx, getStyle(hxf))
-                    continue
-                if len(args["forms"][colx]) == 5:
-                    if row[0] == "TOTAL" or not valx:
-                        sheet.write(rowx, colx, "",
-                            getStyle(hxf + "; align: horz left"))
-                        continue
-                elif valx and args["forms"][colx][0].lower() == "d1":
-                    # D1 Date conversion
-                    valx = datetime.datetime(int(valx / 10000),
-                        int(valx / 100) % 100, valx % 100)
-                elif valx and args["forms"][colx][0].lower() == "d2":
-                    # D2 Date conversion
-                    valx = datetime.datetime(int(valx / 100), valx % 100, 1)
-                elif args["forms"][colx][0] not in alpha and unl:
-                    # Underlines
-                    if unl == "s":
-                        hxf = hxf + "; borders: bottom thin"
-                    else:
-                        hxf = hxf + "; borders: bottom double"
-                if args["forms"][colx][0][0].lower() == "d" and not valx:
-                    sheet.write(rowx, colx, valx,
-                        getStyle(hxf, num=xf_map["UI"]))
-                else:
-                    sheet.write(rowx, colx, valx,
-                        getStyle(hxf, num=xf_map[args["forms"][colx][0]]))
-        # Save the spreadsheet
-        name = args["name"] + ".xls"
-        book.save(args["name"] + ".xls")
-        # View the spreadsheet
-        if view:
-            viewFile(exe, cmd, name, wait)
-
 def ftpDownload(server, srce, name=None, word=None, dest=None, close=False, check=False):
     import ftplib
     if not name:
@@ -1874,10 +1626,13 @@ def doDrawTable(fpdf, rr, ppad=1, spad=1, cw=None, ld=None, font=True):
                                 (10, 1.5, .9, ("Row1","Row2","Row3","Row4")),
                                 (10, 1.5),
                                 (50, 1.5),
-                                (10, 1.5)), 4))}
+                                (10, 1.5), 4)))}
 
-                  Note: You can add True after the text to draw a
-                          centred string.
+                  Notes:
+                    You can add True or False after the text to draw a
+                        centred string.
+                    You can add True or False after the alignment to
+                        draw the string if bold format.
 
         ppad    - Y padding for drawString.
         spad    - Space padding for repeats.
@@ -1890,6 +1645,14 @@ def doDrawTable(fpdf, rr, ppad=1, spad=1, cw=None, ld=None, font=True):
     cols = []
     rows = []
     rest = []
+    if type(font) in (list, tuple):
+        dflt = list(font)
+    elif ppad == 1:
+        dflt = ["helvetica", "B", 10]
+    else:
+        dflt = ["helvetica", "B", 12]
+    if font:
+        fpdf.setFont(dflt[0], dflt[1], dflt[2], default=True)
     for row in rr["rows"]:
         if type(row[2]) in (list, tuple):
             # Mutiple columns
@@ -1951,21 +1714,21 @@ def doDrawTable(fpdf, rr, ppad=1, spad=1, cw=None, ld=None, font=True):
             fill = 0
         for x in r[0]:                      # x
             for y in r[1]:                  # y
-                if font:
-                    if ppad == 1:
-                        fpdf.setFont("helvetica", "B", 10)
-                    else:
-                        fpdf.setFont("helvetica", "B", 12)
-                if len(r) == 7 and r[6]:
+                if len(r) > 6 and r[6]:
                     align = "C"
                 else:
                     align = ""
+                if len(r) > 7 and r[7]:
+                    style = dflt[:]
+                else:
+                    style = [dflt[0], "", dflt[2]]
                 xx = round(x * cw, 2)
                 yy = round(y * ld, 2)
                 if len(r) > 5:
                     txt = r[5]
                     fpdf.drawText(x=xx, y=yy, w=r[2] * cw, h=r[3] * ld,
-                        align=align, border="TLRB", fill=fill, txt=txt)
+                        align=align, border="TLRB", fill=fill, txt=txt,
+                        font=style)
                 else:
                     if fill:
                         style = "DF"
@@ -2438,7 +2201,7 @@ def getSell(sql, cono, group, code, loc=None, lvl=1, recp=False, ind=None):
     prc = sql.getRec("strprc", cols=["stp_price"], where=[("stp_cono",
         "=", cono), ("stp_group", "=", group), ("stp_code", "=", code),
         ("stp_loc", "=", loc), ("stp_level", "=", lvl)], limit=1)
-    if prc and prc[0]:
+    if prc:
         # Price Level
         return prc[0]
     elif ind == "P":
@@ -2660,23 +2423,6 @@ def getColors(style, scheme):
             ("#000000", "#ffffff"))
     else:
         # Defaults
-        lout = {}
-
-        def doprint(e, lnum):
-            for x in e:
-                lnum += 1
-                lout[lnum] = [x[0]]
-                opt = list(style.element_options(x[0]))
-                opt.sort()
-                for y in opt:
-                    lout[lnum].append(
-                        (y[1:], style.lookup(x[0], y[1:])))
-                if type(x[1]) == dict:
-                    for key in list(x[1].keys()):
-                        if key == "children":
-                            doprint(x[1][key], lnum)
-                        else:
-                            lout[lnum].append((key, x[1][key]))
         widgets = {
             "label": {
                 "label": {
@@ -2702,21 +2448,8 @@ def getColors(style, scheme):
                                 if n[0] in widgets[widget][typ][m]:
                                     widgets[widget][typ][m][n[0]] = n[1]
                     continue
-                lout = {}
-                doprint(style.layout(wid), 0)
-                keys = list(lout.keys())
-                keys.sort()
-                for key in keys:
-                    opts = lout[key]
-                    if opts[0].split(".")[-1] == typ:
-                        newo = opts[1:]
-                        newo.sort()
-                        for opt in newo:
-                            if opt[0] in widgets[widget][typ]:
-                                c = opt[1]
-                                if c == "black":
-                                    c = "#000000"
-                                widgets[widget][typ][opt[0]] = c
+                for clr in widgets[widget][typ]:
+                    widgets[widget][typ][clr] = style.lookup(wid, clr)
         color = [
             [widgets["label"]["label"]["foreground"],
             widgets["label"]["label"]["background"]],
@@ -2726,6 +2459,12 @@ def getColors(style, scheme):
             widgets["button"]["map"]["background"]["active"]],
             [widgets["button"]["label"]["foreground"],
             widgets["button"]["map"]["background"]["disabled"]]]
+    if color[3] == color[1]:
+        color[3][0] = "#ffffff"
+    if not color[2][1]:
+        color[2] = color[1][:]
+    if not color[3][1]:
+        color[3] = ["#ffffff", color[1][1]]
     return color
 
 def chkMod(mod):
@@ -2880,35 +2619,401 @@ def printPDF(prt, fle, cpy=1):
         import io, fitz, win32con, win32gui, win32print, win32ui
         from PIL import Image, ImageWin
         hdl = win32print.OpenPrinter(prt)
-        fd = fitz.open(fle)
-        rect = fd[0].MediaBox
-        siz = [int(rect[2]), int(rect[3])]
-        mat = fitz.Matrix(4.16667, 4.16667)
-        clip = fitz.Rect(0, 0, siz[0], siz[1])
-        dst = (0, 0, int(rect[2] * 20), int(rect[3] * -20))
         dev = win32print.GetPrinter(hdl, 2)["pDevMode"]
-        if siz[0] > siz[1]:
-            dev.Orientation = 2
-        hdc = win32gui.CreateDC("WINSPOOL", prt, dev)
-        dcf = win32ui.CreateDCFromHandle(hdc)
-        dcf.SetMapMode(win32con.MM_TWIPS)
-        dcf.StartDoc(fle)
-        for _ in range(cpy):
-            for pge in fd:
+        dev.PaperSize = 9
+        fd = fitz.open(fle)
+        for pge in fd:
+            # Fitz
+            rect = pge.MediaBox
+            siz = [int(rect[2]), int(rect[3])]
+            mat = fitz.Matrix(4.16667, 4.16667)
+            clp = fitz.Rect(0, 0, siz[0], siz[1])
+            dst = (0, 0, int(rect[2] * 20), int(rect[3] * -20))
+            lst = pge.getDisplayList()
+            pix = lst.getPixmap(matrix=mat, clip=clp, alpha=False)
+            buf = io.BytesIO()
+            buf.write(pix.getImageData(output="ppm"))
+            # Win32
+            img = Image.open(buf)
+            dib = ImageWin.Dib(img)
+            if siz[0] < siz[1]:
+                dev.Orientation = 1
+            else:
+                dev.Orientation = 2
+            hdc = win32gui.CreateDC("WINSPOOL", prt, dev)
+            dcf = win32ui.CreateDCFromHandle(hdc)
+            dcf.SetMapMode(win32con.MM_TWIPS)
+            for _ in range(cpy):
+                dcf.StartDoc(fle)
                 dcf.StartPage()
-                dlist = pge.getDisplayList()
-                pix = dlist.getPixmap(matrix=mat, clip=clip, alpha=False)
-                buf = io.BytesIO()
-                buf.write(pix.getImageData(output="ppm"))
-                img = Image.open(buf)
-                dib = ImageWin.Dib(img)
                 dib.draw(hdc, dst)
                 dcf.EndPage()
-        dcf.EndDoc()
-        del dcf
+                dcf.EndDoc()
+            del dcf
+        win32print.ClosePrinter(hdl)
     else:
         import subprocess
         subprocess.Popen(["/usr/bin/lp", "-d%s" % prt, "-n%s" % cpy, fle],
             stdout=subprocess.PIPE)
+
+def doWriteExport(**args):
+    """
+    Write an Export file using the following arguments:
+        xtype  - C for csv and X for xlsx or a tuple of both
+        name   - The output file name without an extension
+        heads  - A list of the Report headings. A heading can be a tuple as:
+                    (Text, Column width, Font Size)
+        colsh  - A list of lists of Column headings comprising:
+                    Text
+                    Start Col (Default is current col)
+                    End Col   (Default is current col)
+                or
+                    Text
+                    Alignment
+        forms  - A list of column format details comprising:
+                    Format per CCD
+                    Size   per CCD
+                    Clickable (True or False) - Default is False (ScrollGrid)
+                    Negative colour (ScrollGrid)
+                    Ignore for ULINE[D/S] and TOTAL - Default is False
+        datas  - The column data comprising:
+                    Type of data:
+                        "PAGE"   - A new page/sheet
+                            ["PAGE", (heading, colsh, forms, name)]
+                        "HEAD"   - A heading in column 0 only
+                        "BODY"   - A body line of columns of data
+                        "BLANK"  - A blank line - skip
+                        "ULINED" - A double underline - skip
+                        "ULINES" - A sigle underline - skip
+                        "TOTAL"  - A total line of columns of data
+                    List of values
+        rcdic  - The tartanrc dictionary
+        view   - Whether to view the report
+        wait   - Whether to wait for the viewer to exit.
+    """
+    import os, sys
+
+    def viewFile(exe, cmd, name, wait):
+        if not cmd:
+            try:
+                if sys.platform == "win32":
+                    os.startfile(name)
+                else:
+                    import subprocess
+                    if wait:
+                        subprocess.call(["xdg-open", name])
+                    else:
+                        subprocess.Popen(["xdg-open", name])
+            except Exception as err:
+                showError(None, "Execution Error",
+                    "No Valid Export Application.\n\n%s" % err)
+            return
+        try:
+            import subprocess
+            if wait:
+                subprocess.call(cmd + [name])
+            else:
+                subprocess.Popen(cmd + [name])
+        except Exception as err:
+            showError(None, err, "The Application"\
+                "\n\n%s\n\nIs Not Found or Not Accessible" % exe)
+            return
+
+    if "view" not in args:
+        view = True
+    else:
+        view = args["view"]
+    if view:
+        if args["rcdic"] and args["rcdic"]["exp"]:
+            exe, cmd = parsePrg(args["rcdic"]["exp"])
+            if not os.path.isfile(exe):
+                exe = cmd = None
+        else:
+            exe = cmd = None
+    if "wait" not in args:
+        wait = False
+    else:
+        wait = args["wait"]
+    if type(args["xtype"]) == str:
+        args["xtype"] = [args["xtype"]]
+    types = []
+    for t in args["xtype"]:
+        types.append(t.upper())
+
+    if "C" in types:
+        head = ""
+        name = args["name"] + ".csv"
+        flenam = open(name, "w")
+        for valc in args["colsh"][-1]:
+            if type(valc) in (list, tuple):
+                text = valc[0]
+            else:
+                text = valc
+            if head:
+                head = '%s,"%s"' % (head, text)
+            else:
+                head = '"%s"' % text
+        if head:
+            flenam.write(head + "\n")
+        for valx in args["datas"]:
+            if valx[0] != "BODY":
+                continue
+            if not valx[1] or len(valx[1]) != len(args["forms"]):
+                # Blank line or invalid line length
+                continue
+            line = ""
+            for colc, valc in enumerate(valx[1]):
+                if type(valc) in (list, tuple):
+                    valc = valc[0]
+                if args["forms"][colc][0][0].lower() == "d" or \
+                   args["forms"][colc][0][1].lower() in ("d", "i", "l"):
+                    if line:
+                        line = "%s,%s" % (line, valc)
+                    else:
+                        line = "%s" % valc
+                elif line:
+                    line = '%s,"%s"' % (line, valc)
+                else:
+                    line = '"%s"' % valc
+            flenam.write(line + "\n")
+        # Save the csv file
+        flenam.close()
+        if view and "X" not in types:
+            # View the csv file
+            viewFile(exe, cmd, name, wait)
+        if "X" not in types:
+            return
+
+    def getLetter(col):
+        string = ""
+        while col > 0:
+            col, remainder = divmod(col - 1, 26)
+            string = chr(65 + remainder) + string
+        return string
+
+    def cellWrite(sheet, row, col, val, fmt):
+        if type(row) in (list, tuple):
+            ccl = getLetter(col[0])
+            ccc = "%s%s" % (ccl, row[0])
+            sheet.merge_cells(start_row=row[0], start_column=col[0],
+                end_row=row[1], end_column=col[1])
+            sheet.cell(column=col[0], row=row[0], value=val)
+        else:
+            ccl = getLetter(col)
+            ccc = "%s%s" % (ccl, row)
+            sheet.cell(column=col, row=row, value=val)
+        for key in fmt:
+            if key == "ccd":
+                if fmt[key][0] in xf_map:
+                    sheet[ccc].number_format = xf_map[fmt[key][0]]
+            elif key == "font":
+                sheet[ccc].font = Font(name=fmt[key])
+            elif key == "bold":
+                sheet[ccc].font = Font(bold=fmt[key])
+            elif key == "align":
+                if type(fmt[key]) is str:
+                    h, v = fmt[key], "center"
+                else:
+                    h, v = fmt[key]
+                sheet[ccc].alignment = Alignment(horizontal=h, vertical=v)
+            elif key == "border":
+                stl = Side(border_style=fmt[key][1], color="000000")
+                if fmt[key][0] == "T":
+                    sheet[ccc].border = Border(top=stl)
+                elif fmt[key][0] == "L":
+                    sheet[ccc].border = Border(left=stl)
+                elif fmt[key][0] == "R":
+                    sheet[ccc].border = Border(right=stl)
+                elif fmt[key][0] == "B":
+                    sheet[ccc].border = Border(bottom=stl)
+                elif fmt[key][0] == "LRB":
+                    sheet[ccc].border = Border(left=stl, right=stl, bottom=stl)
+                elif fmt[key][0] == "TLRB":
+                    sheet[ccc].border = Border(top=stl, left=stl, right=stl,
+                        bottom=stl)
+
+    def createSheet(fmt, page, text=None):
+        if text is None:
+            text = "Page %s" % page
+        sheet = book.create_sheet(title=text)
+        # Main headings
+        rowx = 0
+        blank = False
+        for num, valx in enumerate(args["heads"]):
+            if type(valx) in (list, tuple):
+                cols = len(args["colsh"][-1])
+                hgt, siz = valx[1:]
+                hxf = {"font": ["Ariel", siz, True]}
+                hxf["align"] = ["center", "center"]
+            else:
+                hxf = {"font": "Ariel"}
+                hxf["bold"] = True
+                hxf["align"] = ["left", "center"]
+                cols = 0
+            if valx and blank:
+                # Add a blank line
+                if cols:
+                    cellWrite(sheet, [rowx+1, rowx+1], [1, cols], "", hxf)
+                else:
+                    cellWrite(sheet, rowx+1, 1, "", hxf)
+                blank = False
+                rowx += 1
+            if cols:
+                cellWrite(sheet, [rowx+1, rowx+1], [1, cols], valx[0], hxf)
+                sheet.row_dimensions[num+1].height = (hgt / 20)
+            else:
+                cellWrite(sheet, rowx+1, 1, valx, hxf)
+            rowx += 1
+            blank = bool(valx)
+        if blank:
+            rowx += 1
+        # Column headings
+        for colx, valx in enumerate(args["colsh"]):
+            nc = 0
+            for cx, vx in enumerate(valx):
+                fff = args["forms"][cx]
+                hxf = dict(fmt)
+                hxf["bold"] = True
+                if type(vx) in (list, tuple) and len(vx) > 1:
+                    if len(vx) == 2:
+                        hxf["align"] = vx[1]
+                    else:
+                        hxf["align"] = "center"
+                elif fff[0] in alpha:
+                    hxf["align"] = "left"
+                elif fff[0][0] in ("D", "d"):
+                    hxf["align"] = "center"
+                else:
+                    hxf["align"] = "right"
+                if type(vx) in (list, tuple):
+                    if len(vx) == 3:
+                        cellWrite(sheet, [rowx+1, rowx+1], [vx[1]+1, vx[2]+1],
+                            vx[0], hxf)
+                        nc = vx[2]
+                    else:
+                        cellWrite(sheet, rowx+1, nc+1, vx[0], hxf)
+                else:
+                    cellWrite(sheet, rowx+1, nc+1, vx, hxf)
+                nc += 1
+                if colx == len(args["colsh"]) - 1:
+                    ccl = getLetter(nc)
+                    sheet.column_dimensions[ccl].width = (int(fff[1]) + 2)
+            if colx != len(args["colsh"]) - 1:
+                rowx += 1
+        # Freeze the headings
+        sheet.freeze_panes = "A%s" % (rowx + 2)
+        return sheet, rowx
+
+    if "X" in types:
+        import datetime
+        from openpyxl import Workbook
+        from openpyxl.styles import Border, Side, Font, Alignment
+        from TartanClasses import tkfont
+
+        # Variables and Formats
+        fnt = tkfont.nametofont("TkTextFont")
+        fmt = {"font": fnt.configure()["family"]}
+        alpha = ("HA", "LA", "La", "NA", "Na", "TX", "UA", "Ua")
+        cash = ("CD", "CI", "SD", "SI")
+        xf_map = {
+            "D1": "yyyy-mm-dd",
+            "d1": "yyyy-mm-dd",
+            "D2": "yyyy-mm",
+            "d2": "yyyy-mm",
+            "UI": "########0",
+            "UL": "#0",
+            "CI": "#,##0",
+            "SI": "#0",
+            "SL": "#0",
+            "US": "#0",
+            "CD": "#,##0.00",
+            "SD": "#0.00",
+            "UD": "#0.00"}
+        for an in alpha:
+            xf_map[an] = "@"
+        # Create the workbook and worksheet
+        book = Workbook()
+        del book["Sheet"]
+        page = 1
+        if args["datas"][0][0] != "PAGE":
+            sheet, rowx = createSheet(fmt, page)
+            page += 1
+        # Generate the body
+        for num, row in enumerate(args["datas"]):
+            if row[0] == "PAGE":
+                args["heads"] = row[1][0]
+                args["colsh"] = row[1][1]
+                if len(row[1]) > 2:
+                    args["forms"] = row[1][2]
+                if len(row[1]) == 4:
+                    pg = row[1][3]
+                else:
+                    pg = page
+                if len(row[1]) == 4:
+                    sheet, rowx = createSheet(fmt, pg, row[1][3])
+                else:
+                    sheet, rowx = createSheet(fmt, pg)
+                page += 1
+                continue
+            if row[0] in ("ULINES", "ULINED"):
+                continue
+            rowx += 1
+            if row[0] == "BLANK":
+                cellWrite(sheet, rowx+1, 1, "", fmt)
+                continue
+            # Check if next line is an underline
+            unl = False
+            chk = num + 1
+            if chk != len(args["datas"]):
+                if args["datas"][chk][0] == "ULINES":
+                    unl = "s"
+                elif args["datas"][chk][0] == "ULINED":
+                    unl = "d"
+            # Write columns
+            for colx, valx in enumerate(row[1]):
+                if type(valx) in (list, tuple):
+                    valx, bord = valx
+                else:
+                    bord = None
+                if row[0] == "BODY":
+                    if valx and args["forms"][colx][0].lower() == "d1":
+                        # D1 Date conversion
+                        valx = datetime.datetime.strptime(str(valx), "%Y%m%d")
+                    elif valx and args["forms"][colx][0].lower() == "d2":
+                        # D2 Date conversion
+                        valx = datetime.datetime.strptime(str(valx), "%Y%m")
+                # Format Font, Bold and/or Border
+                hxf = dict(fmt)
+                if row[0] in ("HEAD", "TOTAL"):
+                    hxf["bold"] = True
+                # Underline & Border
+                ccd = list(args["forms"][colx][:])
+                if ccd[0] in cash and type(valx) == str:
+                    ccd[0] = "NA"
+                if unl == "s" and ccd[0] in cash:
+                    hxf["border"] = ["B", "thin"]
+                elif unl == "d" and ccd[0] in cash:
+                    hxf["border"] = ["B", "double"]
+                elif bord:
+                    hxf["border"] = [bord, "thin"]
+                # CCD Format
+                if ccd[0] not in cash and not valx:
+                    ccd[0] = "NA"
+                    valx = ""
+                hxf["ccd"] = ccd
+                # Alignment
+                if ccd[0] in alpha:
+                    hxf["align"] = "left"
+                elif ccd[0][0] in ("D", "d"):
+                    hxf["align"] = "center"
+                else:
+                    hxf["align"] = "right"
+                cellWrite(sheet, rowx+1, colx+1, valx, hxf)
+        # Save the spreadsheet
+        name = args["name"] + ".xlsx"
+        book.save(filename=name)
+        # View the spreadsheet
+        if view:
+            viewFile(exe, cmd, name, wait)
 # END
 # vim:set ts=4 sw=4 sts=4 expandtab:

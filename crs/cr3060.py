@@ -25,8 +25,8 @@ COPYING
 """
 
 import time
-from TartanClasses import CCD, GetCtl, MyFpdf, ProgressBar, Sql, TartanDialog
-from tartanFunctions import getModName, doPrinter, showError
+from TartanClasses import CCD, GetCtl, RepPrt, Sql, TartanDialog
+from tartanFunctions import showError
 
 class cr3060(object):
     def __init__(self, **opts):
@@ -48,8 +48,8 @@ class cr3060(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
+        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
+            t[1], t[2], t[3], t[4], self.__class__.__name__)
         return True
 
     def mainProcess(self):
@@ -71,7 +71,7 @@ class cr3060(object):
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
-            tend=tnd, txit=txt, view=("N","V"), mail=("Y","N"))
+            tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
 
     def doSort(self, frt, pag, r, c, p, i, w):
         self.sort = w
@@ -105,18 +105,35 @@ class cr3060(object):
         self.closeProcess()
 
     def printReport(self, recs):
-        p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %128s %10s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
-        self.pglin = 999
+        mnam = self.__class__.__name__
+        head = ["Creditors Ledger Master List as at %s" % self.sysdtd]
+        if self.df.repprt[2] == "export":
+            head[0] += " %s" % self.sysdttm
+        cols = [
+            ["a", "NA", 7, "Acc-Num", "Y"],
+            ["b", "NA", 30, "Name", "Y"],
+            ["c", "NA", 30, "Address", "Y"],
+            ["d", "NA", 4, "PCod", "Y"],
+            ["e", "NA", 12, "Tel-Number", "Y"],
+            ["f", "NA", 12, "Fax-Number", "Y"]]
+        if self.condet == "M":
+            det = "Manager's Contact Details"
+        elif self.condet == "A":
+            det = "Accounts Contact Details"
+        else:
+            det = "Orders Contact Details"
+        cols.extend([
+            ["g", "NA", 40, det, "Y"],
+            ["h", "NA", 1, "P", "Y"],
+            ["i", "UI", 3, "Trm", "Y"],
+            ["j", "NA", 1, "B", "Y"],
+            ["k", "UI", 2, "St", "Y"],
+            ["l", "UI", 7, "CrLimit", "Y"],
+            ["m", "UD", 6.2, "Tr-Dis", "Y"],
+            ["n", "UD", 6.2, "Py-Dis", "Y"]])
+        data = []
         col = self.sql.crsmst_col
         for num, dat in enumerate(recs):
-            p.displayProgress(num)
-            if p.quit:
-                break
             acno = CCD(dat[col.index("crm_acno")], "NA", 7)
             name = CCD(dat[col.index("crm_name")], "NA", 30)
             add1 = CCD(dat[col.index("crm_add1")], "NA", 30)
@@ -142,55 +159,17 @@ class cr3060(object):
             limit = CCD(dat[col.index("crm_limit")], "UI", 7)
             trdis = CCD(dat[col.index("crm_trdis")], "UD", 6.2)
             pydis = CCD(dat[col.index("crm_pydis")], "UD", 6.2)
-            if self.pglin > self.fpdf.lpp:
-                self.pageHeading()
-            self.fpdf.drawText("%s %s %s %s %s %s %s %s %s %s %s %s %s %s" % \
-                (acno.disp, name.disp, add1.disp, pcod.disp, tel.disp,
-                fax.disp, nameml.disp, pyind.disp, terms.disp, termsb.disp,
-                stday.disp, limit.disp, trdis.disp, pydis.disp))
+            data.append([acno.work, name.work, add1.work, pcod.work, tel.work,
+                fax.work, nameml.work, pyind.work, terms.work, termsb.work,
+                stday.work, limit.work, trdis.work, pydis.work])
             if self.address == "Y" and add2.work:
-                self.fpdf.drawText("%38s %-30s" % ("", add2.disp))
-                self.pglin += 1
+                data.append(["", "", add2.work] + [""] * 11)
             if self.address == "Y" and add3.work:
-                self.fpdf.drawText("%38s %-30s" % ("", add3.disp))
-                self.pglin += 1
-            self.pglin += 1
-        p.closeProgress()
-        if self.fpdf.page and not p.quit:
-            pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
-                self.__class__.__name__, self.opts["conum"], ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
-                fromad=self.fromad, repeml=self.df.repeml)
-        self.closeProcess()
-
-    def pageHeading(self):
-        self.fpdf.add_page()
-        self.fpdf.setFont(style="B")
-        self.pgnum += 1
-        self.fpdf.drawText(self.head)
-        self.fpdf.drawText()
-        self.fpdf.drawText("%-34s %-10s %122s %5s" % \
-            ("Creditors Ledger Master List as at", self.sysdtd,
-                "Page", self.pgnum))
-        self.fpdf.drawText()
-        self.fpdf.drawText("%-15s%-1s%-1s" % ("(Options: Sort-",
-            self.df.t_disp[0][0][0], ")"))
-        self.fpdf.drawText()
-        if self.condet == "M":
-            det = "Manager's Contact Details"
-        elif self.condet == "A":
-            det = "Accounts Contact Details"
-        else:
-            det = "Orders Contact Details"
-        self.fpdf.drawText("%-7s %-30s %-30s %-4s %-12s %-12s %-40s %-1s "\
-            "%-3s %-1s %-2s %-7s %-6s %-6s" % ("Acc-Num", "Name", "Address",
-            "PCod", "Tel-Number", "Fax-Number", "%s" % det, "P", "Trm", "B",
-            "St", "CrLimit", "Tr-Dis", "Py-Dis"))
-        self.fpdf.underLine(txt=self.head)
-        self.fpdf.setFont()
-        self.pglin = 8
+                data.append(["", "", add3.work] + [""] * 11)
+        RepPrt(self.opts["mf"], conum=self.opts["conum"],
+            conam=self.opts["conam"], name=mnam, tables=data, heads=head,
+            cols=cols, ttype="D", repprt=self.df.repprt,
+            repeml=self.df.repeml, fromad=self.fromad)
 
     def doExit(self):
         self.df.closeProcess()

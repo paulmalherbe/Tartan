@@ -42,9 +42,9 @@ class st4010(object):
 
     def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["ctlvmf", "drschn", "drsmst",
-            "genmst", "strgrp", "strloc", "strmf1", "strmf2", "strprc",
-            "strgmu", "strcmu", "strrcp", "strtrn", "struoi"],
-                prog=self.__class__.__name__)
+            "genmst", "strgrp", "strloc", "strmf1", "strmf2", "strgmu",
+            "strcmu", "strrcp", "strtrn", "struoi"],
+            prog=self.__class__.__name__)
         if self.sql.error:
             return
         gc = GetCtl(self.opts["mf"])
@@ -61,8 +61,6 @@ class st4010(object):
             self.locs = 1
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.per_from = 0
         self.per_to = 0
         return True

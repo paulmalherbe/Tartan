@@ -100,6 +100,7 @@ SYNOPSIS
     self.tsize = Team Size: Three or Four
     self.dbase: Draw Basis P - Position, R - Rating, C - Combination
     self.broken: list of tabs that have been in a broken rink
+                 or in the case of teams True or False
     bdt_flag: A - Arranged, B - Broken Rinks, C - Teams, D - Drawn
     self.dofix: In single gender draws fix broken teams by moving 1 player
 
@@ -183,7 +184,7 @@ class bc2010(object):
                 "available, Select whether or not to use the Alternative "\
                 "Gender Ratings."),
             (("T",0,4,0),("IRB",r2s),0,"Fix Odd Numbers","",
-                "Y","N",self.doBroken,None,None,None,None,"If Both "\
+                "Y","N",self.doFixOdd,None,None,None,None,"If Both "\
                 "Genders have an Odd number of tabs, move a Random "\
                 "Tab to Equalize the Numbers."),
             (("T",0,5,0),("IRB",r3s),0,"Draw By","",
@@ -361,6 +362,7 @@ class bc2010(object):
         if self.mixed == "N":
             self.rating = "N"
             self.mf.loadEntry(frt, pag, p + 1, data=self.rating)
+            self.mf.loadEntry(frt, pag, p + 2, data="Y")
             return "sk1"
 
     def doMixedRating(self, frt, pag, r, c, p, i, w):
@@ -370,10 +372,10 @@ class bc2010(object):
         if self.dbase == "C":
             return "sk1"
         self.nbase = self.dbase
-        self.mf.loadEntry(frt, pag, p + 1, data=self.dbase)
+        self.mf.loadEntry(frt, pag, p + 2, data=self.dbase)
         return "sk2"
 
-    def doBroken(self, frt, pag, r, c, p, i, w):
+    def doFixOdd(self, frt, pag, r, c, p, i, w):
         if w == "Y":
             self.dofix = True
         else:
@@ -494,13 +496,15 @@ class bc2010(object):
                 "Display a list of Entered Tabs",1),
             ("Modify",None,self.doModify,0,("T",1,7),None,
                 "Change the Ratings for this Tab in this Draw",1),
-            ("Draw",None,self.doDraw,0,("T",1,1),None,
+            ("Do Draw",None,self.doDraw,0,("T",1,1),None,
                 "Genetrate a New Draw",2),
             ("Edit Draw",None,self.doEdit,0,("T",1,1),None,
                 "Change the Draw",2),
+            ("View Draw",None,self.doEdit,0,("T",1,1),None,
+                "View the Draw",2),
             ("Print",None,self.doPrint,0,("T",1,1),None,
                 "Print the Draw",2),
-            ("Exit",None,self.doExit,1,None,None,None,2))
+            ("Exit",None,self.doExit,1,None,None,None,3,4))
         tnd = (None, (self.doEnd,"n"))
         txt = (None, self.doExit)
         # Create dialog
@@ -634,17 +638,19 @@ class bc2010(object):
         snam = acc[c.index("btb_surname")]
         fnam = acc[c.index("btb_names")]
         gend = acc[c.index("btb_gender")]
+        if self.mixed == "Y" and self.rating == "Y" and gend == "F":
+            pos = str(acc[c.index("btb_pos2")])
+            rte = str(acc[c.index("btb_rate2")])
+        else:
+            pos = str(acc[c.index("btb_pos1")])
+            rte = str(acc[c.index("btb_rate1")])
         if form == "T":
             self.tab = int(tab)
             self.df.loadEntry("T", 1, 1, data=snam)
             self.df.loadEntry("T", 1, 2, data=fnam)
             self.df.loadEntry("T", 1, 3, data=gend)
-            if self.mixed == "Y" and self.rating == "Y" and gend == "F":
-                self.df.loadEntry("T",1,4, data=str(acc[c.index("btb_pos2")]))
-                self.df.loadEntry("T",1,5, data=str(acc[c.index("btb_rate2")]))
-            else:
-                self.df.loadEntry("T",1,4, data=str(acc[c.index("btb_pos1")]))
-                self.df.loadEntry("T",1,5, data=str(acc[c.index("btb_rate1")]))
+            self.df.loadEntry("T",1,4, data=pos)
+            self.df.loadEntry("T",1,5, data=rte)
         else:
             if fnam:
                 name = snam.upper() + ", " + fnam[0][0].upper()
@@ -654,8 +660,10 @@ class bc2010(object):
                 self.at.loadEntry("C", 0, self.at.pos + 1, data=name)
             elif form == "B":
                 self.bg.loadEntry("C", 0, self.bg.pos + 1, data=name)
-            else:
+            elif form == "C":
                 return name
+            else:
+                return [name, pos, rte]
         return True
 
     def doDelete(self):
@@ -916,9 +924,16 @@ First Change the Bounce Game and then Delete It.""")
                 ("btb_rate1", "", 0, "RP")),
             "where": [("btb_cono", "=", self.opts["conum"])],
             "order": "btb_surname, btb_names"}
+        r1s = (("Yes", "Y"), ("No", "N"))
         fld = (
+            (("T",0,0,0),"IUI",1,"Team Size","",
+                3,"Y",self.doTSiz,None,None,("between",2,4)),
+            (("T",0,0,0),("IRB",r1s),0,"Prefer Pairs","",
+                "Y","N",self.doTR42,None,None,None,None,
+                "In the case of Trips select whether to Replace "\
+                "teams of Four with Pairs."),
             (("C",0,0,2),"IUI",3,"Skp","Skip",
-                "","N",self.doTTab,mem,None,None),
+                "","N",self.doTTab,mem,None,("notzero",)),
             (("C",0,1,3),"OUA",15,"Name"),
             (("C",0,1,4),"IUI",3,"3rd","Third",
                 "","N",self.doTTab,mem,None,None),
@@ -935,12 +950,22 @@ First Change the Bounce Game and then Delete It.""")
         state = self.df.disableButtonsTags()
         self.df.setWidget(self.df.mstFrame, state="hide")
         self.at = TartanDialog(self.opts["mf"], tops=True, title=tit,
-            eflds=fld, butt=but, cend=((self.doTEnd,"y"),),
+            eflds=fld, butt=but, tend=((self.doTEnd,"y"),),
+            txit=(self.doTExit,), cend=((self.doTEnd,"y"),),
             cxit=(self.doTExit,), rows=[18])
-        self.loadTeams()
         self.at.mstFrame.wait_window()
         self.df.enableButtonsTags(state)
         self.df.setWidget(self.df.mstFrame, state="show")
+
+    def doTSiz(self, frt, pag, r, c, p, i, w):
+        self.tsize = w
+        if self.tsize == 4:
+            self.rep42 = "N"
+            self.at.loadEntry(frt, pag, p + 1, data=self.rep42)
+            return "sk1"
+
+    def doTR42(self, frt, pag, r, c, p, i, w):
+        self.rep42 = w
 
     def doTTab(self, frt, pag, r, c, p, i, w):
         if not w:
@@ -971,8 +996,7 @@ First Change the Bounce Game and then Delete It.""")
                     self.at.focusField(frt, pag, pos + 1)
                 elif ok == "R":
                     self.doTDel(w)
-                    self.at.loadEntry(frt, pag, self.at.pos, data=w)
-                    self.doLoadTab(w, "A")
+                    return "rf"
                 else:
                     return "Duplicate Team"
             self.tskip = w
@@ -1003,19 +1027,29 @@ First Change the Bounce Game and then Delete It.""")
             self.at.focusField("C", 0, 1)
 
     def doTEnd(self):
-        self.teams[self.tskip] = []
-        for x in range(0, len(self.at.c_work[0][self.at.row]), 2):
-            mem = self.at.c_work[0][self.at.row][x]
-            self.teams[self.tskip].append(mem)
-            if mem and mem not in self.alltabs:
-                acc = self.sql.getRec("bwltab", cols=["btb_surname",
-                    "btb_names", "btb_gender", "btb_pos1", "btb_rate1"],
-                    where=[("btb_cono", "=", self.opts["conum"]), ("btb_tab",
-                    "=", mem)], limit=1)
-                self.alltabs[mem] = acc + ["Y"]
-        self.at.advanceLine(0)
-        self.drawn = False
-        self.doShowQuantity()
+        if self.at.frt == "T":
+            self.loadTeams()
+        else:
+            team = []
+            for x in range(0, len(self.at.c_work[0][self.at.row]), 2):
+                mem = self.at.c_work[0][self.at.row][x]
+                team.append(mem)
+                if mem and mem not in self.alltabs:
+                    acc = self.sql.getRec("bwltab", cols=["btb_surname",
+                        "btb_names", "btb_gender", "btb_pos1", "btb_rate1"],
+                        where=[("btb_cono", "=", self.opts["conum"]),
+                        ("btb_tab", "=", mem)], limit=1)
+                    self.alltabs[mem] = acc + ["Y"]
+            if team[2] and not team[3]:
+                team[3] = team[2]
+                team[2] = 0
+            if team[1] and not team[2]:
+                team[2] = team[1]
+                team[1] = 0
+            self.teams[self.tskip] = team
+            self.loadTeams()
+            self.drawn = False
+            self.doShowQuantity()
 
     def doTShow(self):
         if not self.teams:
@@ -1082,7 +1116,7 @@ First Change the Bounce Game and then Delete It.""")
         invalid = (0, 1, 3, 5)
         if not self.bounce and not self.teams and len(self.alltabs) in invalid:
             showError(self.opts["mf"].body, "Error",
-                "Invalid Number of Entries (0, 1, 3 or 5)")
+                "Invalid Number of Entries\n(0, 1, 3 or 5)")
             err = True
         if not err and self.teams:
             tabs = []
@@ -1096,19 +1130,29 @@ First Change the Bounce Game and then Delete It.""")
                         for mem in self.bounce[rnk][sd]:
                             if mem:
                                 tabs.append(mem)
-            data = []
+            self.tdata = []
             for t in self.alltabs:
                 if t not in tabs:
-                    data.append((t, self.doLoadTab(t, "C")))
-            if data:
-                data.sort()
+                    self.tdata.append([t] + self.doLoadTab(t, "D"))
+            if self.tdata:
+                self.dogen = False
+                self.tdata.sort()
                 cols = [
                     ("a", "Tab-No", 6, "UI", "N"),
-                    ("b", "Name", 20, "NA", "N")]
+                    ("b", "Name", 20, "NA", "N"),
+                    ("c", "Pos", 1, "UI", "N"),
+                    ("d", "Rte", 2, "UI", "N")]
+                but = [
+                    ("Generate", self.doGenTeams),
+                    ("Delete", self.doDelTabs)]
                 SelectChoice(self.opts["mf"].window,
                     "These Tabs Are Not In Teams",
-                    cols, data, live=False)
-                err = True
+                    cols, self.tdata, butt=but, live=False)
+                if self.dogen:
+                    self.doDraw()
+                    return
+                else:
+                    err = True
             if not err and len(self.teams) % 2:
                 showError(self.opts["mf"].body, "Error",
                     "Unequal Number of Teams (%s)" % len(self.teams))
@@ -1139,14 +1183,17 @@ Do you still want to continue?""" % np, default="no")
             fld = [
                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
                     "S","N",self.doType,None,None,None,None,
-                    """Strength: The draw will try and pair the teams by Strength.
-Random: The teams will be Randomly paired.""")]
+                    """Strength: The draw will try and Pair the teams by Strength.
+Random: The teams will be Randomly Paired.""")]
             x = 1
+            self.dhist = "N"
         elif self.nbase in ("C", "R"):
             r1s = (("Random", "R"), ("Strength", "S"))
             fld = [
                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
-                    "R","N",self.doType,None,None,None)]
+                    "R","N",self.doType,None,None,None,None,
+                    """Strength: The draw will try and Draw the teams by Strength.
+Random: The teams will be Randomly Drawn.""")]
             x = 1
         else:
             x = 0
@@ -1165,7 +1212,11 @@ Random: The teams will be Randomly paired.""")]
                 x += 1
             fld.extend([
                 (("T",0,x,0),("IRB",r2s),0,"Apply History","",
-                    "Y","N",self.doHist,None,None,None),
+                    "Y","N",self.doHist,None,None,None,None,
+                    """For at Least %s Weeks:
+Try Not to Pair the Same Skips
+Try to Avoid Broken Rink Repeats
+Try to Allocate Different Rinks""" % self.weeks),
                 (("T",0,x + 1,0),("IRB",r3s),0,"Team Size","",
                     "4","N",self.doSize,None,None,None),
                 (("T",0,x + 2,0),("IRB",r2s),0,"Prefer Pairs","",
@@ -1191,19 +1242,79 @@ Random: The teams will be Randomly paired.""")]
         self.df.enableButtonsTags(state)
         self.df.focusField("T", 1, 1)
 
+    def doGenTeams(self):
+        self.dogen = True
+        odds = self.doPositions(self.alltabs, grp=False)
+        if self.tsize == 3:
+            self.seconds += self.thirds
+            self.thirds = 0
+            if "4/3" in odds:
+                self.thirds += 1
+                self.seconds -= 1
+        for tm in self.teams:
+            for nm, tb in enumerate(self.teams[tm]):
+                tmm = []
+                if tb:
+                    if nm == 0:
+                        self.skips -= 1
+                    elif nm == 1:
+                        self.thirds -= 1
+                    elif nm == 2:
+                            self.seconds -= 1
+                    else:
+                        self.leads -= 1
+        tmp = sorted(self.tdata, key=itemgetter(2, 3), reverse=True)
+        skp = []
+        tds = []
+        sds = []
+        lds = []
+        for _ in range(self.skips):
+            skp.append(tmp.pop(0)[0])
+        for _ in range(self.thirds):
+            tds.append(tmp.pop(0)[0])
+        for _ in range(self.seconds):
+            sds.append(tmp.pop(0)[0])
+        for _ in range(self.leads):
+            lds.append(tmp.pop(0)[0])
+        tmm = {}
+        while skp:
+            num = skp.pop(0)
+            tmm[num] = [num]
+            if tds:
+                tmm[num].append(tds.pop(0))
+            else:
+                tmm[num].append(0)
+            if sds:
+                tmm[num].append(sds.pop(0))
+            else:
+                tmm[num].append(0)
+            tmm[num].append(lds.pop(0))
+        if skp or tds or sds or lds:
+            showError(self.opts["mf"].body, "Error",
+                "Unable To Generate Teams.\n\nPlease Do So Manually.")
+            return
+        self.teams = self.teams | tmm
+
+    def doDelTabs(self):
+        for tab in self.tdata:
+            del self.alltabs[tab[0]]
+        self.doShowQuantity()
+        self.doDraw()
+
     def doCancel(self):
         self.dw.closeProcess()
 
     def doType(self, frt, pag, r, c, p, i, w):
         self.dtype = w
         if self.teams:
-            self.dhist = "N"
-            self.tsize = 4
-            self.rep42 = "N"
             self.needed = self.getNeeded(len(self.alltabs))
         elif self.dtype == "S":
             self.dhist = "N"
             self.dw.loadEntry(frt, pag, p+1, data="N")
+        if self.teams:
+            self.needed = self.getNeeded(len(self.teams))
+            self.dw.topf[0][self.gpos][4] = \
+                "Greens (%s Rinks Needed)" % self.needed
 
     def doPer(self, frt, pag, r, c, p, i, w):
         self.dper = w
@@ -1321,6 +1432,7 @@ Random: The teams will be Randomly paired.""")]
         self.adraw1 = []
         self.rinks1 = copyList(self.rinks)
         self.ndict = copyList(self.alltabs)
+        random.shuffle(self.rinks1)
         if self.bounce:
             # Bounce games
             self.adraw2 = []
@@ -1342,7 +1454,6 @@ Random: The teams will be Randomly paired.""")]
             # same skip they played in their previous game. Also try and
             # put them on a different rink.
             self.adraw2 = []
-            random.shuffle(self.rinks1)
             temp = []
             for skp in self.teams:
                 dat = [0, 0]
@@ -1353,48 +1464,74 @@ Random: The teams will be Randomly paired.""")]
                         plr = self.ndict.pop(mem)
                         dat.append([mem] + plr)
                         dat[1] += plr[4]
+                dat[1] = dat[1] / dat[0]
                 temp.append(dat)
             if self.dtype == "S":
-                temp = sorted(temp, key=itemgetter(1))
+                three = []
+                four = []
+                for num, tmm in enumerate(temp):
+                    if tmm[0] == 4:
+                        four.append(tmm)
+                    elif tmm[0] == 3:
+                        three.append(tmm)
+                if len(four) % 2:
+                    four = random.choice(four)
+                    clos = 999
+                    for idx, tmm in enumerate(three):
+                        rte = tmm[2][5] + tmm[3][5] + tmm[4][5] + tmm[4][5]
+                        rte = rte / 4
+                        if rte > four[1]:
+                            dif = rte - four[1]
+                        else:
+                            dif = four[1] - rte
+                        if dif < clos:
+                            clos = dif
+                            three = tmm
+                    temp.remove(three)
+                    temp.remove(four)
+                    temp = sorted(temp, key=itemgetter(0, 1))
+                    temp.extend([three, four])
+                else:
+                    temp = sorted(temp, key=itemgetter(0, 1))
             else:
                 random.shuffle(temp)
+                temp = sorted(temp, key=itemgetter(0))
             while temp:
                 ok = False
-                rk1 = False
-                rk2 = False
+                rk1 = None
                 sk1 = temp.pop(0)       # Next skip
+                col = ["bdt_rink", "bdt_date", "bdt_time"]
                 whr = [
                     ("bdt_cono", "=", self.opts["conum"]),
                     ("bdt_tab", "=", sk1[2][0]),
                     ("bdt_pos", "=", 4),
                     ("bdt_flag", "=", "C")]
-                chk = self.sql.getRec("bwldrt", where=whr,
-                    order="bdt_date, bdt_time asc")
+                chk = self.sql.getRec("bwldrt", cols=col, where=whr,
+                    order="bdt_date desc, bdt_time asc", limit=1)
                 if chk:
-                    rk1 = chk[-1][4]    # Opposition skip of last game
+                    rk1 = chk[0]        # Rink of last game
                     whr = [
                         ("bdt_cono", "=", self.opts["conum"]),
+                        ("bdt_tab", "<>", sk1[2][0]),
+                        ("bdt_date", "=", chk[1]),
+                        ("bdt_time", "=", chk[2]),
+                        ("bdt_rink", "=", rk1),
                         ("bdt_pos", "=", 4),
-                        ("bdt_date", "=", chk[-1][2]),
-                        ("bdt_time", "=", chk[-1][3]),
                         ("bdt_flag", "=", "C")]
                     opp = self.sql.getRec("bwldrt", where=whr, limit=1)
-                    if opp:
-                        rk2 = opp[4]
+                    if opp:             # Opposition skip of last game
                         for skp in temp:
-                            if skp[2][0] is not opp[0]:
+                            if skp[0] == sk1[0] and skp[2][0] is not opp[1]:
                                 ok = True
                                 sk2 = skp
                                 temp.remove(skp)
                                 break
-                if not ok:
+                if not ok:              # Next skip
                     sk2 = temp.pop(0)
                 ok = False
-                if rk1 or rk2:
+                if rk1:
                     for rink in self.rinks1:
                         if rk1 and rink == rk1:
-                            continue
-                        if rk2 and rink == rk2:
                             continue
                         self.rinks1.remove(rink)
                         ok = True
@@ -1410,7 +1547,7 @@ Random: The teams will be Randomly paired.""")]
             self.tot = 0
             self.scl = 0
             self.bcl = 0
-            self.tcl = 0
+            self.pcl = 0
         else:
             grps = [[]]
             ntabs = []
@@ -1493,7 +1630,7 @@ Combination Number %10s"""
                     tot = self.doDrawRest(splash, text)
                     scl = 0
                     bcl = 0
-                    tcl = []
+                    pcl = []
                     for rink in range(0, len(self.adraw2), 2):
                         sk1 = self.adraw2[rink][2][0]
                         sk2 = self.adraw2[rink + 1][2][0]
@@ -1520,11 +1657,11 @@ Combination Number %10s"""
                                 for tab in check:
                                     chk = [tab, plr]
                                     if tab in self.hist[plr][0]:
-                                        if chk not in tcl:
-                                            tcl.append([plr, tab])
+                                        if chk not in pcl:
+                                            pcl.append([plr, tab])
                                     if tab in self.hist[plr][1]:
-                                        if chk not in tcl:
-                                            tcl.append([plr, tab])
+                                        if chk not in pcl:
+                                            pcl.append([plr, tab])
                         for plr in ops:
                             if plr in self.hist:
                                 check = copyList(ops)
@@ -1532,19 +1669,19 @@ Combination Number %10s"""
                                 for tab in check:
                                     chk = [tab, plr]
                                     if tab in self.hist[plr][0]:
-                                        if chk not in tcl:
-                                            tcl.append([plr, tab])
+                                        if chk not in pcl:
+                                            pcl.append([plr, tab])
                                     if tab in self.hist[plr][1]:
-                                        if chk not in tcl:
-                                            tcl.append([plr, tab])
-                    alldraw.append([scl, bcl, len(tcl), tot, self.adraw2, tcl])
+                                        if chk not in pcl:
+                                            pcl.append([plr, tab])
+                    alldraw.append([scl, bcl, len(pcl), tot, self.adraw2, pcl])
                 splash.closeSplash()
                 # Select the lowest draw where there are least clashes
                 # scl = skips clash
                 # bcl = broken rinks
-                # tcl = players clash
+                # pcl = players clash
                 # tot = total team difference
-                self.scl, self.bcl, self.tcl, self.tot, draw, t = \
+                self.scl, self.bcl, self.pcl, self.tot, draw, t = \
                     sorted(alldraw, key=itemgetter(0, 1, 2, 3))[0]
                 self.adraw1.extend(draw)
                 for d in draw:
@@ -1580,7 +1717,7 @@ Combination Number %10s"""
                 txt = "Best S v S Draw After Trying %s Different "\
                     "Combinations, Largest Team Difference is %s, "\
                     "Skips Clash %s, Players Clash %s, Broken %s" % \
-                    (self.count, self.tot, self.scl, self.tcl, self.bcl)
+                    (self.count, self.tot, self.scl, self.pcl, self.bcl)
             elif self.dhist == "N":
                 txt = "Best Random Draw After Trying %s Different "\
                     "Combinations, Largest Team Difference is %s" % \
@@ -1589,7 +1726,7 @@ Combination Number %10s"""
                 txt = "Best Random Draw After Trying %s Different "\
                     "Combinations, Largest Team Difference is %s, "\
                     "Skips Clash %s, Players Clash %s, Broken %s" % \
-                    (self.count, self.tot, self.scl, self.tcl, self.bcl)
+                    (self.count, self.tot, self.scl, self.pcl, self.bcl)
             self.doShowDraw(txt, self.adraw1)
             self.doSave()
 
@@ -1672,12 +1809,12 @@ Combination Number %10s"""
         draw2[1] = av2
         return av1, av2
 
-    def doPositions(self, grp):
+    def doPositions(self, tabs, grp=True):
         # Calculate the number of players, by position, required
         # Treating 2nds as 3rds in trips
-        teams = int(len(grp) / (self.tsize * 2))  # full teams
+        teams = int(len(tabs) / (self.tsize * 2))  # full teams
         odds = []                                 # others
-        rem = len(grp) % (self.tsize * 2)         # players short
+        rem = len(tabs) % (self.tsize * 2)         # players short
         if rem:
             if self.tsize == 2 and rem == 2:
                 odds = ["1/1"]
@@ -1797,12 +1934,14 @@ Combination Number %10s"""
             self.thirds = 0
             self.seconds = 0
             self.leads = 0
+        if not grp:
+            return odds
         # Group players by position
         self.skip1 = []
         self.third1 = []
         self.second1 = []
         self.lead1 = []
-        for tab in grp:
+        for tab in tabs:
             if self.nbase == "R":
                 tab[4] = 0
                 self.skip1.append(tab)
@@ -1930,7 +2069,6 @@ Combination Number %10s"""
         splash.refreshSplash()
         # Rinks
         rinks2 = copyList(self.rinks1)
-        random.shuffle(rinks2)
         # Shuffle players
         self.skip2 = copyList(self.skip1)
         random.shuffle(self.skip2)
@@ -2137,10 +2275,10 @@ Combination Number %10s"""
                             teams = True
                     if bounce:
                         rec.append("A")
-                    elif broken:
-                        rec.append("B")
                     elif teams:
                         rec.append("C")
+                    elif broken:
+                        rec.append("B")
                     else:
                         rec.append("D")
                     self.sql.insRec("bwldrt", data=rec)
@@ -2188,11 +2326,14 @@ Combination Number %10s"""
 
     def doCards(self, frt, pag, r, c, p, i, w):
         self.cards = w
-        if self.cards == "N":
+        if not self.teams and self.cards == "N":
+            self.cdes = None
             return "sk2"
 
     def doHead(self, frt, pag, r, c, p, i, w):
         self.cdes = w
+        if self.teams and self.cards == "N":
+            return "sk1"
 
     def doEnds(self, frt, pag, r, c, p, i, w):
         self.ends = w
@@ -2220,9 +2361,10 @@ Combination Number %10s"""
     def doPEnd(self):
         self.pd.closeProcess()
         if self.cards != "O":
-            PrintDraw(self.opts["mf"], self.opts["conum"], self.date, self.time,
-                takings=self.takings, listing=self.listing, board=self.board,
-                empty=self.empty, repprt=self.pd.repprt)
+            PrintDraw(self.opts["mf"], self.opts["conum"], self.date,
+                self.time, cdes=self.cdes, takings=self.takings,
+                listing=self.listing, board=self.board, empty=self.empty,
+                repprt=self.pd.repprt)
         if self.cards != "N":
             recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
                 cols=["bdt_rink", "bdt_tab"], where=[("bdt_cono", "=",
@@ -2241,8 +2383,8 @@ Combination Number %10s"""
                     self.opts["conum"]), ("btb_tab", "=", recs[x+1][1])],
                     limit=1)
                 skips.append((grn, skp, opp))
-            PrintCards(self.opts["mf"], self.opts["conum"], self.cdes,
-                1, self.dated, skips, self.ends, "N", 0)
+            PrintCards(self.opts["mf"], self.opts["conum"], self.cdes, 1,
+                self.dated, skips, self.ends, "N", 0)
 
     def doPExit(self):
         self.pd.closeProcess()
@@ -2253,6 +2395,8 @@ Combination Number %10s"""
                 "The Draw Has Not Yet Been Done")
             self.df.focusField("T", 1, 1)
             return
+        state = self.df.disableButtonsTags()
+        self.df.setWidget(self.df.mstFrame, state="hide")
         self.adraw3 = copyList(self.adraw1)
         while True:
             draw = self.doShowDraw("Edit of Draw", self.adraw3, True)
@@ -2294,13 +2438,29 @@ Combination Number %10s"""
                     if draw[2][0] or draw[3][0] or draw[4][0] or draw[5][0]:
                         self.adraw1.append(draw)
                 self.doSave()
+        self.df.enableButtonsTags(state)
+        self.df.setWidget(self.df.mstFrame, state="show")
+        self.doShowQuantity()
+        self.df.focusField("T", 1, 1)
+
+    def doView(self):
+        if not self.drawn:
+            showError(self.opts["mf"].body, "Error",
+                "The Draw Has Not Yet Been Done")
+            self.df.focusField("T", 1, 1)
+            return
+        state = self.df.disableButtonsTags()
+        self.df.setWidget(self.df.mstFrame, state="hide")
+        self.doShowDraw("View of Draw", self.adraw1)
+        self.df.enableButtonsTags(state)
+        self.df.setWidget(self.df.mstFrame, state="show")
         self.doShowQuantity()
         self.df.focusField("T", 1, 1)
 
     def doShowDraw(self, title, draw, select=False):
         cols = (
             ("rink", "RK", 2, "UA", "N"),
-            ("rate", "AVG", 5.2, "UD", "N"),
+            ("rate", "AVG ", 5.2, "UD", "N"),
             ("skip", "Skip", 24, "UA", "N"),
             ("third", "Third", 24, "UA", "N"),
             ("second", "Second", 24, "UA", "N"),
@@ -2367,7 +2527,6 @@ Combination Number %10s"""
             (("T",0,8,0),"IUI",6,"Lead","",
                 0,"N",self.doChgTab,mem,None,("efld",)),
             (("T",0,8,0),"OUA",20,""))
-        self.df.setWidget(self.df.mstFrame, state="hide")
         self.cg = TartanDialog(self.opts["mf"], title=tit, tops=True,
             eflds=fld, tend=((self.doChgEnd,"n"),), txit=(self.doChgExit,),
             focus=False)
@@ -2377,11 +2536,10 @@ Combination Number %10s"""
             self.cg.loadEntry("T", 0, 2 + (2 * n), data=d[1])
         self.cg.focusField("T", 0, 1, clr=False)
         self.cg.mstFrame.wait_window()
-        self.df.setWidget(self.df.mstFrame, state="show")
 
     def doChgTab(self, frt, pag, r, c, p, i, w):
         if w and w not in self.alltabs:
-            return "Invalid Tab, Not in draw"
+            return "Invalid Tab, Not Entered"
         if not w:
             nam = ""
         else:
@@ -2449,7 +2607,7 @@ Combination Number %10s"""
             ("qty", "Qty", 3, "UI", "N"))
         data = self.sql.getRec("bwldrt", cols=["bdt_date", "bdt_time",
             "count(*)"], group="bdt_date, bdt_time", order="bdt_date, bdt_time")
-        sel = SelectChoice(self.opts["mf"].window, titl, cols, data, live=True)
+        sel = SelectChoice(self.opts["mf"].window, titl, cols, data)
         if not sel.selection:
             return
         self.teams = {}

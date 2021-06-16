@@ -104,7 +104,7 @@ class bc3040(object):
         self.df.closeProcess()
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, "declare_%s" % self.date, ext="pdf")
-        fpdf = MyFpdf(name=self.__class__.__name__, head=90, foot=True)
+        fpdf = MyFpdf(name=self.__class__.__name__, head=90)
         cw = fpdf.get_string_width("X")             # character width
         ld = 4.3                                    # line depth
         r1 = {

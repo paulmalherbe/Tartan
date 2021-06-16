@@ -100,8 +100,7 @@ class bk3010(object):
         else:
             odr = "bkm_stddte, bkm_grpdte, bkm_ccode"
         recs = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=80, auto=True,
-            foot=True)
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=80, auto=True)
         self.fpdf.header = self.pageHeading
         self.fpdf.add_page()
         newrec = []

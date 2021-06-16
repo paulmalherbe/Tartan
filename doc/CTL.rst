@@ -23,11 +23,11 @@ This routine is used to create or amend a system control record by entering the 
 
 Company Records Maintenance
 ...........................
-This routine is used to create or amend company records, at least one company, number 1, must be created.
+This routine is used to create or amend company records, at least one company record, number 1, must be created.
 
 While most of the fields are self explanatory the following are of note:
 
-+ **E-Mail Address** - Your default email address.
++ **E-Mail Address** - The company's default email address.
 + **V.A.T. Default** - Any alphanumeric character. If the code, except **N** which is used for no V.A.T., has not previously been created you will be prompted to create one as in `V.A.T. Records Maintenance`_.
 + **Systems** - You must tick all the systems that you would like to enable otherwise they will not appear on your menu.
 + **Logo** - You can select an image file to be used as the letterhead for invoices, statements and remittance advices. this file should be a jpg file.
@@ -49,6 +49,15 @@ Use this routine to set passwords to override certain security limitations e.g. 
 + **System** - The relevant system code. F1 will show all system codes.
 + **Code** - The relevant restrictions code. F1 will show existing overrides and the `All Codes` button will show all available restrictions.
 + **Password** - The password required to override this restriction.
+
+**Examples**
+
+.. csv-table::
+  :header: "System", "Code", "Description"
+  :widths: 6, 20, 50
+
+  "MST", "TarBck", "Allow Database Backup"
+  "MST", "TarRes", "Allow Database Restore"
 
 Module Passwords Listing
 ........................
@@ -104,6 +113,16 @@ Use this routine to print a report of all changes effected on masterfile records
 + **Date To** - Enter the cut-off date or Enter for end of file.
 + **Table Name** - Enter the table name or Enter for all tables.
 + **User Login** - Enter the user login or Enter for all users.
+
+Application Usage Report
+........................
+Use this routine to print a report of applications usage history.
+
++ **Date From** - Enter the starting date or Enter for beginning of file.
++ **Date To** - Enter the cut-off date or Enter for end of file.
++ **User Name** - Enter the user's name or Enter for all.
++ **Module** - Enter the module code or Enter for all.
++ **Date Order** - Select the date order of the report details.
 
 Financial Year End Routine
 ..........................

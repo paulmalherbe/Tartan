@@ -255,8 +255,7 @@ Toolbox (ML)
 ............
 Transaction Reallocations (ML)
 ++++++++++++++++++++++++++++++
-Synchronise Access Control (ML)
-+++++++++++++++++++++++++++++++
+Use this routine to reallocate and age transactions.
 
 Member Records (ML)
 ...................

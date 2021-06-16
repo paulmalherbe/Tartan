@@ -40,6 +40,8 @@ from tartanFunctions import getUnderline, importTkinter, loadRcFile
 from tartanFunctions import luhnFunc, makeArray, mthendDate, parsePrg
 from tartanFunctions import printPDF, projectDate, removeFunctions, sendMail
 from tartanFunctions import showError, showException, showWarning, doPublish
+from tartanFunctions import unbindAllWidgets, getManager, placeWindow
+from tartanFunctions import cutpasteMenu
 import tartanWork
 
 try:
@@ -77,7 +79,7 @@ except:
 # Excel import and export modules
 # ========================================================
 try:
-    import pyexcel, pyexcel_xls
+    import pyexcel
     XLS = True
 except:
     XLS = False
@@ -86,12 +88,11 @@ try:
     XLSX = True
 except:
     XLSX = False
-XLWT = bool(chkMod("xlwt"))
 # ========================================================
 # Openoffice import module
 # ========================================================
 try:
-    from pyexcel_ods import get_data as gods
+    from pyexcel_ods import get_data as getods
     ODS = True
 except:
     ODS = False
@@ -132,21 +133,13 @@ try:
     tk, ttk = importTkinter()
     if not tk:
         raise Exception
-
-    try:
-        import tkinter.filedialog as tkfile
-        import tkinter.font as tkfont
-    except:
-        import tkFileDialog as tkfile
-        import tkFont as tkfont
+    import tkinter.filedialog as tkfile
+    import tkinter.font as tkfont
     try:
         from tkcolorpicker import askcolor
         CPICK = True
     except:
-        try:
-            import tkinter.colorchooser as tkcolor
-        except:
-            import tkColorChooser as tkcolor
+        import tkinter.colorchooser as tkcolor
         CPICK = False
     from PIL import Image, ImageTk
 
@@ -156,86 +149,6 @@ try:
         "odiaeresis", "Odiaeresis",
         "udiaeresis", "Udiaeresis",
         "ssharp"]
-
-    def unbindAllWidgets(widget):
-        binds = []
-        for bind in widget.winfo_toplevel().bind():
-            if "<Key-Alt_L>" in bind:
-                binds.append((bind, widget.winfo_toplevel().bind(bind)))
-                widget.winfo_toplevel().unbind(bind)
-        return binds
-
-    def getManager(widget):
-        # Window Placement
-        try:
-            children = widget.winfo_children()
-            if not children:
-                mgr = "pack"
-            else:
-                mgr = ""
-                for c in children:
-                    if c.winfo_manager():
-                        mgr = c.winfo_manager()
-                        break
-        except:
-            mgr = "pack"
-        return mgr
-
-    def placeWindow(window, parent=None, place="C", size=None, expose=False):
-        window.update_idletasks()
-        if size:
-            ww, wh = size
-        else:
-            ww = window.winfo_reqwidth()
-            wh = window.winfo_reqheight()
-        if window.winfo_class().lower() == "tk":
-            parent = None
-        if parent:
-            if parent.winfo_class().lower() not in ("tk", "toplevel"):
-                parent = parent.winfo_toplevel()
-            wx = int(parent.winfo_x() + (parent.winfo_width() / 2 - ww / 2))
-            wy = int(parent.winfo_y() + (parent.winfo_height() / 2 - wh / 2))
-        else:
-            if place == "L":
-                wx = 0
-            elif place == "R":
-                wx = window.winfo_screenwidth() - ww
-            else:
-                wx = int((window.winfo_screenwidth() - ww) / 2)
-            wy = 0
-        window.geometry("%dx%d+%d+%d" % (ww, wh, wx, wy))
-        if expose:
-            window.deiconify()
-        window.update_idletasks()
-
-    def cut_pasteMenu(event):
-        # Cut, copy and paste menu
-        wid = event.widget
-        font = tkfont.Font(font=("Arial", 10))
-        wid.menu = tk.Menu(wid, tearoff=False, takefocus=0, font=font)
-        image = getImage("Cut", (20, 20))
-        wid.menu.add_command(label="Cut", image=image, compound="left",
-            accelerator="Ctl-X", font=font)
-        wid.menu.i1 = image
-        image = getImage("Copy", (20, 20))
-        wid.menu.add_command(label="Copy", image=image, compound="left",
-            accelerator="Ctl-C", font=font)
-        wid.menu.i2 = image
-        image = getImage("Paste", (20, 20))
-        wid.menu.add_command(label="Paste", image=image, compound="left",
-            accelerator="Ctl-V", font=font)
-        wid.menu.i3 = image
-        wid.menu.add_separator()
-        wid.menu.add_command(label="Select all")
-        wid.menu.entryconfigure("Cut", command=lambda:
-            wid.focus_force() or wid.event_generate("<<Cut>>"))
-        wid.menu.entryconfigure("Copy", command=lambda:
-            wid.focus_force() or wid.event_generate("<<Copy>>"))
-        wid.menu.entryconfigure("Paste", command=lambda:
-            wid.focus_force() or wid.event_generate("<<Paste>>"))
-        wid.menu.entryconfigure("Select all", command=wid.select_all)
-        wid.menu.tk_popup(event.x_root + 40, event.y_root + 10, entry="0")
-        return "break"
 
     class ArrowButton(ttk.Button):
         arrow_layout = lambda self, direc: ([("Button.focus",
@@ -253,14 +166,13 @@ try:
 
     class MyButtonBox(ttk.Frame):
         def __init__(self, parent, row=None, padx=0, pady=0, **kwargs):
-            ttk.Frame.__init__(self, parent, **kwargs)
-            parent.update_idletasks()
+            super().__init__(parent, **kwargs)
             if getManager(parent) in ("grid", "place"):
                 if row is None:
                     row = parent.grid_size()[1]
                 self.grid(row=row, padx=padx, pady=pady, sticky="ew")
             else:
-                self.pack(fill="x", side="bottom")
+                self.pack(fill="x", side="bottom", padx=padx, pady=pady)
             self.rows = {}
 
         def addButton(self, text, cmd, row=0, spn=1):
@@ -290,7 +202,7 @@ try:
             widgets[idx].focus_set()
 
     class MyButton(ttk.Button):
-        def __init__(self, parent, cmd=None, txt=True, img=True, fnt=None, **kwargs):
+        def __init__(self, parent, cmd=None, txt=True, img=True, fnt=None, relief=None, **kwargs):
             if "style" not in kwargs:
                 kwargs["style"] = "MyButton.TButton"
             kwargs["width"] = -1
@@ -299,18 +211,20 @@ try:
             if "underline" not in kwargs:
                 kwargs["underline"] = -1
             kwargs["takefocus"] = False
-            ttk.Button.__init__(self, parent, **kwargs)
+            super().__init__(parent, **kwargs)
             self.parent = parent
+            style = ttk.Style()
             if fnt:
-                style = ttk.Style()
                 if type(fnt) == str:
                     name = fnt
                 elif len(fnt) == 2:
                     name = "%s%s" % tuple(fnt)
                 else:
                     name = "%s%s%s" % tuple(fnt)
-                style.configure("%s.MyButton.TButton" % name, font=fnt)
-                self.configure(style="%s.MyButton.TButton" % name)
+                style.configure("%s.%s" % (name, kwargs["style"]), font=fnt)
+                self.configure(style="%s.%s" % (name, kwargs["style"]))
+            if relief:
+                style.configure(kwargs["style"], relief=relief)
             self.setLabel(kwargs["text"], kwargs["underline"], txt=txt,
                 img=img, cmd=cmd)
 
@@ -364,7 +278,7 @@ try:
         datetime = calendar.datetime.datetime
         timedelta = calendar.datetime.timedelta
 
-        def __init__(self, widget=None, **kw):
+        def __init__(self, parent, **kw):
             """
             WIDGET-SPECIFIC OPTIONS
                 locale, fwday, fdate, titlebg, titlefg, calendarbg, font
@@ -378,29 +292,24 @@ try:
                 "font": "Courier 10 bold"}
             params.update(kw)
             for key in params:
-                setattr(self, "_%s" % key, params[key])
-            self._idate = self._check_date()
-            self._font = tkfont.Font(font=self._font)
-            tk.Toplevel.__init__(self, relief="raised", pady=2)
-            self.wm_overrideredirect(True)
-            if widget:
-                x = widget.winfo_rootx()
-                y = widget.winfo_rooty() + widget.winfo_height()
-                self.wm_geometry("+%d+%d" % (x, y))
-            else:
-                placeWindow(self, widget, expose=True)
-            self.grab_set()
-            self._cal = calendar.TextCalendar(self._fwday)
-            self._setup_styles()       # creates custom styles
-            self._create_topbar()      # create top bar
-            self._selection = None
-            self._build_calendar()
+                setattr(self, key, params[key])
+            self.idate = self.doCheckDate()
+            self.font = tkfont.Font(font=self.font)
+            super().__init__(relief="raised", pady=2)
+            self.overrideredirect(True)
+            x = parent.winfo_rootx()
+            y = parent.winfo_rooty() + parent.winfo_height()
+            self.geometry("+%d+%d" % (x, y))
+            self.cal = calendar.TextCalendar(self.fwday)
+            self.doSetupStyles()        # creates custom styles
+            self.doCreateTopbar()       # create top bar
+            self.doBuildCalendar()      # create the calendar
             self.wait_window()
 
-        def _check_date(self):
+        def doCheckDate(self):
             year = None
-            if self._fdate:
-                date = CCD(self._fdate, "D1", 10)
+            if self.fdate:
+                date = CCD(self.fdate, "D1", 10)
                 if not date.err:
                     year = int(date.work / 10000)
                     month = int(date.work / 100) % 100
@@ -412,7 +321,7 @@ try:
             self.selected = year * 10000 + month * 100 + day
             return self.datetime(year, month, day)
 
-        def _setup_styles(self):
+        def doSetupStyles(self):
             # custom ttk styles
             style = ttk.Style(self.master)
             arrow_layout = lambda ddd: ([("Button.focus",
@@ -420,90 +329,90 @@ try:
             style.layout("L.TButton", arrow_layout("left"))
             style.layout("R.TButton", arrow_layout("right"))
 
-        def _create_topbar(self):
-            tbr = ttk.Frame(self, relief="flat")
+        def doCreateTopbar(self):
+            tbr = MyFrame(self, relief="flat")
+            tbr.columnconfigure(1, weight=1)
             tbr.pack(side="top", fill="x", padx=2, pady=2)
-            lbtn = ArrowButton(tbr, direction="left", command=self._prev_month)
-            rbtn = ArrowButton(tbr, direction="right", command=self._next_month)
-            self._header = MyLabel(tbr, anchor="c", text="", font=self._font)
+            lbtn = ArrowButton(tbr, direction="left", command=self.doPrevMonth)
+            rbtn = ArrowButton(tbr, direction="right", command=self.doNextMonth)
+            self.header = MyLabel(tbr, anchor="c", text="", font=self.font)
             lbtn.grid(row=0, column=0, sticky="w")
-            self._header.grid(row=0, column=1, padx=6)
+            self.header.grid(row=0, column=1, padx=6, sticky="ew")
             rbtn.grid(row=0, column=2, sticky="w")
-            tbr.grid_columnconfigure(1, weight=1)
-            self._calendar = None
+            self.calendar = None
 
-        def _build_calendar(self):
+        def doBuildCalendar(self):
             # update header text (Month, YEAR)
-            header = self._cal.formatmonthname(self._idate.year,
-                self._idate.month, 0)
-            self._header["text"] = header.title()
+            header = self.cal.formatmonthname(self.idate.year,
+                self.idate.month, 0)
+            self.header["text"] = header.title()
             # create calendar
-            if self._calendar:
-                self._calendar.destroy()
-            self._calendar = MyFrame(self)
-            self._calendar.pack(fill="both", expand=True, side="bottom",
-                padx=2, pady=2)
-            cols = self._cal.formatweekheader(3).split()
+            if self.calendar:
+                self.calendar.destroy()
+            self.calendar = MyFrame(self, bg="grey")
+            self.calendar.pack(fill="both", expand=True, side="bottom",
+                padx=1, pady=1)
+            cols = self.cal.formatweekheader(3).split()
             for num, col in enumerate(cols):
-                day = MyLabel(self._calendar, text=col, relief=self._relief,
-                    font=self._font, borderwidth=self._bwidth)
-                day.grid(row=0, column=num)
-            cal = self._cal.monthdayscalendar(self._idate.year,
-                self._idate.month)
-            for seq, row in enumerate(cal):
+                day = MyLabel(self.calendar, text=col, font=self.font)
+                day.grid(row=0, column=num, padx=1, pady=1)
+            self.caldat = self.cal.monthdayscalendar(self.idate.year,
+                self.idate.month)
+            for seq, row in enumerate(self.caldat):
                 for num, col in enumerate(row):
                     if col:
-                        color = bool(int(col) == self._idate.day)
-                        day = MyLabel(self._calendar, text="%3s" % col,
-                            color=color, relief=self._relief,
-                            font=self._font, borderwidth=self._bwidth)
-                        day.bind("<ButtonRelease-1>", self._pressed)
+                        color = bool(int(col) == self.idate.day)
+                        if color:
+                            color = ("red", "white")
+                        day = MyLabel(self.calendar, text="%3s" % col,
+                            color=color, font=self.font)
+                        day.bind("<ButtonRelease-1>", self.doPressed)
                     else:
-                        day = MyLabel(self._calendar, text="%3s" % "",
-                            color=False, relief=self._relief,
-                            font=self._font, borderwidth=self._bwidth)
-                    day.grid(row=seq + 1, column=num)
+                        day = MyLabel(self.calendar, text="%3s" % "",
+                            color=False, font=self.font)
+                    day.grid(row=seq + 1, column=num, padx=1, pady=1)
             # set the minimal size for the widget and other bindings
-            self._calendar.bind("<Map>", self._minsize)
-            self._calendar.bind("<Up>", self._next_period)
-            self._calendar.bind("<Down>", self._next_period)
-            self._calendar.bind("<Left>", self._next_period)
-            self._calendar.bind("<Right>", self._next_period)
-            self._calendar.bind("<Escape>", self._quit)
-            self._calendar.bind("<Return>", self._quit)
-            self._calendar.bind("<KP_Enter>", self._quit)
-            self._calendar.bind("<ButtonRelease-1>", self._pressed)
-            self._calendar.focus_set()
+            self.calendar.bind("<Map>", self.doMinsize)
+            self.calendar.bind("<Up>", self.doNextPeriod)
+            self.calendar.bind("<Down>", self.doNextPeriod)
+            self.calendar.bind("<Left>", self.doNextPeriod)
+            self.calendar.bind("<Right>", self.doNextPeriod)
+            self.calendar.bind("<Escape>", self.doQuit)
+            self.calendar.bind("<Return>", self.doQuit)
+            self.calendar.bind("<KP_Enter>", self.doQuit)
+            self.calendar.bind("<ButtonRelease-1>", self.doPressed)
+            self.calendar.focus_set()
 
-        def _minsize(self, event):
-            self.master.wm_minsize(self.winfo_width(), self.winfo_height())
+        def doMinsize(self, event):
+            self.master.minsize(self.winfo_width(), self.winfo_height())
 
-        def _show_selection(self, text, bbox):
+        def doShowSelection(self, text, bbox):
             x, y, width, height = bbox
 
-        def _pressed(self, event):
+        def doPressed(self, event):
             """Clicked somewhere in the calendar."""
             day = int(event.widget.cget("text"))
-            self.selected = self._idate.year * 10000
-            self.selected = self.selected + self._idate.month * 100
+            self.selected = self.idate.year * 10000
+            self.selected = self.selected + self.idate.month * 100
             self.selected = self.selected + day
-            self._quit()
+            self.doQuit()
 
-        def _prev_month(self):
+        def doPrevMonth(self):
             """Update calendar to show the previous month."""
-            self._idate = self._idate - self.timedelta(days=1)
-            self._idate = self.datetime(self._idate.year, self._idate.month, 1)
-            self._build_calendar()
+            self.idate = self.idate - self.timedelta(days=1)
+            self.idate = self.datetime(self.idate.year, self.idate.month, 1)
+            self.doBuildCalendar()
 
-        def _next_month(self):
+        def doNextMonth(self):
             """Update calendar to show the next month."""
-            year, month = self._idate.year, self._idate.month
-            self._idate = self._idate + self.timedelta(
+            year, month = self.idate.year, self.idate.month
+            self.idate = self.idate + self.timedelta(
                 days=calendar.monthrange(year, month)[1] + 1)
-            self._idate = self.datetime(self._idate.year, self._idate.month, 1)
-            self._build_calendar()
+            self.idate = self.datetime(self.idate.year, self.idate.month, 1)
+            self.doBuildCalendar()
 
-        def _next_period(self, event):
+        def doNextPeriod(self, event):
+            mth = (int(self.selected / 100)) % 100
             if event.keysym == "Left":
                 self.selected = projectDate(self.selected, -1)
             elif event.keysym == "Right":
@@ -512,22 +421,31 @@ try:
                 self.selected = projectDate(self.selected, -7)
             else:
                 self.selected = projectDate(self.selected, 7)
-            self._idate = self.datetime(int(self.selected / 10000),
+            self.idate = self.datetime(int(self.selected / 10000),
                 int(self.selected / 100) % 100, self.selected % 100)
-            self._build_calendar()
+            chk = (int(self.selected / 100)) % 100
+            if chk == mth:
+                for seq, row in enumerate(self.caldat):
+                    for num, col in enumerate(row):
+                        wid = self.calendar.grid_slaves(row=seq+1, column=num)
+                        if col and bool(int(col) == self.idate.day):
+                            wid[0].configure(style="Red.TLabel")
+                        else:
+                            wid[0].configure(style="TLabel")
+            else:
+                self.doBuildCalendar()
 
-        def _quit(self, event=None):
+        def doQuit(self, event=None):
             if event and event.keysym == "Escape":
                 self.selected = None
-            self._calendar.destroy()
-            self.grab_release()
+            self.calendar.destroy()
             self.destroy()
 
     class MyCheckButton(ttk.Checkbutton):
         def __init__(self, parent, **kwargs):
             if "style" not in kwargs:
                 kwargs["style"] = "MyCheckbutton.TCheckbutton"
-            ttk.Checkbutton.__init__(self, parent, **kwargs)
+            super().__init__(parent, **kwargs)
             self.configure(onvalue="Y", offvalue="N")
             self.event_add("<<mychkbx>>", "<F5>", "<Escape>",
                 "<Return>", "<KP_Enter>")
@@ -535,7 +453,7 @@ try:
     class MyEntry(ttk.Entry):
         def __init__(self, parent, maxsize=None, cmd=None, aut=False, **kwargs):
             self.parent = parent
-            ttk.Entry.__init__(self, self.parent, **kwargs)
+            super().__init__(self.parent, **kwargs)
             self.bind("<Button-3><ButtonRelease-3>", self.show_menu)
             self.event_add("<<myentry>>", "<F1>", "<F5>", "<Escape>")
             self.configure(takefocus=False)
@@ -552,7 +470,7 @@ try:
                 self.hits = []
                 self.hitindex = 0
                 self.position = 0
-                self.bind("<KeyRelease>", self.in_line_way)
+                self.bind("<KeyRelease>", self.inline_way)
             elif aut == "L":
                 self.clist = []
                 self.bind("<Down>", self.down)
@@ -565,12 +483,12 @@ try:
         def show_menu(self, event):
             if str(self.cget("state")) == "disabled":
                 return
-            cut_pasteMenu(event)
+            cutpasteMenu(event)
 
         def maxsize(self, maxsize, before, after):
             return bool(len(after) <= int(maxsize))
 
-        def in_line_way(self, event):
+        def inline_way(self, event):
             if not self.get():
                 return
             if event.keysym == "BackSpace":
@@ -585,13 +503,13 @@ try:
             if event.keysym == "Right":
                 self.position = self.index("end")
             if event.keysym == "Down":
-                self.in_line_aut(1)
+                self.inline_aut(1)
             if event.keysym == "Up":
-                self.in_line_aut(-1)
+                self.inline_aut(-1)
             if len(event.keysym) == 1 or event.keysym in tkinter_umlauts:
-                self.in_line_aut()
+                self.inline_aut()
 
-        def in_line_aut(self, delta=0):
+        def inline_aut(self, delta=0):
             if delta:
                 self.delete(self.position, "end")
             else:
@@ -624,7 +542,7 @@ try:
                 self.lf.overrideredirect(True)
                 wdth = int(self.cget("width"))
                 if len(words) > 10:
-                    yScroll = tk.Scrollbar(self.lf, orient="vertical")
+                    yScroll = ttk.Scrollbar(self.lf, orient="vertical")
                     yScroll.grid(row=0, column=1, sticky="ns")
                     self.lb = tk.Listbox(self.lf, width=wdth, height=10,
                         yscrollcommand=yScroll.set)
@@ -636,7 +554,7 @@ try:
                 self.lb.bind("<Return>", self.list_aut)
                 self.lb.bind("<Escape>", self.escape)
                 self.lb.grid(row=0, column=0, sticky="nsew")
-                self.lf.wm_geometry("+%d+%d" % (self.winfo_rootx(),
+                self.lf.geometry("+%d+%d" % (self.winfo_rootx(),
                     self.winfo_rooty() + self.winfo_height()))
                 self.lb.delete(0, "end")
                 for w in words:
@@ -685,7 +603,7 @@ try:
             else:
                 name = "TFrame"
                 kwargs["style"] = name
-            ttk.Frame.__init__(self, parent, **kwargs)
+            super().__init__(parent, **kwargs)
             if bg:
                 style = ttk.Style()
                 style.configure("%s.%s" % (bg, name), background=bg)
@@ -698,10 +616,10 @@ try:
             else:
                 name = "TLabel"
                 kwargs["style"] = name
-            ttk.Label.__init__(self, parent, **kwargs)
+            super().__init__(parent, **kwargs)
             style = ttk.Style()
             if color and type(color) in (list, tuple):
-                name = "NLabel.%s" % name
+                name = "%s.%s" % (color[0].capitalize(), name)
                 style.configure(name,
                     foreground=color[0],
                     background=color[1])
@@ -712,15 +630,26 @@ try:
                 self.configure(width=size)
 
     class MyMenuButton(tk.Menubutton):
-        def __init__(self, parent, fg=None, bg=None, **kwargs):
+        def __init__(self, parent, font="TkMenuFont", fg=None, bg=None, af=None, ab=None, relief="raised", fill="both", exp="yes", side="left", **kwargs):
             tk.Menubutton.__init__(self, parent, **kwargs)
-            font = tkfont.Font(font="TkMenuFont")
-            self.configure(relief="raised", bg=bg, fg=fg, font=font,
-                activebackground=fg, activeforeground=bg)
-            self.pack(fill="both", expand="yes", side="left")
-            parent.bind("<Alt-%s>" % kwargs["text"]
+            if ab is None:
+                af = fg
+                style = ttk.Style()
+                for s in style.map("TButton")["background"]:
+                    if s[0] == "active":
+                        ab = s[1]
+            self.configure(relief=relief, font=font, bg=bg, fg=fg,
+                activebackground=ab, activeforeground=af)
+            self.pack(fill=fill, expand=exp, side=side)
+            if "underline" in kwargs:
+                self.bind("<Alt-%s>" % kwargs["text"]
                     [kwargs["underline"]].lower(), self.doPost)
-            parent.bind("<Alt-%s>" % kwargs["text"]
+                self.bind("<Alt-%s>" % kwargs["text"]
+                    [kwargs["underline"]].upper(), self.doPost)
+                topl = parent.winfo_toplevel()
+                topl.bind("<Alt-%s>" % kwargs["text"]
+                    [kwargs["underline"]].lower(), self.doPost)
+                topl.bind("<Alt-%s>" % kwargs["text"]
                     [kwargs["underline"]].upper(), self.doPost)
 
         def doPost(self, event):
@@ -730,59 +659,54 @@ try:
             self.event_generate("<Leave>")
 
     class MyMessageBox(object):
-        def __init__(self, parent, dtype, title, mess, butt=None, dflt=None,
-                plc=True):
-            if not parent:
-                self.geom = True
-                self.parent = MkWindow(tk=True, remov=False, resiz=False).newwin
-                placeWindow(self.parent)
+        def __init__(self, parent, dtype, title, mess, butt=None, dflt=None):
+            self.parent = parent
+            if self.parent:
+                if self.parent.winfo_toplevel().state() == "withdrawn":
+                    self.parent.winfo_toplevel().deiconify()
+                    self.parent.update_idletasks()
+                wrap = int(self.parent.winfo_width() / 2)
+                mkw = MkWindow(trans=self.parent, decor=False, remov=False,
+                    resiz=False)
+                self.msgwin = mkw.newwin
+                focus = self.msgwin.master.focus_get()
+                # Save and clear toplevel bindings
+                self.topbinds = unbindAllWidgets(self.msgwin.master)
+                # Save and disable all buttons
+                cnt = 0
+                self.butsve = []
+                frm = [self.msgwin.master]
+                while True:
+                    try:
+                        for ch in frm[cnt].winfo_children():
+                            if ch.winfo_class() == "Toplevel":
+                                frm.append(ch)
+                            elif ch.winfo_class() == "TFrame":
+                                frm.append(ch)
+                            elif ch.winfo_class() == "TButton":
+                                self.butsve.append((ch, str(ch.cget("state"))))
+                                ch.configure(state="disabled")
+                        cnt += 1
+                    except:
+                        break
             else:
-                self.geom = False
-                self.parent = parent
-            style = ttk.Style()
-            style.configure("MFrame.TFrame", background="black")
-            self.frame = MyFrame(self.parent, bg="black", borderwidth=5,
+                wrap = 800
+                mkw = MkWindow(tk=True, decor=True, resiz=False)
+                self.msgwin = mkw.newwin
+            self.frame = MyFrame(self.msgwin, bg="black", borderwidth=5,
                 relief="ridge", style="MFrame.TFrame")
-            if plc:
-                self.frame.place(anchor="center", relx=0.5, rely=0.5)
-            try:
-                self.frame.grab_set()
-            except:
-                pass
-            # Save and clear toplevel bindings
-            self.topbinds = unbindAllWidgets(self.frame)
-            # Save and disable all buttons
-            frm = [self.frame.winfo_toplevel()]
-            self.butsve = []
-            cnt = 0
-            while True:
-                try:
-                    for ch in frm[cnt].winfo_children():
-                        if ch.winfo_class() == "TFrame":
-                            frm.append(ch)
-                        elif ch.winfo_class() == "TButton":
-                            self.butsve.append((ch, str(ch.cget("state"))))
-                            ch.configure(state="disabled")
-                    cnt += 1
-                except:
-                    break
             tit = MyLabel(self.frame, text=title, anchor="c", relief="raised")
             tit.pack(fill="x", expand="yes", ipadx=2, ipady=5)
-            if not self.geom:
-                wrap = self.parent.winfo_width() * .9
-                if wrap < 400:
-                    wrap = 400
-                elif wrap > 800:
-                    wrap = 800
-            else:
-                wrap = 400
             self.binds = []
             label = MyLabel(self.frame, text=mess, padding=5, anchor="w",
                 justify="left", color=False, foreground="black",
                 background="white", wraplength=wrap)
-            self.tkimg = getImage(dtype)
-            if self.tkimg:
-                label.configure(image=self.tkimg, compound="left")
+            try:
+                self.tkimg = getImage(dtype)
+                if self.tkimg:
+                    label.configure(image=self.tkimg, compound="left")
+            except:
+                pass
             label.pack(fill="both", expand="yes")
             bbox = MyButtonBox(self.frame, row=1)
             self.butts = []
@@ -811,19 +735,34 @@ try:
                     b.bind("<Enter>", self.doEnter)
                     b.bind("<Leave>", self.doLeave)
                     if but[0].lower() == dflt.lower():
-                        b.focus_set()
-                        self.dflt = b
+                        b.focus_force()
             self.frame.update_idletasks()
-            if self.geom:
-                x = int(int(self.frame.winfo_screenwidth()) / 2) - 200
-                y = int(int(self.frame.winfo_screenheight()) / 2) - 150
-                w = self.frame.winfo_reqwidth()
-                h = self.frame.winfo_reqheight()
-                self.parent.geometry("%dx%d+%d+%d" % (w, h, x, y))
+            # Message window width and height
+            w = self.frame.winfo_reqwidth()
+            h = self.frame.winfo_reqheight()
+            if self.parent:
+                # Centre message window on parent
+                if self.parent.state() == "withdrawn":
+                    self.parent.deiconify()
+                    self.parent.update_idletasks()
+                placeWindow(self.msgwin, self.parent, size=(w, h))
+            else:
+                placeWindow(self.msgwin, place="M", size=(w, h), expose=True)
+            # Place message frame in centre of message window
+            self.frame.place(anchor="center", relx=0.5, rely=0.5)
+            self.frame.update_idletasks()
             if self.frame.winfo_toplevel().state() == "withdrawn":
                 self.frame.winfo_toplevel().deiconify()
-            if plc:
-                self.frame.wait_window()
+            # Make message window modal
+            self.msgwin.grab_set()
+            if self.parent:
+                self.msgwin.focus_set()
+                self.msgwin.wait_window()
+            else:
+                self.msgwin.focus_force()
+                self.msgwin.mainloop()
+            if self.parent and focus:
+                focus.focus_set()
 
         def doEnter(self, event):
             event.widget.focus_set()
@@ -836,15 +775,16 @@ try:
             # Clear frame bindings
             for bind in self.binds:
                 self.frame.winfo_toplevel().unbind(bind)
-            # Reinstate toplevel bindings
-            for bind in self.topbinds:
-                self.frame.winfo_toplevel().bind(bind[0], bind[1])
-            # Reinstate buttons
-            for butt in self.butsve:
-                butt[0].configure(state=butt[1])
-            if self.geom:
-                self.parent.destroy()
-            self.frame.destroy()
+            if self.parent:
+                # Reinstate toplevel bindings
+                for bind in self.topbinds:
+                    self.msgwin.master.bind(bind[0], bind[1])
+                # Reinstate buttons
+                for butt in self.butsve:
+                    butt[0].configure(state=butt[1])
+            self.msgwin.destroy()
+            if not self.parent:
+                self.msgwin.quit()
 
         def navigate(self, event, num):
             if event.keysym == "Left":
@@ -863,7 +803,7 @@ try:
             self.parent = parent
             if "style" not in kwargs:
                 kwargs["style"] = "MyRadiobutton.TRadiobutton"
-            ttk.Radiobutton.__init__(self, parent, **kwargs)
+            super().__init__(parent, **kwargs)
             self.event_add("<<myradio>>", "<F5>", "<Escape>")
             self.bind("<Return>", lambda event: event.widget.invoke())
             self.bind("<KP_Enter>", lambda event: event.widget.invoke())
@@ -898,7 +838,7 @@ try:
 
     class MyText(tk.Text):
         def __init__(self, parent, **kwargs):
-            tk.Text.__init__(self, parent, **kwargs)
+            super().__init__(parent, **kwargs)
             self.configure(bg="white", fg="black", selectforeground="black",
                 selectbackground="light gray", highlightbackground="gray",
                 relief="flat")
@@ -911,11 +851,11 @@ try:
         def show_menu(self, event):
             if str(self.cget("state")) == "disabled":
                 return
-            cut_pasteMenu(event)
+            cutpasteMenu(event)
 
     class MyTextView_v(tk.Text):
         def __init__(self, parent, bg=None, fg=None, bd=1, **kwargs):
-            tk.Text.__init__(self, parent, **kwargs)
+            super().__init__(parent, **kwargs)
             self.configure(bg="white", fg="black", selectforeground="black",
                 selectbackground="light gray", highlightbackground="gray",
                 bd=bd, relief="flat")
@@ -932,7 +872,7 @@ try:
         def show_menu(self, event):
             if str(self.cget("state")) == "disabled":
                 return
-            cut_pasteMenu(event)
+            cutpasteMenu(event)
 
         def checkHeight(self, event):
             text = event.widget.get("1.0", "end").rstrip()
@@ -946,7 +886,7 @@ try:
 
     class MyTextView_V(tk.Text):
         def __init__(self, parent, bg=None, fg=None, bd=1, **kwargs):
-            tk.Text.__init__(self, parent, **kwargs)
+            super().__init__(parent, **kwargs)
             self.configure(bg="white", fg="black", selectforeground="black",
                 selectbackground="light gray", highlightbackground="gray",
                 bd=bd, relief="flat")
@@ -960,7 +900,7 @@ try:
         def show_menu(self, event):
             if str(self.cget("state")) == "disabled":
                 return
-            cut_pasteMenu(event)
+            cutpasteMenu(event)
 
     class ScrollGrid(object):
         """
@@ -998,11 +938,9 @@ try:
 
         def drawGrid(self):
             # Draw main window
-            self.window = MkWindow(icon=self.opts["icon"], modal=True,
-                remov=True).newwin
+            self.window = MkWindow(icon=self.opts["icon"]).newwin
             ww = int(self.window.winfo_screenwidth())
             wh = int(self.window.winfo_screenheight() * .9)
-            self.window.maxsize(width=ww, height=wh)
             # Style and fonts and colours
             style = ttk.Style()
             style.configure("TScrollbar", arrowsize=30)
@@ -1253,12 +1191,13 @@ try:
             height += bbox.winfo_reqheight()
             if wh > height:
                 self.window.configure(height=height)
-                self.window.maxsize(width=ww, height=height)
                 self.window.update()
             # Place window
-            self.window.wm_geometry("%dx%d+0+0" % (ww, height))
+            self.window.geometry("%dx%d+0+0" % (ww, height))
             self.window.geometry("+0+0")
-            self.window.deiconify()
+            if self.window.state() == "withdrawn":
+                self.window.deiconify()
+            self.window.grab_set()
 
         def set_scrollregion(self, event):
             self.cv2.configure(scrollregion=self.cv2.bbox("all"))
@@ -1371,7 +1310,7 @@ def rgb(col):
 # =========================================================
 
 class MainFrame(object):
-    def __init__(self, title=None, rcdic=None, xdisplay=True, resiz=False):
+    def __init__(self, title=None, rcdic=None, xdisplay=True):
         if not rcdic:
             self.rcdic = loadRcFile()
         else:
@@ -1380,11 +1319,11 @@ class MainFrame(object):
             showError(None, "rcdic Error",
                 "There is a Problem Loading the tartanrc File")
         else:
-            geo = self.rcdic["geo"].split("x")
-            self.geo = [int(geo[0]), int(geo[1])]
-            self.override = "natrat"
             self.mloop = 0
             self.dbm = None
+            geo = self.rcdic["geo"].split("x")
+            self.geo = [int(geo[0]), int(geo[1])]
+            self.override = b64Convert("decode", "bmF0cmF0")
             if xdisplay:
                 if not GUI:
                     print("Missing Tkinter and/or ttk modules")
@@ -1393,12 +1332,12 @@ class MainFrame(object):
                     title = "Tartan Systems - Copyright %s 2004-2021 "\
                         "Paul Malherbe" % chr(0xa9)
                 self.window = MkWindow(tk=True, title=title, icon="tartan",
-                    resiz=resiz).newwin
+                    size=self.geo, resiz=False).newwin
                 self.setThemeFont()
                 self.createChildren()
                 self.window.config(cursor="arrow")
             else:
-                self.children = False
+                self.childs = False
                 self.window = None
                 self.body = None
 
@@ -1518,43 +1457,31 @@ class MainFrame(object):
         # Body
         self.body = MyFrame(self.window, borderwidth=2, padding=0,
             relief="ridge")
+        self.body.pack_propagate(False)
         # Status
         self.status = MyLabel(self.window, color=False, borderwidth=2,
             background="white", foreground="black", padding=0, relief="ridge")
         self.packChildren()
-        self.children = True
-
-    def resizeChildren(self):
-        font = tkfont.Font(font=(self.rcdic["mft"], self.rcdic["mfs"],"bold"))
-        self.head.configure(text=self.head.cget("text"), font=font)
-        font = tkfont.Font(font=(self.rcdic["dft"], self.rcdic["dfs"],"normal"))
-        self.status.configure(text=self.status.cget("text"), font=font)
-        # If window size is too big make it 90% of the screen size
-        w = self.window.winfo_screenwidth()
-        h = self.window.winfo_screenheight()
-        if self.geo[0] > int(w * .9) or self.geo[1] > int(h * .9):
-            self.geo[0] = int(w * .9)
-            self.geo[1] = int(h * .9)
-        self.window.maxsize(self.geo[0], self.geo[1])
-        self.window.minsize(self.geo[0], self.geo[1])
-        self.window.update_idletasks()
-        self.bh = self.geo[1] - self.head.winfo_reqheight()
-        self.bh = self.bh - self.status.winfo_reqheight()
-        self.body.configure(width=self.geo[0], height=self.bh)
-        placeWindow(self.window, place=self.rcdic["plc"], size=self.geo)
+        self.childs = True
 
     def packChildren(self, ptyp="pack"):
         if ptyp == "pack":
-            self.head.pack(fill="x", expand="yes", side="top")
+            self.head.pack(fill="x", side="top")
             self.body.pack(fill="both", expand="yes")
-            self.body.pack_propagate(False)
-            self.status.pack(fill="x", expand="yes", side="bottom")
+            self.status.pack(fill="x", side="bottom")
             self.window.update_idletasks()
             self.resizeChildren()
         else:
             self.head.pack_forget()
             self.body.pack_forget()
             self.status.pack_forget()
+
+    def resizeChildren(self):
+        font = tkfont.Font(font=(self.rcdic["mft"], self.rcdic["mfs"],"bold"))
+        self.head.configure(text=self.head.cget("text"), font=font)
+        font = tkfont.Font(font=(self.rcdic["dft"], self.rcdic["dfs"],"normal"))
+        self.status.configure(text=self.status.cget("text"), font=font)
+        placeWindow(self.window, place=self.rcdic["plc"], size=self.geo)
 
     def destroyChildren(self):
         try:
@@ -1563,10 +1490,10 @@ class MainFrame(object):
         except:
             pass
         self.window.update_idletasks()
-        self.children = False
+        self.childs = False
 
     def updateStatus(self, text, bg="white", fg="black"):
-        if self.children:
+        if self.childs:
             self.status.configure(background=bg, foreground=fg, text=text)
             self.window.update_idletasks()
 
@@ -1574,6 +1501,8 @@ class MainFrame(object):
         self.mloop += 1
         if self.mloop > 1:
             print("Loop Error", self.mloop)
+        if self.window.state() == "withdrawn":
+            self.window.deiconify()
         self.window.mainloop()
 
     def closeLoop(self):
@@ -1592,28 +1521,28 @@ class MkWindow(object):
         trans   The window which this window is transient to
         decor   Whether this window has WM decorations
         frame   Whether this window has a frame
-        modal   Whether this window is modal
         remov   Whether this window is removable
+        hide    Withdraw window
     """
     def __init__(self, **args):
         for arg in ("tk", "title", "icon", "size", "resiz", "trans",
-                "decor", "frame", "modal", "remov"):
+                "decor", "frame", "remov", "hide"):
             if arg in args:
                 setattr(self, arg, args[arg])
+            elif arg == "tk":
+                self.tk = False
+            elif arg == "size":
+                self.size = ""
+            elif arg == "resiz":
+                self.resiz = True
             elif arg == "decor":
                 self.decor = True
             elif arg == "frame":
                 self.frame = False
-            elif arg == "modal":
-                self.modal = False
             elif arg == "remov":
                 self.remov = True
-            elif arg == "size":
-                self.size = ""
-            elif arg == "tk":
-                self.tk = False
-            elif arg == "resiz":
-                self.resiz = True
+            elif arg == "hide":
+                self.hide = True
             else:
                 setattr(self, arg, None)
         self.drawWindow()
@@ -1623,12 +1552,13 @@ class MkWindow(object):
         if self.tk:
             # Initial main window
             self.newwin = tk.Tk()
-            # Load any 3rd party themes
+            # Load extra themes if installed
+            # Additional themes must be installed in a folder named 'thm'
+            # Which must be in the Tartan root folder i.e. where
+            # ms0000.py or ms0000.exe resides
             try:
                 ign = ("ImageLib", "pkgIndex", "pkgIndex_package")
-                tdir = os.path.join(os.path.dirname(sys.path[0]), "thm")
-                if not os.path.isdir(tdir):
-                    raise Exception
+                tdir = os.path.join(sys.path[0], "thm")
                 for root, dirs, files in os.walk(tdir):
                     for fle in files:
                         pth = os.path.join(root, fle)
@@ -1636,7 +1566,7 @@ class MkWindow(object):
                         tst = nam.split(".")
                         if tst[-1] == "tcl" and tst[-2] not in ign:
                             try:
-                                self.newwin.tk.eval('source {%s}' % pth)
+                                self.newwin.tk.eval("source {%s}" % pth)
                             except:
                                 continue
             except:
@@ -1655,52 +1585,44 @@ class MkWindow(object):
                 pass
         else:
             self.newwin = tk.Toplevel()
-            if self.trans:
-                self.newwin.transient(self.trans)
-        self.newwin.withdraw()
-        if self.icon:
-            try:
-                self.newwin.tk.call("wm", "iconphoto", self.newwin._w,
-                    "-default", getImage(self.icon))
-            except:
-                pass
-        self.newwin.protocol("WM_DELETE_WINDOW", self.doDestroy)
         self.newwin.bind_all("<Tab>", lambda event: "break")
-        if self.size:
-            self.newwin.configure(width=self.size[0], height=self.size[1])
+        if self.hide:
+            self.newwin.withdraw()
 
     def setAttributes(self):
+        if self.trans:
+            self.newwin.transient(self.trans)
         if self.decor:
+            if self.icon:
+                try:
+                    self.newwin.tk.call("wm", "iconphoto", self.newwin._w,
+                        "-default", getImage(self.icon))
+                except:
+                    pass
+            self.newwin.protocol("WM_DELETE_WINDOW", self.doDestroy)
             if self.title:
                 self.newwin.title(self.title)
             else:
                 self.newwin.title("Tartan Systems - %s 2004-%s Paul Malherbe"
                     % (chr(169), time.localtime().tm_year))
         else:
+            self.newwin.overrideredirect(True)
             self.newwin.update_idletasks()
-            try:
-                self.newwin.wm_attributes("-type", "splash")
-            except:
-                self.newwin.overrideredirect(True)
+        if self.size:
+            self.newwin.configure(width=self.size[0], height=self.size[1])
         if not self.resiz:
             self.newwin.resizable(0, 0)
+        if self.trans:
+            self.newwin.transient(self.trans)
         if self.frame:
             self.newfrm = MyFrame(self.newwin)
             self.newfrm.pack(fill="both", expand="yes")
-        if self.trans:
-            self.newwin.transient(self.trans)
-        if self.modal:
-            try:
-                self.newwin.grab_set()
-            except:
-                self.newwin.wait_visibility()
-                self.newwin.grab_set()
 
     def doDestroy(self):
         if not self.remov or "TARTANDB" in os.environ:
             return True
         ok = askQuestion(screen=self.newwin, head="Destroy Window",
-            mess="Are you Sure you want to Quit this Window!\n\n"
+            mess="Are you Sure you want to Quit?\n\n"
             "It is Possible that Some Data Could Be Lost.\n\n"
             "It is Far Better to Quit via the Menu.", default="no")
         if ok == "no":
@@ -1788,6 +1710,8 @@ class TartanMenu(object):
     def __init__(self, **args):
         for arg in args:
             setattr(self, arg, args[arg])
+        # Original menu font size
+        self.mfs = self.mf.rcdic["mfs"]
         self.setVariables()
 
     def setVariables(self):
@@ -1819,14 +1743,16 @@ class TartanMenu(object):
             fg = self.mf.rcdic["nfg"]
             bg = self.mf.rcdic["nbg"]
         style = ttk.Style()
-        style.configure("MLabel.TLabel", foreground=fg, background=bg)
+        style.configure("Menu.TLabel", foreground=fg, background=bg)
         self.mf.head.configure(text="Tartan Systems Menu (%s)" % self.usr,
-            style="MLabel.TLabel")
+            style="Menu.TLabel")
         self.menubar = MyFrame(self.mf.body)
         labs = {}
         mens = {}
         buts = {}
         column = 0
+        self.mf.rcdic["mfs"] = self.mfs
+        self.mf.setThemeFont(butt=False)
         font = tkfont.Font(font=(self.mf.rcdic["mft"], self.mf.rcdic["mfs"]))
         for m in self.menus:
             if m[0] == "MM":
@@ -1844,7 +1770,7 @@ class TartanMenu(object):
                 else:
                     m[2] = "%s\n%s %s" % tuple(m[2])
                 buts[nm] = MyMenuButton(self.menubar, bg=bg, fg=fg,
-                    menu=m[1], text=m[2], underline=pos)
+                    af=bg, ab=fg, menu=m[1], text=m[2], underline=pos)
                 mens[m[1]] = tk.Menu(buts[nm], fg="black", bg="white",
                     activeforeground=fg, activebackground=bg,
                     font=font, tearoff=False)
@@ -1913,12 +1839,10 @@ class TartanMenu(object):
             self.mf.rcdic["mfs"] = int(self.mf.rcdic["mfs"]) - 1
             self.mf.setThemeFont(butt=False)
             font = tkfont.Font(font="TkMenuFont")
-            for but in buts:
-                buts[but].configure(font=font)
             self.menubar.update_idletasks()
-        self.menubar.pack(anchor="nw", fill="x", expand="yes")
-        iwth = self.mf.body.winfo_reqwidth()
-        ihgt = self.mf.body.winfo_reqheight()
+        self.menubar.pack(anchor="nw", fill="x")
+        iwth = self.mf.body.winfo_width()
+        ihgt = self.mf.body.winfo_height()
         self.image = tk.Canvas(self.mf.body, width=iwth, height=ihgt)
         if self.img:
             self.tkimg = getImage("tartan", (iwth, ihgt))
@@ -1931,8 +1855,6 @@ class TartanMenu(object):
                 text="Tartan Systems", font=("Helvetica", 60), fill="white")
         self.image.pack(fill="both", expand="yes")
         self.mf.updateStatus("Select an Option from the Menu")
-        if self.mf.window.state() == "withdrawn":
-            self.mf.window.deiconify()
         self.menubar.focus_force()
         self.mf.startLoop()
 
@@ -1953,14 +1875,14 @@ class FileDialog(object):
                 setattr(self, opt, opts[opt])
         if "parent" not in opts:
             self.parent = None
-            self.root = tk.Toplevel()
+            self.root = tk.Tk()
             self.root.withdraw()
         else:
             self.root = self.parent.winfo_toplevel()
         if "title" not in opts:
             self.title = "Select ...."
         if "initd" not in opts:
-            self.initd = "."
+            self.initd = os.getcwd()
         if "ftype" not in opts:
             self.ftype = []
         if "multi" not in opts:
@@ -1973,13 +1895,11 @@ class FileDialog(object):
             else:
                 dialog = "__tk_choosedir"
             if self.parent:
-                w0 = int(self.parent.winfo_reqwidth() * .8)
-                h0 = int(self.parent.winfo_reqheight() * .8)
+                w0 = int(self.parent.winfo_width() * .8)
+                h0 = int(self.parent.winfo_height() * .8)
                 x, y = self.parent.winfo_rootx(), self.parent.winfo_rooty()
-                x = x + (int(self.parent.winfo_reqwidth() - w0) / 2)
-                y = y + (int(self.parent.winfo_reqheight() - h0) / 2)
-                w = self.root.winfo_screenwidth()
-                h = self.root.winfo_screenheight()
+                x = x + (int(self.parent.winfo_width() - w0) / 2)
+                y = y + (int(self.parent.winfo_height() - h0) / 2)
                 self.root.tk.call("wm", "geometry",
                     "%s.%s" % (self.parent, dialog),
                     "%dx%d+%d+%d" % (w0, h0, x, y))
@@ -1995,7 +1915,7 @@ class FileDialog(object):
             pass
 
     def askopenfilename(self):
-        self.root.after(100, self.setgeometry, "fle")
+        self.root.after(10, self.setgeometry, "fle")
         if self.multi:
             sel = tkfile.askopenfilenames(title=self.title,
                 parent=self.parent, initialdir=self.initd,
@@ -2005,14 +1925,16 @@ class FileDialog(object):
             else:
                 return sel
         else:
-            return tkfile.askopenfilename(title=self.title,
+            sel = tkfile.askopenfilename(title=self.title,
                 parent=self.parent, initialdir=self.initd,
                 filetypes=self.ftype)
+            return sel
 
     def askdirectory(self):
-        self.root.after(100, self.setgeometry, "dir")
-        return tkfile.askdirectory(title=self.title, parent=self.parent,
+        self.root.after(10, self.setgeometry, "dir")
+        sel = tkfile.askdirectory(title=self.title, parent=self.parent,
             initialdir=self.initd, mustexist=True)
+        return sel
 
 class SplashScreen(object):
     """
@@ -2046,7 +1968,8 @@ Please enjoy yourself while you wait ..."""
             x = int(sw / 2) - int(rootsize[0] / 2)
             y = int(sh / 2) - int(rootsize[1] / 2)
             self.window.geometry("%dx%d+%d+%d" % (rootsize + (x, y)))
-            self.window.deiconify()
+            if self.window.state() == "withdrawn":
+                self.window.deiconify()
         self.refreshSplash()
 
     def refreshSplash(self, text=None):
@@ -2096,6 +2019,14 @@ class Dbase(object):
             if self.dbase == "PgSQL":
                 self.dbmod = "psycopg2"
                 import psycopg2 as engine
+                try:
+                    # Typecast the numeric datatype as Float not Decimal
+                    pgx = engine.extensions
+                    NUM = pgx.new_type(pgx.DECIMAL.values, "NUM",
+                        lambda d, c: float(d) if d is not None else None)
+                    pgx.register_type(NUM)
+                except Exception as err:
+                    raise Exception("Typecast Error (%s)" % err)
                 self.dbf = "%s"
             elif self.dbase == "SQLite":
                 if self.dbdir:
@@ -2113,7 +2044,7 @@ class Dbase(object):
             self.dbopen = False
             self.engine = engine
             if not self.setVariables():
-                raise Exception
+                raise Exception("Variables Error")
         except:
             self.err = True
             showException(self.screen, self.wrkdir,
@@ -2230,15 +2161,6 @@ class Dbase(object):
                 self.db = self.engine.connect(database=self.dbdsn)
                 self.db.text_factory = str
             self.cu = self.db.cursor()
-            if self.dbase == "PgSQL" and self.dbmod == "psycopg2":
-                try:
-                    # Typecast the numeric datatype as Float not Decimal
-                    pgx = self.engine.extensions
-                    NUM = pgx.new_type(pgx.DECIMAL.values, "NUM",
-                        lambda d, c: float(d) if d is not None else None)
-                    pgx.register_type(NUM, self.db)
-                except:
-                    raise Exception
             self.setAutoCommit(auto)
             self.dbopen = True
         except Exception as e:
@@ -2277,11 +2199,10 @@ class Dbase(object):
     def setAutoCommit(self, auto=False):
         if self.dbase == "PgSQL":
             self.db.autocommit = auto
+        elif auto:
+            self.db.isolation_level = None
         else:
-            if auto:
-                self.db.isolation_level = None
-            else:
-                self.db.isolation_level = ""
+            self.db.isolation_level = ""
 
     def closeDbase(self):
         try:
@@ -2435,13 +2356,11 @@ class Dbase(object):
     def dropTable(self, table, frecs=False):
         if self.checkTable(table):
             self.cu.execute("Drop table %s" % table)
-            if frecs:
-                self.cu.execute(
-                    "Delete from ffield where ff_tabl = '%s'" % table)
-                self.cu.execute(
-                    "Delete from ftable where ft_tabl = '%s'" % table)
-            if self.dbase == "SQLite":
-                self.db.execute("VACUUM")
+        if frecs:
+            self.cu.execute(
+                "Delete from ffield where ff_tabl = '%s'" % table)
+            self.cu.execute(
+                "Delete from ftable where ft_tabl = '%s'" % table)
 
 class Sql(object):
     """
@@ -2472,8 +2391,9 @@ class Sql(object):
             self.tables = tables
         for table in self.tables:
             setattr(self, table, table)
-            cols = self.sqlRec(state=("Select * from ffield where ff_tabl=%s "
-                "order by ff_seq" % self.dbm.dbf, (table,)))
+            self.dbm.cu.execute("Select * from ffield where ff_tabl='%s' "
+                "order by ff_seq" % table)
+            cols = self.dbm.cu.fetchall()
             if cols and type(cols) in (list, tuple):
                 col = []
                 fld = ""
@@ -3431,7 +3351,7 @@ class CCD(object):
             self.data = "0"
         try:
             if self.data.count("-"):
-                self.err = "Invalid UnSigned Long (UI-)"
+                self.err = "Invalid UnSigned Long (UL-)"
             else:
                 self.work = int(self.data)
                 self.disp = self.data.rjust(self.quo)
@@ -3638,6 +3558,7 @@ class DBCreate(object):
                 self.sql.sqlRec("Insert into verupd values('%s', %s)" %
                     (self.ver, sysdt))
             if self.dbm.dbase == "SQLite":
+                self.dbm.commitDbase()
                 self.dbm.cu.execute("PRAGMA JOURNAL_MODE=DELETE")
                 self.dbm.cu.execute("PRAGMA SYNCHRONOUS=FULL")
             if self.cmt:
@@ -3674,6 +3595,7 @@ class DBCreate(object):
             self.dbm.createDbase()
             self.dbm.openDbase(dbuser=self.usr, dbpwd=self.pwd, auto=True)
         if self.dbm.dbase == "SQLite":
+            self.dbm.commitDbase()
             self.dbm.cu.execute("PRAGMA JOURNAL_MODE=OFF")
             self.dbm.cu.execute("PRAGMA SYNCHRONOUS=OFF")
         if self.spl:
@@ -3686,17 +3608,16 @@ class DBCreate(object):
                 self.dbm.createTable(table, drop=True, index=self.idx)
             for table in ("ffield", "ftable"):
                 self.dbm.populateTable(table, commit=False)
-        elif self.put == "g":
+        elif self.put == "g" and self.dbm.dbase == "PqSQL":
             tbs = self.sql.sqlRec("Select ft_tabl from ftable group by ft_tabl")
             for tb in tbs:
-                if self.dbm.dbase == "PgSQL":
-                    self.sql.sqlRec("Grant ALL on %s to group %s" % (tb[0],
-                        self.dbm.dbname))
-                    seq = self.sql.sqlRec("Select ff_name from ffield where "\
-                        "ff_tabl = '%s' and ff_type = 'US'" % tb[0])
-                    if seq:
-                        self.sql.sqlRec("Grant ALL on %s_%s_seq to group %s" %
-                            (tb[0], seq[0][0], self.dbm.dbname))
+                self.sql.sqlRec("Grant ALL on %s to group %s" % (tb[0],
+                    self.dbm.dbname))
+                seq = self.sql.sqlRec("Select ff_name from ffield where "\
+                    "ff_tabl = '%s' and ff_type = 'US'" % tb[0])
+                if seq:
+                    self.sql.sqlRec("Grant ALL on %s_%s_seq to group %s" %
+                        (tb[0], seq[0][0], self.dbm.dbname))
         elif self.put == "u":
             self.createUser(self.newusr, self.newpwd)
         if self.put in ("i", "p", "t"):
@@ -4084,8 +4005,8 @@ class TartanDialog(object):
                     self.butt.append(list(but))
             else:
                 setattr(self, arg, args[arg])
-        # Save window bindings
         self.window = self.mf.window
+        # Save window bindings
         self.svebind = []
         for bind in self.window.bind():
             if "<Key-Alt_L>" in bind:
@@ -4193,7 +4114,6 @@ class TartanDialog(object):
                 prt = {
                     "stype": "C",
                     "titl": "Available Printers",
-                    "head": ("Name", "Description"),
                     "data": data}
                 rvs = [("View","V"),("Print","P"),("None","N")]
                 mes = """Select what to do with the generated report.
@@ -4205,8 +4125,8 @@ Print  - The report will be printed on the selected printer."""
                 if self.view[0].lower() in ("y", "c", "x"):
                     if self.view[0].lower() in ("y", "c"):
                         rvs.append(("Export CSV","C"))
-                    if XLWT and self.view[0].lower() in ("y", "x"):
-                        rvs.append(("Export XLS","X"))
+                    if XLSX and self.view[0].lower() in ("y", "x"):
+                        rvs.append(("Export XLSX","X"))
                     mes = """%s
 
 Export - The report in the selected format will be opened
@@ -4599,7 +4519,7 @@ Export - The report in the selected format will be opened
             self.mstFrame = MyFrame(self.master, borderwidth=2, relief="ridge")
             tops = MyLabel(self.mstFrame, anchor="center", text=self.title,
                 borderwidth=2, relief="raised")
-            tops.grid(column=0, sticky="ew")
+            tops.grid(column=0, sticky="nsew")
         else:
             self.mstFrame = MyFrame(self.master)
         self.frt = ""
@@ -4619,24 +4539,17 @@ Export - The report in the selected format will be opened
         self.dfs = self.mf.rcdic["dfs"]
         while True:
             self.mstFrame.update_idletasks()
+            bh = self.mf.body.winfo_height()
             if self.mstFrame.winfo_reqwidth() > int(self.mf.geo[0]) or \
-                    self.mstFrame.winfo_reqheight() > int(self.mf.bh):
+                    self.mstFrame.winfo_reqheight() > int(bh):
                 self.mf.rcdic["dfs"] = int(self.mf.rcdic["dfs"]) - 1
                 self.mf.setThemeFont(butt=False)
                 self.mf.resizeChildren()
             else:
                 break
         self.mstFrame.place(anchor="center", relx=0.5, rely=0.5)
-        if self.mf.window.state() == "withdrawn":
-            self.mf.window.deiconify()
         self.mf.window.update_idletasks()
-        grab = False
-        while not grab:
-            try:
-                self.mstFrame.grab_set()
-                grab = True
-            except:
-                pass
+        self.mstFrame.grab_set()
 
     def drawNoteBook(self, page):
         # Create images for enabled and disabled
@@ -4832,6 +4745,7 @@ Export - The report in the selected format will be opened
             txt = ""
         if fld[3]:
             txt = txt + fld[3]
+        txt = txt.replace("(noesc)", "")
         rpad = dse - self.acc - len(txt) + 1
         if txt and rpad and rpad > 0:
             txt = txt + " " * rpad
@@ -4961,7 +4875,7 @@ Export - The report in the selected format will be opened
         typ = fld[1]
         siz = int(fld[2][0] / 1)
         lim = int(fld[2][1] / 1)
-        txt = fld[3]
+        txt = fld[3].replace("(noesc)", "")
         seq = ((row * self.colq[pag]) + col)
         if typ[0] == "O":                       # Output Field Only
             cr = f1 = None                      # Not Used with Output Field
@@ -5282,15 +5196,15 @@ Export - The report in the selected format will be opened
         color = self.getWidget().get().rstrip()
         if color:
             if CPICK:
-                return askcolor(color, parent=self.mstFrame)[1].lower()
+                sel = askcolor(color, parent=self.mstFrame)
             else:
-                return tkcolor.askcolor(parent=self.mstFrame,
-                    initialcolor=color)[1]
+                sel = tkcolor.askcolor(parent=self.mstFrame, initialcolor=color)
+        elif CPICK:
+            sel = askcolor(parent=self.mstFrame)
         else:
-            if CPICK:
-                return askcolor(parent=self.mstFrame)[1].lower()
-            else:
-                return tkcolor.askcolor(parent=self.mstFrame)[1]
+            sel = tkcolor.askcolor(parent=self.mstFrame)
+        if sel[1]:
+            return sel[1].lower()
 
     def doKeys(self, event):
         if str(event.widget.cget("state")) == "disabled":
@@ -5471,10 +5385,14 @@ Export - The report in the selected format will be opened
         # ======================================================================
         # Setting the status line help message
         # ======================================================================
-        if flds[8] and flds[1][0] == "I":
-            sufx = ", Enter to Continue, <F1> to Select"
-        else:
-            sufx = ", Enter to Continue"
+        sufx = ""
+        if not err:
+            if flds[8]:
+                sufx = ", Enter to Continue, <F1> to Select"
+            else:
+                sufx = ", Enter to Continue"
+        elif flds[8]:
+            sufx = ", <F1> to Select"
         if flds[9]:
             sufx = sufx + ", <F5> to Delete"
         if flds[1][1:] == "TV":
@@ -5497,14 +5415,15 @@ Export - The report in the selected format will be opened
                 sufx = sufx + " or <Esc> to Back Up"
         if err and err != "ok":
             if self.mf.rcdic["errs"] == "Y":
-                if sys.platform == "win32":
+                try:
+                    import beepy
+                    beepy.beep(1)
+                except:
                     try:
                         import winsound
                         winsound.Beep(2500, 1000)
                     except:
                         self.mf.window.bell()
-                else:
-                    self.mf.window.bell()
             self.mf.updateStatus("%s, Retry%s" % (err, sufx), "white", "red")
         else:
             self.mf.updateStatus("%s%s" % (text.lstrip(), sufx))
@@ -6645,9 +6564,7 @@ Export - The report in the selected format will be opened
             else:
                 self.doCheckButton(wid, state)
             return
-        if state == "normal":
-            wid.configure(state=state)
-        elif state == "disabled":
+        if state in ("normal", "disabled"):
             wid.configure(state=state)
         elif state == "focus":
             wid.focus_set()
@@ -6692,17 +6609,22 @@ Export - The report in the selected format will be opened
         return dics
 
     def closeProcess(self):
-        try:
-            # Clear dialog bindings
-            for bind in self.bindings:
-                self.mstFrame.winfo_toplevel().unbind(bind)
-        except:
-            pass
         self.mstFrame.destroy()
+        # Clear dialog bindings
+        for bind in self.bindings:
+            try:
+                self.window.unbind(bind)
+            except:
+                pass
         # Restore saved bindings
         for bind in self.svebind:
-            self.window.bind(bind[0], bind[1])
+            try:
+                self.window.bind(bind[0], bind[1])
+            except:
+                pass
+        # Restore default font
         self.mf.rcdic["dfs"] = self.dfs
+        # Restore default theme
         self.mf.setThemeFont(butt=False)
         self.mf.updateStatus("")
 
@@ -7064,7 +6986,6 @@ class SelectChoice(object):
     scrl   - Have Scrollbars True or False.
     styl   - Style to use.
     font   - Font to use.
-    addh   - Additional height.
     escape - Allow Escape.
     colr   - List or tuple denoting the fg and bg colours of the row
              depending on the value of the column e.g.
@@ -7073,8 +6994,11 @@ class SelectChoice(object):
     rowc   - Alternate the colours of every x rows e.g.
              rowc = (2, "black", "white", "black", "grey") or
              rowc = 2
+    spos   - When doing a search the following applies:
+                 A - Search anywhere in the string.
+                 B - Search from the beginning of the string.
     """
-    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, wait=True, cmnd=None, butt=None, neww=True, deco=True, modal=True, live=True, posn=0, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", addh=0, escape=True, colr=None, rowc=1):
+    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, wait=True, cmnd=None, butt=None, neww=True, deco=True, modal=True, live=True, posn=0, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", spos="B", escape=True, colr=None, rowc=1):
         self.scrn = scrn
         self.ocol = cols
         if titl:
@@ -7154,7 +7078,7 @@ class SelectChoice(object):
             self.rowc = (rowc, "black", "white", "black", "gray92")
         elif rowc:
             self.rowc = rowc
-        self.addh = addh
+        self.spos = spos
         self.escape = escape
         self.selection = None
         if not lines:
@@ -7171,31 +7095,36 @@ class SelectChoice(object):
         if self.wait:
             self.mstFrame.wait_window()
 
-    def setupWidgets(self):
-        if self.neww:
-            if self.scrn:
-                self.scrn.winfo_toplevel().config(cursor="watch")
-            mkw = MkWindow(trans=self.scrn, decor=self.deco, modal=self.modal,
-                title=self.titl, remov=False, resize=True)
-            if not self.deco:
-                mkw.newwin.configure(bg="black", bd=3)
-                mkw.newwin.attributes("-topmost", False)
-                if self.titl:
-                    titl = MyLabel(mkw.newwin, text=self.titl, anchor="c")
-                    tf = tkfont.nametofont("TkDefaultFont")
-                    nf = tkfont.Font(font=(tf.cget("family"), tf.cget("size"),
-                        "bold"))
-                    titl.configure(font=nf)
-                    titl.pack(fill="x", expand="yes")
-            self.window = mkw.newwin
-            self.mstFrame = MyFrame(self.window)
-            self.mstFrame.pack(fill="both", expand="yes")
+    def setupWidgets(self, clear=False):
+        if not clear:
+            if self.neww:
+                if self.scrn:
+                    self.scrn.winfo_toplevel().config(cursor="watch")
+                mkw = MkWindow(trans=self.scrn, decor=self.deco,
+                    title=self.titl, remov=False, resize=True)
+                if not self.deco:
+                    mkw.newwin.configure(bg="black", bd=3)
+                    mkw.newwin.attributes("-topmost", False)
+                    if self.titl:
+                        titl = MyLabel(mkw.newwin, text=self.titl, anchor="c")
+                        tf = tkfont.nametofont("TkDefaultFont")
+                        nf = tkfont.Font(font=(tf.cget("family"),
+                            tf.cget("size"), "bold"))
+                        titl.configure(font=nf)
+                        titl.pack(fill="x", expand="yes")
+                self.window = mkw.newwin
+                self.mstFrame = MyFrame(self.window)
+                self.mstFrame.pack(fill="both", expand="yes")
+            else:
+                self.window = self.scrn.winfo_toplevel()
+                self.mstFrame = MyFrame(self.scrn)
+                self.mstFrame.grid(column=0, sticky="nsew")
         else:
-            self.window = self.scrn.winfo_toplevel()
-            self.mstFrame = MyFrame(self.scrn)
-            self.mstFrame.grid(column=0, sticky="nsew")
-        self.mstFrame.grid_columnconfigure(0, weight=1)
-        self.mstFrame.grid_rowconfigure(0, weight=1)
+            for child in self.mstFrame.winfo_children():
+                child.destroy()
+            self.bbox.destroy()
+        self.mstFrame.columnconfigure(0, weight=1)
+        self.mstFrame.rowconfigure(0, weight=1)
         chgt = self.font.metrics("linespace")
         if self.scrn:
             tlin = int((self.scrn.winfo_reqheight() / chgt) * .8)
@@ -7249,9 +7178,9 @@ class SelectChoice(object):
         self.buttons = []
         if butt:
             self.button = None
-            bbox = MyButtonBox(self.window)
+            self.bbox = MyButtonBox(self.window)
             for num, but in enumerate(butt):
-                b = bbox.addButton(but[0], (self.doButton, but))
+                b = self.bbox.addButton(but[0], (self.doButton, but))
                 self.buttons.append(b)
 
     def doButton(self, button):
@@ -7363,13 +7292,16 @@ class SelectChoice(object):
             if self.posn:
                 self.tree.update_idletasks()
                 self.tree.see(start)
-            self.tree.focus_force()
         elif last:
             # Scroll to last entry
             self.tree.update_idletasks()
             self.tree.see(last)
         if self.neww:
             placeWindow(self.window, parent=self.scrn, expose=True)
+        if self.modal:
+            self.window.wait_visibility()
+            self.window.grab_set()
+            self.tree.focus_force()
 
     def addItem(self, num, item):
         item = list(item)
@@ -7491,7 +7423,7 @@ class SelectChoice(object):
                 continue
             start = None
             text = self.tree.item(child, "values")[self.srch]
-            if text.lower().count(pattern.lower()):
+            if text.lower().startswith(pattern.lower()):
                 self.tree.selection_set(child)
                 self.tree.update_idletasks()
                 self.tree.focus(child)
@@ -7551,7 +7483,10 @@ class SelectChoice(object):
                 self.tree.yview("moveto", 1)
         else:
             self.tree.update_idletasks()
-            idx = iids.index(self.tree.focus())
+            try:
+                idx = iids.index(self.tree.focus())
+            except:
+                idx = 0
             if event.keysym == "Next":
                 idx += self.lines
                 if idx >= len(iids):
@@ -7631,9 +7566,7 @@ class SelectChoice(object):
             self.closeProcess()
         else:
             self.data = copyList(newdata)
-            if self.neww:
-                self.window.destroy()
-            self.setupWidgets()
+            self.setupWidgets(clear=True)
             self.buildTree()
 
     def doExit(self, event=None):
@@ -7642,10 +7575,10 @@ class SelectChoice(object):
 
     def closeProcess(self):
         if self.neww:
-            self.window.destroy()
             if self.scrn:
                 self.scrn.update()
                 self.scrn.winfo_toplevel().config(cursor="arrow")
+            self.window.destroy()
         else:
             self.mstFrame.destroy()
 
@@ -7689,11 +7622,12 @@ class ScrollHtml(object):
             else:
                 self.root.pack(fill="both", expand="yes")
         else:
-            trans, modal, resiz, decor = None, True, True, True
-            win = MkWindow(trans=trans, modal=modal, resiz=resiz,
-                decor=decor, frame=True)
+            trans, resiz, decor = None, True, True
+            win = MkWindow(trans=trans, resiz=resiz, decor=decor, frame=True)
             self.window = win.newwin
-            self.window.deiconify()
+            if self.window.state() == "withdrawn":
+                self.window.deiconify()
+            self.window.grab_set()
             self.root = win.newfrm
         bbox = MyButtonBox(self.root)
         self.binds = []
@@ -7784,9 +7718,9 @@ class ScrollText(object):
             else:
                 self.frame.pack()
         else:
-            trans, modal, resiz, decor = None, True, True, True
+            trans, resiz, decor = None, True, True
             win = MkWindow(tk=True, trans=trans, title=self.title,
-                modal=modal, resiz=resiz, decor=decor, frame=True)
+                resiz=resiz, decor=decor, frame=True)
             self.window = win.newwin
             self.frame = win.newfrm
         bbox = MyButtonBox(self.frame)
@@ -7824,6 +7758,8 @@ class ScrollText(object):
             self.frame.grab_set()
         else:
             placeWindow(self.window, expose=True)
+            self.window.wait_visibility()
+            self.window.grab_set()
         self.text.focus_set()
 
     def execStCmd(self, *args):
@@ -7943,8 +7879,8 @@ class ProgressBar(object):
         self.quit = True
 
 class ShowEmail(object):
-    def __init__(self, window=False, message=None, embed=None, attach=None):
-        mkw = MkWindow(decor=True, modal=True, trans=window, size=(800, -1))
+    def __init__(self, parent=False, message=None, embed=None, attach=None):
+        mkw = MkWindow(decor=True, trans=parent, size=(800, -1))
         self.window = mkw.newwin
         if message or embed:
             self.window.configure(width=824, height=600)
@@ -7982,7 +7918,9 @@ class ShowEmail(object):
             hed.pack(fill="x", expand="yes")
         butt = MyButton(vbox, cmd=self.doClose, text="Close")
         butt.pack()
-        placeWindow(self.window, window, expose=True)
+        placeWindow(self.window, parent, expose=True)
+        self.window.wait_visibility()
+        self.window.grab_set()
         self.window.wait_window()
 
     def doClose(self, *args):
@@ -8106,8 +8044,7 @@ class TartanConfig(object):
     def drawDialog(self):
         pth = {
             "stype":  "F",
-            "types":  "dir",
-            "initd":  ""}
+            "types":  "dir"}
         if sys.platform == "win32":
             typ = "*.exe"
         else:
@@ -8327,6 +8264,8 @@ class TartanConfig(object):
     def doRcFile(self, frt, pag, r, c, p, i, w):
         if self.level < 3 and w != self.rcfile:
             return "Invalid File"
+        if not os.path.isdir(os.path.dirname(w)):
+            return "Invalid Directory (%s)" % os.path.dirname(w)
         self.rcfile = w
         self.edit = True
 
@@ -8381,10 +8320,6 @@ class TartanConfig(object):
                 self.df.loadEntry(frt, pag, p+x, data="")
             return "nd"
 
-    def doVwr(self, frt, pag, r, c, p, i, w):
-        if not w and not FITZ:
-            return "pymupdf Not Installed"
-
     def doAdmin(self, frt, pag, r, c, p, i, w):
         if self.dbase == "P" and not w:
             return "Invalid Administrator"
@@ -8393,9 +8328,47 @@ class TartanConfig(object):
         if not w:
             return "Invalid Password"
 
-    def doConvrt(self, frt, pag, r, c, p, i, w):
-        if w and not os.path.isfile(w):
-            return "Invalid Converter"
+    def doVwr(self, frt, pag, r, c, p, i, w):
+        def getDefaultApp():
+            dflt = None
+            try:
+                if sys.platform == "win32":
+                    import shlex
+                    import winreg
+                    class_root = winreg.QueryValue(winreg.HKEY_CLASSES_ROOT,
+                        ".pdf")
+                    with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT,
+                            r"{}\shell\open\command".format(class_root)) as key:
+                        command = winreg.QueryValueEx(key, "")[0]
+                        return shlex.split(command)[0]
+                else:
+                    import os
+                    fle = os.path.join(os.getenv("HOME"),
+                            ".config/mimeapps.list")
+                    assoc = None
+                    if  os.path.isfile(fle):
+                        with open(fle, "r") as opf:
+                            for lin in opf:
+                                if lin.count("Added Associations"):
+                                    added = True
+                                    continue
+                                elif lin.count("Default Associations"):
+                                    added = False
+                                    dflt = True
+                                    continue
+                                if lin.count("application/pdf"):
+                                    if added:
+                                        assoc = lin.split("=")[1].split(";")
+                                    elif dflt:
+                                        dflt = lin.split("=")[1]
+                                        break
+                    if not dflt and assoc:
+                        dflt = assoc[0]
+                return dflt
+            except:
+                return
+        if not w and not getDefaultApp() and not FITZ:
+            return "Missing pymupdf and No Default"
 
     def doExport(self, frt, pag, r, c, p, i, w):
         if w and not os.path.isfile(w):
@@ -8460,7 +8433,10 @@ class TartanConfig(object):
                 idx = (x * 3) + 1
                 for y in range(2):
                     if not color[x][y]:
-                        color[x][y] = "#ffffff"
+                        if y:
+                            color[x][y] = "#ffffff"
+                        else:
+                            color[x][y] = "#000000"
                     self.df.doKeyPressed(frt, pag, p+idx+y, data=color[x][y])
             return "ff9"
         else:
@@ -8469,7 +8445,10 @@ class TartanConfig(object):
                 idx = (x * 3) + 1
                 for y in range(2):
                     if not color[x+1][y]:
-                        color[x+1][y] = "#ffffff"
+                        if y:
+                            color[x+1][y] = "#ffffff"
+                        else:
+                            color[x+1][y] = "#000000"
                     self.df.doKeyPressed(frt, pag, p+idx+y, data=color[x+1][y])
             return "ff20"
 
@@ -8530,6 +8509,7 @@ class TartanConfig(object):
             self.df.selPage(self.df.tags[self.df.pag - 2][0])
 
     def loadAllFields(self):
+        self.rcdic["dfs"] = self.mf.rcdic["dfs"]
         # DataBase
         if self.rcdic["dbase"] == "PgSQL":
             dbase = "P"
@@ -8681,24 +8661,29 @@ class TartanConfig(object):
             ["cbg", self.df.t_work[3][0][23]],
             ["sfg", self.df.t_work[3][0][25]],
             ["sbg", self.df.t_work[3][0][26]]])
-        f = open(self.rcfile, "w")
-        for a, b in cc:
-            f.write("['%s'] = '%s'\n" % (a, b))
-            if a == "bupdir":
-                self.bupdir = b
-            elif a == "wrkdir":
-                self.wrkdir = b
-            elif a == "upgdir":
-                self.upgdir = b
-            elif a == "vwr":
-                self.vwr = b
-            elif a == "prn":
-                self.prn = b
-            elif a == "exp":
-                self.exp = b
-            else:
-                setattr(self, a, str(b))
-        f.close()
+        try:
+            f = open(self.rcfile, "w")
+            for a, b in cc:
+                f.write("['%s'] = '%s'\n" % (a, b))
+                if a == "bupdir":
+                    self.bupdir = b
+                elif a == "wrkdir":
+                    self.wrkdir = b
+                elif a == "upgdir":
+                    self.upgdir = b
+                elif a == "vwr":
+                    self.vwr = b
+                elif a == "prn":
+                    self.prn = b
+                elif a == "exp":
+                    self.exp = b
+                else:
+                    setattr(self, a, str(b))
+            f.close()
+        except Exception as err:
+            showError(self.mf.body, "Access Error", "The rcfile %s "\
+                "Cannot be Created.\n\n%s." % (self.rcfile, err))
+            return
         showWarning(self.mf.body, "Configuration", "Please Note that Some "\
             "Changes will Only take effect once Tartan is Restarted.")
         self.closeProcess()
@@ -8935,12 +8920,12 @@ class AgeTrans(object):
         # Scrolled Selection
         self.lb = SelectChoice(self.mf.window, "Available Transactions",
             self.cols, self.work, sort=False, wait=False, cmnd=self.enterAll,
-            posn=self.posn, addh=80, escape=False)
+            posn=self.posn, escape=False)
         # Allocation Fields
         hbox = MyFrame(self.lb.window)
         hbox.pack(fill="x", expand="yes")
-        hbox.grid_columnconfigure(0, weight=1)
-        lab = MyLabel(hbox, text="Allocation Amount")
+        hbox.columnconfigure(0, weight=1)
+        lab = MyLabel(hbox, text="Allocated")
         lab.grid(row=0, column=0, sticky="ew")
         self.allAmt = MyEntry(hbox, width=13, maxsize=13, cmd=self.enterAmt)
         self.allAmt.configure(state="disabled")
@@ -8963,6 +8948,7 @@ class AgeTrans(object):
             ToolTip(xitBut, "Leave the Balance as Unallocated")
         ToolTip(canBut, "Cancel All Allocations")
         # Main Loop
+        placeWindow(self.lb.window, self.mf.window)
         self.lb.mstFrame.wait_window()
 
     def enterAll(self, data):
@@ -10215,7 +10201,7 @@ class FinReport(object):
             if self.s_print == "-" and amt >= 0:
                 self.clearData()
                 continue
-            if self.s_print == "Y":
+            if self.s_print != "N":
                 self.printLine()
             self.accumTotals(self.s_acbal)
             if self.s_store == "Y":
@@ -10247,7 +10233,7 @@ class FinReport(object):
         elif self.s_print == "-" and amt >= 0:
             pass
         else:
-            if self.s_print == "Y":
+            if self.s_print != "N":
                 self.printLine()
             self.accumTotals(self.s_acbal)
             if self.s_store == "Y":
@@ -10271,9 +10257,7 @@ class FinReport(object):
         elif self.s_print == "-" and amt >= 0:
             self.clearData()
             return
-        elif self.s_print == "N":
-            pass
-        else:
+        elif self.s_print != "N":
             self.printLine()
         if self.s_store == "Y":
             self.storeBalances()
@@ -10310,9 +10294,7 @@ class FinReport(object):
         elif self.s_print == "-" and amt >= 0:
             self.clearData()
             return
-        elif self.s_print == "N":
-            pass
-        else:
+        elif self.s_print != "N":
             self.printLine()
         self.accumTotals(self.s_acbal)
         self.clearData()
@@ -12899,7 +12881,7 @@ class PrintCards(object):
     skins  - Whether there are skins.
     sends  - The number of ends per skin.
     """
-    def __init__(self, mf, conum, cdes, game, datd, skips, ends=21, skins="N", sends=0):
+    def __init__(self, mf, conum, cdes, game, datd, skips, ends=21, skins="N", sends=0, args=None):
         self.mf = mf
         self.conum = conum
         self.cdes = cdes
@@ -12910,7 +12892,10 @@ class PrintCards(object):
         self.skins = skins
         self.sends = sends
         if self.doVariables():
-            self.doMainProcess()
+            if args:
+                self.tname, self.repprt = args
+            else:
+                self.doMainProcess()
             self.doPrintCards()
 
     def doVariables(self):
@@ -12944,6 +12929,7 @@ class PrintCards(object):
 
     def doEnd(self):
         self.df.closeProcess()
+        self.repprt = self.df.repprt
         showWarning(self.mf.body, "Change Paper",
             "In Order to Print Cards You Need to Change the Paper to "\
             "A6 Cards. Please Do So Now Before Continuing.")
@@ -12997,7 +12983,7 @@ class PrintCards(object):
                 self.form.doDrawDetail(self.form.newdic[key])
         self.form.output(self.pdfnam, "F")
         doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
-            repprt=self.df.repprt)
+            repprt=self.repprt)
 
     def doLoadStatic(self):
         tdc = self.form.sql.tpldet_col
@@ -13029,6 +13015,7 @@ class PrintDraw(object):
         self.date = date
         self.time = dtim
         defaults = {
+            "cdes": None,
             "takings": "y",
             "listing": "n",
             "board": "n",
@@ -13260,8 +13247,11 @@ class PrintDraw(object):
             repprt=self.repprt)
 
     def pageHeading(self, htyp="A", grn="A"):
-        txt = "TABS for the %s of %s (Type %s, Hist %s)" % (self.timed,
-            self.dated, self.dtype, self.dhist)
+        if not self.cdes:
+            txt = "TABS for the %s of %s (Type %s, Hist %s)" % (self.timed,
+                self.dated, self.dtype, self.dhist)
+        else:
+            txt = "%s for the %s of %s" % (self.cdes, self.timed, self.dated)
         if htyp == "C":
             self.fpdf.add_page(orientation="L")
             self.def_orientation = "L"
@@ -13366,8 +13356,6 @@ class PwdConfirm(object):
                 self.flag = "ok"
             else:
                 self.flag = "no"
-        elif not self.mf.window:
-            self.flag = "no"
         else:
             self.mainProcess()
             self.pc.mstFrame.wait_window()
@@ -13423,9 +13411,9 @@ class PwdConfirm(object):
             fld = (
                 (("T",0,0,0),"IHA",30,"Password","",
                     "","Y",self.doPwd,None,None,None),)
-        but = (("Cancel",None,self.doCancel,1,None, None),)
-        tnd = ((self.doExit, "n"), )
-        txt = (self.doCancel, )
+        but = (("Cancel",None,self.doExit,1,None, None),)
+        tnd = ((self.doEnd, "n"), )
+        txt = (self.doExit, )
         self.pc = TartanDialog(self.mf, screen=self.screen, tops=True,
             title=tit, eflds=fld, butt=but, tend=tnd, txit=txt)
         if self.product:
@@ -13436,17 +13424,17 @@ class PwdConfirm(object):
         if w not in (self.pwd, self.sup, self.mf.override):
             self.tries += 1
             if self.tries == 3:
-                return "xt"
+                return "nd"
             else:
                 return "Invalid Password"
         self.flag = "ok"
         return "nc"
 
-    def doCancel(self):
-        self.flag = "no"
-        self.doExit()
+    def doEnd(self):
+        self.pc.closeProcess()
 
     def doExit(self):
+        self.flag = None
         self.pc.closeProcess()
 
 class BankImport(object):
@@ -13475,7 +13463,10 @@ class BankImport(object):
             for fname in self.fname:
                 if self.impfmt == "O":
                     if OFX:
-                        self.importOfxTool(fname)
+                        try:
+                            self.importOfxTool(fname)
+                        except:
+                            self.importOfxFile(fname)
                     else:
                         self.importOfxFile(fname)
                 elif self.impfmt == "Q":
@@ -14240,7 +14231,7 @@ class RepPrt(object):
         self.pglin = 999
         self.expdatas = []
         if self.repprt[2] != "export":
-            self.fpdf = MyFpdf(name=self.name, head=len(self.head4), foot=True)
+            self.fpdf = MyFpdf(name=self.name, head=len(self.head4))
             for num, font in enumerate(self.fonts):
                 if not font:
                     self.fonts[num] = self.fpdf.font[1]
@@ -16280,7 +16271,7 @@ class FileImport(object):
         elif name.split(".")[-1].lower() == "ods":
             self.ftype = "ods"
             try:
-                self.workbk = gods(name)
+                self.workbk = getods(name)
                 self.sht["data"] = list(self.workbk.keys())
                 self.sht["data"].sort()
             except Exception as err:
@@ -16408,7 +16399,7 @@ class FileImport(object):
                             showError(self.mf.body, "Column Error",
                                 "Row %s, Column %s %s\n\n%s is Invalid" %
                                 (row + 1, col + 1, fmt[0], dat))
-                            raise Exception
+                            raise Exception(err)
             except:
                 imperr = True
         else:
@@ -16437,30 +16428,36 @@ class MyFpdf(fpdf.FPDF):
     fmat        - Page format e.g. A4
     font        - A family string or a tuple (family, style, size)
     name        - Document title
-    head        - String or List / Tuple as folows:
-                    Text - Heading or
+    head        - Integer / String or List / Tuple as folows:
                     Integer - Number of characters or
+                    String - Heading or
                     List / Tuple - (Heading, ("Family", "Style", Size))
     auto        - Automatic page breaks
     foot        - Turn footer on or off
     """
-    def __init__(self, orientation="P", unit="mm", fmat="A4", font="courier", name="", head="", auto=False, foot=False):
+    def __init__(self, orientation="P", unit="mm", fmat="A4", font="courier", name="", head="", auto=False, foot=True):
         self.unit = unit
         self.fmat = fmat
-        self.foot = foot
+        if self.fmat == "A4":
+            self.foot = foot
+        else:
+            self.foot = False
         self.suc = chr(151)
         t = time.localtime()
         self.sysdt = time.strftime("%d %B %Y %H:%M:%S", t)
-        fpdf.FPDF.__init__(self, orientation, self.unit, self.fmat)
-        self.setValues(name, head, font)
-        self.set_author("Tartan Systems")
-        self.set_fill_color(220)
-        self.set_title(name)
-        if not auto:
-            self.set_auto_page_break(False, margin=0)
-        if foot:
-            self.lpp -= 4
-            self.alias_nb_pages()
+        try:
+            fpdf.FPDF.__init__(self, orientation, self.unit, self.fmat)
+            self.setValues(name, head, font)
+            self.set_author("Tartan Systems")
+            self.set_fill_color(220)
+            self.set_title(name)
+            if not auto:
+                self.set_auto_page_break(False, margin=0)
+            if foot:
+                self.lpp -= 4
+                self.alias_nb_pages()
+        except Exception as err:
+            print(err)
 
     def setValues(self, name, head, font="", border=""):
         # Add TTF Fonts
@@ -16568,10 +16565,7 @@ class MyFpdf(fpdf.FPDF):
             else:
                 size = 10
         try:
-            if style:
-                self.set_font(family, style, size)
-            else:
-                self.set_font(family, size=size)
+            self.set_font(family, style, size)
             self.cwth = self.get_string_width("X")
             if default:
                 self.font = [family, size, self.font_size]
@@ -16727,15 +16721,14 @@ class DrawForm(MyFpdf):
         self.titl = tplmst[self.sql.tplmst_col.index("tpm_title")]
         self.tptyp = tplmst[self.sql.tplmst_col.index("tpm_type")]
         self.pgsz = tplmst[self.sql.tplmst_col.index("tpm_pgsize")]
-        self.chgsz = False
         if self.pgsz == "CC":
             self.pgsz = (86, 54)
         elif self.pgsz == "S8":
-            self.chgsz = True
             self.pgsz = (80, 500)
         elif self.pgsz == "S6":
-            self.chgsz = True
             self.pgsz = (57, 500)
+        elif self.pgsz == "A6":
+            self.pgsz = (105, 148)
         self.ortn = tplmst[self.sql.tplmst_col.index("tpm_orient")]
         self.tptp = {}
         self.head = []
@@ -17187,8 +17180,8 @@ class ToolTip(object):
         x = self.widget.winfo_rootx()
         y = self.widget.winfo_rooty() + self.widget.winfo_height()
         self.tipwindow = tw = tk.Toplevel(self.widget)
-        tw.wm_overrideredirect(True)
         self.tipwindow.withdraw()
+        tw.overrideredirect(True)
         label = MyLabel(tw, color=self.color, text=self.text, justify="left",
             relief="solid", borderwidth=2, font=self.font, wraplength=400)
         label.pack(ipadx=1, ipady=2)
@@ -17196,9 +17189,9 @@ class ToolTip(object):
         ww = label.winfo_reqwidth()
         if x + ww > label.winfo_screenwidth():
             x = x - ww
-        tw.wm_geometry("+%d+%d" % (x, y))
+        tw.geometry("+%d+%d" % (x, y))
         self.tipwindow.deiconify()
-        if self.pause:
+        if self.pause and event.type == "9":
             label.after(self.pause, self.hideTip)
 
     def hideTip(self, event=None):
@@ -17220,23 +17213,25 @@ Tartan Systems %s
 All Rights Reserved.
 
 Tartan is free software distributed under the terms
-of the GNU General Piblic License.
+of the GNU General Public License.
 
 For information and or support for this product please contact:
 
 Paul Malherbe
 
-Phone:        27-28-3165036
-Mobile:       27-82-9005260
-Email:    paul@tartan.co.za
-
+Phone:             27-28-3165036
+Mobile:            27-82-9005260
 """ % (ver, chr(169), time.localtime().tm_year)
         label = MyText(self.about, font=("Helvetica", 14), width=65,
             height=19, takefocus=False)
         label.insert("insert", info)
+        label.insert("end", "Email:         ")
         link = HyperlinkManager(label)
-        label.insert("insert", "https://www.tartan.co.za",
-            link.add(self.linkAbout))
+        label.insert("end", "paul@tartan.co.za",
+            link.add(self.linkMail))
+        label.insert("end", "\nWeb:            ")
+        label.insert("end", "www.tartan.co.za",
+            link.add(self.linkWeb))
         label.pack()
         label.tag_add("text", "1.0", "end")
         label.tag_config("text", justify="center")
@@ -17250,7 +17245,16 @@ Email:    paul@tartan.co.za
         self.b2 = bbox.addButton("Exit", self.exitAbout)
         self.mf.startLoop()
 
-    def linkAbout(self, *args):
+    def linkMail(self, *args):
+        try:
+            web = "mailto:paul@tartan.co.za"
+            webbrowser.open_new(web)
+            self.exitAbout()
+        except:
+            showError(self.mf.window, "Browser Error",
+                "Cannot Load Browser or URL")
+
+    def linkWeb(self, *args):
         try:
             web = "https://www.tartan.co.za"
             webbrowser.open_new(web)
@@ -17357,7 +17361,7 @@ class SimpleDialog(object):
     def __init__(self, parent=None, trans=None, modal=False, decor=True, style="TFrame", pad=2, bd=2, cols=None, butt=None, title=None, conf=False):
         self.parent = parent
         if not self.parent:
-            mkw = MkWindow(trans=trans, modal=modal, decor=decor, remov=False)
+            mkw = MkWindow(trans=trans, decor=decor, remov=False)
             self.window = mkw.newwin
         else:
             self.window = self.parent
@@ -17428,6 +17432,9 @@ class SimpleDialog(object):
             self.window.update_idletasks()
             geo = (self.sframe.winfo_reqwidth(), self.sframe.winfo_reqheight())
             placeWindow(self.window, parent=trans, size=geo, expose=True)
+            if modal:
+                self.window.wait_visibility()
+                self.window.grab_set()
         self.fld = self.ents[self.cols[0][0]]
         self.fld.focus_set()
 
@@ -17911,6 +17918,7 @@ class MakeManual(object):
             table = False
             skips = False
             tcont = False
+            note = False
             conts = []
             paras = []
             if type(docfle) == str:
@@ -17927,7 +17935,6 @@ class MakeManual(object):
                 if line and line[:4] == ".. _":
                     continue
                 # Replace links with blank
-                line = line.replace("`", "")
                 line = line.replace("_", "")
                 # Remove | lines
                 if line and line[0] == "|":
@@ -17935,6 +17942,18 @@ class MakeManual(object):
                     continue
                 if line and line.count("PageBreak"):
                     self.fpdf.add_page()
+                    continue
+                if line.count(".. NOTE::"):
+                    note = True
+                    continue
+                if note:
+                    if not line:
+                        note = False
+                        self.fpdf.drawText()
+                    else:
+                        line = line.strip()
+                        self.fpdf.drawText(line, font=self.fonts["bodyb"],
+                            fill=True, h=6, border="TLRB", ctyp="M")
                     continue
                 if line.count(".. contents::"):
                     if vwr:
@@ -18055,8 +18074,8 @@ class MakeManual(object):
                 if not line.strip() and not lines[num + 1].strip():
                     # Two blank lines
                     continue
-                self.fpdf.drawText(line.strip(), font=self.fonts["bodyn"],
-                    ctyp="M")
+                # Other text
+                self.printText(line)
             if paras:
                 self.printPara(paras)
             if tcont and vwr:
@@ -18088,9 +18107,10 @@ class MakeManual(object):
             "head4": ("Arial", "B", 12),
             "head5": ("Arial", "B", 10),
             "bodyb": ("Arial", "B", 10),
+            "bodyi": ("Arial", "I", 10),
             "bodyn": ("Arial", "", 10)}
         self.fpdf = MyFpdf(name="Documents", head=80, font=self.fonts["bodyn"],
-            auto=True, foot=True)
+            auto=True)
         return True
 
     def printPara(self, paras):
@@ -18120,20 +18140,22 @@ class MakeManual(object):
                 words = line.split("*", 2)
             elif line.count("#"):
                 words = line.split("#")
+            elif line.count("+ "):
+                match = re.compile("[^\W\d]").search(line)
+                words = [line[:match.start()], line[match.start():]]
             if words:
                 if len(words) == 3:
                     if words[0]:
                         text = "%s%s" % (words[0], words[1].strip())
                     else:
                         text = words[1].rstrip()
-                else:
-                    text = words[0].rstrip()
-                wdth = self.fpdf.get_string_width(text) + 1
-                if len(words) == 3:
+                    wdth = self.fpdf.get_string_width(text) + 1
                     if words[2] and wdth > indent[level]:
                         indent[level] = wdth
                     lines.append((text, words[2], level, bold))
                 else:
+                    text = words[0].rstrip()
+                    wdth = self.fpdf.get_string_width(text) + 1
                     if words[1] and wdth > indent[level]:
                         indent[level] = wdth
                     lines.append((text, words[1].strip(), level, bold))
@@ -18150,51 +18172,23 @@ class MakeManual(object):
             if len(line) == 0:
                 self.fpdf.drawText()
             elif len(line) == 4:
+                x = self.fpdf.l_margin + \
+                    self.fpdf.get_string_width((line[2] + 2) * "X")
                 if line[3]:
                     self.setFont("bodyb")
                 else:
                     self.setFont("bodyn")
-                text = line[0].rstrip().replace("+ ", "%s " % chr(127))
-                self.fpdf.drawText(text, w=indent[line[2]], ln=0)
-                x = self.fpdf.get_x()
+                text = line[0].strip().replace("+", "%s " % chr(127))
+                self.fpdf.drawText(text, x=x, w=indent[line[2]], ln=0)
                 if line[1]:
-                    self.doRest(line[1], x)
+                    self.printText(line[1])
                 else:
                     self.fpdf.drawText()
             else:
-                text = line[0].rstrip().replace("+ ", "%s " % chr(127))
-                self.doRest(text)
-
-    def doRest(self, line, x=0):
-        line = line.strip()
-        spc = False
-        for tst in ("- ", "%s " % chr(127)):
-            if line[:2] == tst:
-                spc = True
-                break
-        text = ""
-        for word in line.split():
-            if not text:
-                text = word
-            else:
-                self.setFont("bodyn")
-                chk = x + self.fpdf.get_string_width("%s %s" % (text, word))
-                if chk > self.pmax:
-                    self.fpdf.drawText(text, x=x, font=self.fonts["bodyn"])
-                    text = word
-                    if spc:
-                        if not x:
-                            x = self.fpdf.l_margin
-                        x += self.fpdf.get_string_width(tst)
-                        spc = False
-                else:
-                    text = "%s %s" % (text, word)
-        if text:
-            self.fpdf.drawText(text, x=x, font=self.fonts["bodyn"])
-
-    def setFont(self, font):
-        fam, sty, siz = self.fonts[font]
-        self.fpdf.setFont(fam, sty, siz)
+                x = self.fpdf.l_margin + \
+                    self.fpdf.get_string_width((line[2] + 2) * "X")
+                text = line[0].strip().replace("+", "%s " % chr(127))
+                self.printText(text, x=x)
 
     def printTable(self):
         for num, dat in enumerate(self.heads):
@@ -18209,63 +18203,105 @@ class MakeManual(object):
                 self.fpdf.drawText(dat, w=wid, border="TLRB", ln=0)
             self.fpdf.drawText()
 
+    def printText(self, line):
+        line = line.strip()
+        spc = False
+        for tst in ("- ", "%s " % chr(127)):
+            if line[:2] == tst:
+                spc = True
+                break
+        x1 = x2 = self.fpdf.get_x()
+        y1 = self.fpdf.get_y()
+        line = line.replace("**", "*")
+        line = line.split()
+        bold = False
+        spcc = False
+        font = "bodyn"
+        for num, word in enumerate(line):
+            if word.startswith("*"):
+                bold = True
+                font = "bodyb"
+            if word.endswith("*") or word.endswith("*.") or word.endswith("*,"):
+                bold = False
+            word = word.replace("*", "")
+            if word.startswith("`"):
+                bold = True
+                font = "bodyi"
+            if word.endswith("`"):
+                bold = False
+            word = word.replace("`", "")
+            if x2 + self.fpdf.get_string_width(word) > self.pmax:
+                x2 = x1
+                if spc:
+                    x2 += self.fpdf.get_string_width(tst)
+                y1 += 5
+            elif spcc:
+                word = " %s" % word
+            self.fpdf.drawText(word, x=x2, y=y1, font=self.fonts[font], ln=0)
+            self.setFont(font)
+            x2 += self.fpdf.get_string_width(word)
+            y1 = self.fpdf.get_y()
+            if not bold:
+                font = "bodyn"
+            spcc = True
+        self.fpdf.drawText()
+
+    def setFont(self, font):
+        fam, sty, siz = self.fonts[font]
+        self.fpdf.setFont(fam, sty, siz)
+
 class ViewPDF(object):
     """
-    This class is used to view pdf files using pymupdf
+    This class is used to view pdf files using either the system default
+    pdf viewer, a viewer set up in the rcfile or pymupdf.
     """
     def __init__(self, mf=None, pdfnam=None):
         self.mf = mf
         if self.mf and self.mf.window:
             self.mf.window.withdraw()
-            self.win = MkWindow().newwin
-        else:
-            self.win = MkWindow(tk=True).newwin
         try:
-            self.win.tk.call("wm", "iconphoto", self.win._w,
-                "-default", getImage("pdfimg"))
-        except:
-            pass
-        if pdfnam is None:
-            pdfnam = self.getPdfName()
-        if pdfnam and os.path.isfile(pdfnam):
-            self.win.title(pdfnam)
-            if self.mf:
-                vwr = mf.rcdic["vwr"]
-            else:
-                vwr = ""
-            self.pdfnam = pdfnam
-            if vwr and os.path.exists(vwr):
-                exe, cmd = parsePrg(vwr)
-                cmd.append(pdfnam)
-                subprocess.call(cmd)
-            elif not FITZ:
-                try:
+            if pdfnam and os.path.isfile(pdfnam):
+                if self.mf:
+                    vwr = mf.rcdic["vwr"]
+                else:
+                    vwr = ""
+                self.pdfnam = pdfnam
+                if vwr and os.path.exists(vwr):
+                    # default to the selected viewer from the rcfile
+                    exe, cmd = parsePrg(vwr)
+                    cmd.append(pdfnam)
+                    subprocess.call(cmd)
+                elif not FITZ:
+                    # Try and use the default pdf viewer
                     if sys.platform == "win32":
                         os.startfile(pdfnam)
                     else:
                         subprocess.call(["xdg-open", pdfnam])
-                except:
-                    pass
+                else:
+                    # Use the Tartan pdf viewer
+                    if self.mf and self.mf.window:
+                        self.win = MkWindow(remov=False).newwin
+                    else:
+                        self.win = MkWindow(tk=True).newwin
+                    try:
+                        self.win.tk.call("wm", "iconphoto", self.win._w,
+                            "-default", getImage("pdfimg"))
+                    except:
+                        pass
+                    self.win.title(pdfnam)
+                    self.doDisplay()
             else:
-                self.doDisplay()
+                showError(None, "Error", "Invalid File Name\n\n%s" % pdfnam)
+        except Exception as err:
+            showError(None, "Error", "Cannot Display Report.\n\n%s" % err)
         if self.mf:
             self.mf.window.deiconify()
-
-    def getPdfName(self):
-        dialog = FileDialog(**{
-            "title": "Select PDF File",
-            "ftype": (("PDF Files", "*.pdf"),),
-            "multi": False})
-        return dialog.askopenfilename()
-
-    def doFocus(self, event=None):
-        event.widget.focus_set()
 
     def doDisplay(self):
         # Window dimensions and Image sizes
         self.win.resizable(0, 0)
         self.win.configure(borderwidth=2)
-        self.sw = int(self.win.winfo_screenwidth() * .90)
+        self.sw = self.win.winfo_screenwidth()
         self.sh = int(self.win.winfo_screenheight() * .90)
         self.doc = fitz.open(self.pdfnam)
         if self.doc.needsPass:
@@ -18274,9 +18310,9 @@ class ViewPDF(object):
         self.lastpg = self.doc.pageCount
         rect = self.doc[0].MediaBox
         if not self.doc[0].rotation:
-            self.siz = [int(rect[2]), int(rect[3])]
+            self.siz = [rect[2], rect[3]]
         else:
-            self.siz = [int(rect[3]), int(rect[2])]
+            self.siz = [rect[3], rect[2]]
         # Theme and fonts
         self.style = ttk.Style()
         if not self.mf:
@@ -18284,60 +18320,12 @@ class ViewPDF(object):
         self.font = ["Helvetica", 12]
         self.style.configure("pdf.TFrame", font=self.font)
         self.style.configure("pdf.TLabel", font=self.font)
-        self.style.configure("pdf.TButton", font=self.font, padding=2)
-        self.style.configure("pdf.TEntry", font=self.font, height=5)
+        self.style.configure("pdf.TButton", font=self.font, relief="flat")
+        self.style.configure("pdf.TEntry", font=self.font, height=4)
         self.style.configure("pdfbold.TLabel", font=self.font + ["bold"])
-        self.style.configure("pdf.TRadiobutton", font=self.font)
-        # Widgets
-        self.frm = MyFrame(self.win)
-        self.frm.pack(fill="x")
-        self.bt1 = MyButton(self.frm, text="Goto", cmd=self.gotoPage,
-            style="pdf.TButton", underline=0)
-        ToolTip(self.bt1, "Jump To Page Number")
-        self.bt1.pack(padx=3, pady=3, side="left")
-        self.entsiz = len(str(self.lastpg))
-        self.pgd = MyEntry(self.frm, width=self.entsiz, maxsize=self.entsiz,
-            font=self.font)
-        self.pgd.bind("<Return>", self.enterPage)
-        self.pgd.bind("<KP_Enter>", self.enterPage)
-        self.pgd.pack(padx=3, pady=3, side="left")
-        lab = MyLabel(self.frm, text="of %s" % self.lastpg, color=False,
-            style="pdf.TLabel")
-        lab.pack(padx=3, pady=3, side="left")
-        self.bt2 = MyButton(self.frm, txt=False, text="Former",
-            cmd=self.priorPage, style="pdf.TButton", underline=0)
-        ToolTip(self.bt2, "Show Previous Page")
-        self.bt2.pack(padx=3, pady=3, side="left")
-        self.bt3 = MyButton(self.frm, txt=False, text="Next", cmd=self.nextPage,
-            style="pdf.TButton", underline=getUnderline(self.frm, "Next")[1])
-        ToolTip(self.bt3, "Show Next Page")
-        self.bt3.pack(padx=3, pady=3, side="left")
-        self.bt8 = MyButton(self.frm, text="Close", cmd=self.doClose,
-            style="pdf.TButton", underline=0)
-        ToolTip(self.bt8, "Close the Document and Exit")
-        self.bt8.pack(padx=3, pady=3, side="right")
-        self.bt7 = MyButton(self.frm, text="Help", cmd=self.doHelp,
-            style="pdf.TButton", underline=0)
-        ToolTip(self.bt7, "Show Key Bindings")
-        self.bt7.pack(padx=3, pady=3, side="right")
-        self.bt6 = MyButton(self.frm, text="Print", cmd=self.doPrint,
-            style="pdf.TButton", underline=0)
-        ToolTip(self.bt6, "Print Document")
-        self.bt6.pack(padx=3, pady=3, side="right")
-        self.bt5 = MyButton(self.frm, text="Rotate", cmd=self.doRotate,
-            style="pdf.TButton", underline=0)
-        ToolTip(self.bt5, "Rotate Document")
-        self.bt5.pack(padx=3, pady=3, side="right")
-        self.bt4 = MyButton(self.frm, text="Zoom", style="pdf.TButton")
-        self.bt4.bind("<Button-1>", self.doZoom)
-        self.bt4.bind("<Button-3>", self.doZoom)
-        ToolTip(self.bt4, "Left Button to Zoom in Increments of 25%. Right "\
-            "Button to UnZoom. Ctrl plus the Numeric Keypad +- Keys can "\
-            "also be used.")
-        self.bt4.pack(padx=3, pady=3, side="right")
-        self.frm.update_idletasks()
-        # Canvas
-        self.cv = tk.Canvas(self.win, highlightthickness=0)
+        fg = self.style.lookup("pdf.TButton", "foreground")
+        bg = self.style.lookup("pdf.TButton", "background")
+        self.style.configure("pdf.TRadiobutton", width=5, font=self.font)
         # Create arrowless scrollbars
         self.style.layout("h.TScrollbar", [
             ("Horizontal.Scrollbar.trough", {
@@ -18345,37 +18333,113 @@ class ViewPDF(object):
                     "expand": "1",
                     "sticky": "nswe"})],
                 "sticky": "ew"})])
+        # Widgets
+        fr1 = MyFrame(self.win)
+        fr1.pack(side="top", fill="x")
+        fr2 = MyFrame(fr1, borderwidth=1, relief="raised")
+        fr2.pack(fill="x", expand="yes")
+        # Buttons and Entries
+        self.bt1 = MyButton(fr2, text="Goto", cmd=self.gotoPage,
+            style="pdf.TButton", underline=0)
+        ToolTip(self.bt1, "Jump To Page Number")
+        self.bt1.pack(padx=3, pady=3, side="left")
+        self.entsiz = len(str(self.lastpg))
+        self.pgd = MyEntry(fr2, width=self.entsiz, maxsize=self.entsiz,
+            style="pdf.TEntry")
+        self.pgd.bind("<Return>", self.enterPage)
+        self.pgd.bind("<KP_Enter>", self.enterPage)
+        self.pgd.pack(padx=3, pady=3, side="left")
+        lab = MyLabel(fr2, text="of %s" % self.lastpg, color=False,
+            style="pdf.TLabel")
+        lab.pack(padx=3, pady=3, side="left")
+        self.bt2 = MyButton(fr2, txt=False, text="Former",
+            cmd=self.priorPage, style="pdf.TButton", underline=0)
+        ToolTip(self.bt2, "Show Previous Page")
+        self.bt2.pack(padx=3, pady=3, side="left")
+        self.bt3 = MyButton(fr2, txt=False, text="Next", cmd=self.nextPage,
+            style="pdf.TButton", underline=getUnderline(fr2, "Next")[1])
+        ToolTip(self.bt3, "Show Next Page")
+        self.bt3.pack(padx=3, pady=3, side="left")
+        # Draw menu
+        imgm = getImage("menu", siz=(20, 20))
+        self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat",
+            font=self.font, image=imgm, compound="left", underline=0,
+            fg=fg, bg=bg)
+        self.bt4.pack(exp="no", side="right")
+        self.bt4.menu = tk.Menu(self.bt4, font=self.font, bg=bg, fg=fg,
+            tearoff=0)
+        self.bt4["menu"] = self.bt4.menu
+        mods = []
+        if self.mf and self.mf.dbm:
+            try:
+                gc = GetCtl(self.mf)
+                ctlsys = gc.getCtl("ctlsys", error=False)
+                if ctlsys and ctlsys["sys_msvr"]:
+                    self.server = [ctlsys["sys_msvr"], ctlsys["sys_mprt"],
+                        ctlsys["sys_msec"], ctlsys["sys_maut"],
+                        ctlsys["sys_mnam"], ctlsys["sys_mpwd"]]
+                    if sendMail(self.server, "", "", "", check=True,
+                            err=self.mf.window, wrkdir=self.mf.rcdic["wrkdir"]):
+                        mods.append(("E-Mail", self.doEmail))
+            except:
+                pass
+        mods.extend([
+            ("Print", self.doPrint),
+            ("Save as..", self.doSave),
+            ("Send to..", self.doSend),
+            ("Help", self.doHelp)])
+        img = {}
+        for num, text in enumerate(mods):
+            img[num] = getImage(text[0], siz=(20, 20))
+            self.bt4.menu.add_command(label=text[0], image=img[num],
+                compound="left", command=text[1], underline=0)
+        self.bt4.menu.add_separator()
+        imgr = getImage("exit", (20, 20))
+        self.bt4.menu.add_command(label="Exit", image=imgr, compound="left",
+            command=self.doClose, underline=1)
+        # Rest of Buttons
+        self.bt5 = MyButton(fr2, text="Zoom", style="pdf.TButton")
+        self.bt5.bind("<Button-1>", self.doZoom)
+        self.bt5.bind("<Button-3>", self.doZoom)
+        ToolTip(self.bt5, "Left Button to Zoom in Increments of 25%. Right "\
+            "Button to UnZoom. Ctrl plus the Numeric Keypad +- Keys can "\
+            "also be used. Use F11 to toggle full screen.")
+        self.bt5.pack(padx=3, pady=3, side="right")
+        fr1.update_idletasks()
+        # Canvas
+        self.cv = tk.Canvas(self.win, highlightthickness=0)
         self.horz = ttk.Scrollbar(self.win, orient="horizontal",
             style="h.TScrollbar")
         self.horz.config(command=self.cv.xview)
         self.cv.config(xscrollcommand=self.horz.set)
         self.horz.pack(fill="x", expand="no", side="bottom")
-        self.cv.pack(expand="yes")
+        self.cv.pack(fill="both", expand="yes")
         if sys.platform == "win32":
-            self.cv.bind("<MouseWheel>", self.doWheel)
+            self.win.bind("<MouseWheel>", self.doWheel)
         else:
-            self.cv.bind("<Button-4>", self.doWheel)
-            self.cv.bind("<Button-5>", self.doWheel)
-        self.cv.bind("<Escape>", self.doClose)
-        self.cv.bind("<F1>", self.doHelp)
-        self.cv.bind("<F2>", self.doContents)
-        self.cv.bind("<Home>", self.homePage)
-        self.cv.bind("<Next>", self.nextPage)
-        self.cv.bind("<Prior>", self.priorPage)
-        self.cv.bind("<End>", self.lastPage)
-        self.cv.bind("<Up>", self.doKey)
-        self.cv.bind("<Down>", self.doKey)
-        self.cv.bind("<Left>", self.doKey)
-        self.cv.bind("<Right>", self.doKey)
-        self.cv.bind("<Control-f>", self.doSearch)
-        self.cv.bind("<Control-n>", self.nextSearch)
-        self.cv.bind("<Control-e>", self.endSearch)
-        self.cv.bind("<Control-KP_Add>", self.doZoom)
-        self.cv.bind("<Control-KP_Subtract>", self.doZoom)
+            self.win.bind("<Button-4>", self.doWheel)
+            self.win.bind("<Button-5>", self.doWheel)
+        self.win.bind("<Escape>", self.doClose)
+        self.win.bind("<F1>", self.doHelp)
+        self.win.bind("<F2>", self.doContents)
+        self.win.bind("<F11>", self.doMaxi)
+        self.win.bind("<Home>", self.homePage)
+        self.win.bind("<Next>", self.nextPage)
+        self.win.bind("<Prior>", self.priorPage)
+        self.win.bind("<End>", self.lastPage)
+        self.win.bind("<Up>", self.doKey)
+        self.win.bind("<Down>", self.doKey)
+        self.win.bind("<Left>", self.doKey)
+        self.win.bind("<Right>", self.doKey)
+        self.win.bind("<Control-f>", self.doSearch)
+        self.win.bind("<Control-n>", self.nextSearch)
+        self.win.bind("<Control-e>", self.endSearch)
+        self.win.bind("<Control-KP_Add>", self.doZoom)
+        self.win.bind("<Control-KP_Subtract>", self.doZoom)
         self.win.update_idletasks()
         # Scale settings
         self.scale = 1
-        self.mat = fitz.Matrix(1, 1)
+        self.mat = list(fitz.Matrix(1, 1))
         self.zoom = self.scale
         # Other settings
         self.pgno = 1
@@ -18387,6 +18451,7 @@ class ViewPDF(object):
         self.wsiz = []
         # Display 1st page
         self.showPage()
+        self.maxi = False
         self.win.wait_window()
 
     def doPassword(self):
@@ -18437,23 +18502,23 @@ class ViewPDF(object):
 
     def homePage(self, event=None):
         self.pgno = 1
-        self.showPage("top")
+        self.showPage(pos="top")
 
     def lastPage(self, event=None):
         self.pgno = self.lastpg
-        self.showPage("top")
+        self.showPage(pos="top")
 
     def nextPage(self, event=None):
         if self.pgno == self.lastpg:
             return
         self.pgno += 1
-        self.showPage("top")
+        self.showPage(pos="top")
 
     def priorPage(self, event=None, pos="top"):
         if self.pgno == 1:
             return
         self.pgno -= 1
-        self.showPage(pos)
+        self.showPage(pos=pos)
 
     def gotoPage(self, event=None):
         self.pgd.configure(state="normal")
@@ -18466,40 +18531,43 @@ class ViewPDF(object):
             self.pgd.selection_range(0, "end")
             return
         self.pgno = pgno
-        self.showPage("top")
+        self.showPage(pos="top")
+
+    def doMaxi(self, event=None):
+        if not self.maxi:
+            self.maxi = self.mat[:]
+            self.win.geometry("%sx%s+0+0" % (self.sw, self.sh))
+            self.mat[0] = self.mat[3] = self.sw / self.siz[0]
+        else:
+            self.mat = self.maxi
+            self.maxi = False
+        self.wsiz = []
+        self.showPage()
 
     def doZoom(self, event=None):
         if event.num == 3 or event.keysym == "KP_Subtract":
             if self.zoom > self.scale:
                 self.zoom = round((self.zoom - .25), 2)
-        elif self.zoom < (self.scale + 2):
+        elif self.zoom < (self.scale + 3):
             while self.zoom <= self.mat[0]:
                 self.zoom = round((self.zoom + .25), 2)
         self.wsiz = []
         self.mat[0] = self.mat[3] = self.zoom
         self.showPage()
 
-    def doRotate(self, event=None):
-        page = self.doc[self.pgno - 1]
-        rot = page.rotation
-        if rot == 270:
-            rot = 0
-        else:
-            rot += 90
-        page.setRotation(rot)
-        self.showPage()
-
     def doSearch(self, event=None):
         def getSearch(event=None):
             self.search = ent.get()
+            self.okfound = False
             self.pags = []
             self.prec = {}
             for page in self.doc:
                 annot = page.firstAnnot
                 while annot:
                     annot = page.deleteAnnot(annot)
-                self.found = page.searchFor(self.search)
-                for inst in self.found:
+                found = page.searchFor(self.search)
+                for inst in found:
+                    self.okfound = True
                     numb = (page.number + 1)
                     if numb not in self.pags:
                         self.pags.append(numb)
@@ -18529,7 +18597,7 @@ class ViewPDF(object):
         frm.place(anchor="center", relx=0.5, rely=0.5)
         ent.focus_set()
         frm.wait_window()
-        if not self.found:
+        if not self.okfound:
             sp = SplashScreen(self.win, "Sorry, Not Found")
             time.sleep(2)
             sp.closeSplash()
@@ -18561,23 +18629,24 @@ class ViewPDF(object):
         if unbind:
             if key:
                 self.cvbinds = []
-                for bind in self.cv.bind():
+                for bind in self.win.bind():
                     if bind != exc:
-                        self.cvbinds.append((bind, self.cv.bind(bind)))
+                        self.cvbinds.append((bind, self.win.bind(bind)))
                         self.cv.unbind(bind)
-            for x in range(1, 8):
+            for x in range(1, 6):
                 bt = getattr(self, "bt%s" % x)
                 bt.configure(state="disabled")
         else:
             if key:
                 for bind in self.cvbinds:
-                    self.cv.bind(bind[0], bind[1])
-            for x in range(1, 8):
+                    self.win.bind(bind[0], bind[1])
+            for x in range(1, 6):
                 bt = getattr(self, "bt%s" % x)
                 bt.configure(state="normal")
         self.win.update_idletasks()
 
     def showPage(self, pos=None):
+        self.ltime = 0
         self.cv.delete("all")
         page = self.doc[self.pgno - 1]
         dlist = page.getDisplayList()
@@ -18589,8 +18658,8 @@ class ViewPDF(object):
         self.ti = tk.PhotoImage(data=pix.getImageData("ppm"))
         self.cv.create_image(0, 0, image=self.ti, anchor="nw", tags="img")
         self.cv.configure(width=self.ti.width(), height=self.ti.height())
+        # Limit display size to %-tage of screen size
         self.win.update_idletasks()
-        # Limit display size to 90% of screen size
         wsiz = [self.win.winfo_reqwidth(), self.win.winfo_reqheight()]
         if wsiz[0] > self.sw:
             wsiz[0] = self.sw
@@ -18621,8 +18690,10 @@ class ViewPDF(object):
                 y1, y2 = self.getVisibleArea()
             if self.cont:
                 self.cont = False
+        self.win.lift()
+        self.win.grab_set()
+        self.win.focus_set()
         self.win.update_idletasks()
-        self.cv.focus_set()
 
     def getVisibleArea(self):
         y1 = self.cv.canvasy(0)
@@ -18640,23 +18711,22 @@ class ViewPDF(object):
         data = (
             ("F1", "This help"),
             ("F2", "A Table of Contents, if available"),
+            ("F11", "Toggle Full Screen"),
+            ("Alt m", "Show the Menu"),
             ("Alt g", "Go To Page"),
             ("Alt f", "Former Page"),
             ("Alt n", "Next Page"),
-            ("Alt p", "Print the Document"),
-            ("Alt h", "This help"),
-            ("Alt c", "Close the Document"),
             ("Ctrl +", "Zoom"),
             ("Ctrl -", "Reverse Zoom"),
-            ("Ctrl f", "Search for text"),
-            ("Ctrl n", "Next occurrence of text"),
-            ("Ctrl e", "Clear highlighted text"),
+            ("Ctrl f", "Search for Text"),
+            ("Ctrl n", "Next occurrence of Text"),
+            ("Ctrl e", "Clear highlighted Text"),
             ("Arrows", "Scroll up, down, left and right"),
             ("Esc", "Close the Current View"))
         self.doUnbind(exc="<Key-F1>")
         SelectChoice(self.cv, titl="Keyboard Bindings", deco=False, modal=True,
-            cols=cols, data=data, font=self.font, lines=len(data), sort=False,
-            scrl=False, live=False)
+            cols=cols, data=data, font=self.font, lines=len(data),
+            sort=False, scrl=False, live=False)
         self.doUnbind(False)
         self.cv.focus_force()
 
@@ -18734,8 +18804,147 @@ class ViewPDF(object):
             self.prec[self.pgno] = found[0]
             self.cont = True
             self.showPage()
+        self.cv.focus_force()
+
+    def doSave(self):
+        if sys.platform == "win32":
+            lastdir = os.path.join(self.mf.rcdic["wrkdir"], "savedir")
         else:
-            self.cv.focus_force()
+            lastdir = os.path.join(self.mf.rcdic["wrkdir"], ".savedir")
+        if os.path.exists(lastdir):
+            infle = open(lastdir, "r")
+            name = infle.readline().rstrip()
+            infle.close()
+        else:
+            name = self.mf.rcdic["wrkdir"]
+        path = tkfile.asksaveasfilename(title="Choose Filename",
+            defaultextension=".pdf", filetypes=[("pdf Files", "*.pdf")],
+            initialdir=name, initialfile=os.path.basename(self.pdfnam))
+        if path:
+            try:
+                shutil.copyfile(self.pdfnam, path)
+                infle = open(lastdir, "w")
+                infle.write(os.path.dirname(os.path.normpath(path)))
+                infle.close()
+            except Exception as err:
+                showError(None, "Error", err)
+
+    def doSend(self):
+        if sys.platform == "win32":
+            os.startfile(self.pdfnam)
+        else:
+            subprocess.Popen(["xdg-open", self.pdfnam])
+        self.doClose()
+
+    def doEmail(self):
+        self.win.withdraw()
+        # From address
+        if sys.platform == "win32":
+            self.lasteml = os.path.join(self.mf.rcdic["wrkdir"], "fromeml")
+        else:
+            self.lasteml = os.path.join(self.mf.rcdic["wrkdir"], ".fromeml")
+        if os.path.exists(self.lasteml):
+            infle = open(self.lasteml, "r")
+            self.efrom = infle.readline().rstrip()
+            infle.close()
+        else:
+           self.efrom = ""
+        # To addresses
+        data = []
+        sql = Sql(self.mf.dbm, ["telmst", "telcon"],
+            prog=__name__)
+        tdm = sql.getRec("telmst", cols=["tdm_name",
+            "tdm_email"], where=[("tdm_email", "<>", "")],
+            order="tdm_name")
+        for t in tdm:
+            data.append([t[0], "", "", t[1]])
+        tdc = sql.getRec("telcon", cols=["tdc_name",
+            "tdc_contact", "tdc_desig", "tdc_email"],
+            where=[("tdc_email", "<>", "")],
+            order="tdc_name, tdc_contact")
+        if tdc:
+            data.extend(tdc)
+        adr = {
+            "stype": "C",
+            "titl": "Available Addresses",
+            "head": (
+                "Name", "Contact", "Designation", "Address"),
+            "typs": (("NA",0,"Y"),("NA",0),("NA",0),("NA",0)),
+            "data": data,
+            "mode": "M",
+            "index": 3}
+        tit = "Email Document"
+        fld = (
+            (("T",0,0,0),"ITX",30,"From Address","",
+                self.efrom,"N",None,None,None,("email", False)),
+            (("T",0,1,0),"ITX",50,"To Addresses","",
+                "","N",self.doETo,adr,None,("email", False),None,
+                "Comma Separated List of Addresses."))
+        self.ed = TartanDialog(self.mf, tops=True, tile=tit, eflds=fld,
+            tend=((self.doEEnd, "y"),), txit=(self.doEExit,))
+        if self.mf and self.mf.window:
+            self.mf.window.deiconify()
+        self.ed.mstFrame.wait_window()
+        if self.mf and self.mf.window:
+            self.mf.window.withdraw()
+        self.win.deiconify()
+
+    def doETo(self, frt, pag, r, c, p, i, w):
+        try:
+            data = list(eval(w))
+            addr = ""
+            for a in data:
+                if not addr:
+                    addr = a
+                else:
+                    addr = "%s,%s" % (addr, a)
+            self.ed.loadEntry(frt, pag, p, data=addr)
+        except:
+            pass
+
+    def doEEnd(self):
+        self.ed.closeProcess()
+        fromad, toad = self.ed.t_work[0][0]
+        toad = toad.replace(" ", "").split(",")
+        subj = "PDF Report"
+        att = [self.pdfnam]
+        sql = Sql(self.mf.dbm, "emllog", prog=__name__)
+        for add in toad:
+            ok = False
+            while not ok:
+                sp = SplashScreen(self.mf.window.focus_displayof(),
+                    "E-Mailing the Report to:\n\n%s\n\nPlease Wait....." % add)
+                ok = sendMail(self.server, fromad, add, subj, "", attach=att,
+                    wrkdir=self.mf.rcdic["wrkdir"])
+                sp.closeSplash()
+                if not ok:
+                    ok = askQuestion(self.mf.window.focus_displayof(),
+                        "E-Mail Error", "Problem Delivering This "\
+                        "Message.\n\nTo: %s\nSubject: %s\n\nWould "\
+                        "You Like to Retry?" % (add, subj))
+                    if ok == "yes":
+                        ok = None
+                    else:
+                        ok = "Failed"
+                else:
+                    ok = "OK"
+                if ok:
+                    try:
+                        tim = time.localtime()[0:  5]
+                        tim = "%04i-%02i-%02i %02i:%02i" % tim
+                        sql.insRec("emllog", data=[fromad.strip(),
+                            add.strip(), subj, tim, "OK"])
+                    except:
+                        pass
+        self.mf.dbm.commitDbase()
+        infle = open(self.lasteml, "w")
+        infle.write("%s\n" % self.ed.t_work[0][0][0])
+        infle.close()
+        self.ed.mstFrame.destroy()
+
+    def doEExit(self):
+        self.ed.closeProcess()
+        self.ed.mstFrame.destroy()
 
     def doPrint(self):
         def doDisable(event=None):
@@ -18788,56 +18997,25 @@ class ViewPDF(object):
                     wrk = tempfile.gettempdir()
                 showException(self.cv, wrk, err)
 
-        def getDevices():
-            dflt = None
-            prts = []
-            if sys.platform == "win32":
-                import win32print
-                dflt = win32print.GetDefaultPrinter()
-                lst = win32print.EnumPrinters(2)
-                for l in lst:
-                    prts.append(l[2].strip())
-            else:
-                proc = subprocess.Popen("lpstat -d", shell=True, bufsize=0,
-                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE, close_fds=True)
-                prt = proc.stdout.readline()
-                if type(prt) == bytes:
-                    prt = prt.decode("utf-8")
-                if prt.count(":"):
-                    dflt = prt.strip().split(":")[1]
-                proc = subprocess.Popen("lpstat -e", shell=True, bufsize=0,
-                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE, close_fds=True)
-                lst = proc.stdout.readlines()
-                for l in lst:
-                    if type(l) == bytes:
-                        l = l.decode("utf-8")
-                    prts.append(l.rstrip())
-            return (dflt, prts)
-
-        dflt, prts = getDevices()
+        prts = getPrinters()
         if not prts:
             return
         self.doUnbind()
-        win = MkWindow(trans=self.cv, modal=True, decor=False).newwin
+        win = MkWindow(trans=self.cv, decor=False).newwin
         win.configure(bg="black", borderwidth=2)
-        win.bind("<Enter>", self.doFocus)
         fr1 = MyFrame(win, relief="ridge", borderwidth=2,
             style="pdf.TFrame")
         fr1.pack(fill="both", expand="yes")
         lb1 = MyLabel(fr1, color=False, text="Available Printers",
             relief="raised", style="pdfbold.TLabel")
         lb1.pack(fill="x")
-        lbx = tk.Listbox(fr1, font=self.font, width=10)
+        lbx = tk.Listbox(fr1, font=self.font, width=10,
+            selectbackground="blue", selectforeground="white")
+        lbx.bind("<Return>", doExec)
+        lbx.bind("<KP_Enter>", doExec)
+        lbx.bind("<Escape>", doCancel)
         for prt in prts:
             lbx.insert("end", prt)
-        if dflt in prts:
-            idx = prts.index(dflt)
-        else:
-            idx = 0
-        lbx.selection_set(idx)
-        lbx.activate(idx)
         lbx.pack(fill="both", expand="yes")
         fr2 = MyFrame(win, relief="ridge", borderwidth=2,
             style="pdf.TFrame")
@@ -18845,43 +19023,47 @@ class ViewPDF(object):
         fr2 = MyFrame(win, relief="ridge", borderwidth=2,
             style="pdf.TFrame")
         fr2.pack(fill="both", expand="yes")
-        fr3 = MyFrame(fr2, style="pdf.TFrame")
-        fr3.pack(side="left", fill="both", expand="yes")
-        lb2 = MyLabel(fr3, color=False, text="Range", style="pdfbold.TLabel")
-        lb2.grid(row=0, column=0, sticky="w", columnspan=2)
+        fr2.columnconfigure(0, weight=1)
+        fr2.columnconfigure(1, weight=1)
+        fr2.columnconfigure(2, weight=1)
+        lb2 = MyLabel(fr2, color=False, text="Range", style="pdfbold.TLabel")
+        lb2.grid(row=0, column=0, sticky="w")
         var = tk.StringVar()
         var.set("A")
-        rb1 = ttk.Radiobutton(fr3, variable=var, text="All Pages",
-            value="A", command=doDisable, style="pdf.TRadiobutton")
-        rb1.grid(row=1, column=0, sticky="w")
-        rb2 = ttk.Radiobutton(fr3, variable=var, text="Current Page",
-            value="C", command=doDisable, style="pdf.TRadiobutton")
-        rb2.grid(row=2, column=0, sticky="w")
-        rb3 = ttk.Radiobutton(fr3, variable=var, text="Pages",
+        rb1 = MyRadioButton(fr2, variable=var, text="All Pages",
+            value="A", command=doDisable, style="pdf.TRadiobutton",
+            width=12)
+        rb1.grid(row=1, column=0, sticky="nsew")
+        rb2 = MyRadioButton(fr2, variable=var, text="Current Page",
+            value="C", command=doDisable, style="pdf.TRadiobutton",
+            width=12)
+        rb2.grid(row=2, column=0, sticky="nsew")
+        rb3 = MyRadioButton(fr2, variable=var, text="Pages",
             value="P", command=doPages, style="pdf.TRadiobutton")
-        rb3.grid(row=3, column=0, sticky="w")
-        ent = MyEntry(fr3, font=self.font)
+        rb3.grid(row=3, column=0, sticky="nsew")
+        ent = MyEntry(fr2, style="pdf.TEntry")
         ToolTip(ent, "Enter page numbers separated by commas.")
         ent.bind("<Return>", doExec)
         ent.bind("<KP_Enter>", doExec)
         ent.configure(state="disabled")
-        ent.grid(row=3, column=1)
-        fr4 = MyFrame(fr2, style="pdf.TFrame")
-        fr4.pack(side="left", fill="both", expand="yes")
-        lb3 = MyLabel(fr4, text="Copies", style="pdfbold.TLabel", color=False)
-        lb3.pack(fill="x")
-        spn = tk.Spinbox(fr4, from_=1, to=10, font=self.font)
-        spn.pack(fill="x")
-        fr5 = MyFrame(win, style="pdf.TFrame")
-        fr5.pack(fill="x", expand="yes")
-        bt1 = MyButton(fr5, text="Cancel", cmd=doCancel, underline=0,
+        ent.grid(row=3, column=1, sticky="nsew", columnspan=2)
+        lb3 = MyLabel(fr2, text="Copies", style="pdfbold.TLabel", color=False)
+        lb3.grid(row=0, column=2, sticky="e")
+        spn = tk.Spinbox(fr2, from_=1, to=10, font=self.font, width=5)
+        spn.grid(row=1, column=2, sticky="e")
+        fr3 = MyFrame(win, style="pdf.TFrame")
+        fr3.pack(fill="x", expand="yes")
+        bt1 = MyButton(fr3, text="Cancel", cmd=doCancel, underline=0,
             style="pdf.TButton")
         bt1.pack(side="left", fill="x", expand="yes")
-        bt2 = MyButton(fr5, text="Print", cmd=doExec, underline=0,
+        bt2 = MyButton(fr3, text="Print", cmd=doExec, underline=0,
             style="pdf.TButton")
         bt2.pack(side="left", fill="x", expand="yes")
         placeWindow(win, self.cv, expose=True)
+        lbx.selection_set(0)
+        lbx.activate(0)
         lbx.focus_set()
+        win.grab_set()
         win.wait_window()
         self.win.update_idletasks()
         self.doUnbind(False)

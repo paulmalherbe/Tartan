@@ -47,8 +47,6 @@ class wg3020(object):
         self.fromad = wagctl["ctw_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def doProcess(self):
@@ -84,10 +82,8 @@ class wg3020(object):
 
     def doPrintReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %10s %49s %10s %10s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-113s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         old_empno = 0
         for num, dat in enumerate(recs):
@@ -125,12 +121,10 @@ class wg3020(object):
     def doPageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-35s %-10s %64s %5s" % (
-            "Salaries Data Capture Report as at", self.date,
-            "Page", self.pgnum))
+        self.fpdf.drawText("%-35s %-10s" %
+            ("Salaries Data Capture Report as at", self.date))
         self.fpdf.drawText()
         self.fpdf.drawText(
             "%-5s %-50s %-1s %-5s %-1s %-3s %-30s %-1s %13s" % ("EmpNo",

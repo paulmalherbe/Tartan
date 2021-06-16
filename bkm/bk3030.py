@@ -206,8 +206,7 @@ class bk3030(object):
             self.hdes = "Arrivals for Weekend %s to %s" % (start, end)
         else:
             self.hdes = "Arrivals for Period %s to %s" % (start, end)
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=80, auto=True,
-            foot=True)
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=80, auto=True)
         self.fpdf.header = self.pageHeading
         self.rtyp = "A"
         self.doArrival()

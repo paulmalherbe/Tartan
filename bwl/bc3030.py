@@ -314,6 +314,8 @@ class bc3030(object):
         self.opts["mf"].closeLoop()
 
     def getName(self, snam, fnam):
+        snam = snam.replace("VAN DER", "V D")
+        snam = snam.replace("JANSE VAN", "J V")
         if fnam:
             return "%s, %s" % (snam.upper(), fnam.split()[0][0].upper())
         else:

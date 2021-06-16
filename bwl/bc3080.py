@@ -176,7 +176,7 @@ Burnt Ends - Replay the end."""),
             self.fpdf.set_font("Arial","",8)
             h = 3.5
         else:
-            self.fpdf = MyFpdf(auto=True, foot=True)
+            self.fpdf = MyFpdf(auto=True)
             self.fpdf.set_font("Arial","",14)
             h = 6
         self.fpdf.header = self.pageHeading
@@ -199,8 +199,8 @@ Burnt Ends - Replay the end."""),
             self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_tsize"][4],
                 h=h, ln=0)
             self.fpdf.drawText(txt=ldic["bct_tsize"], x=x1, h=h, ctyp="M")
-            if ldic["bct_cfmat"] in ("D", "K", "R"):
-                return
+            #if ldic["bct_cfmat"] in ("D", "K", "R"):
+            #    return
             self.fpdf.drawText(txt="Draw", h=h, ln=0)
             if ldic["bct_drawn"] == ldic["bct_games"]:
                 txt = "All Games will be Random Draws."
@@ -212,9 +212,10 @@ Burnt Ends - Replay the end."""),
                     txt = "The First %s Games will be Random Draws and "\
                         "thereafter Strength v Strength." % ldic["bct_drawn"]
             self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
-            self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_games"][4],
-                h=h, ln=0)
-            self.fpdf.drawText(txt=ldic["bct_games"], x=x1, h=h, ctyp="M")
+            if ldic["bct_games"]:
+                self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_games"][4],
+                    h=h, ln=0)
+                self.fpdf.drawText(txt=ldic["bct_games"], x=x1, h=h, ctyp="M")
             self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_ends"][4],h=h,ln=0)
             self.fpdf.drawText(txt=ldic["bct_ends"], x=x1, h=h, ctyp="M")
             if ldic["bct_grgame"]:
@@ -302,8 +303,13 @@ Burnt Ends - Replay the end."""),
                         (ldic[ptyp]["bcp_lose_by"] - 1)
                     self.fpdf.drawText(txt=txt, x=x2, h=h, ctyp="M")
                     pts += 1
-                txt = "Therefore a Maximum of %s Points per Game." % pts
-                self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+                if pts:
+                    if pts == 1:
+                        txt = "Point"
+                    else:
+                        txt = "Points"
+                    txt = "Therefore a Maximum of %s %s per Game." % (pts, txt)
+                    self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
             if self.notes:
                 txt = "Notes"
                 self.fpdf.drawText(h=h)

@@ -49,8 +49,6 @@ class rc4020(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -306,11 +304,8 @@ class rc4020(object):
     def doPrintOption(self, opt):
         if opt == "N":
             return
-        self.head = ("%03u %-30s %63s %10s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-105s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         if opt not in ("D", "T"):
             self.pageHeading()
@@ -443,17 +438,14 @@ class rc4020(object):
     def pageHeading(self, deposit=False):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         if deposit:
-            self.fpdf.drawText("%-42s %-10s %49s %5s" % \
-                ("Rentals Ledger Deposit Interrogation as at", self.depdtd,
-                "Page", self.pgnum))
+            self.fpdf.drawText("%-42s %-10s" % \
+                ("Rentals Ledger Deposit Interrogation as at", self.depdtd))
         else:
-            self.fpdf.drawText("%-34s %-10s %57s %5s" % \
-                ("Rentals Ledger Interrogation as at", self.sysdtd,
-                "Page", self.pgnum))
+            self.fpdf.drawText("%-34s %-10s" % \
+                ("Rentals Ledger Interrogation as at", self.sysdtd))
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()
         self.pglin = 6

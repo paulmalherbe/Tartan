@@ -50,8 +50,7 @@ class bk3040(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["Number", "S", "Acc-Cod", "Name", "Group", "Tot-Balance",
             "Dr-Balance", "Cr-Balance"]
         self.forms = [("UI", 7), ("UA", 1), ("UA", 7), ("NA", 30),
@@ -116,7 +115,7 @@ class bk3040(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("Booking's Balances up to %s" % self.period)
         self.expheads.append("Booking Status: %s" % self.statusd)
         self.expcolsh = [self.colsh]
@@ -150,14 +149,12 @@ class bk3040(object):
             chrs -= 2
         else:
             chrs -= 1
-        pad = chrs - 35 - len(self.sysdttm)
-        self.head1 = self.head % (" " * pad + self.sysdttm)
-        self.head2 = "Booking's Balances up to %s%s" % (self.period, "%s%s")
-        pad = chrs - len(self.head2) + 4 - 11  # %s%s and ' Page     1'
-        self.head2 = self.head2 % (" " * pad, " Page %5s")
+        self.head1 = self.head
+        self.head2 = "Booking's Balances up to %s" % self.period
+        pad = chrs - len(self.head2)
+        self.head2 = self.head2 + (" " * pad)
         self.head3 = "Booking Status: %s" % self.statusd
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head2)
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -223,17 +220,16 @@ class bk3040(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head1)
         self.fpdf.drawText()
-        self.fpdf.drawText(self.head2 % self.pgnum)
+        self.fpdf.drawText(self.head2)
         self.fpdf.drawText()
         self.fpdf.drawText(self.head3)
         self.fpdf.drawText()
         self.fpdf.drawText("%-7s %1s %-7s %-30s %-30s %-13s %-13s %-13s" %
             ("Number", "S", "Acc-Cod", "Name", "Group", " Tot-Balance",
             "      Debits", "     Credits"))
-        self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head1)))
+        self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head2)))
         self.fpdf.setFont()
         self.pglin = 8
 

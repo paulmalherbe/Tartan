@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
 from TartanClasses import TartanDialog
 from tartanFunctions import getModName, doPrinter, showError
@@ -47,9 +46,6 @@ class dr3010(object):
         if not drsctl:
             return
         self.fromad = drsctl["ctd_emadd"]
-        t = time.localtime()
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % (t[0],
-            t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -117,12 +113,9 @@ class dr3010(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %48s %6s" %
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-86s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.btot = [0, 0]
-        self.pgnum = 0
         self.pglin = 999
         bc = self.sql.ctlbat_col
         tc = self.sql.drstrn_col
@@ -178,11 +171,9 @@ class dr3010(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-34s %49s %5s" %
-            ("Debtors Ledger Batch Error Listing", "Page", self.pgnum))
+        self.fpdf.drawText("%-90s" % ("Debtors Ledger Batch Error Listing"))
         self.fpdf.drawText()
         self.fpdf.setFont()
         self.pglin = 4

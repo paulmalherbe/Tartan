@@ -143,7 +143,7 @@ Thanks and Regards.
                 "No Records Selected")
             self.opts["mf"].closeLoop()
             return
-        self.fpdf = MyFpdf(name="bs3010", head=90, auto=True, foot=True)
+        self.fpdf = MyFpdf(name="bs3010", head=90, auto=True)
         self.fpdf.header = self.pageHeading
         self.stat = recs[0][0]
         self.fpdf.add_page()

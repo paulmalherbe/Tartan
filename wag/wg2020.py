@@ -75,8 +75,6 @@ class wg2020(object):
         self.sysdtd = CCD(self.sysdtw, "d1", 10).disp
         self.s_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
-        self.head = ("%03u %-30s %40s %10s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdtd, "wg2020"))
         self.etotal = 0
         self.pgnum = 0
         self.empnos = []

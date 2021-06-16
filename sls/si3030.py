@@ -55,8 +55,6 @@ class si3030(object):
         self.fromad = slsctl["ctv_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -145,13 +143,11 @@ class si3030(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %-10s %-49s %-9s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-108s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.stot = [0] * 3
         self.gtot = [0] * 3
         lstgrp = ""
-        self.pgnum = 0
         self.pglin = 999
         for num, rec in enumerate(recs):
             p.displayProgress(num)
@@ -216,12 +212,11 @@ class si3030(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         per = CCD(self.per, "D2", 7)
-        self.fpdf.drawText("%-27s %-7s %70s %5s" % \
-            ("Period Sales By Product for", per.disp, "Page", self.pgnum))
+        self.fpdf.drawText("%-27s %-7s" % \
+            ("Period Sales By Product for", per.disp))
         self.fpdf.drawText()
         acc = self.getGroup(self.grp.work)
         if acc:

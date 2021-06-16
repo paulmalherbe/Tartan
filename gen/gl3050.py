@@ -176,7 +176,7 @@ class gl3050(object):
             view = None
             mail = None
         else:
-            var = ["",0,"S","N","N",1,"N","V","","","B","Y","Y","Y"]
+            var = ["",0,"S","N","N",1,"N","V","","","B","Y","N","Y"]
             view = ("Y", "V")
             mail = ("Y", "N")
         fld = (
@@ -978,8 +978,7 @@ Custom  - Customised Report"""),
                 self.expforms.append(self.titles[col[0]][1:])
         self.expdatas = []
         self.counter = 0
-        p = ProgressBar(self.opts["mf"].body, mxs=len(self.allfields),
-            esc=True)
+        p = ProgressBar(self.opts["mf"].body, mxs=len(self.allfields), esc=True)
         for num, dat in enumerate(self.allfields):
             p.displayProgress(num)
             if dat[6] < self.counter:
@@ -1245,8 +1244,7 @@ Custom  - Customised Report"""),
             self.width = self.lhead
         if "args" not in self.opts or "noprint" in self.opts["args"] or \
                 "stream" in self.opts["args"]:
-            self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.width,
-                foot=True)
+            self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.width)
         self.pgnum = 0
         self.pglin = 999
         self.achart = []
@@ -1746,7 +1744,7 @@ Custom  - Customised Report"""),
                     else:
                         start = 1
                     if line[1] == "B":
-                        expcolsh[0][start] = ""
+                        expcolsh[0][start][0] = ""
                         expcolsh[1][start] = ""
                         expcolsh[1][start + 1] = ""
                         expcolsh[1][start + 2] = ""

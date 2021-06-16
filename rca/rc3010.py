@@ -49,8 +49,6 @@ class rc3010(object):
         self.fromad = rcactl["cte_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.curdt = int(self.sysdtw / 100)
         self.totind = "N"
         return True
@@ -84,7 +82,7 @@ class rc3010(object):
             (("T",0,1,0),"Id2",7,"Starting Period","",
                 self.curdt,"Y",self.doStartPer,None,None,("efld",)),
             (("T",0,2,0),"Id2",7,"Ending Period","",
-                self.curdt,"Y",self.doEndPer,None,None,("efld",)),
+                self.curdt,"Y",self.doEndPer,None,None,("notzero",)),
             (("T",0,3,0),"Id1",10,"Starting Date","",
                 self.sysdtw,"Y",self.doStartDat,None,None,("efld",)),
             (("T",0,4,0),"Id1",10,"Ending Date","",
@@ -185,13 +183,9 @@ class rc3010(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.totsonly == "Y":
-            self.head = ("%03u %-30s %33s %6s" % \
-                (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+            self.head = "%03u %-71s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %21s %33s %22s %6s" % \
-                (self.opts["conum"], self.opts["conam"], "", self.sysdttm,
-                "", self.__class__.__name__))
+            self.head = "%03u %-116s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.bqty = 0
         self.bamt = 0
@@ -205,7 +199,6 @@ class rc3010(object):
         self.gam = [0] * (len(rttrtp) + 1)
         self.gvt = [0] * (len(rttrtp) + 1)
         self.trtp = 0
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -268,19 +261,13 @@ class rc3010(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        if self.totsonly == "Y":
-            self.fpdf.drawText(
-            "%-36s %-10s %-2s %-10s %7s %5s" % \
-            ("Rental Owners Audit Trail for Period",
-            self.sperd, "to", self.eperd, "Page", self.pgnum))
+        if not self.sperd:
+            self.fpdf.drawText("Rental Owners Audit Trail to %s" % self.eperd)
         else:
-            self.fpdf.drawText(
-            "%-36s %-10s %-2s %-10s %52s %5s" % \
-            ("Rental Owners Audit Trail for Period",
-            self.sperd, "to", self.eperd, "Page", self.pgnum))
+            self.fpdf.drawText("Rental Owners Audit Trail for Period "\
+                "%s to %s" % (self.sperd, self.eperd))
         self.fpdf.drawText()
         self.pglin = 4
         if self.totind == "N":

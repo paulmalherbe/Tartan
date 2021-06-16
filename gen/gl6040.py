@@ -24,19 +24,17 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import ASD, CCD, MyFpdf, Sql, TartanDialog
 from tartanFunctions import getModName, doPrinter
 
 class gl6040(object):
     def __init__(self, **opts):
         self.opts = opts
-        if self.getAccounts():
-            self.setVariables()
+        if self.setVariables():
             self.mainProcess()
             self.opts["mf"].startLoop()
 
-    def getAccounts(self):
+    def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "genint", "genbal",
             "gentrn"], prog=self.__class__.__name__)
         if self.sql.error:
@@ -52,14 +50,8 @@ class gl6040(object):
                 self.opts["conum"])], limit=1)
             if acn:
                 self.accs.append([acc[0], acc[1], acn[0]])
-        return True
-
-    def setVariables(self):
-        t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.s_per = int(self.opts["period"][1][0] / 100)
+        return True
 
     def mainProcess(self):
         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
@@ -82,10 +74,8 @@ class gl6040(object):
         self.doExit()
 
     def printReport(self):
-        self.head = ("%03u %-30s %2s %35s %3s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-80s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         for acc in self.accs:
             if self.pglin > self.fpdf.lpp:
@@ -148,14 +138,13 @@ class gl6040(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-40s %-20s %15s %5s" % \
-            ("General Ledger Integrated Controls as at ",
-            self.df.t_disp[0][0][0], "Page", self.pgnum))
+        self.fpdf.drawText("%-40s %-10s" %
+            ("General Ledger Integrated Controls as at",
+            self.df.t_disp[0][0][0]))
         self.fpdf.drawText()
-        self.fpdf.drawText("%-3s %-32s%15s %15s %15s" % \
+        self.fpdf.drawText("%-3s %-32s%15s %15s %15s" %
             ("Coy", "Company-Name", "Balance-1", "Balance-2", "Difference"))
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()

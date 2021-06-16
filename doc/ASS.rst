@@ -128,7 +128,7 @@ Toolbox (AR)
 ............
 Change Asset Codes (AR)
 +++++++++++++++++++++++
-Use this routine to change asset groups and codes.
+Use this routine to change existing asset groups and codes.
 
 Interrogation (AR)
 ..................

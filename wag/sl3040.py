@@ -50,11 +50,7 @@ class sl3040(object):
         self.fromad = wagctl["ctw_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
-        self.head = ("%03u %-30s %80s %6s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-118s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         return True
 
@@ -137,7 +133,6 @@ class sl3040(object):
         self.opts["mf"].closeLoop()
 
     def doProcess(self, emp):
-        self.pgnum = 0
         self.totbal = 0
         wlc = self.sql.waglmf_col
         self.emp = CCD(emp[wlc.index("wlm_empno")], "UI", 5)
@@ -182,12 +177,11 @@ class sl3040(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-27s %-15s %2s %15s %53s %5s" % \
+        self.fpdf.drawText("%-27s %-15s %2s %15s" % \
             ("Staff Loans Statements from", self.df.t_disp[0][0][0],
-            "to", self.df.t_disp[0][0][1], "Page", self.pgnum))
+            "to", self.df.t_disp[0][0][1]))
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()
         self.pglin = 4

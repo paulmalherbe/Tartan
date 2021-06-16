@@ -40,11 +40,9 @@ class gl3080(object):
             "gentrn", "genrct"], prog=self.__class__.__name__)
         if self.sql.error:
             return
-        t = time.localtime()
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.s_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
+        t = time.localtime()
         self.c_per = (t[0] * 100) + t[1]
         return True
 
@@ -140,8 +138,8 @@ class gl3080(object):
     def printReport(self):
         p = ProgressBar(self.opts["mf"].body,
             mxs=(len(self.pays) + len(self.recs) + len(self.imps)))
-        self.head = ("%03u %-30s" % (self.opts["conum"], self.opts["conam"]))
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=90, foot=True)
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=90)
         self.pglin = 999
         self.tot_chq = 0
         self.tot_dep = 0

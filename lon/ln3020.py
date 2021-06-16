@@ -49,11 +49,9 @@ class ln3020(object):
             return
         self.fromad = lonctl["cln_emadd"]
         t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
             (t[0], t[1], t[2], t[3], t[4])
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["TP", "BatchNo", "Acc-Num", "Ln", "Reference",
             "Trans-Date", "Remarks", "Debits", "Credits"]
         self.forms = [("UI", 2), ("NA", 7), ("UA", 7), ("UI", 2),
@@ -173,7 +171,7 @@ class ln3020(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("Loans's Ledger Audit Trail for Period "\
             "%s to %s" % (self.sdatd, self.edatd))
         self.expcolsh = [self.colsh]
@@ -203,13 +201,7 @@ class ln3020(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        if self.totsonly == "Y":
-            self.head = ("%03u %-30s %48s %6s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
-        else:
-            self.head = ("%03u %-30s %48s %6s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+        self.head = "%03u %-86s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.bqty = 0
         self.bdrs = 0
@@ -218,7 +210,6 @@ class ln3020(object):
         self.tdrs = 0
         self.tcrs = 0
         self.trtp = 0
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -295,19 +286,10 @@ class ln3020(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        if self.totsonly == "Y":
-            self.fpdf.drawText(
-            "%-34s %-7s %2s %-7s %30s %5s" % \
-            ("Loans Audit Trail for Period",
-            self.sdatd, "to", self.edatd, "Page", self.pgnum))
-        else:
-            self.fpdf.drawText(
-            "%-34s %-7s %-2s %-7s %30s %5s" % \
-            ("Loans Audit Trail for Period",
-            self.sdatd, "to", self.edatd, "Page", self.pgnum))
+        self.fpdf.drawText("%-28s %-7s %2s %-7s" % \
+            ("Loans Audit Trail for Period", self.sdatd, "to", self.edatd))
         self.fpdf.drawText()
         self.pglin = 4
         if self.totind == "N":

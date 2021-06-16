@@ -67,8 +67,7 @@ class ms3010(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
             (t[0], t[1], t[2], t[3], t[4])
-        self.head = ("%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
-            "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["C", "T", "Curr-Dt", "S", "TT", "Acc-Num", "Reference",
             "Date", "Remarks", "Rate-%", "Input-Value", "Input-Tax ",
             "Output-Value", "Output-Tax"]
@@ -258,7 +257,7 @@ class ms3010(object):
             typ="VAT Categories")
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("VAT Statement for Period %s to %s" % \
             (self.sperd, self.eperd))
         self.expcolsh = [self.colsh]
@@ -337,10 +336,7 @@ class ms3010(object):
     def printReport(self, recs):
         p1 = ProgressBar(self.opts["mf"].body, mxs=len(recs),
             typ="VAT Categories")
-        self.head = ("%03u %-30s %30s %18s %27s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=135)
         self.pglin = 999
         self.pcat = None
         self.pcode = None
@@ -423,6 +419,7 @@ class ms3010(object):
                 self.doPrintCodeTotal(ttype="P", line=False)
             else:
                 self.doPrintCodeTotal()
+            self.fpdf.drawText(self.fpdf.suc * 135)
             self.doPrintCatTotal()
             if self.cat in ("A", "B"):
                 self.doPrintHeading("S")
@@ -492,7 +489,6 @@ class ms3010(object):
         if htype in ("A", "S"):
             self.fpdf.add_page()
             self.fpdf.setFont(style="B")
-            self.pgnum += 1
             self.fpdf.drawText(self.head)
             self.fpdf.drawText()
             if self.flag == "Y":
@@ -501,9 +497,9 @@ class ms3010(object):
                 flag = "(Transactions Not Flagged)"
             elif self.flag == "R":
                 flag = "(Transactions Paid on %s)" % self.paidd
-            self.fpdf.drawText("%-24s %-7s %-2s %-7s %-79s %4s %5s" % \
+            self.fpdf.drawText("%-24s %-7s %-2s %-7s %-s" % \
                 ("VAT Statement for Period",
-                self.sperd, "to", self.eperd, flag, "Page", self.pgnum))
+                self.sperd, "to", self.eperd, flag))
             self.fpdf.drawText()
             if htype == "A":
                 if self.totsonly != "Y":
@@ -532,7 +528,7 @@ class ms3010(object):
                 "%13s %13s %13s %13s" % ("Curr-Dt", "S", "TT", "Acc-Num",
                 "Reference", "   Date", "Remarks", "Rate-%", "Input-Value ",
                 "Input-Tax ", "Output-Value ", " Output-Tax "))
-        self.fpdf.underLine(txt=self.head)
+        self.fpdf.drawText(self.fpdf.suc * 135)
         self.fpdf.setFont()
         self.pglin += 3
 
@@ -543,7 +539,7 @@ class ms3010(object):
         m = CCD(self.ctopt, "SD", 13.2)
         if ttype == "P":
             if self.totsonly != "Y" and line:
-                self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+                self.fpdf.drawText(self.fpdf.suc * 135)
             self.fpdf.drawText("%-41s %-14s %-22s %-13s %-13s %-13s %-13s" %
                 ("", "Code-Total", self.pcode, j.disp, k.disp, l.disp, m.disp))
         else:
@@ -569,8 +565,7 @@ class ms3010(object):
                 continue
             if ttype == "P":
                 if not num:
-                    self.fpdf.drawText("%-125s" % (
-                        self.fpdf.suc * len(self.head)))
+                    self.fpdf.drawText(self.fpdf.suc * 135)
                 self.fpdf.drawText("%-41s %-14s %-15s %-6s "\
                     "%-13s %-13s %-13s %-13s" % ("", "Category-Total",
                     self.pcat, rte, j.disp, k.disp, l.disp, m.disp))
@@ -584,7 +579,7 @@ class ms3010(object):
 
     def doPrintSummary(self, ttype="P"):
         if ttype == "X":
-            expheads = [self.head % self.sysdttm]
+            expheads = [self.head + " %s" % self.sysdttm]
             expheads.append("VAT Summary for Period %s to %s" % \
                 (self.sperd, self.eperd))
             expcolsh = [self.colsh[8:]]
@@ -626,7 +621,7 @@ class ms3010(object):
                         m.work]]
                     self.expdatas.append(line)
         if ttype == "P":
-            self.fpdf.drawText("%-125s" % (self.fpdf.suc * len(self.head)))
+            self.fpdf.drawText(self.fpdf.suc * 135)
         else:
             self.expdatas.append(["ULINES"])
         d = CCD("Grand Total", "NA", 30)

@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import ASD, CCD, GetCtl, MyFpdf, Sql, TartanDialog
 from tartanFunctions import doPrinter, getModName
 
@@ -45,9 +44,6 @@ class wg3030(object):
         if not wagctl:
             return
         self.fromad = wagctl["ctw_emadd"]
-        t = time.localtime()
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -81,10 +77,9 @@ class wg3030(object):
 
     def doEnd(self):
         self.df.closeProcess()
-        self.head = ("%03u %-30s %38s %10s" % (self.opts["conum"],
-            self.opts["conam"], self.sysdttm, self.__class__.__name__))
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
+        self.head = "%03u %-80s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         cod = self.sql.getRec("wagedc", cols=["ced_code"],
             where=[("ced_cono", "=", self.opts["conum"]), ("ced_type",
@@ -171,7 +166,7 @@ class wg3030(object):
         self.fpdf.drawText("%-71s %13s" % ("Control Total", totl.disp))
         self.fpdf.drawText()
         self.fpdf.drawText("Summary of SDL Payment")
-        self.fpdf.underLine(txt="X" * 61)
+        self.fpdf.underLine(txt=self.head)
         keys = list(emp.keys())
         keys.sort()
         for k in keys:

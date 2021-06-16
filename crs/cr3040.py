@@ -52,8 +52,6 @@ class cr3040(object):
         self.fromad = crsctl["ctc_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.curdt = int(self.sysdtw / 100)
         return True
 
@@ -102,12 +100,10 @@ class cr3040(object):
 
     def printReport(self, mst):
         p = ProgressBar(self.opts["mf"].body, mxs=len(mst), esc=True)
-        self.head = ("%03u %-30s %13s %33s %13s %10s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-102s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.ctots = [0,0,0,0]
         self.gtots = [0,0,0,0]
-        self.pgnum = 0
         self.pglin = 999
         for num, rec in enumerate(mst):
             p.displayProgress(num)
@@ -120,7 +116,7 @@ class cr3040(object):
                 acno.work)], zer="N")
             if not recs:
                 continue
-            if not self.pgnum:
+            if self.pglin == 999:
                 self.pageHeading(acno.disp, name.disp)
             else:
                 self.newAccount(acno.disp, name.disp)
@@ -168,12 +164,10 @@ class cr3040(object):
     def pageHeading(self, acno, name):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-42s %-7s %50s %5s" % \
-            ("Creditors Outstanding Transactions as at", self.curdd,
-            "Page", self.pgnum))
+        self.fpdf.drawText("%-42s %-64s" % \
+            ("Creditors Outstanding Transactions as at", self.curdd))
         self.fpdf.setFont()
         self.pglin = 3
         self.newAccount(acno, name)

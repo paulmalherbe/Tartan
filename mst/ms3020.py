@@ -24,22 +24,14 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import RepPrt, TartanDialog
 from tartanWork import allsys, pwctrl
 
 class ms3020(object):
     def __init__(self, **opts):
         self.opts = opts
-        self.setVariables()
         self.mainProcess()
         self.opts["mf"].startLoop()
-
-    def setVariables(self):
-        t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
 
     def mainProcess(self):
         sss = []
@@ -56,9 +48,12 @@ class ms3020(object):
             "titl": "Select the Required System",
             "head": ("COD", "Description"),
             "data": data}
+        r1s = (("Yes", "Y"), ("No", "N"))
         fld = (
             (("T",0,0,0),"IUA",3,"System","",
-                "ALL","Y",self.doSys,stt,None,("in", sss)),)
+                "ALL","Y",self.doSys,stt,None,("in", sss)),
+            (("T",0,1,0),("IRB",r1s),0,"Only Enabled","",
+                "Y","N",self.doTyp,None,None,None))
         tnd = ((self.doEnd,"y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], eflds=fld, tend=tnd,
@@ -67,13 +62,16 @@ class ms3020(object):
     def doSys(self, frt, pag, r, c, p, i, w):
         self.sys = w
 
+    def doTyp(self, frt, pag, r, c, p, i, w):
+        self.typ = w
+
     def doEnd(self):
         self.df.closeProcess()
         self.printReport()
         self.closeProcess()
 
     def printReport(self):
-        tables = ["ctlpwr"]
+        state = self.df.disableButtonsTags()
         heads = ["Module Passwords Master Listing"]
         cols = [
             ["pwd_cono","UI",3.0,"Coy"],
@@ -81,14 +79,26 @@ class ms3020(object):
             ["pwd_code","NA",20.0,"Access Code"],
             ["pwd_desc","NA",50.0,"Description"],
             ["pwd_pass","HA",30.0,"Password"]]
-        if self.sys == "ALL":
-            whr = []
+        if self.typ == "Y":
+            tables = ["ctlpwr"]
+            if self.sys == "ALL":
+                whr = []
+            else:
+                whr = [("pwd_sys", "=", self.sys)]
+            odr = "pwd_cono, pwd_sys, pwd_code"
+            RepPrt(self.opts["mf"], name=self.__class__.__name__,
+                tables=tables, heads=heads, cols=cols, where=whr,
+                order=odr, repprt=self.df.repprt)
         else:
-            whr = [("pwd_sys", "=", self.sys)]
-        odr = "pwd_cono, pwd_sys, pwd_code"
-        state = self.df.disableButtonsTags()
-        RepPrt(self.opts["mf"], name=self.__class__.__name__, tables=tables,
-            heads=heads, cols=cols, where=whr, order=odr, repprt=self.df.repprt)
+            ccol = cols[:]
+            ccol[0][1] = "NA"
+            data = []
+            for ctl in pwctrl:
+                if self.sys == "ALL" or ctl[0] == self.sys:
+                    data.append(("", ctl[0], ctl[1], ctl[2], ""))
+            RepPrt(self.opts["mf"], name=self.__class__.__name__,
+                tables=data, heads=heads, cols=ccol, ttype="D",
+                repprt=self.df.repprt)
         self.df.enableButtonsTags(state=state)
 
     def doExit(self):

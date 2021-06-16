@@ -219,7 +219,7 @@ Do You Want to Modify and Redraw It?""", default="no")
             self.pcod = cod
         chk = self.sql.getRec("scpmem", cols=["scm_surname",
             "scm_names", "scm_gender"], where=[("scm_cono", "=",
-            self.opts["conum"]), ("scm_scod", "=", self.scod)], limit=1)
+            self.opts["conum"]), ("scm_scod", "=", cod)], limit=1)
         if not chk:
             return "Invalid Player Code"
         if self.tsex in ("M", "F") and chk[2] != self.tsex:

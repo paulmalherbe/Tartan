@@ -25,9 +25,9 @@ COPYING
 """
 
 import time
-from TartanClasses import CCD, GetCtl, MyMessageBox, ScrollGrid, SelectChoice
-from TartanClasses import Sql
+from TartanClasses import CCD, GetCtl, ScrollGrid, SelectChoice, Sql
 from tartanFunctions import callModule, dateDiff, projectDate, showError
+from tartanFunctions import showInfo
 
 class bk1010(object):
     def __init__(self, **opts):
@@ -222,6 +222,7 @@ class bk1010(object):
             self.tt = None
         self.cal.window.destroy()
         self.opts["mf"].setThemeFont()
+        self.opts["mf"].window.deiconify()
         if not self.ptyp and not self.quit:
             callModule(self.opts["mf"], None, "bk1020",
                 coy=(self.opts["conum"], self.opts["conam"]),
@@ -261,12 +262,8 @@ class bk1010(object):
                 ("bkc_cono=bkm_cono",),
                 ("bkc_ccode=bkm_ccode",)],
             order="bkc_sname, bkc_names")
-        self.cal.window.withdraw()
-        self.opts["mf"].window.deiconify()
-        sc = SelectChoice(self.opts["mf"].window, "Select Booking", cols, data,
-            fltr=self.opts["mf"])
-        self.opts["mf"].window.withdraw()
-        self.cal.window.deiconify()
+        sc = SelectChoice(self.cal.window, "Select Booking", cols, data,
+            fltr=True)
         if sc.selection:
             self.number = int(sc.selection[1])
             self.opts["mf"].closeLoop()
@@ -314,18 +311,8 @@ class bk1010(object):
             text = "%s\n%-10s R%s" % (text, "Balance:", bal)
             if data[7]:
                 text = "%s\n\n%s" % (text, data[7])
-        mbox = MyMessageBox(args[2][0], "info", "Booking %s" % number,
-            text, plc=False)
-        cp = list(args[2][1])
-        fp = args[2][0].winfo_geometry().split("+")[0].split("x")
-        rp = (mbox.frame.winfo_reqwidth(), mbox.frame.winfo_reqheight())
-        if cp[0] + int(rp[0]) > int(fp[0]):
-            cp[0] = int(fp[0]) - int(rp[0])
-        if cp[1] + int(rp[1]) > int(fp[1]):
-            cp[1] = int(fp[1]) - int(rp[1])
-        mbox.frame.place(x=cp[0], y=cp[1])
-        mbox.frame.update_idletasks()
-        mbox.frame.grab_set()
+        # cp = list(args[2][1])
+        showInfo(args[2][0], "Booking %s" % number, text)
 
     def doBkm(self, *args):
         number = args[1].split("\n")

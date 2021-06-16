@@ -103,7 +103,7 @@ class bc3070(object):
         recs = self.sql.getRec(tables=["bwlent", "bwltab"], cols=col,
             where=whr, order=odr)
         if recs:
-            self.fpdf = MyFpdf(auto=True, foot=True)
+            self.fpdf = MyFpdf(auto=True)
             self.fpdf.header = self.doHead
             self.fpdf.add_page()
             self.fpdf.set_font("Courier","",9)

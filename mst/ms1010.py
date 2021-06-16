@@ -173,8 +173,8 @@ class ms1010(object):
             for x in range(0, len(mods), 2):
                 idx = self.sys.index(mods[x:x+2])
                 self.df.loadEntry(frt, pag+2, idx, data="Y")
-            self.df.loadEntry(frt, pag+3, 0, data=self.old[-1])
             self.logo = self.old[self.sql.ctlmst_col.index("ctm_logo")]
+            self.df.loadEntry(frt, pag+3, 0, data=self.logo)
             if self.logo:
                 self.displayLogo(self.logo)
 

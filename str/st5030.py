@@ -49,8 +49,6 @@ class st5030(object):
         self.fromad = strctl["cts_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -103,8 +101,7 @@ class st5030(object):
     def printReport(self, recs):
         data = []
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %31s %33s %31s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-135s" % (self.opts["conum"], self.opts["conam"])
         for num, dat in enumerate(recs):
             p.displayProgress(num)
             if p.quit:

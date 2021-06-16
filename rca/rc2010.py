@@ -27,7 +27,7 @@ COPYING
 import time
 from TartanClasses import ASD, GetCtl, NotesCreate, PwdConfirm, Sql
 from TartanClasses import SelectChoice, TartanDialog
-from tartanFunctions import getVatRate, mthendDate, projectDate, runModule
+from tartanFunctions import getVatRate, projectDate, runModule
 from tartanWork import rcmvtp, rctrtp
 
 class rc2010(object):
@@ -165,7 +165,7 @@ class rc2010(object):
                 "N","N",self.doOwnCod,vtm,None,("efld",)),
             (("C",1,0,5),"ISD",11.2,"V.A.T","V.A.T Amount",
                 "","N",self.doOwnVat,None,None,None),
-            (("C",1,0,6),"INA",43,"Details","Transaction Details",
+            (("C",1,0,6),"INA",47,"Details","Transaction Details",
                 "","N",self.doOwnDet,None,None,None),
             (("T",2,0,0),"INA",7,"Acc-Num","Account Number",
                 "","Y",self.doAccNum,tnm,None,None),
@@ -508,6 +508,7 @@ class rc2010(object):
         self.showOwnerTrans()
         if self.acno:
             self.showTenantTrans()
+        self.df.nb.grab_set()
 
     def showOwnerTrans(self):
         whr = [("rot_cono", "=", self.opts["conum"]), ("rot_acno", "=",
@@ -545,12 +546,12 @@ class rc2010(object):
             ("rot_trdt", "Trans-Date", 10, "D1", "N"),
             ("rot_type", "Typ", 3, ("XX", rctrtp), "N"),
             ("rot_refno", "Reference", 9, "Na", "N"),
-            ("rot_desc", "Details", 30, "NA", "N"),
+            ("rot_desc", "Details", 39, "NA", "N"),
             ("rot_tramt", "Amount", 11.2, "SD", "N"),
             ("rot_taxamt", "VAT-Amount", 11.2, "SD", "N"),
             ("balance", "Balance", 15.2, "SD", "N"))
         self.otrn = SelectChoice(self.df.topPage1, None, col, data, wait=False,
-            neww=False, live=False, lines=9)
+            neww=False, live=False, modal=False, lines=9)
 
     def showTenantTrans(self):
         try:
@@ -580,7 +581,7 @@ class rc2010(object):
             ("rtu_taxamt", "VAT-Amount", 11.2, "SD", "N"),
             ("balance", "Balance", 15.2, "SD", "N"))
         self.ttrn = SelectChoice(self.df.topPage2, None, col, data, wait=False,
-            neww=False, live=False, lines=9)
+            neww=False, live=False, modal=False, lines=9)
 
     def showTenantBalance(self):
         bal = self.sql.getRec("rcatnt",

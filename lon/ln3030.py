@@ -48,8 +48,6 @@ class ln3030(object):
         self.fromad = lonctl["cln_emadd"]
         t = time.localtime()
         self.curdt = int(((t[0] * 10000) + (t[1] * 100) + t[2]) / 100)
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -103,16 +101,13 @@ class ln3030(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.pend == "Y":
-            self.head = ("%03u %-30s %80s %6s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-118s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %52s %6s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-90s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         ltot = 0
         itot = 0
         ntot = 0
-        self.pgnum = 0
         self.pglin = 999
         for num, rec in enumerate(recs):
             p.displayProgress(num)
@@ -178,15 +173,9 @@ class ln3030(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        if self.pend == "Y":
-            txt = "%-29s %-7s %78s %5s" % ("Loans Balances Listing as at",
-                self.cdte, "Page", self.pgnum)
-        else:
-            txt = "%-29s %-7s %50s %5s" % ("Loans Balances Listing as at",
-                self.cdte, "Page", self.pgnum)
+        txt = "%-29s %-7s" % ("Loans Balances Listing as at", self.cdte)
         self.fpdf.drawText(txt=txt)
         self.fpdf.drawText()
         self.fpdf.drawText("%s %s  %s %s)" % \

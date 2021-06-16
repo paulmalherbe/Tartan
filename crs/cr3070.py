@@ -50,8 +50,6 @@ class cr3070(object):
         self.fromad = crsctl["ctc_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.curdt = int(self.sysdtw / 100)
         return True
 
@@ -144,8 +142,7 @@ class cr3070(object):
             self.printBody()
 
     def printSetup(self):
-        self.head = ("%03u %-30s %13s %15s %14s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-102s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.prnt = "Y"
 

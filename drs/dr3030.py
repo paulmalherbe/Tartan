@@ -52,8 +52,6 @@ class dr3030(object):
         self.fromad = drsctl["ctd_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -97,13 +95,10 @@ class dr3030(object):
 
     def printReport(self, mst):
         p = ProgressBar(self.opts["mf"].body, mxs=len(mst), esc=True)
-        self.head = ("%03u %-30s %33s %6s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-71s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.ctots = [0,0,0]
         self.gtots = [0,0,0]
-        self.pgnum = 0
         self.pglin = 999
         for seq, rec in enumerate(mst):
             p.displayProgress(seq)
@@ -118,7 +113,7 @@ class dr3030(object):
                 neg=False, zer="N")
             if not trns:
                 continue
-            if not self.pgnum:
+            if self.pglin == 999:
                 self.pageHeading(chn.disp, acno.disp, name.disp)
             else:
                 self.newAccount(chn.disp, acno.disp, name.disp)
@@ -158,12 +153,10 @@ class dr3030(object):
     def pageHeading(self, chn, acno, name):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-42s %-10s %15s %5s" % \
-            ("Debtors Transactions Due For Payment as at", self.pdatd,
-            "Page", self.pgnum))
+        self.fpdf.drawText("%-42s %-32s" % \
+            ("Debtors Transactions Due For Payment as at", self.pdatd))
         self.fpdf.drawText()
         self.fpdf.drawText("%-19s%-10s%-1s" % \
             ("(Options: Pay Date-", self.df.t_disp[0][0][0], ")"))

@@ -129,7 +129,7 @@ In the event of Financial Statements (gl3050), if there are available Report Str
 
 Template Manager
 ................
-Use this routine to create, edit or delete templates.
+Use this routine to create, edit or delete templates. All templates hard coded into Tartan canot be altered. They can however be copied and then altered. In order to do this you would enter a new template name and then press the Copy Button.
 
 + **Name** - The name of the template.
 + **Title** - The title of the template.

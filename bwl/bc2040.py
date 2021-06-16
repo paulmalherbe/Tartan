@@ -129,6 +129,10 @@ class bc2040(object):
                 return "rf"
             self.newcmp = True
         else:
+            if self.cmp[self.sql.bwlcmp_col.index("bcm_poff")]:
+                showError(self.opts["mf"].body, "Complete",
+                    "This Sectional Competition Has Been Completed.")
+                return "rf"
             gme = self.sql.getRec("bwlgme", cols=["count(*)"],
                 where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
                 self.ccod), ("bcg_ocod", "<>", 0)], limit=1)
@@ -141,7 +145,7 @@ Do You Want to Erase All Draws and Results?""", default="no")
                     return "rf"
                 self.erase = True
             self.newcmp = False
-            for num, fld in enumerate(self.cmp[1:-1]):
+            for num, fld in enumerate(self.cmp[1:-2]):
                 self.df.loadEntry(frt, pag, p+num, data=fld)
             ent = self.sql.getRec("bwlent", cols=["bce_scod"],
                 where=[("bce_cono", "=", self.opts["conum"]),
@@ -221,7 +225,13 @@ Do You Want to Erase All Draws and Results?""", default="no")
             self.df.loadEntry(frt, pag, p+3, data=ent[1])
         else:
             self.newent = True
-        if self.cfmat != "X":
+        if self.cfmat == "X":
+            if self.scod < self.nstart:
+                self.tcod = "H"
+            else:
+                self.tcod = "V"
+            self.df.loadEntry(frt, pag, p+2, data=self.tcod)
+        else:
             self.tcod = ""
             return "sk2"
 
@@ -318,7 +328,7 @@ Do You Want to Erase All Draws and Results?""", default="no")
 
     def doEnd(self):
         if self.df.frt == "T":
-            data = [self.opts["conum"]] + self.df.t_work[0][0]
+            data = [self.opts["conum"]] + self.df.t_work[0][0] + [0]
             if self.newcmp:
                 self.sql.insRec("bwlcmp", data=data)
             else:

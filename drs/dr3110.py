@@ -53,8 +53,7 @@ class dr3110(object):
             (t[0], t[1], t[2], t[3], t[4])
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
-            "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.forms = [("UI",3), ("NA",7), ("NA",30), ("Na",3), ("UA",3),
             ("UA",3)] + [("SI",10)] * 12
         self.stots = [0] * 12
@@ -148,7 +147,7 @@ class dr3110(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(acs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("Debtor's Sales History for the 12 Months "\
             "Period to %s" % self.coffd)
         self.expheads.append("Options:- Ignore-Zeros: %s" % self.zer)
@@ -191,16 +190,14 @@ class dr3110(object):
             chrs -= 2
         else:
             chrs -= 1
-        pad = chrs - 35 - len(self.sysdttm)
-        self.head1 = self.head % (" " * pad + self.sysdttm)
+        self.head1 = self.head
         self.head2 = "Debtor's Sales History for the 12 Months "\
-            "Period to %s%s" % (self.coffd, "%s%s")
-        pad = chrs - len(self.head2) + 4 - 11  # %s%s and ' Page     1'
-        self.head2 = self.head2 % (" " * pad, " Page %5s")
+            "Period to %s" % self.coffd
+        pad = chrs - len(self.head2)
+        self.head2 = self.head2 + (" " * pad)
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head2)
-        self.pgnum = 0
         self.pglin = 999
         self.repno = None
         self.actno = None
@@ -298,10 +295,9 @@ class dr3110(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head1)
         self.fpdf.drawText()
-        self.fpdf.drawText(self.head2 % self.pgnum)
+        self.fpdf.drawText(self.head2)
         self.fpdf.drawText()
         self.fpdf.drawText("(%-23s %1s %-12s %1s)" % \
             ("Options:- Ignore Zeros:", self.zer, "By Salesman:", self.rep))
@@ -345,7 +341,7 @@ class dr3110(object):
         else:
             self.fpdf.drawText("%-3s %-7s %-30s %-3s %3s %3s %s" % ("Chn",
                 "Acc-Num", "Name", "Rep", "Act", "Typ", self.mthhead))
-        self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head1)))
+        self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head2)))
         self.fpdf.setFont()
         self.pglin = 10
 
@@ -379,7 +375,7 @@ class dr3110(object):
                 salesd = "%s" % a.disp
             mchart.append(a.work)
         self.mchart.append(mchart)
-        self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head1)))
+        self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.head2)))
         if self.rep == "Y":
             self.fpdf.drawText("%7s %3s %-30s %-3s %-3s %s" % ("", "",
                 desc, "", "", salesd))

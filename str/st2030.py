@@ -71,7 +71,7 @@ class st2030(object):
         self.pr = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=[], tend=((self.doPrtEnd,"y"),), txit=(self.doPrtExit,),
             view=("N","P"))
-        self.pr.mstFrame.wait_window()
+        self.opts["mf"].startLoop()
 
     def doPrtEnd(self):
         self.doPrtClose()
@@ -82,6 +82,7 @@ class st2030(object):
 
     def doPrtClose(self):
         self.pr.closeProcess()
+        self.opts["mf"].closeLoop()
 
     def dataHeader(self):
         gpm = {

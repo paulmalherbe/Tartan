@@ -54,8 +54,7 @@ class ar3040(object):
             t[1], t[2], t[3], t[4], self.__class__.__name__)
         self.sper = int(self.opts["period"][1][0] / 100)
         self.eper = int(self.opts["period"][2][0] / 100)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["Code", "Description", "Purch-Date", "Cost-Price",
             "Accum-Dep", "Opening-Bal", "Purchases", "Improvements",
             "Write-Offs", "Depreciation", "Sales", "Profit/Loss",
@@ -150,7 +149,7 @@ class ar3040(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("Asset Register Report as at %s" % self.sysdtd)
         self.expheads.append("Options: Report Period: %s Report Type: %s" % \
             (self.df.t_disp[0][0][0], self.typ))
@@ -205,15 +204,13 @@ class ar3040(object):
             chrs -= 2
         else:
             chrs -= 1
-        pad = chrs - 35 - len(self.sysdttm)
-        self.head1 = self.head % (" " * pad + self.sysdttm)
-        self.head2 = "Asset Register Report as at %s%s" % (self.sysdtd, "%s%s")
-        pad = chrs - len(self.head2) + 4 - 11  # %s%s and ' Page     1'
-        self.head2 = self.head2 % (" " * pad, " Page %5s")
+        self.head1 = self.head
+        self.head2 = "Asset Register Report as at %s" % self.sysdtd
+        pad = chrs - len(self.head2)
+        self.head2 = self.head2 + (" " * pad)
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head1)
-        self.pgnum = 0
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head2)
         self.pglin = 999
         for seq, dat in enumerate(recs):
             p.displayProgress(seq)
@@ -299,10 +296,9 @@ class ar3040(object):
     def pageHeading(self, grp):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head1)
         self.fpdf.drawText()
-        self.fpdf.drawText(self.head2 % self.pgnum)
+        self.fpdf.drawText(self.head2)
         self.fpdf.drawText()
         self.fpdf.drawText("(%s %s %s %s)" % ("Options: Report Period:",
             self.df.t_disp[0][0][0], "Report Type:", self.typ))
@@ -315,7 +311,7 @@ class ar3040(object):
             "Cost-Price ", "Accum-Dep ", "Opening-Bal ", "Purchases ",
             "Improvements ", "  Write-Offs ", "Depreciation ", "Sales ",
             " Profit/Loss ", " Closing-Bal "))
-        self.fpdf.underLine(txt=self.head1)
+        self.fpdf.underLine(txt=self.head2)
         self.fpdf.setFont()
         self.pglin = 10
 

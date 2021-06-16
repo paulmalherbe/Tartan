@@ -364,7 +364,7 @@ class cr2010(object):
             self.opts["conum"]), ("crm_acno", "=", w)], limit=1)
         if not acc:
             return "Invalid Account Number"
-        if acc[6] == "X":
+        if acc[7] == "X":
             return "Invalid Account, Redundant"
         self.cracno = w
         self.name = acc[0]
@@ -374,6 +374,7 @@ class cr2010(object):
         self.stdt = acc[4]
         self.pdis = acc[5]
         self.glac = acc[6]
+        self.popv = False
         self.df.loadEntry(frt, pag, p+1, data=self.name)
 
     def doRef1(self, frt, pag, r, c, p, i, w):
@@ -407,6 +408,13 @@ class cr2010(object):
         vrte = getVatRate(self.sql, self.opts["conum"], w, self.trndat)
         if vrte is None:
             return "Invalid V.A.T Code"
+        if vrte and not self.vatn:
+            ok = askQuestion(self.opts["mf"].window, "VAT Number",
+                "This Account Does Not Have a VAT Number.\n\nMust "\
+                "it be Populated?", default="yes")
+            if ok == "yes":
+                self.vatn = w
+                self.popv = True
         self.vatcode = w
         self.vatamt = round((self.trnamt * vrte / (vrte + 100)), 2)
         self.df.loadEntry(frt, pag, p+1, data=self.vatamt)
@@ -635,6 +643,13 @@ class cr2010(object):
         self.vatrte = getVatRate(self.sql, self.allcoy, w, self.trndat)
         if self.vatrte is None:
             return "Invalid V.A.T Code"
+        if self.vatrte and not self.vatn:
+            ok = askQuestion(self.opts["mf"].window, "VAT Number",
+                "This Account Does Not Have a VAT Number.\n\nMust "\
+                "it be Populated?", default="yes")
+            if ok == "yes":
+                self.vatn = w
+                self.popv = True
         self.vatcode = w
 
     def doAllAmt(self, frt, pag, r, c, p, i, w):
@@ -788,6 +803,11 @@ class cr2010(object):
         self.df.focusField("C", 2, self.df.col)
 
     def doCrsTrn(self):
+        # Creditors Master File
+        if self.popv:
+            self.sql.updRec("crsmst", cols=["crm_vatno"], data=["Unknown"],
+                where=[("crm_cono", "=", self.opts["conum"]),
+                ("crm_acno", "=", self.cracno)])
         # Creditors Ledger Transaction
         paydt = paymentDate(self.base, self.stdt, self.term, self.trndat)
         data = [self.opts["conum"], self.cracno, self.opts["rtn"],

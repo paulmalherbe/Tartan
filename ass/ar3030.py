@@ -51,8 +51,6 @@ class ar3030(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.sper = int(self.opts["period"][1][0] / 100)
         self.eper = int(self.opts["period"][2][0] / 100)
         return True
@@ -128,17 +126,12 @@ class ar3030(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.rordp == "Y":
-            self.head = ("%03u %-30s %22s %33s %23s %6s" % (self.opts["conum"],
-                self.opts["conam"], "", self.sysdttm, "",
-                    self.__class__.__name__))
+            self.head = "%03u %-118s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %8s %33s %9s %6s" % (self.opts["conum"],
-                self.opts["conam"], "", self.sysdttm, "",
-                    self.__class__.__name__))
+            self.head = "%03u %-91s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         oldgrp = ""
         oldcod = ""
-        self.pgnum = 0
         self.pglin = 999
         mc = self.sql.assmst_col
         for num, dat in enumerate(recs):
@@ -202,15 +195,14 @@ class ar3030(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         if self.rordp == "Y":
-            self.fpdf.drawText("%-22s %-10s %82s %5s" % \
-                ("Asset Statements as at", self.sysdtd, "Page", self.pgnum))
+            self.fpdf.drawText("%-22s %-99s" % ("Asset Statements as at",
+                self.sysdtd))
         else:
-            self.fpdf.drawText("%-22s %-10s %54s %5s" % \
-                ("Asset Statements as at", self.sysdtd, "Page", self.pgnum))
+            self.fpdf.drawText("%-22s %-71s" % ("Asset Statements as at",
+                self.sysdtd))
         self.fpdf.drawText()
         self.fpdf.drawText("(Options: From Period %7s to Period %7s)" % \
             (self.df.t_disp[0][0][0], self.df.t_disp[0][0][1]))

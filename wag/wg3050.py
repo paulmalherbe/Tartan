@@ -50,8 +50,6 @@ class wg3050(object):
         self.fromad = wagctl["ctw_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         ctc = self.sql.getRec("ctlmst", where=[("ctm_cono", "=",
             self.opts["conum"])], limit=1)
         ctw = self.sql.getRec("wagctl", where=[("ctw_cono", "=",
@@ -68,7 +66,10 @@ class wg3050(object):
         self.cname = ctc[self.sql.ctlmst_col.index("ctm_contact")]
         self.cotel = ctc[self.sql.ctlmst_col.index("ctm_tel")]
         self.coeml = ctc[self.sql.ctlmst_col.index("ctm_email")].strip()
-        self.regno = ctw[self.sql.wagctl_col.index("ctw_regno")]
+        try:
+            self.regno = int(ctw[self.sql.wagctl_col.index("ctw_regno")])
+        except:
+            return
         self.sdlno = ctw[self.sql.wagctl_col.index("ctw_sdlno")]
         self.uifno = ctw[self.sql.wagctl_col.index("ctw_uifno")]
         self.trade = ctw[self.sql.wagctl_col.index("ctw_trade")]
@@ -297,10 +298,10 @@ class wg3050(object):
             for code in (2010,2015,2020,2022,2024,2025,2026,2027,2028,2030,
                     2031, 2035,2064,2065,2066,2080,9999):
                 self.totcode += code
-        except:
+        except Exception as err:
             showError(None, "Header Record Error", "There is a Problem "\
                 "with your Company or Control Records, Please Fix the "\
-                "Problem and then Reprint")
+                "Problem and then Reprint\n\n%s" % err)
             self.error = True
 
     def doSelCoy(self):
@@ -389,7 +390,10 @@ class wg3050(object):
         for i in fname:
             self.inits = self.inits + i[0]
         self.nature = wgm[col.index("wgm_nature")]
-        self.idno = wgm[col.index("wgm_idno")]
+        try:
+            self.idno = int(wgm[col.index("wgm_idno")])
+        except:
+            self.idno = 0
         self.dob = CCD(wgm[col.index("wgm_dob")], "D1", 10)
         self.emadd = wgm[col.index("wgm_emadd")].strip()
         self.addr1 = wgm[col.index("wgm_addr1")]
@@ -736,6 +740,10 @@ Please Amend the Earnings or Deduction Codes containing It and then Try Again.""
                 bacno = int(self.bacno)
             except:
                 bacno = 0
+            try:
+                taxno = int(self.taxno.work)
+            except:
+                taxno = 0
             self.emprec = '3010,"%s",3015,"%s",3020,"%1s",3025,%04i,'\
                 '3030,"%s",3040,"%s",3050,"%s",3060,%013i,3080,%08i,'\
                 '3100,%010i,3125,"%s",3136,"%s",3147,"%s",3148,"%s",'\
@@ -744,11 +752,11 @@ Please Amend the Earnings or Deduction Codes containing It and then Try Again.""
                 '3217,"%s",3218,"X",3230,"%s",3240,%01i,3241,%s,3242,%s,'\
                 '3245,"%s",3246,%01i' % (self.irp5, self.ttyp, self.nature,
                 self.taxyr, self.sname, self.fname, self.inits, self.idno,
-                self.dob.work, int(self.taxno.work), self.emadd,
-                self.cotel[:11].strip(), self.coad1[:24].strip(),
-                self.coad2.strip(), self.coad3[:21].strip(), self.cocod,
-                self.emp, self.start.work, self.term.work, self.base,
-                self.pers, self.addr1, self.addr2, self.addr3, self.pcode,
+                self.dob.work, taxno, self.emadd, self.cotel[:11].strip(),
+                self.coad1[:24].strip(), self.coad2.strip(),
+                self.coad3[:21].strip(), self.cocod, self.emp,
+                self.start.work, self.term.work, self.base, self.pers,
+                self.addr1, self.addr2, self.addr3, self.pcode,
                 self.direct, btype, bacno, self.branch, self.payee,
                 self.relate)
             for code in (3010,3015,3020,3025,3030,3040,3050,3060,3080,
@@ -757,10 +765,10 @@ Please Amend the Earnings or Deduction Codes containing It and then Try Again.""
                     3242,3245,3246):
                 self.totcode += code
             self.totrecs += 1
-        except:
+        except Exception as err:
             showError(None, "Header Record Error", "There is a Problem "\
                 "with Employee %s's Record. Please Fix the Problem and "\
-                "then Reprint" % self.emp)
+                "then Reprint\n\n%s" % (self.emp, err))
             self.error = True
 
     def printGross(self):

@@ -76,8 +76,6 @@ class ml3020(object):
             t[1], t[2], t[3], t[4], self.__class__.__name__)
         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
             "Member's Ledger Audit Trail (%s)" % self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
         self.colsh = ["TP", "BatchNo", "Mem-No", "Name", "Reference",
             "Date", "Debits", "Credits", "Tax-Amount", "T", "Remarks"]
         self.forms = [("UI", 2, False, False, True), ("Na", 7),
@@ -228,7 +226,8 @@ class ml3020(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = ["%03u %-30s %s" % (self.opts["conum"],
+            self.opts["conam"], self.sysdttm)]
         self.expheads.append("Member's Ledger Audit Trail for Period "\
             "%s to %s" % (self.sperd, self.eperd))
         self.expcolsh = [self.colsh]
@@ -257,11 +256,9 @@ class ml3020(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.totsonly == "Y":
-            self.head = ("%03u %-30s %49s %6s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-87s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %91s %10s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-133s" % (self.opts["conum"], self.opts["conam"])
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
@@ -274,7 +271,6 @@ class ml3020(object):
         self.tcrs = 0
         self.tvat = 0
         self.trtp = 0
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -355,17 +351,11 @@ class ml3020(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        if self.totsonly == "Y":
-            self.fpdf.drawText("%-38s %-10s %-2s %-10s %21s %5s" % \
-                ("Member's Ledger Audit Trail for Period",
-                self.sperd, "to", self.eperd, "Page", self.pgnum))
-        else:
-            self.fpdf.drawText("%-38s %-10s %-2s %-10s %67s %5s" % \
-                ("Member's Ledger Audit Trail for Period",
-                self.sperd, "to", self.eperd, "Page", self.pgnum))
+        self.fpdf.drawText("%-38s %-7s %-2s %-7s" %
+            ("Member's Ledger Audit Trail for Period",
+            self.sperd, "to", self.eperd))
         self.fpdf.drawText()
         self.pglin = 4
         if self.totind == "N":
@@ -455,7 +445,7 @@ class ml3020(object):
     def grandTotal(self):
         tot = [0, 0, 0, 0, 0]
         if self.repprt[2] == "export":
-            for x, t in enumerate(mltrtp):
+            for x in range(len(mltrtp)):
                 tot[0] = float(ASD(tot[0]) + ASD(self.gdr[x]))
                 tot[1] = float(ASD(tot[1]) + ASD(self.gcr[x]))
                 tot[2] = float(ASD(tot[2]) + ASD(self.gvt[x]))
@@ -466,7 +456,7 @@ class ml3020(object):
             return
         self.totind = "Y"
         self.pageHeading()
-        for x in range(0, len(mltrtp)):
+        for x, t in enumerate(mltrtp):
             qt = CCD(self.gqt[x], "SI", 8)
             dr = CCD(self.gdr[x], "SD", 13.2)
             cr = CCD(self.gcr[x], "SD", 13.2)

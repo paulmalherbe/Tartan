@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import GetCtl, RepPrt, Sql, TartanDialog
 from tartanFunctions import showError
 
@@ -49,10 +48,6 @@ class drc220(object):
                 "Chain Stores are Not Enabled")
             return
         self.fromad = drsctl["ctd_emadd"]
-        t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):

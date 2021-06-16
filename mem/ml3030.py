@@ -50,8 +50,7 @@ class ml3030(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["Mem-No", "Member", "Cr-Balance", "Tot-Balance",
             "Current", "30-Days", "60-Days", "90-Days", "Over-90-Days"]
         self.forms = [("UI", 6), ("NA", 30)] + [("SD", 13.2)] * 7
@@ -257,7 +256,7 @@ class ml3030(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("Members Age Analysis up to %s" %
             self.opts["period"])
         self.expheads.append(self.getOptions())
@@ -290,17 +289,14 @@ class ml3030(object):
             chrs -= 2
         else:
             chrs -= 1
-        pad = chrs - 35 - len(self.sysdttm)
-        self.head1 = self.head % (" " * pad + self.sysdttm)
-        self.head2 = "Members Age Analysis up to %s%s" % (self.opts["period"],
-            "%s%s")
-        pad = chrs - len(self.head2) + 4 - 11  # %s%s and ' Page     1'
-        self.head2 = self.head2 % (" " * pad, " Page %5s")
+        self.head1 = self.head
+        self.head2 = "Members Age Analysis up to %s" % self.opts["period"]
+        pad = chrs - len(self.head2)
+        self.head2 = self.head2 + (" " * pad)
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head2)
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -365,10 +361,9 @@ class ml3030(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head1)
         self.fpdf.drawText()
-        self.fpdf.drawText(self.head2 % self.pgnum)
+        self.fpdf.drawText(self.head2)
         self.fpdf.drawText()
         self.fpdf.drawText(self.getOptions())
         self.fpdf.drawText()
@@ -376,7 +371,7 @@ class ml3030(object):
             "%-13s" % ("Mem-No", "Member", "  Cr-Balance", " Tot-Balance",
             "     Current", "     30-Days", "     60-Days", "     90-Days",
             "Over-90-Days"))
-        self.fpdf.underLine(txt=self.head1)
+        self.fpdf.underLine(txt=self.head2)
         self.fpdf.setFont()
         self.pglin = 8
 

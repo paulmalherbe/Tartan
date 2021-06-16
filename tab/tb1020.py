@@ -72,6 +72,7 @@ class tb1020(object):
                 self.dbm.commitDbase()
             self.doFinal()
             if self.dbm.dbase == "SQLite":
+                self.dbm.commitDbase()
                 self.dbm.cu.execute("PRAGMA JOURNAL_MODE=DELETE")
                 self.dbm.cu.execute("PRAGMA SYNCHRONOUS=FULL")
 
@@ -141,8 +142,6 @@ class tb1020(object):
             "memsta": ["mls_date", "mls_seq"],
             "memtrn": ["mlt_capdt", "mlt_seq"],
             "memtrs": ["mst_trdt", "mst_seq"],
-            "postrn": ["pst_capdt", "pst_seq"],
-            "posrcp": ["prp_seq"],
             "rcaowt": ["rot_capdt", "rot_seq"],
             "rcatnt": ["rtu_capdt", "rtu_seq"],
             "rtltrn": ["rtt_capdt", "rtt_seq"],
@@ -157,6 +156,7 @@ class tb1020(object):
             self.lmt = 5000
         elif self.dbm.dbase == "SQLite":
             self.lmt = 500
+            self.dbm.commitDbase()
             self.dbm.cu.execute("PRAGMA JOURNAL_MODE=OFF")
             self.dbm.cu.execute("PRAGMA SYNCHRONOUS=OFF")
         else:
@@ -306,7 +306,7 @@ class tb1020(object):
     def doNewTable(self):
         sql = Sql(self.dbm, self.table, error=False,
             prog=self.__class__.__name__)
-        if sql.error or self.table == "ctllog":
+        if sql.error:
             data = None
         else:
             # Read Existing Table
@@ -496,11 +496,18 @@ class tb1020(object):
             self.opts["mf"].updateStatus("")
             if self.opts["bar"]:
                 pb.closeProgress()
-        # Fix Stores Markup
+        # Fix ctlmst and Stores Markup
         tabs = ["ctlmst", "strctl", "strgrp", "strgmu", "strcmu"]
         sql = Sql(self.dbm, tabs)
         coys = sql.getRec("ctlmst", cols=["ctm_cono"])
         for coy in coys:
+            mods = sql.getRec("ctlmst", cols=["ctm_modules"],
+                where=[("ctm_cono", "=", coy[0])], limit=1)
+            newm = ""
+            for x in range(0, len(mods[0]), 2):
+                if mods[0][x:x+2] != "PS":
+                    newm += mods[0][x:x+2]
+            sql.updRec("ctlmst", cols=["ctm_modules"], data=[newm])
             sctl = sql.getRec("strctl", cols=["cts_plevs", "cts_automu"],
                 where=[("cts_cono", "=", coy[0])], limit=1)
             if sctl:
@@ -663,29 +670,30 @@ class tb1020(object):
             self.opts["mf"].updateStatus("Creating New Indexes for %s" % table)
         for key in keys:
             nam = "%s_key%s" % (table, str(key[2]))
-            if not self.doCheckIndex(table, nam):
-                idx = ""
-                skip = False
-                for k in key[4:]:
-                    if k:
-                        if self.dbm.dbase == "SQLite":
-                            if self.checkBlob(table, k):
-                                skip = True
-                                break
-                        if idx:
-                            idx = "%s,%s" % (idx, k)
-                        else:
-                            idx = k
-                if skip:
-                    continue
+            idx = ""
+            skip = False
+            for k in key[4:]:
+                if k:
+                    if self.dbm.dbase == "SQLite":
+                        if self.checkBlob(table, k):
+                            skip = True
+                            break
+                    if idx:
+                        idx = "%s,%s" % (idx, k)
+                    else:
+                        idx = k
+            if skip:
+                continue
+            chk = self.doCheckIndex(table, nam)
+            if chk != idx:
+                if chk:
+                    self.sql.sqlRec("Drop index %s" % nam)
                 if key[3] == "N":
                     sql = "Create index"
                 else:
                     sql = "Create unique index"
-                try:
-                    self.sql.sqlRec("%s %s on %s (%s)" % (sql, nam, table, idx))
-                except:
-                    pass
+                sql = "%s %s on %s (%s)" % (sql, nam, table, idx)
+                self.sql.sqlRec(sql)
 
     def doDropIndex(self, tab):
         old = self.sql.getRec("ftable", where=[("ft_tabl", "=", tab)],
@@ -695,14 +703,16 @@ class tb1020(object):
             if self.doCheckIndex(tab, nam):
                 self.sql.sqlRec("Drop index %s" % nam)
 
-    def doCheckIndex(self, table, index):
+    def doCheckIndex(self, table, name):
         if self.dbm.dbase == "PgSQL":
-            sel = "Select * from pg_indexes where schemaname='public' "\
-                "and tablename='%s' and indexname='%s'" % (table, index)
+            sel = "Select indexdef from pg_indexes where schemaname='public' "\
+                "and tablename='%s' and indexname='%s'" % (table, name)
         else:
-            sel = "Select * from sqlite_master where type='index' "\
-                "and tbl_name='%s' and name='%s'" % (table, index)
-        return self.sql.sqlRec(sel, limit=1)
+            sel = "Select sql from sqlite_master where type='index' "\
+                "and tbl_name='%s' and name='%s'" % (table, name)
+        dat = self.sql.sqlRec(sel, limit=1)
+        if dat:
+            return dat[0].split("(")[1].split(")")[0].replace(" ", "")
 
     def checkBlob(self, table, key):
         cols = tabdic[table]["fld"]

@@ -19,11 +19,12 @@ General Ledger
 ..............
 If you are going to use the `General Ledger` you must perform the following procedures in order:
 
-+ Create the chart of accounts using `Masterfile Records`.
-+ Create control accounts using `Control Accounts`. Select the `Populate` button to automatically populate a company's set of accounts.
-+ Capture the account's opening balances using `Opening Balances`.
-+ Print a trial balance using `Trial Balance` and ensure that your accounts balance. If not, recapture the incorrect ones.
-+ Capture the account's budgets using `Budgets` if required.
++ Create the chart of accounts using `File Maintenance -> Masterfile Records`.
+    + Select the `Populate` button to automatically populate a company's set of accounts.
++ Create control accounts using `File Maintenance -> Control Accounts`.
++ Capture account's opening balances using `Data Caspture -> Opening Balances`.
++ Print a trial balance using `Reporting -> Trial Balance` and ensure that your accounts balance. If not, recapture the incorrect ones.
++ Capture budgets using `Data Capture -> Budgets`, if required.
 
 The General Ledger system is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
 
@@ -31,10 +32,10 @@ Asset's Ledger
 ..............
 If you are going to use the `Asset's Register` you must at least perform the following procedures in order:
 
-+ Create a control record using `Control Record`.
-+ Create depreciation codes using `Depreciation Codes`.
-+ Create group records using `Group Records`.
-+ Create masterfile records and take on opening balances for existing assets using `Opening Balances`.
++ Create a control record using `File Maintenance -> Control Record`.
++ Create depreciation codes using `File Maintenance -> Depreciation Codes`.
++ Create group records using `File Maintenance -> Group Records`.
++ Create masterfile records and take on opening balances for existing assets using `Data Capture -> Opening Balances`.
 
 The Asset's Register system is at this stage fully functional and you can capture payments, receipts and journal entries. Please note that new assets are captured via the data capture routines i.e. Payments and/or Journal Entries.
 
@@ -42,10 +43,10 @@ Bookings Manager
 ................
 If you are going to use the `Booking's Manager` you must at least perform the following procedures in order:
 
-+ Create a control record using `Control Record`.
-+ Create unit records using `Unit Records`.
-+ Create rate records using `Rate Records`.
-+ Create booking letters using `Booking Letters`.
++ Create a control record using `File Maintenance -> Control Record`.
++ Create unit records using `File Maintenance -> Unit Records`.
++ Create rate records using `File Maintenance -> Rate Records`.
++ Create booking letters using `File Maintenance -> Booking Letters`.
 
 The Booking's Manager system is at this stage fully functional and you can capture bookings and booking's movements.
 
@@ -85,11 +86,11 @@ Creditor's Ledger
 .................
 If you are going to use the `Creditor's Ledger` you must perform the following procedures in order:
 
-+ Create a control record for the company using `Control Record`.
++ Create a control record for the company using `File Maintenance -> Control Record`.
 + If you elected to integrate with the General Ledger you must create the `crs_ctl` and `dis_rec` control accounts as per above.
-+ Create Creditor's accounts using `Masterfile Records`.
-+ Capture the account's opening balances using `Journals` in `Data Capture`.
-+ Print an aged analysis using `Age Analysis` and ensure that your totals balance. If not, recapture the incorrect ones.
++ Create Creditor's accounts using `File Maintenance -> Masterfile Records`.
++ Capture the account's opening balances using `Data Capture -> Journals`.
++ Print an aged analysis using `Reporting -> Age Analysis` and ensure that your totals balance. If not, recapture the incorrect ones.
 
 Please remember that if you are integrating the Creditors and General Ledger systems, the control account must balance with the age analysis.
 
@@ -101,29 +102,39 @@ Debtor's Ledger
 ...............
 If you are going to use the `Debtor's Ledger` you must perform the following procedures in order:
 
-+ Create a control record using `Control Record`.
++ Create a control record using `File Maintenance -> Control Record`.
 + If you elected to integrate with the General Ledger you must create the `drs_ctl` and `dis_all` controls as per above.
-+ If you are going to make use of chain stores, i.e. the facility to have separate accounts for branches within a chain with a consolidated statement. You would have to create the necessary chain store records using `Chain Stores`.
-+ If you are going to group your accounts by business activity, create the necessary records using `Business Activities`.
-+ If you are going to group your accounts by business types, create the necessary records using `Business Types`.
-+ If you are going to group your accounts by area, create the necessary records using `Areas`.
++ If you are going to make use of chain stores, i.e. the facility to have separate accounts for branches within a chain with a consolidated statement. You would have to create the necessary chain store records using `File Maintenance -> Chain Stores`.
++ If you are going to group your accounts by business activity, create the necessary records using `File Maintenance -> Business Activities`.
++ If you are going to group your accounts by business types, create the necessary records using `File Maintenance -> Business Types`.
++ If you are going to group your accounts by area, create the necessary records using `File Maintenance -> Areas`.
 + If you are going to group your accounts by salesman, create the necessary records using `Salesmen`.
-+ Create Debtor's accounts using `Masterfile Records`.
-+ Capture the account's opening balances using `Journals` in `Data Capture`.
-+ Print an aged analysis using `Age Analysis` and ensure that your totals balance. If not, recapture the incorrect ones.
++ Create Debtor's accounts using `File Maintenance -> Masterfile Records`.
++ Capture the account's opening balances using `Data Capture -> Journals`.
++ Print an aged analysis using `Reporting -> Age Analysis` and ensure that your totals balance. If not, recapture the incorrect ones.
 
 Please remember that if you are integrating the Debtors and General Ledger systems, the control account must balance with the age analysis.
 
 The Debtor's Ledger system is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
 
+Loan's Ledger
+.............
+If you are going to use the `Loan's Ledger` you must at least perform the following procedures in order:
+
++ Create a control record using `File Maintenance -> Control Record`.
++ If you elected to integrate with the General Ledger you must create the `lon_ctl` controls as per above.
++ Create existing or new loans using `Data Capture` and just entering on the `Acc-Num` iand `LN` fields.
+
+The Loan's Ledger system is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
+
 Member's Ledger
 ...............
 If you are going to use the `Member's Ledger` you must at least perform the following procedures in order:
 
-+ Create a control record using `Control Record`.
++ Create a control record using `File Maintenance -> Control Record`.
 + If you elected to integrate with the General Ledger you must create the `mem_ctl` and `mem_pen` controls as per above.
-+ Create category records using `Category Records`.
-+ Create contact records using `Contact Records`.
++ Create category records using `File Maintenance -> Category Records`.
++ Create contact records using `File Maintenance -> Contact Records`.
 
 The Member's Ledger system is at this stage fully functional and you can add members, edit member details, capture postings, produce basic reports and do interrogations etc.
 
@@ -131,9 +142,9 @@ Rental's Ledger - Standard
 ..........................
 If you are going to use the `Rental's Ledger (Standard)` you must at least perform the following procedures in order:
 
-+ Create a control record using `Control Record`.
-+ Create premises records using `Premises Records`.
-+ Create masterfile records using `Masterfile Records`.
++ Create a control record using `File Maintenance -> Control Record`.
++ Create premises records using `File Maintenance -> Premises Records`.
++ Create masterfile records using `File Maintenance -> Masterfile Records`.
 
 The Rental's Ledger (Standard) system is at this stage fully functional and you can capture payments, receipts and journal entries.
 
@@ -141,10 +152,10 @@ Rental's Ledger - Extended
 ..........................
 If you are going to use the `Rental's Ledger (Extended)` you must at least perform the following procedures in order:
 
-+ Create a control record using `Control Record`.
-+ Create owners records using `Owners Records`.
-+ Create premises records using `Premises Records`.
-+ Create tenants records using `Tenants Records`.
++ Create a control record using `File Maintenance -> Control Record`.
++ Create owners records using `File Maintenance -> Owners Records`.
++ Create premises records using `File Maintenance -> Premises Records`.
++ Create tenants records using `File Maintenance -> Tenants Records`.
 
 The Rental's Ledger (Standard) system is at this stage fully functional and you can capture payments, receipts and journal entries.
 
@@ -152,15 +163,15 @@ Store's Ledger
 ..............
 If you are going to use the `Store's Ledger` you must perform the following procedures in order:
 
-+ Create a control record for the company using `Control Record`.
++ Create a control record for the company using `File Maintenance -> Control Record`.
 + If you elected to integrate with the General Ledger you must create the `stk_soh` and `stk_susp` controls as per above.
-+ Create units of issue records using `Units of Issue`.
-+ Create product groups using `Product Groups`.
-+ Create stock records for the company by selecting `Masterfile Records`.
-+ Enter the current stock on hand for the company by selecting `Stock Take Returns`.
-+ Print a variance report using `Stock Take Variance Report` and ensure that all the quantities have been entered correctly. Correct any errors by redoing the previous step for the incorrect ones only.
-+ Update the stock items using `Stock Take Merge`.
-+ Print a stock on hand report using `Stock on Hand`.
++ Create units of issue records using `File Maintenance -> Units of Issue`.
++ Create product groups using `File Maintenance -> Product Groups`.
++ Create stock records for the company by selecting `File Maintenance -> Masterfile Records`.
++ Enter the current stock on hand for the company by selecting `Stock Take -> Returns`.
++ Print a variance report using `Stock Take -> Variance Report` and ensure that all the quantities have been entered correctly. Correct any errors by redoing the previous step for the incorrect ones only.
++ Update the stock items using `Stock Take -> Merge`.
++ Print a stock on hand report using `Reporting -> Stock on Hand`.
 
 Please remember that if you are integrating the Stores and General Ledger systems, the control account must balance with the stock on hand report.
 
@@ -172,7 +183,7 @@ If you are going to use `Sales Invoicing` you must perform the following procedu
 
 + Setup the Debtor's System as in 8) above ensuring that you create at least one salesman's record.
 + Setup the Store's System as in 9) above.
-+ Create a control record using `Control Record`.
++ Create a control record using `File Maintenance -> Control Record`.
 
 The Sale's Invoicing system is at this stage fully functional and you can capture invoices, credit notes, sales orders and quotations.
 
@@ -180,12 +191,12 @@ Salaries and Wages
 ..................
 If you are going to use `Salaries and Wages` you must at least perform the following procedures in order:
 
-+ Create a control record using `Control Record`.
++ Create a control record using `File Maintenance -> Control Record`.
 + If you elected to integrate with the General Ledger you must create the `wag_ctl`, `wag_slc` and `wag_sli` controls as per above.
-+ Create at least one branch record using `Branch Records`.
-+ Create at least one department record using `Department Records`.
-+ Create all necessary earnings and deduction records using `Earning and Deduction Codes`.
-+ Create employee records using `Employee Masterfile`.
++ Create at least one branch record using `File Maintenance -> Branch Records`.
++ Create at least one department record using `File Maintenance -> Department Records`.
++ Create all necessary earnings and deduction records using `File Maintenance -> Earning and Deduction Codes`.
++ Create employee records using `File Maintenance -> Employee Masterfile`.
 
 The Salaries and Wages system is at this stage fully functional and you can capture clock cards and produce payslips etc.
 

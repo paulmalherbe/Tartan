@@ -77,7 +77,7 @@ class bc3110(object):
         recs = self.sql.getRec(tables=["bwlent", "bwltab"], cols=col,
             where=whr, order="btb_surname")
         if recs:
-            fpdf = MyFpdf(name=self.__class__.__name__, head=90)
+            fpdf = MyFpdf(name=self.__class__.__name__, head=90, foot=False)
             for num, rec in enumerate(recs):
                 if not num % 5:
                     fpdf.add_page()

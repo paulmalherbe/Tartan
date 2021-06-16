@@ -3,7 +3,7 @@
 ==================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   5.13
+:Version:   6.0
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -36,7 +36,7 @@ In 2011, version 4, I dropped support for windows 9x and also replaced reportlab
 
 In 2015, version 5, I replaced PyGtk with Tkinter and ttk.
 
-In 2020, version 5.13, I dropped support for MySQL and Firebird databases.
+In 2020, version 6.0, I dropped support for MySQL and Firebird databases.
 
 .. _Python: http://www.python.org
 .. _Tkinter: http://www.python.org/topics/tkinter
@@ -47,39 +47,40 @@ In 2020, version 5.13, I dropped support for MySQL and Firebird databases.
 
 Installation Procedure
 ----------------------
-Linux and Source
-................
-Ensure that the following dependencies are installed on your system:
+Source
+.......
+Ensure that python is installed on your system:
 
-+ python >= 2.7.5 and < 3.0.0
-
-Windows also requires pywin32 >= build 216 downloaded from:
-
-    https://sourceforge.net/projects/pywin32/files/pywin32/
++ python >= 3.5
 
 The following dependencies must be installed using pip:
 
 + fpdf                  # Used to create all documents
 + pillow                # Used by fpdf and imaging
-+ pymupdf               # Used by the built-in PDF Viewer and Bulk Mail
 + pywin32               # Windows only
+
+The following dependancy should also be installed using pip:
+
++ pymupdf               # Used by the Tartan PDF Viewer/Printer and Bulk Mail
 
 Additionally, the following dependencies should also be installed using pip:
 
-+ markdown              # Bulk Mail - enable markdown format
-+ odfpy                 # ODS File Reader - file imports
++ markdown              # Bulk Mail - Enable Markdown Format
 + ofxtools              # OFX File Reader - bank statements
-+ progress              # Curses progress bar
++ openpyxl              # XLSX File Reader and Writer
++ progress              # Curses Progress Bar
 + pyaes                 # Password Manager - pm1010
-+ pycrypto              # Password Manager - pm1010
++ pycryptodome          # Password Manager - pm1010
++ pyexcel               # XLS File Reader
++ pyexcel-ods           # ODS File Reader
 + pygal                 # SVG Charts
-+ pysmb                 # Netbios file names
-+ python-escpos         # POS esc commands
-+ requests              # Web scraping
-+ send2trash            # Move files to recycle bin
++ pysmb                 # Netbios File Names
++ python-escpos         # POS Escape Commands
++ requests              # Web Scraping
++ send2trash            # Move Files to Recycle Bin
++ svglib                # SVG to PDF File Converter
++ tkcolorpicker         # Alternative to colorchooser for Tkinter
 + tkinterhtml           # HTML Viewer
-+ xlrd                  # Excel Read - file imports
-+ xlwt                  # Excel Write - file exports
 
 And, depending on your database needs:
 
@@ -87,11 +88,11 @@ And, depending on your database needs:
 
 Then download the following file from ftp://ftp.tartan.co.za
 
-+ Tartan_5.x.x.tar.gz
++ Tartan_5.x.tar.gz
 
-Extract Tartan_5.x.x.tar.gz into a directory of your choice as follows:
+Extract Tartan_5.x.tar.gz into a directory of your choice as follows:
 
-+ cd your.directory && tar -xvzf Tartan_5.x.x.tar.gz
++ cd your.directory && tar -xvzf Tartan_5.x.tar.gz
 
 Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
 
@@ -99,9 +100,9 @@ Windows Binary
 ..............
 Download the following file from ftp://ftp.tartan.co.za or if you are in possession of a CD this is not necessary.
 
-+ Tartan_5.x.x.exe
++ Tartan_5.x.exe
 
-Install Tartan_5.x.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
+Install Tartan_5.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
 
 Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
 
@@ -194,6 +195,22 @@ Whenever a report is being produced you will have the opportunity of deciding on
 + **E-Mail Address** - If available, enter the email address, if more than one, comma separate them.
 + **E-Mail Message** - If available, enter the email message as well as any additional attachments, if any.
 
+Tartan PDF Viewer
+.................
+If no external pdf viewer is entered in the preferences and pymupdf is installed the Tartan PDF viewer will be used.
+
++ **Goto** - This button will alow you to enter a page number.
++ **Zoom** - This button, depending on whether the left or right mouse button is pressed, will increase or decrease the font and page size.
++ **Menu** - This button wil display a menu with the following options:
+    + **Email** - This button, if available, will enable the emailing of the document:
+        + **From Address** - The email address of the sender.
+        + **To Address** - A comma separated list of receiving email addresses.
+    + **Print** - This button wil open a print dialog screen.
+    + **Save as..** - This button wil enable the saving of the document with a different/same name and/or a different directory.
+    + **Send to..** - This button will open the document using the system default pdf viewer e.g. Acrobat.
+    + **Help** - This button will display the various key bindings.
+    + **Exit** - This button will close the viewer. Escape can also be used.
+
 Error Messages
 ..............
 Should an error message occur and there is a file named *errors.txt* in the `Work Path` as created in `Preferences`_. Please email the file to errors@tartan.co.za after which you may delete it.
@@ -250,7 +267,7 @@ Use this routine to create or amend user's records, permissions etc.
 
 .. csv-table::
   :header: "Coy", "SS", "Prog", "Password", "Meaning"
-  :widths: 5, 5, 6, 10, 50
+  :widths: 5, 5, 6, 10, 55
 
   "0", "gl", "    ", "    ", "All G/L modules for all companies would be denied."
   "0", "gl", "2032", "    ", "G/L payments data capture for all companies would be denied."
@@ -302,10 +319,8 @@ Select this routine to export data to an external database in a chosen directory
 + **Company(s)** - Select *Single* for a single company or *Multi* for multiple companies.
 + **Company Number** - Enter the single company number to export.
 
-::
-
-    If the selected company or companies is/are linked to other companies you
-    will be asked if all linked companies should be exported.
+.. NOTE::
+    If the selected company or companies is/are linked to other companies you will be asked if all linked companies should be exported.
 
 + **Directory** - Enter the directory where the exported file must be placed.
 + **Database Name** - Enter the name of the exported file or accept the default.
@@ -360,9 +375,9 @@ Use this routine to configure Tartan, however, depending on your security level,
     + **Backup Path** - This is the path where backups of the database will be stored.
     + **Work Path** - This is the path of the work directory. All temporary files will be created in this directory.
     + **Upgrade Path** - This is the path where any upgrades will be stored.
-    + **PDF Viewer** - This is the full path of an External program used to display pdf files. The default is `Blank` for the built-in pdf viewer. External programme for LINUX is **evince** and for Windows **SumatraPDF** or  **Foxit Reader**.
-    + **Print Command** - This is the full path of the print program used to print pdf files. The LINUX default is **lpr** and Windows is **SumatraPDF**. Another recommended program for windows is **Foxit Reader**. If necessary use %p% for the printer name and %f% for the file name e.g. the print command for Sumatra could be `the-path-to\SumatraPDF.exe -print-to %p% %f%`.
-    + **Spreadsheet Reader** - This is the full path of the program used to read csv and xls file formats.
+    + **PDF Viewer** - This is the full path of an External program used to display pdf files. The default is `Blank` for the built-in pdf viewer. Suggested programme for LINUX is **evince** and for Windows **SumatraPDF** or **Foxit Reader**.
+    + **Print Command** - This is the full path of an External print program used to print pdf files. The default is `Blank` for the built-in pdf printer. Suggested LINUX default is **lpr** and Windows is **SumatraPDF**. Another recommended program for windows is **Foxit Reader**. If necessary use %p% for the printer name and %f% for the file name e.g. the print command for Sumatra could be `the-path-to\SumatraPDF.exe -print-to %p% %f%`.
+    + **Spreadsheet Reader** - This is the full path of the program used to read xlsx, xls and csv files.
     + **Screen Geometry** - This defaults to the suggested geometry for your screen. Entering a zero will achieve the same result.
     + **Screen Placement** - Where the Tartan Window must be placed on the monitor i.e. Left, Centre or Right.
     + **Show Tartan Image** - Whether to display the Tartan image on the Main Menu screen.
@@ -381,7 +396,7 @@ Use this routine to configure Tartan, however, depending on your security level,
     + **Default Font**
         + **Name** - This is the font family to be used in all other cases.
         + **Size** - This is font size to be used in all other cases.
-    + **Theme** - The theme to be used. The default theme is `clam`.
+    + **Theme** - The theme to be used. The default theme is `clam`.  To make more themes available download themes of your choice and install them in a folder named `thm` which must be in the Tartan root folder i.e. where the Tartan file ms0000.py or ms0000.exe resides.
     + **Colour Scheme** - The colour scheme to be used. The default scheme is `Red`.
     + **Normal**
         + **FG** - The normal label and button foreground colour.

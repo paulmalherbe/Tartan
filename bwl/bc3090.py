@@ -96,9 +96,15 @@ class bc3090(object):
         if self.cfmat in ("D", "K"):
             return "Knockout Competitions has No Summary"
         if self.cfmat == "R":
-            self.games = self.sql.getRec("bwlent", cols=["count(*)"],
-                where=[("bce_cono", "=", self.opts["conum"]), ("bce_ccod", "=",
-                self.ccod)], limit=1)[0] - 1
+            games = self.sql.getRec("bwlgme", cols=["count(*)"],
+                where=[("bcg_cono", "=", self.opts["conum"]),
+                ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", 1)],
+                group="bcg_group")
+            self.games = 0
+            for gme in games:
+                if gme[0] > self.games:
+                    self.games = gme[0]
+            self.games -= 1
         else:
             self.games = bwltyp[self.sql.bwltyp_col.index("bct_games")]
         self.grgame = bwltyp[self.sql.bwltyp_col.index("bct_grgame")]
@@ -109,7 +115,6 @@ class bc3090(object):
     def doEnd(self):
         if "args" not in self.opts:
             self.df.closeProcess()
-        groups = ["None", "A", "B", "C", "D", "E"]
         lst = self.sql.getRec("bwlgme", cols=["bcg_game",
             "sum(bcg_points)"], where=[("bcg_cono", "=", self.opts["conum"]),
             ("bcg_ccod", "=", self.ccod)], group="bcg_game", order="bcg_game")
@@ -190,7 +195,10 @@ class bc3090(object):
                         dup[1] = "X"
                     rks.append(rnk)
             dup.append("%s" % eds)
-            dat.insert(2, groups[grp])
+            if grp:
+                dat.insert(2, chr(64 + grp))
+            else:
+                dat.insert(2, "")
             dat.append("%1s%1s%1s" % tuple(dup))
             data.append(dat)
         head = [
@@ -198,8 +206,11 @@ class bc3090(object):
             ("Draw Summary Sheet", 16, "C")]
         cols = [
             ["a", "UI",  6, "Skp",  "y"],
-            ["b", "NA", 29, "Name", "y"],
-            ["c", "UA",  1, "G",    "y"]]
+            ["b", "NA", 29, "Name", "y"]]
+        if self.cfmat == "R":
+            cols.append(["c", "UA",  1, "S",    "y"])
+        else:
+            cols.append(["c", "UA",  1, "G",    "y"])
         for x in range(self.games):
             cols.extend([
                 ["d%s" % x, "UI", 6, "Opp", "y"],

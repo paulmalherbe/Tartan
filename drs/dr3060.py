@@ -193,11 +193,8 @@ class dr3060(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %141s %6s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-179s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -263,12 +260,10 @@ class dr3060(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-32s %-10s %133s %5s" % \
-            ("Debtors Ledger Master List as at", self.sysdtd,
-                "Page", self.pgnum))
+        self.fpdf.drawText("%-32s %-150s" % \
+            ("Debtors Ledger Master List as at", self.sysdtd))
         self.fpdf.drawText()
         self.fpdf.drawText("(%-15s%1s)" % ("Options: Sort-",
             self.df.t_disp[0][0][0]))
@@ -281,7 +276,7 @@ class dr3060(object):
             det = "Orders Contact Details"
         self.fpdf.drawText("%-3s %-7s %-30s %-30s %-4s %-12s %-12s %-40s "\
             "%-7s %-3s %-3s %-3s %1s %-3s %-3s %-7s" % ("Chn", "Acc-Num",
-            "Name", "Address", "Code", "Tel-Number", "Fax-Number", "%s" % det,
+            "Name", "Address", "Code", "Tel-Number", "Fax-Number", det,
             "Deliver", "Rep", "Act", "Typ", "P", "Rft","Rjt","C-Limit"))
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()

@@ -43,10 +43,7 @@ class tb3010(object):
             return
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
-        self.head = ("%-24s %64s %5s %6s" % \
-            ("Tartan Systems", self.sysdttm, "", self.__class__.__name__))
+        self.head = "Tartan Systems"
         return True
 
     def mainProcess(self):
@@ -101,7 +98,7 @@ class tb3010(object):
                 "ft_desc"], where=whr, order="ft_tabl")
         if not tabs:
             return
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=80)
         self.pgnum = 0
         p = ProgressBar(self.opts["mf"].body, mxs=len(tabs), esc=True)
         for num, tab in enumerate(tabs):

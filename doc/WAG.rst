@@ -46,16 +46,14 @@ Use this routine to create and amend the earnings and deduction records.
 + **Employee Portion** - Amount if the portion is a monetary value or Rate if the portion is a rate.
     + **Base** - If you have indicated that the portion is a rate, you must now indicate the code of the base of the calculation, as follows:
 
-        + **1** - X \* Normal Rate of Pay * Value
-        + **2** - Normal Pay * Value
-        + **3** - Normal Pay * Value / 100
-        + **4** - X \* Daily Rate of Pay * Value
-        + **5** - X \* Hourly Rate of Pay * Value
-        + **6** - U.I.F. Pay * Value
+        + **1** - X `times` Normal Rate of Pay `times` Value
+        + **2** - Normal Pay `times` Value
+        + **3** - Normal Pay `times` Value `divided` by 100
+        + **4** - X `times` Daily Rate of Pay `times` Value
+        + **5** - X `times` Hourly Rate of Pay `times` Value
+        + **6** - U.I.F. Pay `times` Value
         + **Where:**
             + **X** refers to a data captured period e.g. hours or days.
-            + **\*** indicates multiplication.
-            + **\/** indicates division
             + **Value** refers to the 'Value' field below.
         + **Value** - The actual amount or rate to be used in the calculations.
         + **Limit** - The maximum amount allowed e.g. U.I.F. - 116.62.

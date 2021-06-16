@@ -117,8 +117,10 @@ class gl1010(object):
                 "Generate a Chart of Accounts with Accompanying Control "\
                 "Records and Financial Statement Report. This Only Applies "\
                 "to Unpopulated (NEW) Ledgers."],
-            ("Accept",None,self.doAccept,0,("T",0,2),(("T",0,0),("T",0,1))),
-            ("Cancel",None,self.doCancel,0,("T",0,2),(("T",0,0),("T",0,1))),
+            ("Accept",None,self.doAccept,0,(("T",0,2),("T",0,5)),
+                (("T",0,0),("T",0,1))),
+            ("Cancel",None,self.doCancel,0,(("T",0,2),("T",0,5)),
+                (("T",0,0),("T",0,1))),
             ("Quit",None,self.doQuit,1,None,None,"",1,4)]
         tnd = ((self.doEnd,"y"), )
         txt = (self.doQuit, )

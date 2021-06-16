@@ -26,8 +26,7 @@ COPYING
 
 import time
 from TartanClasses import ASD, FileImport, GetCtl, RepPrt, Sql, TartanDialog
-from tartanFunctions import askQuestion, callModule, getCost, getSell
-from tartanFunctions import showError
+from tartanFunctions import askQuestion, callModule, getCost, showError
 
 class st2020(object):
     def __init__(self, **opts):
@@ -41,7 +40,7 @@ class st2020(object):
 
     def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["gentrn", "strgrp", "strmf1",
-            "strmf2", "strgmu", "strcmu", "strtrn", "strpom", "strprc"],
+            "strmf2", "strgmu", "strcmu", "strtrn", "strpom"],
             prog=self.__class__.__name__)
         if self.sql.error:
             return
@@ -59,7 +58,6 @@ class st2020(object):
         self.glint = strctl["cts_glint"]
         self.locs = strctl["cts_locs"]
         self.plevs = strctl["cts_plevs"]
-        self.automu = strctl["cts_automu"]
         self.fromad = strctl["cts_emadd"]
         if self.glint == "Y":
             ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
@@ -81,7 +79,7 @@ class st2020(object):
         self.pr = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=[], tend=((self.doPrtEnd,"y"),), txit=(self.doPrtExit,),
             view=("N","P"), mail=("N","Y"))
-        self.pr.mstFrame.wait_window()
+        self.opts["mf"].startLoop()
 
     def doPrtEnd(self):
         self.doPrtClose()
@@ -92,6 +90,7 @@ class st2020(object):
 
     def doPrtClose(self):
         self.pr.closeProcess()
+        self.opts["mf"].closeLoop()
 
     def dataHeader(self):
         gpm = {
@@ -150,9 +149,6 @@ class st2020(object):
             (("C",0,0,7),"IUD",5.2,"Dis-%","Discount Percentage",
                 "","N",self.doDisPer,None,None,("efld",)),
             (("C",0,0,8),"OSD",9.2,"Value")]
-        if self.automu == "N":
-            fld.append((("C",0,0,9),"IUD",9.2,"Unit-Sell","Unit Selling Price",
-                "","N",self.doUsell,None,None,("efld",)))
         tnd = ((self.endPage0,"n"),)
         txt = (self.exitPage0,)
         cnd = ((self.endPage1,"y"),)
@@ -327,13 +323,6 @@ class st2020(object):
         self.ucost = float(ASD(self.ucost) - ASD(udis))
         self.tcost = float(ASD(self.tcost) - ASD(tdis))
         self.df.loadEntry(frt, pag, p+1, data=self.tcost)
-        if self.automu == "N":
-            self.usell = getSell(self.sql, self.opts["conum"],
-                self.group, self.code, self.loc, 1, ind="P")
-            self.df.loadEntry(frt, pag, p+2, data=self.usell)
-
-    def doUsell(self, frt, pag, r, c, p, i, w):
-        self.nsell = w
 
     def endPage0(self):
         self.df.focusField("C", 0, 1)
@@ -370,14 +359,6 @@ class st2020(object):
             self.tcost, 0, self.curdt, self.desc, 0, "", "", "STR",
             self.trdis, "N", self.opts["capnm"], self.sysdtw, 0]
         self.sql.insRec("strtrn", data=data)
-        if self.automu == "N" and self.nsell != self.usell:
-            # Price Record
-            self.sql.delRec("strprc", where=[("stp_cono", "=",
-                self.opts["conum"]), ("stp_group", "=", self.group),
-                ("stp_code", "=", self.code), ("stp_loc", "=", self.loc),
-                ("stp_level", "=", 1)])
-            self.sql.insRec("strprc", data=[self.opts["conum"],
-                self.group, self.code, self.loc, 1, self.nsell])
         if self.glint == "N":
             return
         # General Ledger Control Transaction (Stock On Hand)

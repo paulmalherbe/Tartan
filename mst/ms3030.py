@@ -44,7 +44,7 @@ class ms3030(object):
             "tables": ("emllog",),
             "cols": (("eml_too", "", 0, "E-Mail Address", "F"),),
             "group": "eml_too"}
-        r1s = (("Ascending", "A"), ("Descending","D"))
+        r1s = (("Descending","D"), ("Ascending", "A"))
         fld = (
             (("T",0,0,0),"Id1",10,"Date From","",
                 0,"N",self.doDate,None,None,("efld",)),
@@ -53,7 +53,7 @@ class ms3030(object):
             (("T",0,2,0),"INA",50,"Recipient","",
                 "","N",self.doRecpt,eml,None,("efld",)),
             (("T",0,3,0),("IRB",r1s),0,"Date Order","",
-                "A","N",self.doOrder,None,None,None))
+                "D","N",self.doOrder,None,None,None))
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)
         self.df = TartanDialog(self.opts["mf"], tops=False,
@@ -61,11 +61,11 @@ class ms3030(object):
 
     def doDate(self, frt, pag, r, c, p, i, w):
         if p == 0:
-            self.frm = w
-        elif w < self.frm:
-            return "Invalid Date, Less than Start Date"
+            self.frm = CCD(w, "d1", 10)
+        elif w < self.frm.work:
+            return "Invalid, Before From"
         else:
-            self.too = w
+            self.too = CCD(w, "D1", 10)
 
     def doRecpt(self, frt, pag, r, c, p, i, w):
         self.recpt = w
@@ -75,13 +75,15 @@ class ms3030(object):
 
     def doEnd(self):
         self.df.closeProcess()
-        frm = CCD(self.frm, "d1", 10).disp
-        too = CCD(self.too, "D1", 10).disp
-        hds = "Email Log Report from %s to %s" % (frm, too)
+        if not self.frm.work:
+            frm = "Beginning"
+        else:
+            frm = self.frm.disp
+        hds = "Email Log Report from %s to %s" % (frm, self.too.disp)
         col = ["eml_too", "eml_sub", "eml_dtt", "eml_sta"]
         whr = [
-            ("eml_dtt", ">=", "%10s 00:00" % frm),
-            ("eml_dtt", "<=", "%10s 99:99" % too)]
+            ("eml_dtt", ">=", "%10s 00:00" % self.frm.disp),
+            ("eml_dtt", "<=", "%10s 99:99" % self.too.disp)]
         if self.recpt:
             whr.append(("eml_too", "like", "%s%s%s" % ("%", self.recpt, "%")))
         if self.order == "A":

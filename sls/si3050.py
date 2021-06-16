@@ -56,8 +56,6 @@ class si3050(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -206,20 +204,16 @@ class si3050(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.vals == "Y":
-            spc1 = " " * 12
-            spc2 = " " * 11
+            spc = " " * 67
         else:
-            spc1 = " " * 28
-            spc2 = " " * 27
-        self.head = ("%03u %-30s %s %35s %s %6s" % (self.opts["conum"],
-            self.opts["conam"], spc1, self.sysdttm, spc2,
-                self.__class__.__name__))
+            spc = " " * 99
+        self.head = "%03u %-30s %s" % (self.opts["conum"],
+            self.opts["conam"], spc)
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.dtot = [0] * 3
         self.gtot = [0] * 3
         old_chn = recs[0][8]
         old_drs = recs[0][9]
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -278,16 +272,10 @@ class si3050(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        if self.vals == "Y":
-            spc = " " * 49
-        else:
-            spc = " " * 81
-        self.fpdf.drawText("%-30s %-10s %s %4s %5s" % \
-            ("Sales By Customer Report as at", self.sysdtd, spc,
-            "Page", self.pgnum))
+        self.fpdf.drawText("%-30s %-10s" % \
+            ("Sales By Customer Report as at", self.sysdtd))
         self.fpdf.drawText()
         if not self.drsact:
             act = "All"

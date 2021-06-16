@@ -12,6 +12,9 @@ bd = os.path.expanduser("~")  # Base directory
 sv = "root@mail"              # ftp login@server
 vv = 6                        # Version number
 bv = "Tartan-%s" % vv         # Version directory
+bx = "TartanExe"              # Executable directory
+bo = "TartanOld"              # Old directory
+bs = "TartanSve"              # Save directory
 vd = os.path.join(bd, bv)
 if not os.path.isdir(vd):
     print("Invalid Version Directory: %s" % vd)
@@ -43,28 +46,44 @@ def addPage(doc, fle, last=False):
         doc.write("\n")
     data.close()
 
+def getName(nam, x, y, z=None):
+    dd = os.path.join(bd, bo)
+    if z is None:
+        exe = "%s/Tartan_%s.%s.exe" % (dd, x, y)
+    else:
+        exe = "%s/Tartan_%s.%s.%s.exe" % (dd, x, y, z)
+    if os.path.isfile(exe):
+        dt = time.localtime(os.path.getmtime(exe))
+        nam = "%s %04i-%02i-%02i" % (nam, dt.tm_year, dt.tm_mon, dt.tm_mday)
+    return nam
+
 print("Packaging...")
+bits = ("32", "64")
 email = False
 mkcd = False
-pipupd = False
 newver = None
 publish = False
 test = False
+upgpip = False
 verinc = False
 windows = False
-opts, args = getopt.getopt(sys.argv[1:], "b:cehiptv:w")
+opts, args = getopt.getopt(sys.argv[1:], "a:b:cehiptuv:w")
 for o, v in opts:
     if o == "-h":
-        print("Usage: pkgprg [-b base directory] [-c create cd] [-d pipupd] "\
-                "[-e email] [-h help] [-i increment] [-p publish] [-t test] "\
-                "[-v new version] [-w windows]")
+        print("Usage: pkgprg [-a arch] [-b base directory] [-c create cd] "\
+                "[-e email] [-h help] [-i increment] [-p publish] "\
+                "[-t test] [-u upgpip] [-v new version] [-w windows]")
         sys.exit()
+    elif o == "-a":
+        if v in ("32", "64"):
+            bits = (v,)
+        else:
+            print("Invalid Architecture")
+            sys.exit()
     elif o == "-b":
         bd = v
     elif o == "-c":
         mkcd = True
-    elif o == "-d":
-        pipupd = True
     elif o == "-e":
         email = True
     elif o == "-i":
@@ -74,10 +93,20 @@ for o, v in opts:
         windows = True
     elif o == "-t":
         test = True
+    elif o == "-u":
+        upgpip = True
     elif o == "-v":
         newver = v
     elif o == "-w":
         windows = True
+if windows:
+    names = []
+    # Check if wine or windows
+    proc = subprocess.Popen("/usr/bin/virsh list --name --state-running",
+        shell=True, bufsize=0, stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE, close_fds=True)
+    for l in proc.stdout:
+        names.append(l.strip().decode("utf-8"))
 if publish:
     mkcd = True
 if not os.path.exists(bd):
@@ -87,9 +116,9 @@ pypath = findFile(start=[bd], name=bv, ftyp="d")
 if not pypath:
     print("%s/%s directory not found" % (bd, bv))
     sys.exit()
-for d in ("TartanExe", "TartanOld", "TartanSve"):
-    if not os.path.exists(os.path.join(bd, d)):
-        os.makedirs(os.path.join(bd, d))
+for dd in (bx, bo, bs):
+    if not os.path.exists(os.path.join(bd, dd)):
+        os.makedirs(os.path.join(bd, dd))
 csys = "Tartan"
 cver = list(VERSION)
 if not newver:
@@ -113,11 +142,6 @@ if newver and newver != "%s.%s" % VERSION:
     if not os.path.isfile("changes.txt"):
         input("changes.txt File Not Found! Ctl-C to Abort")
     try:
-        if pipupd:
-            # Update sependancies
-            exeCmd("sh %s/uty/dopip.bat")
-            if windows:
-                exeCmd("wine %s/uty/dopip.bat")
         # Change version number in ms0000.py, SYS.rst, Downloads.rst
         old = open("ms0000.py", "r")
         lin = old.readlines()
@@ -172,12 +196,8 @@ if newver and newver != "%s.%s" % VERSION:
             new.write(l)
         new.close()
         # Update repository version control
-        if vv == 5:
-            sta = "/usr/bin/bzr status"
-            dif = "/usr/bin/bzr diff"
-        else:
-            sta = "/usr/bin/git status"
-            dif = "/usr/bin/git diff"
+        sta = "/usr/bin/git status"
+        dif = "/usr/bin/git diff"
         sta += " > ver/ver_%s.%s.status" % tuple(cver)
         exeCmd(sta)
         dif += " > ver/ver_%s.%s.diff" % tuple(cver)
@@ -192,6 +212,7 @@ if newver and newver != "%s.%s" % VERSION:
                 nam = "ver_%s.%s" % (x, y)
                 fle = os.path.join("ver", "%s.changes" % nam)
                 if os.path.isfile(fle):
+                    nam = getName(nam, x, y)
                     chg.write(nam + "\n")
                     chg.write(("=" * len(nam)) + "\n")
                     lines = open(fle, "r")
@@ -203,6 +224,7 @@ if newver and newver != "%s.%s" % VERSION:
                     nam = "ver_%s.%s.%s" % (x, y, z)
                     fle = os.path.join("ver", "%s.changes" % nam)
                     if os.path.isfile(fle):
+                        nam = getName(nam, x, y, z)
                         chg.write(nam + "\n")
                         chg.write(("=" * len(nam)) + "\n")
                         lines = open(fle, "r")
@@ -217,32 +239,28 @@ if newver and newver != "%s.%s" % VERSION:
         rst.write(chg.changes)
         rst.close()
         # Create current file
-        cur = open("%s/TartanExe/current" % bd, "w")
+        cur = open("%s/%s/current" % (bd, bx), "w")
         cur.write("%s\n" % newver)
         cur.close()
         # Commit repository
-        if vv == 5:
-            exeCmd("/usr/bin/bzr commit -m 'ver_%s.%s'" % tuple(cver))
-            exeCmd("/usr/bin/bzr log > ver/ver_%s.%s.log" % tuple(cver))
-        else:
-            exeCmd("/usr/bin/git add ver")
-            exeCmd("/usr/bin/git commit -am 'ver_%s.%s'" % tuple(cver))
-            if not test:
-                push = input("Push Version (y/n): ")
-                if push == "y":
-                    exeCmd("/usr/bin/git push -u origin master")
-    except:
-        print("Error Creating New Version")
+        exeCmd("/usr/bin/git add ver")
+        exeCmd("/usr/bin/git commit -am 'ver_%s.%s'" % tuple(cver))
+        if not test:
+            push = input("Push Version (y/n): ")
+            if push == "y":
+                exeCmd("/usr/bin/git push -u origin master")
+    except Exception as err:
+        print("Error Creating New Version (%s)" % err)
         sys.exit()
 # Create a zip of the repository
 if os.path.exists("%s/tarzip.zip" % bd):
     os.remove("%s/tarzip.zip" % bd)
-if vv == 5:
-    exeCmd("/usr/bin/bzr export --format=zip --root= %s/tarzip.zip" % bd)
-else:
-    exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
+exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
+exeCmd("zip -qd %s/tarzip doc/POS.rst" % bd)
+exeCmd("zip -qd %s/tarzip pos/*" % bd)
+exeCmd("zip -qd %s/tarzip pos" % bd)
 # Update the zip with tarchg.py tartan.ico and uncommitted files
-exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py pos/*.py rca/*.py rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py uty/*.py wag/*.py" % bd)
+exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py rca/*.py rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py uty/*.py wag/*.py" % bd)
 # Create a new system directory
 if os.path.exists("%s/tartan" % bd):
     shutil.rmtree("%s/tartan" % bd)
@@ -258,7 +276,6 @@ if os.path.isdir("ver"):
 # Create tarimp module for pyinstaller
 ofl = open("tarimp.py", "w")
 ofl.write("# Tartan Modules to Include with Pyinstaller Exe\n")
-ofl.write("import pkg_resources.py2_warn\n")
 ofl.write("import sys\n")
 for fle in glob.iglob("*.py"):
     if fle.count("__pycache__"):
@@ -274,30 +291,32 @@ print("")
 os.chdir(bd)
 # Create zip file for pyinstaller
 zipfle = "tartan-%s" % vv
-print("Creating %s.zip in TartanSve directory ..... Please Wait" % zipfle)
-if os.path.exists("%s/TartanSve/%s.zip" % (bd, zipfle)):
-    os.remove("%s/TartanSve/%s.zip" % (bd, zipfle))
-if vv == 5:
-    exeCmd("zip -qr %s/TartanSve/%s tartan --exclude \.bzr\*" % (bd, zipfle))
-else:
-    exeCmd("zip -qr %s/TartanSve/%s tartan --exclude \.git\*" % (bd, zipfle))
+print("Creating %s.zip in %s directory ..... Please Wait" % (zipfle, bs))
+if os.path.exists("%s/%s/%s.zip" % (bd, bs, zipfle)):
+    os.remove("%s/%s/%s.zip" % (bd, bs, zipfle))
+exeCmd("zip -qr %s/%s/%s tartan --exclude \.git\*" % (bd, bs, zipfle))
 if windows:
     # Python windows executable
-    if vv == 5:
-        dd = "%s/.wine2/drive_c/PyInstall" % bd
-        exeCmd("wine2 cmd /c %s/maker.bat tartan" % dd)
+    if "Windows10" in names:
+        if upgpip:
+            # Update dependancies
+            exeCmd("ssh windows PyInstall\\\\dopip.bat")
+        exeCmd("ssh windows PyInstall\\\\maker.bat tartan")
+        os.rename("%s/%s/tartan-%s.exe" % (bd, bx, vv),
+            "%s/%s/tartan-%s-64.exe" % (bd, bx, vv))
     else:
-        names = []
-        proc = subprocess.Popen("/usr/bin/virsh list --name --state-running",
-            shell=True, bufsize=0, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, close_fds=True)
-        for l in proc.stdout:
-            names.append(l.strip().decode("utf-8"))
-        if "win10" in names:
-            os.system("ssh windows PyInstall\\\\maker.bat tartan")
-        else:
-            dd = "%s/.wine3/drive_c/PyInstall" % bd
-            exeCmd("wine3 cmd /c %s/maker.bat tartan" % dd)
+        for bit in bits:
+            print("Packaging %s bit" % bit)
+            if upgpip:
+                # Update dependancies
+                exeCmd("wine%s cmd /c %s/uty/dopip.bat" % (bit, bv))
+            xpth = "/home/paul/.wine%s/dosdevices/x:" % bit
+            if not os.path.exists(xpth):
+                os.symlink("/home/paul", xpth)
+            dd = "%s/.wine%s/drive_c/PyInstall" % (bd, bit)
+            exeCmd("wine%s cmd /c %s/maker.bat tartan" % (bit, dd))
+            os.rename("%s/%s/tartan-%s.exe" % (bd, bx, vv),
+                "%s/%s/tartan-%s-%s.exe" % (bd, bx, vv, bit))
 if publish:
     # Publish
     # Change to pypath directory
@@ -307,9 +326,9 @@ if publish:
     fles = ["doc/SYS.rst", "doc/CTL.rst", "doc/GEN.rst", "doc/ASS.rst",
             "doc/BKM.rst", "doc/CRS.rst", "doc/DRS.rst", "doc/LON.rst",
             "doc/MEM.rst", "doc/RTL.rst", "doc/RCA.rst", "doc/STR.rst",
-            "doc/SLS.rst", "doc/POS.rst", "doc/WAG.rst", "doc/SLN.rst",
-            "doc/BKS.rst", "doc/BWL.rst", "doc/CSH.rst", "doc/SCP.rst",
-            "doc/UTY.rst", "doc/HLP.rst"]
+            "doc/SLS.rst", "doc/WAG.rst", "doc/SLN.rst", "doc/BKS.rst",
+            "doc/BWL.rst", "doc/CSH.rst", "doc/SCP.rst", "doc/UTY.rst",
+            "doc/HLP.rst"]
     doc = open(man, "w")
     for fle in fles:
         if fle == fles[-1]:
@@ -317,41 +336,45 @@ if publish:
         else:
             addPage(doc, fle)
     doc.close()
+    exeCmd("rst2pdf %s/%s/doc/Manual.rst -o /tmp/Manual.pdf "\
+            "-s %s/%s/doc/mystylesheet" % (bd, bv, bd, bv))
     # Move Current to Old
-    exeCmd("mv %s/TartanExe/%s_%s.* %s/TartanOld/" % (bd, csys, vv, bd))
+    exeCmd("mv %s/%s/%s_%s.* %s/%s/" %
+        (bd, bx, csys, vv, bd, bo))
     # Create Source tgz and zip
-    exeCmd("tar -czf %s/TartanExe/%s_%s.%s.tgz %s/tartan" %
-        (bd, csys, cver[0], cver[1], bd))
-    exeCmd("cp -p %s/TartanSve/tartan-%s.zip %s/TartanSve/%s_%s.%s.zip" %
-        (bd, vv, bd, csys, cver[0], cver[1]))
+    exeCmd("tar -czf %s/%s/%s_%s.%s.tgz %s/tartan" %
+        (bd, bx, csys, cver[0], cver[1], bd))
+    exeCmd("cp -p %s/%s/tartan-%s.zip %s/%s/%s_%s.%s.zip" %
+        (bd, bs, vv, bd, bs, csys, cver[0], cver[1]))
     # Rename Windows exe's
-    exeCmd("cp -p %s/TartanExe/tartan-%s.exe %s/TartanExe/%s_%s.%s.exe" %
-        (bd, vv, bd, csys, cver[0], cver[1]))
+    exeCmd("cp -p %s/%s/tartan-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
+        (bd, bx, vv, bd, bx, csys, cver[0], cver[1]))
+    exeCmd("cp -p %s/%s/tartan-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
+        (bd, bx, vv, bd, bx, csys, cver[0], cver[1]))
     print("")
     print("Version Number is %s.%s" % tuple(cver))
     print("")
     if not test:
         # Dropbox
         exeCmd("rm /home/paul/Dropbox/Updates/%s*" % csys)
-        exeCmd("cp -p %s/TartanExe/%s_%s.%s.tgz "\
-            "/home/paul/Dropbox/Updates/" % (bd, csys, cver[0], cver[1]))
-        exeCmd("cp -p %s/TartanExe/%s_%s.%s.exe "\
-            "/home/paul/Dropbox/Updates/" % (bd, csys, cver[0], cver[1]))
+        exeCmd("cp -p %s/%s/%s_%s.%s.tgz /home/paul/Dropbox/Updates/" %
+            (bd, bx, csys, cver[0], cver[1]))
+        exeCmd("cp -p %s/%s/%s_%s.%s.exe /home/paul/Dropbox/Updates/" %
+            (bd, bx, csys, cver[0], cver[1]))
         # FTP Server
         exeCmd("ssh %s rm /srv/ftp/%s*" % (sv, csys))
-        exeCmd("rsync -az %s/TartanOld/Tartan_2.5.29.* %s:/srv/ftp/ "\
-            "--progress" % (bd, sv))
-        exeCmd("rsync -az %s/TartanOld/Tartan_3.4.51.* %s:/srv/ftp/ "\
-            "--progress" % (bd, sv))
-        exeCmd("rsync -az %s/TartanOld/Tartan_4.1.14.* %s:/srv/ftp/ "\
-            "--progress" % (bd, sv))
-        exeCmd("rsync -az %s/TartanOld/Tartan_5.5.* %s:/srv/ftp/ "\
-            "--progress" % (bd, sv))
-        exeCmd("rsync -az %s/TartanExe/current %s:/srv/ftp/ "\
-            "--progress" % (bd, sv))
-        exeCmd("rsync -az %s/TartanExe/%s* %s:/srv/ftp/ "\
-            "--progress" % (bd, csys, sv))
-        exeCmd("ssh %s chmod a+r /srv/ftp/*" % sv)
+        exeCmd("rsync -az %s/%s/Tartan_4.1.14.* %s:/srv/ftp/ "\
+            "--progress" % (bd, bo, sv))
+        exeCmd("rsync -az %s/%s/Tartan_5.5.* %s:/srv/ftp/ "\
+            "--progress" % (bd, bo, sv))
+        exeCmd("rsync -az %s/%s/Tartan_5.13.* %s:/srv/ftp/ "\
+            "--progress" % (bd, bo, sv))
+        exeCmd("rsync -az %s/%s/current %s:/srv/ftp/ "\
+            "--progress" % (bd, bx, sv))
+        exeCmd("rsync -az %s/%s/%s* %s:/srv/ftp/ "\
+            "--progress" % (bd, bx, csys, sv))
+        exeCmd("rsync -az /tmp/Manual.pdf %s:/srv/ftp/ --progress" % sv)
+        exeCmd("ssh %s chmod a+rx /srv/ftp/*" % sv)
         exeCmd("ssh %s chown paul:paul /srv/ftp/*" % sv)
         # Web documents
         exeCmd("rsync -az %s/%s/doc/Manual.rst "\
@@ -375,8 +398,8 @@ if publish:
         # Executables
         exeCmd("mkdir %s/tempcd" % bd)
         exeCmd("mkdir %s/tempcd/Other" % bd)
-        exeCmd("cp -p %s/TartanExe/Tartan* %s/tempcd/" % (bd, bd))
-        exeCmd("cp -pr %s/TartanExe/* %s/tempcd/Other/" % (bd, bd))
+        exeCmd("cp -p %s/%s/Tartan* %s/tempcd/" % (bd, bx, bd))
+        exeCmd("cp -pr %s/%s/* %s/tempcd/Other/" % (bd, bx, bd))
         exeCmd("rm %s/tempcd/Other/Tartan*" % bd)
         exeCmd("rm %s/tempcd/Other/Rnehol*" % bd)
         exeCmd("rm %s/tempcd/Other/??????-[5,6].exe" % bd)
@@ -389,19 +412,18 @@ if publish:
         exeCmd("todos -o %s/tempcd/AUTORUN.INF" % bd)
         exeCmd("chmod a+x %s/tempcd/AUTORUN.INF" % bd)
         # Add Documentation
-        exeCmd("rst2pdf %s/%s/doc/Manual.rst -o %s/tempcd/Manual.pdf "\
-            "-s %s/%s/doc/mystylesheet" % (bd, bv, bd, bd, bv))
+        exeCmd("cp /tmp/Manual.pdf %s/tempcd/Manual.pdf" % bd)
         # Make CD iso
         exeCmd("mkisofs -r -J -l -D -V 'Tartan Systems %s.%s' "\
             "-p 'Paul Malherbe paul@tartan.co.za' -copyright 'Paul Malherbe' "\
             "-o %s/TartanCD/Tartan.iso -graft-points /\=%s/tempcd" %
             (cver[0], cver[1], bd, bd))
         shutil.rmtree("%s/tempcd" % bd)
-        #if verinc and windows:
-        #    # Sourceforge
-        #    os.chdir("%s/TartanExe" % bd)
-        #    exeCmd("cp -p %s/doc/readme.md ." % pypath)
-        #    exeCmd("%s/uty/upload.sh %s" % (pypath, newver))
+        if verinc and windows:
+            # Sourceforge
+            os.chdir("%s/%s" % (bd, bx))
+            exeCmd("cp -p %s/doc/readme.md ." % pypath)
+            exeCmd("%s/uty/upload.sh %s" % (pypath, newver))
 if email and not test:
     # Email Users
     chgfle = "%s/ver/ver_%s.%s.changes" % (pypath, cver[0], cver[1])
@@ -438,12 +460,14 @@ if email and not test:
             "lorraine@multitrust.net",
             "marindag@buildinn-el.co.za",
             "marlene@acsonline.co.za",
+            "marlene@fourthquadrant.co.za",
             "mcbagro@gmail.com",
             "mel@acsaccounting.co.za",
             "mike@annettelaing.co.za",
             "no2pigstash@hotmail.com",
             "paul@tartan.co.za",
             "paulabergh@mweb.co.za",
+            "pevensey@futurenet.co.za",
             "rob@itennis.co.za",
             "rene@agfin.co.za",
             "ruthmiles52@gmail.com",

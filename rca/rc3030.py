@@ -48,8 +48,6 @@ class rc3030(object):
         self.fromad = rcactl["cte_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -95,12 +93,9 @@ class rc3030(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %33s %6s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+        self.head = "%03u %-71s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.tots = 0
-        self.pgnum = 0
         self.pglin = 999
         for num, rec in enumerate(recs):
             p.displayProgress(num)
@@ -138,11 +133,10 @@ class rc3030(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-33s %-7s %27s %5s" % ("Rental Owners Master "\
-            "Report up to", self.opts["period"], "Page", self.pgnum))
+        self.fpdf.drawText("%-33s %-7s" % ("Rental Owners Master "\
+            "Report up to", self.opts["period"]))
         self.fpdf.drawText()
         self.fpdf.drawText("%-27s%-1s%-1s" % ("(Options: "\
             "Ignore-Zero-Bal: ", self.df.t_disp[0][0][2], ")"))

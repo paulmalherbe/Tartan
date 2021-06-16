@@ -44,7 +44,7 @@ class st2010(object):
         self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctlmes", "ctlvrf",
             "ctlrep", "crsmst", "gentrn", "strgrp", "strloc", "strmf1",
             "strmf2", "strpom", "strpot", "strtrn", "strgmu", "strcmu",
-            "strprc", "tplmst"], prog=self.__class__.__name__)
+            "tplmst"], prog=self.__class__.__name__)
         if self.sql.error:
             return
         gc = GetCtl(self.opts["mf"])
@@ -98,7 +98,7 @@ class st2010(object):
         self.pr = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=fld, tend=((self.doPrtEnd,"y"),), txit=(self.doPrtExit,),
             view=("N","P"), mail=("N","Y","Y"))
-        self.pr.mstFrame.wait_window()
+        self.opts["mf"].startLoop()
 
     def doTplNam(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w),
@@ -115,9 +115,6 @@ class st2010(object):
         self.curdt = int(self.trdt / 100)
         self.batch = "S%s" % self.curdt
 
-    #def doAutoMkUp(self, frt, pag, r, c, p, i, w):
-    #    self.mkup = w
-
     def doPrtEnd(self):
         self.doPrtClose()
 
@@ -127,6 +124,7 @@ class st2010(object):
 
     def doPrtClose(self):
         self.pr.closeProcess()
+        self.opts["mf"].closeLoop()
 
     def mainProcess(self):
         doc = {
@@ -464,6 +462,7 @@ class st2010(object):
             return "Invalid Code (Redundant)"
         if strmf1[self.sql.strmf1_col.index("st1_value_ind")] == "N":
             return "Invalid Code (Value Indicator)"
+        self.vatcod = strmf1[self.sql.strmf1_col.index("st1_vatcode")]
         strmf2 = self.sql.getRec("strmf2", where=[("st2_cono", "=",
             self.opts["conum"]), ("st2_group", "=", self.grp), ("st2_code",
             "=", w), ("st2_loc", "=", self.loc)], limit=1)
@@ -499,6 +498,7 @@ class st2010(object):
 
     def doQty(self, frt, pag, r, c, p, i, w):
         self.qty = w
+        self.df.loadEntry(frt, pag, p+1, data=self.vatcod)
 
     def doVat(self, frt, pag, r, c, p, i, w):
         self.vatrte = getVatRate(self.sql, self.opts["conum"], w, self.trdt)

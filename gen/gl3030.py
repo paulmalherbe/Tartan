@@ -47,8 +47,7 @@ class gl3030(object):
         t = time.localtime()
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
-            "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["Coy", "Acc-Num", "Description", "Date", "Reference",
             "Typ", "Batch", "Remarks", "Debit", "Credit", "Balance"]
         self.forms = [("UI", 3), ("UI", 7), ("NA", 30), ("D1", 10),
@@ -177,7 +176,7 @@ class gl3030(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("General Ledger Account Statements for Period "\
             "%s to %s" % (self.sdate.disp, self.edate.disp))
         self.expcolsh = [self.colsh]
@@ -194,6 +193,8 @@ class gl3030(object):
                 self.sdate.work), ("glt_curdt", "<=", self.edate.work)],
                 order="glt_acno, glt_curdt, glt_trdt, glt_type, glt_refno, "\
                 "glt_batch")
+            if self.pages == "Y" and (acctot or trn):
+                self.expdatas.append(["PAGE", [self.expheads, self.expcolsh]])
             prt = False
             if acctot:
                 prt = True
@@ -210,7 +211,7 @@ class gl3030(object):
                     self.acno.work, self.desc.work, trdt.work, refno.work,
                     gltrtp[(trtp.work - 1)][0], batch.work, detail.work,
                     dbt.work, crt.work, acctot]])
-            if prt:
+            if self.pages == "N" and prt:
                 self.expdatas.append(["BLANK"])
         p.closeProgress()
         doWriteExport(xtype=self.df.repprt[1], name=expnam,
@@ -218,11 +219,9 @@ class gl3030(object):
             datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
 
     def printReport(self, recs):
-        self.pgnum = 0
         self.pglin = 999
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %59s %10s" % (self.opts["conum"],
-            self.opts["conam"], self.sysdttm, self.__class__.__name__))
+        self.head = "%03u %-101s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         for seq, dat in enumerate(recs):
             p.displayProgress(seq)
@@ -235,7 +234,7 @@ class gl3030(object):
                 order="glt_acno, glt_curdt, glt_trdt, glt_type, glt_refno, "\
                 "glt_batch")
             if acctot or trn:
-                if not self.pgnum or self.pages == "Y":
+                if self.pglin == 999 or self.pages == "Y":
                     self.pageHeading()
                 else:
                     self.newAccount()
@@ -318,7 +317,6 @@ class gl3030(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         if self.sacno == 0:
@@ -329,10 +327,9 @@ class gl3030(object):
             eacc = "Last"
         else:
             eacc = self.df.t_disp[0][0][2]
-        self.fpdf.drawText("%-38s %-7s %2s %-7s %-10s %7s %2s %7s %11s %5s" % \
+        self.fpdf.drawText("%-38s %-7s %2s %-7s %-10s %7s %2s %-25s" % \
             ("General Ledger Statements for Accounts", sacc, "to", eacc,
-            "for Period", self.sdate.disp, "to", self.edate.disp, "Page",
-            self.pgnum))
+            "for Period", self.sdate.disp, "to", self.edate.disp))
         self.fpdf.setFont()
         self.pglin = 3
         self.newAccount()

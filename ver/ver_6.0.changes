@@ -1,0 +1,25 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Upgraded to Python 3 as Python 2 is no longer supported. As Python 3 is
+    not backward compatible with Python 2 many changes, in addition to those
+    listed below, needed to be done.
+ 2) Upgraded and improved the built-in PDF viewer.
+ 3) Added a module to print application usage history.
+      Control --> Reporting --> Application Usage Report.
+ 4) Added the pay as you earn tax table for 2022.
+ 5) Added banking details to debtor's recurring charges invoices.
+ 6) Changed the default spreadsheet import and export to xlsx.
+ 7) Added balance field to rentals data capture transaction listing.
+ 8) Fixed an error in the exporting of the purchase history report.
+ 9) Fixed an error in the exporting of the sales history report.
+10) Fixed an error in preferences, colour selection.
+11) Fixed an error in bowls round robin competitions.
+12) Added singles and pairs to bowls tabs-in module to cater for Covid.
+13) Added the facilty to run sectional round robin competitions and then
+    generate a knockout competition from the results.
+14) Many other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.

@@ -50,7 +50,7 @@ class drc420(object):
         tnd = ((self.doEnd,"Y"), )
         txt = (self.closeProcess, )
         self.df = TartanDialog(self.opts["mf"], eflds=[], tend=tnd,
-            txit=txt, view=("N","V"), mail=("Y","N"))
+            txit=txt, view=("Y","V"), mail=("Y","N"))
 
     def doEnd(self):
         recs = self.sql.getRec("drsdel", order="del_code")

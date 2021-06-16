@@ -69,8 +69,7 @@ class ml3060(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
             (t[0], t[1], t[2], t[3], t[4])
-        self.head = ("%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
-            "%s"))
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["Mem-No", "Titles", "Inits", "Surname", "Actions",
             "Category", "Action-Dte", "Operator", "Start-Date", " End-Date",
             "Last-Date"]
@@ -110,7 +109,7 @@ class ml3060(object):
             (("T",0,1,0),"Id1",10,"Starting Date","",
                 self.sysdtw,"Y",self.doStartDate,None,None,None),
             (("T",0,2,0),"ID1",10,"Ending   Date","Ending Date",
-                self.sysdtw,"Y",self.doEndDate,None,None,None),
+                self.sysdtw,"Y",self.doEndDate,None,None,("notzero",)),
             (("T",0,3,0),("IRB",self.ctyp),0,"Change Type","",
                 "A","Y",self.doChgTyp,None,None,None),
             (("T",0,4,0),("IRB",self.catg),0,"Category","",
@@ -136,7 +135,7 @@ class ml3060(object):
     def doEndDate(self, frt, pag, r, c, p, i, w):
         if w < self.start.work:
             return "Invalid End Date, Before Start Date"
-        self.end = CCD(w, "d1", 10)
+        self.end = CCD(w, "D1", 10)
         if self.reptyp == "P":
             self.chgtyp = "A"
             self.cat = None
@@ -195,11 +194,13 @@ class ml3060(object):
         whr = [("chg_tab", "=", "memcat")]
         if self.reptyp == "P":
             whr.append(("chg_dte", "=", self.dte))
-        elif self.start.work:
-            whr.append(("chg_dte", "between", (self.start.work * 1000000),
-                (self.end.work * 1000000) + 999999))
         else:
-            whr.append(("chg_dte", "<=", (self.end.work * 1000000) + 999999))
+            end = str((self.end.work * 1000000) + 999999)
+            if self.start.work:
+                start = str(self.start.work * 1000000)
+                whr.append(("chg_dte", "between", start, end))
+            else:
+                whr.append(("chg_dte", "<=", end))
         if self.chgtyp != "A":
             whr.append(("chg_act", "=", self.chgtyp))
         if self.cat:
@@ -225,7 +226,7 @@ class ml3060(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(chg), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = [self.head % self.sysdttm]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("Members Category Changes between %s and %s" %
             (self.start.disp, self.end.disp))
         self.expheads.append(self.getOptions())
@@ -258,9 +259,7 @@ class ml3060(object):
 
     def printReport(self, chg):
         p = ProgressBar(self.opts["mf"].body, mxs=len(chg), esc=True)
-        self.head = ("%03u %-30s %27s %33s %46s %10s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=154)
         self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(chg):
@@ -318,7 +317,7 @@ class ml3060(object):
             act = "Changed"
         else:
             act = "Unknown"
-        dte = data[self.sql.chglog_col.index("chg_dte")]
+        dte = int(data[self.sql.chglog_col.index("chg_dte")])
         dte = CCD(int(dte / 1000000), "D1", 10)
         usr = CCD(data[self.sql.chglog_col.index("chg_usr")], "NA", 20)
         old = CCD(data[self.sql.chglog_col.index("chg_old")], "d1", 10)
@@ -354,7 +353,7 @@ class ml3060(object):
             "%10s %10s" % ("Mem-No", "Titles", "Inits", "Surname", "Actions",
             "Category", "Action-Dte", "Operator", "Start-Date", " End-Date",
             "Last-Date"))
-        self.fpdf.underLine(txt=self.head)
+        self.fpdf.underLine(txt="X"*154)
         self.fpdf.setFont()
         self.pglin = 8
 

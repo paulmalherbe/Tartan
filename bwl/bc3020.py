@@ -180,8 +180,7 @@ class bc3020(object):
             d.extend([dte.disp, side[0], side[1], side[2], side[3]])
             dat.append(d)
             l = self.tab
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=120, auto=True,
-            foot=True)
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=120, auto=True)
         self.fpdf.header = self.pageHeading
         if self.tots == "N":
             # Print teams

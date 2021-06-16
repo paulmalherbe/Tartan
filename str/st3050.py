@@ -49,8 +49,6 @@ class st3050(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -145,11 +143,9 @@ class st3050(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %33s %6s" % (self.opts["conum"],
-            self.opts["conam"], self.sysdttm, self.__class__.__name__))
+        self.head = "%03u %-71s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         oldrec = ""
-        self.pgnum = 0
         self.pglin = 999
         st1 = self.sql.strmf1_col
         srr = self.sql.strrcp_col
@@ -198,8 +194,7 @@ class st3050(object):
                 fromad=self.fromad, repeml=self.df.repeml)
 
     def pageHeading(self, grp, cod, chg=False):
-        if self.pgnum and self.page == "N" and chg and \
-                            self.pglin < (self.fpdf.lpp - 10):
+        if self.page == "N" and chg and self.pglin < (self.fpdf.lpp - 10):
             self.fpdf.drawText()
             self.fpdf.drawText()
             self.fpdf.setFont(style="B")
@@ -207,11 +202,10 @@ class st3050(object):
         else:
             self.fpdf.add_page()
             self.fpdf.setFont(style="B")
-            self.pgnum += 1
             self.fpdf.drawText(self.head)
             self.fpdf.drawText()
-            self.fpdf.drawText("%-19s %-10s %38s %5s" % ("Stock Recipes as at",
-                self.sysdtd, "Page", self.pgnum))
+            self.fpdf.drawText("%-19s %-10s" % ("Stock Recipes as at",
+                self.sysdtd))
             self.fpdf.drawText()
             self.pglin = 4
         self.fpdf.drawText("%-5s %3s  %-4s %s  %-8s %s %s" % ("Group", grp,

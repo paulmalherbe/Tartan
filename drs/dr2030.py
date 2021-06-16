@@ -61,8 +61,8 @@ class dr2030(object):
             where=[("ctm_cono", "=", self.opts["conum"])], limit=1)
         for col in ("ctm_name", "ctm_add1", "ctm_add2", "ctm_add3",
                     "ctm_pcode", "ctm_regno", "ctm_taxno", "ctm_tel",
-                    "ctm_fax", "ctm_b_name", "ctm_b_ibt", "ctm_b_acno",
-                    "ctm_logo"):
+                    "ctm_fax", "ctm_b_name", "ctm_b_branch", "ctm_b_ibt",
+                    "ctm_b_acno", "ctm_logo"):
             setattr(self, "%s" % col, ctl[self.sql.ctlmst_col.index(col)])
         if "LETTERHEAD" in os.environ:
             self.ctm_logo = os.environ["LETTERHEAD"]
@@ -305,6 +305,12 @@ class dr2030(object):
         self.fpdf.drawText(x=22.5*cw, y=12.5*ld, txt=drm[col.index("drm_add2")])
         self.fpdf.drawText(x=22.5*cw, y=13.5*ld, txt=drm[col.index("drm_add3")])
         self.fpdf.drawText(x=22.5*cw, y=14.5*ld, txt=drm[col.index("drm_pcod")])
+        if self.ctm_b_name:
+            dat = "Name:    %s" % self.ctm_b_name
+            dat = "%s\nBranch:  %s" % (dat, self.ctm_b_branch)
+            dat = "%s\nCode:    %s" % (dat, self.ctm_b_ibt)
+            dat = "%s\nAccount: %s\n " % (dat, self.ctm_b_acno)
+            self.fpdf.drawText(x=22.5*cw, y=37*ld, txt=dat, ctyp="M")
         self.emadd = CCD(drm[col.index("drm_acc_email")], "TX")
         # Tables
         r1 = {
@@ -342,6 +348,10 @@ class dr2030(object):
                     [11, 1.5],
                     [12, 1.5, .8, "Total Value"],
                     [13, 1.5]]]]}
+        if self.ctm_b_name:
+            r1["rows"].extend([
+                [22, 35, [[32, 1.5, .8, "Banking Details", False]]],
+                [22, 36.5, [[32, 5.5]]]])
         doDrawTable(self.fpdf, r1, cw=cw, ld=ld, font=False)
 
     def printTotals(self, cw, ld, ica, iva):

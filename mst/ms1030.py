@@ -89,7 +89,7 @@ class ms1030(object):
             (("T",0,4,0),"IHA",30,"Password","",
                 "","N",self.doPwd,None,self.doDelete,None))
         but = (
-            ("Show All",self.ctl,None,0,("T",0,3),("T",0,0)),
+            ("Show All",self.ctl,None,0,("T",0,1),("T",0,0)),
             ("Cancel",None,self.doCancel,0,("T",0,2),("T",0,0)),
             ("Quit",None,self.doExit,1,None,None))
         tnd = ((self.doEnd,"y"), )
@@ -104,6 +104,7 @@ class ms1030(object):
             if not nam:
                 return "Invalid Company Number"
         self.coy = w
+        self.sys = None
 
     def doSystem(self, frt, pag, r, c, p, i, w):
         d1 = ""

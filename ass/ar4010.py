@@ -54,8 +54,6 @@ class ar4010(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.sper = int(self.opts["period"][1][0] / 100)
         self.eper = int(self.opts["period"][2][0] / 100)
         return True
@@ -181,7 +179,7 @@ class ar4010(object):
         asset = bals.doAssBals(start=self.sper, end=self.eper, trans="C")
         if not asset:
             return
-        cap, cdp, rdp, cbl, rbl, mov, self.trn = asset
+        cap, cdp, rdp, cbl, rbl, mov, trn = asset
         dte = self.sql.getRec("asstrn", cols=["min(ast_date)"],
             where=[("ast_cono", "=", self.opts["conum"]), ("ast_group", "=",
             self.group), ("ast_code", "=", self.code), ("ast_mtyp", "=",
@@ -225,34 +223,7 @@ class ar4010(object):
     def doTrans2(self, frt, pag, r, c, p, i, w):
         tit = "Transactions for Item: %s %s - %s" % \
             (self.group, self.code, self.desc)
-        if self.rordp == "Y":
-            col = ("ast_date", "ast_curdt", "ast_batch", "ast_type", "ast_mtyp",
-                "ast_refno", "ast_amt1", "ast_amt2", "ast_desc", "ast_seq")
-        else:
-            col = ("ast_date", "ast_curdt", "ast_batch", "ast_type", "ast_mtyp",
-                "ast_refno", "ast_amt1", "ast_desc", "ast_seq")
-        atc = [
-            ("ast_date", "   Date", 10, "D1", "N"),
-            ("ast_curdt", "Curr-Dt", 7, "D2", "N"),
-            ("ast_batch", "Batch", 7, "Na", "N"),
-            ("ast_type", "Typ", 3, ("XX", artrtp), "N"),
-            ("ast_mtyp", "Mov", 3, ("XX", armvtp), "N"),
-            ("ast_refno", "Reference", 9, "Na", "Y"),
-            ("ast_amt1", "  Amount-1", 15.2, "SD", "N")]
-        if self.rordp == "Y":
-            atc.append(("ast_amt2", "  Amount-2", 15.2, "SD", "N"))
-        atc.extend([
-            ("ast_desc", "Details", 30, "NA", "N"),
-            ("ast_seq", "Sequence", 8, "UI", "N")])
-        whr = [
-            ("ast_cono", "=", self.opts["conum"]),
-            ("ast_group", "=", self.group),
-            ("ast_code", "=", self.code),
-            ("ast_curdt", "<=", self.eper)]
-        if w == "N":
-            whr.append(("ast_curdt", ">=", self.sper))
-        odr = "ast_date, ast_refno"
-        dat = self.sql.getRec("asstrn", cols=col, where=whr, order=odr)
+        dat, atc, col = self.getTrans(hist=w)
         if dat:
             state = self.df.disableButtonsTags()
             while True:
@@ -297,13 +268,10 @@ class ar4010(object):
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         if self.rordp == "Y":
-            self.head = ("%03u %-30s %51s %10s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-93s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %35s %10s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-77s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         if opt != "T":
             self.pageHeading()
@@ -313,22 +281,24 @@ class ar4010(object):
             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
                 pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
         elif opt == "A":
-            if not self.trn[0]:
+            dat, atc, col = self.getTrans()
+            if not dat:
                 self.fpdf.output(pdfnam, "F")
                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
             else:
                 self.pageHeading()
                 self.pageHeadingTrans()
-                self.printTrans()
+                self.printTrans(dat, atc)
                 self.fpdf.output(pdfnam, "F")
                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
         elif opt == "T":
-            if self.trn[0]:
+            dat, atc, col = self.getTrans()
+            if dat:
                 self.pageHeading()
                 self.pageHeadingTrans()
-                self.printTrans()
+                self.printTrans(dat, atc)
                 self.fpdf.output(pdfnam, "F")
                 doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
                     pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
@@ -380,17 +350,19 @@ class ar4010(object):
                 self.fpdf.drawText("%15s%-30s %15s" %
                         (" ", desc[n][:30], d[0]))
 
-    def printTrans(self):
-        for ct in self.trn[0]:
-            trdt = CCD(ct[self.trn[1].index("ast_date")], "D1", 10)
-            ref1 = CCD(ct[self.trn[1].index("ast_refno")], "Na", 9)
-            trtp = CCD(ct[self.trn[1].index("ast_type")], "UI", 1)
-            batch = CCD(ct[self.trn[1].index("ast_batch")], "Na", 7)
-            mtyp = CCD(ct[self.trn[1].index("ast_mtyp")], "UI", 1)
-            amt1 = CCD(ct[self.trn[1].index("ast_amt1")], "SD", 15.2)
+    def printTrans(self, trn, atc):
+        for ct in trn:
+            trdt = CCD(ct[0], "D1", 10)
+            ref1 = CCD(ct[5], "Na", 9)
+            trtp = CCD(ct[3], "UI", 1)
+            batch = CCD(ct[2], "Na", 7)
+            mtyp = CCD(ct[4], "UI", 1)
+            amt1 = CCD(ct[6], "SD", 15.2)
             if self.rordp == "Y":
-                amt2 = CCD(ct[self.trn[1].index("ast_amt2")], "SD", 15.2)
-            detail = CCD(ct[self.trn[1].index("ast_desc")], "NA", 30)
+                amt2 = CCD(ct[7], "SD", 15.2)
+                detail = CCD(ct[8], "NA", 30)
+            else:
+                detail = CCD(ct[7], "NA", 30)
             if self.pglin > self.fpdf.lpp:
                 self.pageHeading()
                 self.pageHeadingTrans()
@@ -408,17 +380,14 @@ class ar4010(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         if self.rordp == "Y":
-            self.fpdf.drawText("%-35s %-10s %44s %5s" % \
-                ("Assets Register Interrogation as at", self.sysdtd, "Page",
-                self.pgnum))
+            self.fpdf.drawText("%-35s %-61s" %
+                ("Assets Register Interrogation as at", self.sysdtd))
         else:
-            self.fpdf.drawText("%-35s %-10s %28s %5s" % \
-                ("Assets Register Interrogation as at", self.sysdtd, "Page",
-                self.pgnum))
+            self.fpdf.drawText("%-35s %-45s" %
+                ("Assets Register Interrogation as at", self.sysdtd))
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()
         self.pglin = 6
@@ -428,7 +397,7 @@ class ar4010(object):
         self.fpdf.drawText()
         self.fpdf.drawText("%-5s %-10s %s %s %-5s %s %s" % ("", "",
             self.df.topf[0][0][3], self.df.t_disp[0][0][0], "",
-            self.df.topf[1][0][3], self.df.t_disp[1][0][0]))
+            self.df.topf[0][1][3], self.df.t_disp[0][0][1]))
         self.fpdf.drawText()
         if self.rordp == "Y":
             self.fpdf.drawText("%-10s %-9s %-3s %-7s %3s %-15s %-15s %-30s" % \
@@ -441,6 +410,37 @@ class ar4010(object):
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()
         self.pglin = 8
+
+    def getTrans(self, hist="Y"):
+        if self.rordp == "Y":
+            col = ("ast_date", "ast_curdt", "ast_batch", "ast_type", "ast_mtyp",
+                "ast_refno", "ast_amt1", "ast_amt2", "ast_desc", "ast_seq")
+        else:
+            col = ("ast_date", "ast_curdt", "ast_batch", "ast_type", "ast_mtyp",
+                "ast_refno", "ast_amt1", "ast_desc", "ast_seq")
+        atc = [
+            ("ast_date", "   Date", 10, "D1", "N"),
+            ("ast_curdt", "Curr-Dt", 7, "D2", "N"),
+            ("ast_batch", "Batch", 7, "Na", "N"),
+            ("ast_type", "Typ", 3, ("XX", artrtp), "N"),
+            ("ast_mtyp", "Mov", 3, ("XX", armvtp), "N"),
+            ("ast_refno", "Reference", 9, "Na", "Y"),
+            ("ast_amt1", "  Amount-1", 15.2, "SD", "N")]
+        if self.rordp == "Y":
+            atc.append(("ast_amt2", "  Amount-2", 15.2, "SD", "N"))
+        atc.extend([
+            ("ast_desc", "Details", 30, "NA", "N"),
+            ("ast_seq", "Sequence", 8, "UI", "N")])
+        whr = [
+            ("ast_cono", "=", self.opts["conum"]),
+            ("ast_group", "=", self.group),
+            ("ast_code", "=", self.code),
+            ("ast_curdt", "<=", self.eper)]
+        if hist == "N":
+            whr.append(("ast_curdt", ">=", self.sper))
+        odr = "ast_date, ast_refno"
+        dat = self.sql.getRec("asstrn", cols=col, where=whr, order=odr)
+        return dat, atc, col
 
     def doExit(self):
         self.df.closeProcess()

@@ -101,7 +101,7 @@ class bc2020(object):
         r1s = (("Fixture", "F"), ("Practice", "P"))
         fld = (
             (("T",0,0,0),"I@bfm_fmat",0,"","",
-                "","N",self.doFmat,fmt,None,("efld",)),
+                "","Y",self.doFmat,fmt,None,("efld",)),
             (("T",0,0,0),"ONA",30,""),
             (("T",0,1,0),("IRB",r1s),0,"Type","",
                 "F","N",self.doType,None,None,None),
@@ -549,7 +549,7 @@ class bc2020(object):
         self.pr.closeProcess()
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, "select_%s" % self.date, ext="pdf")
-        fpdf = MyFpdf(name=self.__class__.__name__, head=90, foot=True)
+        fpdf = MyFpdf(name=self.__class__.__name__, head=90)
         cw = fpdf.get_string_width("X")           # character width
         ld = 4.5                                  # line depth
         fm = {

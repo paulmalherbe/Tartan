@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import CCD, GetCtl, Sql, TartanDialog
 from tartanFunctions import askChoice, sendMail, showError
 from tartanWork import countries
@@ -64,12 +63,6 @@ class ml3090(object):
         memctl = gc.getCtl("memctl", self.opts["conum"])
         if not memctl:
             return
-        t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
-            t[1], t[2], t[3], t[4], self.__class__.__name__)
-        self.head = ("%03u %-30s %s" % (self.opts["conum"], self.opts["conam"],
-            "%s"))
         return True
 
     def mainProcess(self):
@@ -82,7 +75,7 @@ class ml3090(object):
                 ("mcc_code", "", 0, "Cd"),
                 ("mcc_desc", "", 0, "Description", "Y")),
             "where": [("mcc_cono", "=", self.opts["conum"])],
-            "whera": [["T", "mcc_type", 2]],
+            "whera": [["T", "mcc_type", 0]],
             "order": "mcc_code",
             "size": (400, 600)}
         mlm = {

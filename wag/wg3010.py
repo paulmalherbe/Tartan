@@ -95,8 +95,7 @@ class wg3010(object):
                 return
             col = sql.wagmst_col
             dic = sql.wagmst_dic
-            self.fpdf = MyFpdf(name=self.__class__.__name__, head=80,
-                auto=True, foot=True)
+            self.fpdf = MyFpdf(name=self.__class__.__name__, head=80, auto=True)
             self.fpdf.header = self.doHead
             self.fpdf.set_font("Courier", "B", 12)
             cwth = self.fpdf.get_string_width("X")

@@ -451,6 +451,7 @@ class bc1010(object):
             cols=(("a", "Tab Number          ", 6, "UI", "Tab"),))
         ent.sframe.wait_window()
         try:
+            self.merge = False
             if self.gender == "M":
                 start = self.mstart
                 if self.mstart < self.fstart:
@@ -475,9 +476,11 @@ class bc1010(object):
             chk = self.sql.getRec("bwltab", where=[("btb_cono", "=",
                 self.opts["conum"]), ("btb_tab", "=", tab)], limit=1)
             if chk:
-                showError(self.opts["mf"].body, "Invalid",
-                    "This Tab is Already Allocated")
-                raise Exception
+                ok = askQuestion(self.opts["mf"].body, "Invalid",
+                    "This Tab is Already Allocated, Do You Want to Merge?")
+                if ok == "no":
+                    raise Exception
+                self.merge = True
             self.tabcvt = True
             self.old = self.tab
             self.tab = tab
@@ -678,6 +681,10 @@ class bc1010(object):
         if self.tabcvt:
             # Conversion to Member
             for key in self.keys:
+                if key[0] == "bwltab" and self.merge:
+                    self.sql.delRec(key[0], where=[(key[1], "=",
+                        self.opts["conum"]), (key[2], "=", self.old)])
+                    continue
                 self.sql.updRec(key[0], cols=[key[2]], data=[self.tab],
                     where=[(key[1], "=", self.opts["conum"]),
                     (key[2], "=", self.old)])

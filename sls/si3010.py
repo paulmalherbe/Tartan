@@ -190,13 +190,10 @@ class si3010(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.rtype == "L":
-            self.head = ("%03u %-30s %115s %10s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-157s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %44s %10s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-86s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         for num, dat in enumerate(recs):
             p.displayProgress(num)
@@ -288,7 +285,6 @@ class si3010(object):
         self.fpdf.setFont()
 
     def pageHeading(self):
-        self.pgnum += 1
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
         self.fpdf.drawText(self.head)
@@ -299,14 +295,8 @@ class si3010(object):
             txt = "Works"
         else:
             txt = "Quote"
-        if self.rtype == "L":
-            self.fpdf.drawText("%-40s %-10s %64s %5s" % \
-                ("Outstanding %s Documents Report as at" % txt, self.sysdtd,
-                "Page", self.pgnum))
-        else:
-            self.fpdf.drawText("%-40s %-10s %35s %5s" % \
-                ("Outstanding %s Documents Report as at" % txt, self.sysdtd,
-                "Page", self.pgnum))
+        self.fpdf.drawText("%-37s %-10s" % \
+            ("Outstanding %s Documents Report as at" % txt, self.sysdtd))
         self.fpdf.setFont()
         self.pglin = 3
 

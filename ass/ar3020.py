@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
 from TartanClasses import TartanDialog
 from tartanFunctions import getModName, doPrinter, showError
@@ -47,10 +46,6 @@ class ar3020(object):
         if not assctl:
             return
         self.fromad = assctl["cta_emadd"]
-        t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.s_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
         self.totind = "N"
@@ -149,8 +144,7 @@ class ar3020(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %16s %33s %16s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-105s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.bcnt = 0
         self.bmt1 = 0
@@ -165,7 +159,6 @@ class ar3020(object):
         self.gmt2 = [0,0,0,0,0]
         self.gvat = [0,0,0,0,0]
         self.trtp = 0
-        self.pgnum = 0
         self.pglin = 999
         tc = self.sql.asstrn_col
         for num, dat in enumerate(recs):
@@ -235,12 +228,11 @@ class ar3020(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-36s %-7s %-2s %-7s %47s %5s" % \
+        self.fpdf.drawText("%-36s %-7s %-2s %-61s" %
             ("Asset Register Audit Trail for Period",
-            self.sdat.disp, "to", self.edat.disp, "Page", self.pgnum))
+            self.sdat.disp, "to", self.edat.disp))
         self.fpdf.drawText()
         self.pglin = 4
         if self.totind == "N":

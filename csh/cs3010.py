@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import ASD, CCD, MyFpdf, ProgressBar, Sql, TartanDialog
 from tartanFunctions import getModName, doPrinter
 
@@ -40,10 +39,6 @@ class cs3010(object):
             prog=self.__class__.__name__)
         if self.sql.error:
             return
-        t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % (t[0],
-            t[1], t[2], t[3], t[4])
         self.dte = self.sql.getRec("cshcnt", cols=["max(cct_date)"],
             where=[("cct_cono", "=", self.opts["conum"])], limit=1)[0]
         self.denoms = (
@@ -96,7 +91,7 @@ class cs3010(object):
         elif w < self.fm:
             return "Invalid To Date"
         self.to = w
-        self.tod = self.df.t_disp[pag][r][p]
+        self.tod = CCD(w, "D1", 10).disp
         csh = self.sql.getRec("cshcnt", where=[("cct_cono", "=",
             self.opts["conum"]), ("cct_type", "=", "T"), ("cct_date",
             "between", self.fm, self.to)])
@@ -114,10 +109,8 @@ class cs3010(object):
         self.tk2 = self.sql.getRec("cshana", where=[("can_cono", "=",
             self.opts["conum"]), ("can_type", "=", "T"), ("can_date",
             "between", self.fm, self.to)], order="can_trdt, can_code")
-        self.head = ("%03u %-30s %40s %6s" % (self.opts["conum"],
-            self.opts["conam"], self.sysdttm, self.__class__.__name__))
+        self.head = "%03u %-78s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
         self.pageHeading()
         self.printExpTak(self.tk1, 1)
@@ -299,12 +292,10 @@ class cs3010(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-30s %10s to %10s %18s %5s" % \
-            ("Cash Reconciliation for Period", self.fmd,
-            self.tod, "Page", self.pgnum))
+        self.fpdf.drawText("%-30s %10s to %-35s" % \
+            ("Cash Reconciliation for Period", self.fmd, self.tod))
         self.fpdf.drawText()
         self.pglin = 4
         self.fpdf.setFont()

@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import ASD, CCD, MyFpdf, ProgressBar, Sql, TartanDialog
 from tartanFunctions import getModName, doPrinter, showError
 from tartanWork import gltrtp
@@ -41,9 +40,6 @@ class gl3010(object):
             prog=self.__class__.__name__)
         if self.sql.error:
             return
-        t = time.localtime()
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % (t[0],
-            t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -111,11 +107,9 @@ class gl3010(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = ("%03u %-30s %38s %10s" % (self.opts["conum"],
-            self.opts["conam"], self.sysdttm, self.__class__.__name__))
+        self.head = "%03u %-80s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.btot = [0, 0]
-        self.pgnum = 0
         self.pglin = 999
         bc = self.sql.ctlbat_col
         tc = self.sql.gentrn_col
@@ -173,11 +167,9 @@ class gl3010(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-34s %43s %5s" %
-            ("General Ledger Batch Error Listing", "Page", self.pgnum))
+        self.fpdf.drawText("General Ledger Batch Error Listing")
         self.fpdf.drawText()
         self.fpdf.setFont()
         self.pglin = 4

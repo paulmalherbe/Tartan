@@ -51,7 +51,8 @@ class bc1040(object):
             "tables": ("bwltyp",),
             "cols": (
                 ("bct_code", "", 0, "Cod"),
-                ("bct_desc", "", 0, "Description", "Y")),
+                ("bct_desc", "", 0, "Description", "Y"),
+                ("bct_cfmat", "", 0, "F")),
             "where": [("bct_cono", "=", self.opts["conum"])]}
         r1s = (
             ("Tournament", "T"),
@@ -89,11 +90,17 @@ Teams: This is for Team Competitions e.g. Club V Club.
             (("T",0,7,0),"I@bct_grgame",0,"","",
                 0,"N",self.doGrGame,None,None,("efld",)),
             (("T",0,8,0),("IRB",r2s),0,"Adjust Scores","",
-                "N","N",self.doAdjust,None,None,None),
+                "N","N",self.doAdjust,None,None,None,None,
+                "Whether or Not to Modify the Scores of Groups, Other "\
+                "than Group A, when the Teams are Split into Groups."),
             (("T",0,9,0),"I@bct_expunge",0,"","",
-                "","N",None,None,None,("efld",)),
+                "","N",None,None,None,("efld",),None,
+                "These Comma Separated Game Scores will be Cleared when "\
+                "Teams are Split into Groups."),
             (("T",0,10,0),"I@bct_percent",0,"","",
-                100,"N",None,None,None,("efld",)),
+                100,"N",None,None,None,("efld",),None,
+                "This is the Percentage of the Remaining Game Scores which "\
+                "Will be Retained when Teams are Split into Groups."),
             (("T",0,11,0),"I@bct_drawn",0,"","",
                 1,"N",self.doDrawn,None,None,("efld",)),
             (("T",0,12,0),("IRB",r2s),0,"Strict S v S",
@@ -246,7 +253,7 @@ Are you Sure this is what you Want to Do?""", default="no")
         if self.cfmat in ("D", "K", "R"):
             if self.newtyp:
                 self.sql.insRec("bwlpts", data=[self.opts["conum"],
-                    self.ctype, "D", "N", 0, "N", 0, 0, 0, "N", 0, 0])
+                    self.ctype, "D", "N", 0, "N", 0, 0, 1, "N", 0, 0])
         else:
             self.df.setWidget(self.df.mstFrame, state="hide")
             if self.pdiff == "Y":

@@ -53,8 +53,6 @@ class cr3030(object):
         self.fromad = crsctl["ctc_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         return True
 
     def mainProcess(self):
@@ -149,12 +147,10 @@ class cr3030(object):
 
     def printReport(self, mst):
         p = ProgressBar(self.opts["mf"].body, mxs=len(mst), esc=True)
-        self.head = ("%03u %-30s %14s %35s %14s %10s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        self.head = "%03u %-107s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.ctots = [0,0,0,0,0]
         self.gtots = [0,0,0,0,0]
-        self.pgnum = 0
         self.pglin = 999
         for num, rec in enumerate(mst):
             p.displayProgress(num)
@@ -175,7 +171,7 @@ class cr3030(object):
                 neg=False, zer="N")
             if not trns:
                 continue
-            if not self.pgnum:
+            if self.pglin == 999:
                 self.pageHeading(acno.disp, name.disp, ptyp)
             else:
                 self.newAccount(acno.disp, name.disp, ptyp)
@@ -225,12 +221,10 @@ class cr3030(object):
     def pageHeading(self, acno, name, ptyp):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-44s %-10s %49s %5s" % \
-            ("Creditors Transactions Due For Payment as at",
-            self.pdatd, "Page", self.pgnum))
+        self.fpdf.drawText("%-44s %-66s" % \
+            ("Creditors Transactions Due For Payment as at", self.pdatd))
         self.fpdf.drawText()
         self.fpdf.drawText("%-21s%-1s%-3s%-9s%-10s%-3s%-12s%-2s%-1s" % \
             ("(Options: Terms-Base", self.ptyp, "", "Pay-Date", self.pdatd,

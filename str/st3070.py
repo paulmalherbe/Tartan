@@ -50,8 +50,6 @@ class st3070(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.maxlines = 20
         return True
 
@@ -167,13 +165,10 @@ class st3070(object):
     def printSetup(self, recs):
         self.p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.rtyp == "D":
-            self.head = ("%03u %-30s %43s %10s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-85s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %65s %10s" % (self.opts["conum"],
-                self.opts["conam"], self.sysdttm, self.__class__.__name__))
+            self.head = "%03u %-107s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pgnum = 0
         self.pglin = 999
 
     def doDetail(self, recs):
@@ -247,7 +242,6 @@ class st3070(object):
         self.p.closeProgress()
 
     def printHeader(self):
-        self.pgnum += 1
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
         self.fpdf.drawText(self.head)
@@ -256,18 +250,10 @@ class st3070(object):
             txt = "%-39s %3s %-5s %-10s" % \
                 ("Outstanding Orders Report for Location", self.locd, "as at",
                     self.sysdtd)
-            if self.rtyp == "D":
-                txt = "%s %22s %5s" % (txt, "Page", self.pgnum)
-            else:
-                txt = "%s %44s %5s" % (txt, "Page", self.pgnum)
         else:
             txt = "%-27s %3s %-5s %-10s" % \
                 ("Orders Report for Location", self.locd, "as at",
                     self.sysdtd)
-            if self.rtyp == "D":
-                txt = "%s %34s %5s" % (txt, "Page", self.pgnum)
-            else:
-                txt = "%s %56s %5s" % (txt, "Page", self.pgnum)
         self.fpdf.drawText(txt)
         self.fpdf.drawText()
         if self.rtyp == "D":

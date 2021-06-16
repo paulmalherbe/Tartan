@@ -55,7 +55,7 @@ class bc3010(object):
                 ("bdm_dbase", "", 0, ""),
                 ("bdm_tsize", "", 0, "")),
             "where": [("bdm_cono", "=", self.opts["conum"])],
-            "order": "bdm_date, bdm_time desc"}
+            "order": "bdm_date desc, bdm_time desc"}
 
         r1s = (("Morning", "M"), ("Afternoon", "A"))
         r2s = (("Yes", "Y"), ("No", "N"))

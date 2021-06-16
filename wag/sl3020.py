@@ -50,8 +50,6 @@ class sl3020(object):
         self.fromad = wagctl["ctw_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         if lir:
             fy = int(lir / 10000)
             fm = int(lir / 100) - (fy * 100) + 1
@@ -161,13 +159,9 @@ class sl3020(object):
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if self.totsonly == "Y":
-            self.head = ("%03u %-30s %38s %6s" % \
-            (self.opts["conum"], self.opts["conam"], self.sysdttm,
-                self.__class__.__name__))
+            self.head = "%03u %-76s" % (self.opts["conum"], self.opts["conam"])
         else:
-            self.head = ("%03u %-30s %12s %33s %12s %6s" % (self.opts["conum"],
-                self.opts["conam"], "", self.sysdttm, "",
-                    self.__class__.__name__))
+            self.head = "%03u %-97s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.bqty = 0
         self.bamt = 0
@@ -179,7 +173,6 @@ class sl3020(object):
         self.gam = [0,0,0,0,0,0,0]
         self.gdd = [0,0,0,0,0,0,0]
         self.trtp = 0
-        self.pgnum = 0
         self.pglin = 999
         col = self.sql.wagltf_col
         for num, dat in enumerate(recs):
@@ -243,19 +236,11 @@ class sl3020(object):
     def pageHeading(self):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        if self.totsonly == "Y":
-            self.fpdf.drawText(
-            "%-34s %-7s %2s %-7s %20s %5s" % \
+        self.fpdf.drawText("%-34s %-7s %2s %-7s" % \
             ("Staff Loans Audit Trail for Period",
-            self.sdatd, "to", self.edatd, "Page", self.pgnum))
-        else:
-            self.fpdf.drawText(
-            "%-34s %-7s %-2s %-7s %41s %5s" % \
-            ("Staff Loans Audit Trail for Period",
-            self.sdatd, "to", self.edatd, "Page", self.pgnum))
+            self.sdatd, "to", self.edatd))
         self.fpdf.drawText()
         self.pglin = 4
         if self.totind == "N":

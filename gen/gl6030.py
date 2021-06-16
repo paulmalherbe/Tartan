@@ -24,7 +24,6 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
 from TartanClasses import ASD, CCD, GetCtl, MyFpdf, Sql, TartanDialog
 from tartanFunctions import getModName, doPrinter
 
@@ -140,10 +139,6 @@ class gl6030(object):
             prog=self.__class__.__name__)
         if self.sql.error:
             return
-        t = time.localtime()
-        self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i)" % \
-            (t[0], t[1], t[2], t[3], t[4])
         self.start = self.opts["period"][1][0]
         self.s_per = int(self.start / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
@@ -562,10 +557,8 @@ class gl6030(object):
         else:
             self.gsl_bal = 0.00
             self.sln_bal = 0.00
-        head = ("%03u %-30s %2s %33s %3s %6s" % (self.opts["conum"],
-            self.opts["conam"], "", self.sysdttm, "", self.__class__.__name__))
+        head = "%03u %-78s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=head)
-        self.pgnum = 0
         self.pglin = 999
         self.pageHeading(head)
         if self.arint == "Y":
@@ -672,12 +665,11 @@ class gl6030(object):
     def pageHeading(self, desc=None):
         self.fpdf.add_page()
         self.fpdf.setFont(style="B")
-        self.pgnum += 1
         self.fpdf.drawText(desc)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-47s %-7s %20s %5s" % \
+        self.fpdf.drawText("%-47s %-7s" %
             ("General Ledger Integrated Controls up to Period",
-            self.df.t_disp[0][0][0], "Page", self.pgnum))
+            self.df.t_disp[0][0][0]))
         self.fpdf.drawText()
         self.fpdf.drawText("%-24s %-29s %-16s %-20s" % ("Description",
             "Control Account", "Ledger", "Difference"))
