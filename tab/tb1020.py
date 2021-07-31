@@ -70,6 +70,7 @@ class tb1020(object):
                 else:
                     sql.updRec("verupd", data=[self.opts["ver"], self.sysdtw])
                 self.dbm.commitDbase()
+            self.doFixAge()
             self.doFinal()
             if self.dbm.dbase == "SQLite":
                 self.dbm.commitDbase()
@@ -617,6 +618,26 @@ class tb1020(object):
         if table in datdic:
             for dat in datdic[table]:
                 sql.insRec(table, data=dat)
+
+    def doFixAge(self):
+        for sss in ("crs", "drs"):
+            sql = Sql(self.dbm, ["%smst" % sss, "%sage" % sss], prog=__name__)
+            if sss == "drs":
+                col = ["drm_cono", "drm_chain", "drm_acno"]
+                whr = ["dra_seq", "="]
+                idx = 10
+            else:
+                col = ["crm_cono", "crm_acno"]
+                whr = ["cra_seq", "="]
+                idx = 9
+            accs = sql.getRec("%smst" % sss, cols=col)
+            recs = sql.getRec("%sage" % sss)
+            for rec in recs:
+                if rec[:len(col)] not in accs:
+                    w = whr[:]
+                    w.append(rec[idx])
+                    sql.delRec("%sage" % sss, where=[w])
+            self.dbm.commitDbase()
 
     def doFinal(self):
         chg = False
