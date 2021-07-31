@@ -200,6 +200,7 @@ def loadRcFile(rcfile=None, default=False):
     """
 
     import os, sys
+    from pathlib import Path
     from TartanClasses import FITZ
     # Defaults
     if FITZ:
@@ -207,10 +208,17 @@ def loadRcFile(rcfile=None, default=False):
     else:
         win = os.path.join(getPrgPath(), "uty", "SumatraPDF.exe")
         vwr = ["/usr/bin/evince", win]
+    tardir = os.path.join(Path.home(), "Tartan")
+    if not os.path.isdir(tardir):
+        os.makedirs(tardir)
     if sys.platform == "win32":
-        tardir = os.path.normpath("C:/Tartan")
+        test1 = os.path.normpath("C:/tartanrc")
+        test2 = os.path.normpath("C:/Tartan/tartanrc")
+        test3 = os.path.join(tardir, "tartanrc")
     else:
-        tardir = os.path.join(os.getenv("HOME"), "Tartan")
+        test1 = os.path.join(Path.home(), ".tartanrc")
+        test2 = None
+        test3 = os.path.join(tardir, ".tartanrc")
     opts = {
         "dbase": ["SQLite"],
         "dbname": ["tartan"],
@@ -259,17 +267,12 @@ def loadRcFile(rcfile=None, default=False):
     if not rcfile:
         rcfile = os.environ.get("TARTANRC")
         if not rcfile:
-            if sys.platform == "win32":
-                if os.path.isfile(os.path.normpath("C:/tartanrc")):
-                    rcfile = os.path.normpath("C:/tartanrc")
-                elif os.path.isfile(os.path.normpath("C:/Tartan/tartanrc")):
-                    rcfile = os.path.normpath("C:/Tartan/tartanrc")
-                else:
-                    rcfile = os.path.join(tardir, "tartanrc")
-            elif os.path.isfile(os.path.join(tardir, "tartanrc")):
-                rcfile = os.path.join(tardir, "tartanrc")
+            if os.path.isfile(test1):
+                rcfile = test1
+            elif test2 is not None and os.path.isfile(test2):
+                rcfile = test2
             else:
-                rcfile = os.path.join(os.path.expanduser("~"), ".tartanrc")
+                rcfile = test3
     try:
         rcdic = {"name": rcfile}
         fle = open(rcfile, "r")
@@ -2567,6 +2570,7 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
                         data = [cono]
                         if system == "drs":
                             data.append(chain)
+                        data.append(acno)
                         data.append(dtr[col.index("%s_type" % pfx)])
                         if system == "mem":
                             data.append(dtr[col.index("%s_refno" % pfx)])
@@ -2584,6 +2588,7 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
                     data = [cono]
                     if system == "drs":
                         data.append(chain)
+                    data.append(acno)
                     data.append(ctr[col.index("%s_type" % pfx)])
                     if system == "mem":
                         data.append(ctr[col.index("%s_refno" % pfx)])

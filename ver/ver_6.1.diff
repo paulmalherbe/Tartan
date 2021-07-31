@@ -1,0 +1,1152 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index afe613a..7ca6a84 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -162,7 +162,7 @@ try:
+             style.configure("R.TButton", relief="raised")
+             style.layout("R.TButton", self.arrow_layout("right"))
+             kw["style"] = "L.TButton" if direction == "left" else "R.TButton"
+-            ttk.Button.__init__(self, master, **kw)
++            super().__init__(master, **kw)
+ 
+     class MyButtonBox(ttk.Frame):
+         def __init__(self, parent, row=None, padx=0, pady=0, **kwargs):
+@@ -257,7 +257,7 @@ try:
+                 topl.bind("<Alt_L><%s>" % text[udl].upper(), self.execButCmd)
+                 topl.bind("<Alt_L><%s>" % text[udl].lower(), self.execButCmd)
+ 
+-        def execButCmd(self, event):
++        def execButCmd(self, event=None):
+             try:
+                 self.update_idletasks()
+                 self.event_generate("<Leave>")
+@@ -631,13 +631,16 @@ try:
+ 
+     class MyMenuButton(tk.Menubutton):
+         def __init__(self, parent, font="TkMenuFont", fg=None, bg=None, af=None, ab=None, relief="raised", fill="both", exp="yes", side="left", **kwargs):
+-            tk.Menubutton.__init__(self, parent, **kwargs)
++            super().__init__(parent, **kwargs)
+             if ab is None:
+                 af = fg
+-                style = ttk.Style()
+-                for s in style.map("TButton")["background"]:
+-                    if s[0] == "active":
+-                        ab = s[1]
++                try:
++                    style = ttk.Style()
++                    for s in style.map("TButton")["background"]:
++                        if s[0] == "active":
++                            ab = s[1]
++                except:
++                    ab = bg
+             self.configure(relief=relief, font=font, bg=bg, fg=fg,
+                 activebackground=ab, activeforeground=af)
+             self.pack(fill=fill, expand=exp, side=side)
+@@ -691,7 +694,7 @@ try:
+                         break
+             else:
+                 wrap = 800
+-                mkw = MkWindow(tk=True, decor=True, resiz=False)
++                mkw = MkWindow(decor=True, resiz=False)
+                 self.msgwin = mkw.newwin
+             self.frame = MyFrame(self.msgwin, bg="black", borderwidth=5,
+                 relief="ridge", style="MFrame.TFrame")
+@@ -1247,7 +1250,7 @@ try:
+         def __init__(self, parent, *args, **kw):
+             if "height" not in kw:
+                 kw["height"] = 200
+-            MyFrame.__init__(self, parent, *args, **kw)
++            super().__init__(parent, *args, **kw)
+             # create a canvas object and a vertical scrollbar for scrolling it
+             self.vsb = ttk.Scrollbar(self, orient="vertical")
+             self.vsb.pack(fill="y", side="right", expand=False)
+@@ -1331,7 +1334,7 @@ class MainFrame(object):
+                 if not title:
+                     title = "Tartan Systems - Copyright %s 2004-2021 "\
+                         "Paul Malherbe" % chr(0xa9)
+-                self.window = MkWindow(tk=True, title=title, icon="tartan",
++                self.window = MkWindow(title=title, icon="tartan",
+                     size=self.geo, resiz=False).newwin
+                 self.setThemeFont()
+                 self.createChildren()
+@@ -1513,7 +1516,6 @@ class MainFrame(object):
+ class MkWindow(object):
+     """
+     Valid Arguments:
+-        tk      True = Use Tk() else Toplevel()
+         title   The title of the window
+         icon    The icon to use for the window
+         size    The size of the window
+@@ -1525,12 +1527,10 @@ class MkWindow(object):
+         hide    Withdraw window
+     """
+     def __init__(self, **args):
+-        for arg in ("tk", "title", "icon", "size", "resiz", "trans",
++        for arg in ("title", "icon", "size", "resiz", "trans",
+                 "decor", "frame", "remov", "hide"):
+             if arg in args:
+                 setattr(self, arg, args[arg])
+-            elif arg == "tk":
+-                self.tk = False
+             elif arg == "size":
+                 self.size = ""
+             elif arg == "resiz":
+@@ -1549,7 +1549,7 @@ class MkWindow(object):
+         self.setAttributes()
+ 
+     def drawWindow(self):
+-        if self.tk:
++        if tk._default_root is None:
+             # Initial main window
+             self.newwin = tk.Tk()
+             # Load extra themes if installed
+@@ -1585,6 +1585,7 @@ class MkWindow(object):
+                 pass
+         else:
+             self.newwin = tk.Toplevel()
++        # Disable the Tab key
+         self.newwin.bind_all("<Tab>", lambda event: "break")
+         if self.hide:
+             self.newwin.withdraw()
+@@ -1710,8 +1711,6 @@ class TartanMenu(object):
+     def __init__(self, **args):
+         for arg in args:
+             setattr(self, arg, args[arg])
+-        # Original menu font size
+-        self.mfs = self.mf.rcdic["mfs"]
+         self.setVariables()
+ 
+     def setVariables(self):
+@@ -1751,8 +1750,6 @@ class TartanMenu(object):
+         mens = {}
+         buts = {}
+         column = 0
+-        self.mf.rcdic["mfs"] = self.mfs
+-        self.mf.setThemeFont(butt=False)
+         font = tkfont.Font(font=(self.mf.rcdic["mft"], self.mf.rcdic["mfs"]))
+         for m in self.menus:
+             if m[0] == "MM":
+@@ -1770,7 +1767,8 @@ class TartanMenu(object):
+                 else:
+                     m[2] = "%s\n%s %s" % tuple(m[2])
+                 buts[nm] = MyMenuButton(self.menubar, bg=bg, fg=fg,
+-                    af=bg, ab=fg, menu=m[1], text=m[2], underline=pos)
++                    af=bg, ab=fg, font=font, menu=m[1], text=m[2],
++                    underline=pos)
+                 mens[m[1]] = tk.Menu(buts[nm], fg="black", bg="white",
+                     activeforeground=fg, activebackground=bg,
+                     font=font, tearoff=False)
+@@ -1837,8 +1835,10 @@ class TartanMenu(object):
+         self.mf.window.update_idletasks()
+         while self.menubar.winfo_reqwidth() > self.mf.geo[0]:
+             self.mf.rcdic["mfs"] = int(self.mf.rcdic["mfs"]) - 1
+-            self.mf.setThemeFont(butt=False)
+-            font = tkfont.Font(font="TkMenuFont")
++            font = tkfont.Font(font=(self.mf.rcdic["mft"],
++                self.mf.rcdic["mfs"]))
++            for but in buts:
++                buts[but].configure(font=font)
+             self.menubar.update_idletasks()
+         self.menubar.pack(anchor="nw", fill="x")
+         iwth = self.mf.body.winfo_width()
+@@ -6982,7 +6982,8 @@ class SelectChoice(object):
+     modal  - Whether or not the window is modal.
+     live   - Whether the treeview can have focus, defaults to True.
+     posn   - The Initial Row to highlight.
+-    fltr   - If filtering is available, True or False.
++    fltr   - If filtering is available, True, False or a list/tuple having:
++                (parent=None, transient=None, modal=False, style=None)
+     scrl   - Have Scrollbars True or False.
+     styl   - Style to use.
+     font   - Font to use.
+@@ -6998,7 +6999,7 @@ class SelectChoice(object):
+                  A - Search anywhere in the string.
+                  B - Search from the beginning of the string.
+     """
+-    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, wait=True, cmnd=None, butt=None, neww=True, deco=True, modal=True, live=True, posn=0, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", spos="B", escape=True, colr=None, rowc=1):
++    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, wait=True, cmnd=None, butt=None, neww=True, deco=True, modal=True, live=True, posn=None, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", spos="B", escape=True, colr=None, rowc=1):
+         self.scrn = scrn
+         self.ocol = cols
+         if titl:
+@@ -7233,7 +7234,7 @@ class SelectChoice(object):
+                 else:
+                     text = str(col)
+                     anchor = "w"
+-                if self.mode != "none" and self.sort:
++                if self.sort:
+                     self.tree.heading(nam, text=text, anchor=anchor,
+                         command=lambda c=nam: self.doSort(c, False))
+                 else:
+@@ -7278,7 +7279,7 @@ class SelectChoice(object):
+             self.tree.bind("<Key>", self.showEntry)
+             # Create a search entry widget
+             self.toSearch = tk.StringVar()
+-            self.entry = tk.Entry(self.tree, textvariable=self.toSearch)
++            self.entry = MyEntry(self.tree, textvariable=self.toSearch)
+             self.toSearch.trace_variable("w", self.doSearch)
+             self.entry.bind("<Up>", self.anotherOne)
+             self.entry.bind("<Down>", self.anotherOne)
+@@ -7289,15 +7290,21 @@ class SelectChoice(object):
+             if start:
+                 self.tree.selection_set(start)
+                 self.tree.focus(start)
+-            if self.posn:
+-                self.tree.update_idletasks()
+-                self.tree.see(start)
++        self.tree.update_idletasks()
++        if self.live or self.posn is not None:
++            self.tree.see(start)
+         elif last:
+             # Scroll to last entry
+-            self.tree.update_idletasks()
+             self.tree.see(last)
+         if self.neww:
+-            placeWindow(self.window, parent=self.scrn, expose=True)
++            self.window.update_idletasks()
++            sw = self.window.winfo_screenwidth() * .95
++            sh = self.window.winfo_reqheight()
++            if self.window.winfo_reqwidth() > sw:
++                placeWindow(self.window, parent=self.scrn, size=(sw, sh),
++                    expose=True)
++            else:
++                placeWindow(self.window, parent=self.scrn, expose=True)
+         if self.modal:
+             self.window.wait_visibility()
+             self.window.grab_set()
+@@ -7423,7 +7430,7 @@ class SelectChoice(object):
+                 continue
+             start = None
+             text = self.tree.item(child, "values")[self.srch]
+-            if text.lower().startswith(pattern.lower()):
++            if text.lower().count(pattern.lower()):
+                 self.tree.selection_set(child)
+                 self.tree.update_idletasks()
+                 self.tree.focus(child)
+@@ -7496,7 +7503,8 @@ class SelectChoice(object):
+                 if idx < 0:
+                     idx = 0
+             iid = iids[idx]
+-        self.tree.selection_set(iid)
++        if self.live:
++            self.tree.selection_set(iid)
+         self.tree.focus(iid)
+ 
+     def doSort(self, col, descending):
+@@ -7513,7 +7521,8 @@ class SelectChoice(object):
+         # switch the heading so that it will sort in the opposite direction
+         self.tree.heading(col,
+             command=lambda col=col: self.doSort(col, not descending))
+-        self.tree.selection_set(start)
++        if self.live:
++            self.tree.selection_set(start)
+         self.tree.focus(start)
+ 
+     def doFilter(self, event=None):
+@@ -7719,7 +7728,7 @@ class ScrollText(object):
+                 self.frame.pack()
+         else:
+             trans, resiz, decor = None, True, True
+-            win = MkWindow(tk=True, trans=trans, title=self.title,
++            win = MkWindow(trans=trans, title=self.title,
+                 resiz=resiz, decor=decor, frame=True)
+             self.window = win.newwin
+             self.frame = win.newfrm
+@@ -9563,15 +9572,11 @@ class Batches(object):
+                 "","N",self.doQty,None,None,("efld",)),
+             (("T",0,3,0),"ISD",13.2,"Value of Entries","",
+                 "","N",self.doVal,None,None,("efld",)),
+-            (("T",0,4,0),"INA",5,"Batched By","",
+-                "","N",None,None,None,None),
+-            (("T",0,5,0),"INA",5,"Captured By","",
+-                "","N",self.doCapBy,None,None,None),
+-            (("T",0,6,0),("IRB",r1s),0,"Multiple Date Allocations","",
++            (("T",0,4,0),("IRB",r1s),0,"Multiple Date Allocations","",
+                 "N","N",self.doMulti,None,None,None)]
+         if self.bankctl:
+             fld.append(
+-                (("T",0,7,0),"INA",10,"Bank Control","Bank Control Record",
++                (("T",0,5,0),"INA",10,"Bank Control","Bank Control Record",
+                     "","N",self.doCtl,ctl,None,("efld",)))
+         tnd = ((self.doHeadEnd, "y"), )
+         txt = (self.doHeadExit, )
+@@ -9633,8 +9638,6 @@ class Batches(object):
+                 if cf.flag == "no":
+                     return "Invalid Change of Batch Value"
+             return "nd"
+-
+-    def doCapBy(self, frt, pag, r, c, p, i, w):
+         if self.sys not in ("ASS","CRS","DRS","GEN","LON","MEM","RTL","SLN"):
+             if not self.bankctl:
+                 return "nd"
+@@ -9694,14 +9697,12 @@ class Batches(object):
+         self.curdt = self.b1.t_work[0][0][1]
+         self.trno = self.b1.t_work[0][0][2]
+         self.trval = self.b1.t_work[0][0][3]
+-        self.batby = self.b1.t_work[0][0][4]
+-        self.indby = self.b1.t_work[0][0][5]
+-        self.multi = self.b1.t_work[0][0][6]
++        self.multi = self.b1.t_work[0][0][4]
+         self.getTotals()
+         if self.new:
+             self.sql.insRec("ctlbat", data=[self.conum, self.sys, self.rtn,
+                 self.batno, self.sysdt, self.curdt, self.trno, self.trval,
+-                self.batby, self.indby, self.multi, self.ctl, "N"])
++                self.multi, self.ctl, "N"])
+         else:
+             self.sql.updRec("ctlbat", cols=["btm_trno", "btm_trval"],
+                 data=[self.trno, self.trval], where=[("btm_cono", "=",
+@@ -11048,7 +11049,7 @@ Salaries and Wages -> File Maintenance -> Control Record
+ and Create It."""}
+ 
+     def getCtl(self, table, conum=None, error=True):
+-        sql = Sql(self.mf.dbm, ["ffield", table], prog=__name__)
++        sql = Sql(self.mf.dbm, ["ffield", table], error=error, prog=__name__)
+         if sql.error:
+             return None
+         dics = {}
+@@ -16446,7 +16447,7 @@ class MyFpdf(fpdf.FPDF):
+         t = time.localtime()
+         self.sysdt = time.strftime("%d %B %Y %H:%M:%S", t)
+         try:
+-            fpdf.FPDF.__init__(self, orientation, self.unit, self.fmat)
++            super().__init__(orientation, self.unit, self.fmat)
+             self.setValues(name, head, font)
+             self.set_author("Tartan Systems")
+             self.set_fill_color(220)
+@@ -16617,7 +16618,7 @@ class MyFpdf(fpdf.FPDF):
+ 
+ class TartanLabel(MyFpdf):
+     def __init__(self, label, unit="mm", posY=1, posX=1):
+-        MyFpdf.__init__(self, name="__name__", head=90, font="arial")
++        super().__init__(name="__name__", head=90, font="arial")
+         self.setFont(self.font[0], "", self.font[1])
+         if label in tartanWork.labels:
+             type_format = tartanWork.labels[label]
+@@ -16677,7 +16678,7 @@ class DrawForm(MyFpdf):
+         self.tname = tname
+         self.wrkdir = wrkdir
+         if self.setVariables():
+-            MyFpdf.__init__(self, orientation=self.ortn, fmat=self.pgsz)
++            super().__init__(orientation=self.ortn, fmat=self.pgsz)
+             self.set_title(self.titl)
+             self.set_author("Tartan Systems")
+             self.set_auto_page_break(False, margin=0)
+@@ -17346,9 +17347,9 @@ class SimpleDialog(object):
+                     ("name", "label details", size, "type") e.g.
+                 cols=[
+                     ("a", "Number", 7, "UI"),
+-                    ("b", "Surname", (20,1), "TX"),
+-                    ("c", "Names", (20,1), "TX"),
+-                    ("d", "Group", (30,1), "TX"),
++                    ("b", "Surname", 20, "TX"),
++                    ("c", "Names", 20, "TX"),
++                    ("d", "Group", 30, "TX"),
+                     ("e", "Arrival", 10, "d1")]
+     butt    -  A list of lists/tuples of buttons as follows:
+                     ("text", "command") e.g.
+@@ -17369,8 +17370,6 @@ class SimpleDialog(object):
+         self.conf = conf
+         self.data = []
+         self.ents = {}
+-        self.sframe = MyFrame(self.window, bg="black", borderwidth=bd,
+-            style=style, padding=pad)
+         if not parent and not style:
+             style = ttk.Style()
+             style.theme_use("clam")
+@@ -17387,6 +17386,8 @@ class SimpleDialog(object):
+                 else:
+                     nf.configure(family=font[1], size=font[2], weight=font[3])
+                 self.sframe.option_add(font[0], nf)
++        self.sframe = MyFrame(self.window, bg="black", borderwidth=bd,
++            style=style, padding=pad)
+         self.sframe.place(anchor="center", relx=0.5, rely=0.5)
+         if title:
+             head = MyLabel(self.sframe, text=title, color=True, borderwidth=2,
+@@ -17410,12 +17411,9 @@ class SimpleDialog(object):
+                 if col[3][0] == "H":
+                     wid.configure(show="*")
+             wid.bind("<Escape>", functools.partial(self.goBack, num, col))
+-            wid.grid(row=num, column=1, sticky="e")
++            wid.grid(row=num, column=1, sticky="w")
+             self.ents[col[0]] = wid
+-        if len(self.cols[0]) == 5:
+-            txt = "Enter %s" % self.cols[0][4]
+-        else:
+-            txt = "Enter %s" % self.cols[0][1]
++        txt = "Enter %s" % self.cols[0][1]
+         if self.cols[0][3] == "TV":
+             txt += " then <F9> to Accept or <Esc> to Exit"
+         else:
+@@ -17533,7 +17531,8 @@ class SimpleDialog(object):
+         self.sframe.destroy()
+         if not self.parent:
+             self.window.destroy()
+-        self.window.update()
++        else:
++            self.window.update()
+ 
+ class ExportDbase(object):
+     def __init__(self, **opts):
+@@ -18282,7 +18281,7 @@ class ViewPDF(object):
+                     if self.mf and self.mf.window:
+                         self.win = MkWindow(remov=False).newwin
+                     else:
+-                        self.win = MkWindow(tk=True).newwin
++                        self.win = MkWindow().newwin
+                     try:
+                         self.win.tk.call("wm", "iconphoto", self.win._w,
+                             "-default", getImage("pdfimg"))
+@@ -18362,10 +18361,9 @@ class ViewPDF(object):
+         self.bt3.pack(padx=3, pady=3, side="left")
+         # Draw menu
+         imgm = getImage("menu", siz=(20, 20))
+-        self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat",
+-            font=self.font, image=imgm, compound="left", underline=0,
+-            fg=fg, bg=bg)
+-        self.bt4.pack(exp="no", side="right")
++        self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat", fg=fg,
++            bg=bg, font=self.font, image=imgm, compound="left", underline=0)
++        self.bt4.pack(exp="no", padx=3, pady=3, side="right")
+         self.bt4.menu = tk.Menu(self.bt4, font=self.font, bg=bg, fg=fg,
+             tearoff=0)
+         self.bt4["menu"] = self.bt4.menu
+@@ -18380,7 +18378,7 @@ class ViewPDF(object):
+                         ctlsys["sys_mnam"], ctlsys["sys_mpwd"]]
+                     if sendMail(self.server, "", "", "", check=True,
+                             err=self.mf.window, wrkdir=self.mf.rcdic["wrkdir"]):
+-                        mods.append(("E-Mail", self.doEmail))
++                        mods.append(("Email", self.doEmail))
+             except:
+                 pass
+         mods.extend([
+@@ -18438,9 +18436,9 @@ class ViewPDF(object):
+         self.win.bind("<Control-KP_Subtract>", self.doZoom)
+         self.win.update_idletasks()
+         # Scale settings
+-        self.scale = 1
+-        self.mat = list(fitz.Matrix(1, 1))
++        self.scale = .75
+         self.zoom = self.scale
++        self.matrix = list(fitz.Matrix(1, 1))
+         # Other settings
+         self.pgno = 1
+         self.pags = []
+@@ -18456,22 +18454,27 @@ class ViewPDF(object):
+ 
+     def doPassword(self):
+         def enterPwd(event=None):
+-            self.pwd = ent.get()
++            self.pwd = ent.get().strip()
++            frm.destroy()
++        def exitFrm(event=None):
++            self.pwd = None
+             frm.destroy()
+         frm = MyFrame()
+         frm.pack()
+         lab = MyLabel(frm, text="Enter Password")
+         lab.pack(side="left")
+-        ent = MyEntry(frm)
++        ent = MyEntry(frm, show="*")
+         ent.pack(side="left")
++        ent.bind("<Escape>", exitFrm)
+         ent.bind("<Return>", enterPwd)
+         ent.bind("<KP_Enter>", enterPwd)
+         self.win.deiconify()
+         ent.focus_set()
+         frm.wait_window()
+-        if not self.doc.authenticate(self.pwd):
++        if not self.pwd or not self.doc.authenticate(self.pwd):
+             self.win.destroy()
+-            showError(None, "Error", "Invalid Password")
++            if self.pwd:
++                showError(None, "Error", "Invalid Password")
+             return
+         return True
+ 
+@@ -18535,11 +18538,11 @@ class ViewPDF(object):
+ 
+     def doMaxi(self, event=None):
+         if not self.maxi:
+-            self.maxi = self.mat[:]
++            self.maxi = self.matrix[:]
+             self.win.geometry("%sx%s+0+0" % (self.sw, self.sh))
+-            self.mat[0] = self.mat[3] = self.sw / self.siz[0]
++            self.matrix[0] = self.matrix[3] = self.sw / self.siz[0]
+         else:
+-            self.mat = self.maxi
++            self.matrix = self.maxi
+             self.maxi = False
+         self.wsiz = []
+         self.showPage()
+@@ -18549,10 +18552,10 @@ class ViewPDF(object):
+             if self.zoom > self.scale:
+                 self.zoom = round((self.zoom - .25), 2)
+         elif self.zoom < (self.scale + 3):
+-            while self.zoom <= self.mat[0]:
++            while self.zoom <= self.matrix[0]:
+                 self.zoom = round((self.zoom + .25), 2)
+         self.wsiz = []
+-        self.mat[0] = self.mat[3] = self.zoom
++        self.matrix[0] = self.matrix[3] = self.zoom
+         self.showPage()
+ 
+     def doSearch(self, event=None):
+@@ -18654,7 +18657,7 @@ class ViewPDF(object):
+         self.pgd.delete(0, "end")
+         self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
+         self.pgd.configure(state="disabled")
+-        pix = dlist.getPixmap(matrix=self.mat, alpha=False)
++        pix = dlist.getPixmap(matrix=self.matrix, alpha=False)
+         self.ti = tk.PhotoImage(data=pix.getImageData("ppm"))
+         self.cv.create_image(0, 0, image=self.ti, anchor="nw", tags="img")
+         self.cv.configure(width=self.ti.width(), height=self.ti.height())
+@@ -18700,7 +18703,7 @@ class ViewPDF(object):
+         if y1 == -1:
+             y1 = 0
+         y2 = self.cv.canvasy(self.cv.winfo_height())
+-        if self.zoom !=self.scale:
++        if self.zoom != self.scale:
+             y2 = y2 - (self.zoom * 20)
+         return (y1, y2)
+ 
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index eef595e..2b53602 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -495,7 +495,8 @@ class bc2010(object):
+             ("Entered",None,self.doEntered,0,("T",1,1),None,
+                 "Display a list of Entered Tabs",1),
+             ("Modify",None,self.doModify,0,("T",1,7),None,
+-                "Change the Ratings for this Tab in this Draw",1),
++                "Change the Position and/or Rating for this "\
++                "Tab for this Draw Only",1),
+             ("Do Draw",None,self.doDraw,0,("T",1,1),None,
+                 "Genetrate a New Draw",2),
+             ("Edit Draw",None,self.doEdit,0,("T",1,1),None,
+@@ -1084,7 +1085,8 @@ First Change the Bounce Game and then Delete It.""")
+                         t.append(0)
+                     dat.append("%3s %-16s" % (t[0], t[1][:16]))
+             data.append(dat)
+-        SelectChoice(self.opts["mf"].window, title, cols, data, live=False)
++        SelectChoice(self.opts["mf"].window, title, cols, data, sort=False,
++            live=False)
+ 
+     def doTExit(self):
+         self.at.closeProcess()
+@@ -1147,7 +1149,7 @@ First Change the Bounce Game and then Delete It.""")
+                     ("Delete", self.doDelTabs)]
+                 SelectChoice(self.opts["mf"].window,
+                     "These Tabs Are Not In Teams",
+-                    cols, self.tdata, butt=but, live=False)
++                    cols, self.tdata, butt=but, sort=False, live=False)
+                 if self.dogen:
+                     self.doDraw()
+                     return
+diff --git a/doc/BWL.rst b/doc/BWL.rst
+index a1d4a26..332d891 100644
+--- a/doc/BWL.rst
++++ b/doc/BWL.rst
+@@ -416,9 +416,7 @@ Clear History (BC)
+ ++++++++++++++++++
+ Use this routine to selectively erase historical data. Please ensure that you make a **backup** before selecting this routine as there is no going back.
+ 
+-+ **Clear** - Select what to clear.
+-    + **Tabs Draw** - All history relating to tabs draws.
+-    + **League** - All history relating to league selections.
+-    + **Competitions** - All history relating to competitions.
+-    + **All** - All the above categories.
+-+ **Opponents** - Select whether or not to also erase all opponent's details.
+++ **Tabs-Inn** - Delete all history relating to tabs-inn draws.
+++ **League** - Delete all history relating to league selections.
+++ **Competition Entries** - Select which competition entries to delete.
+++ **Competition Type** - If all entries of a type are deleted must the type also be deleted.
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index baef518..575d990 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.0
++:Version:   6.1
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -36,7 +36,7 @@ In 2011, version 4, I dropped support for windows 9x and also replaced reportlab
+ 
+ In 2015, version 5, I replaced PyGtk with Tkinter and ttk.
+ 
+-In 2020, version 6.0, I dropped support for MySQL and Firebird databases.
++In 2020, version 6.1, I dropped support for MySQL and Firebird databases.
+ 
+ .. _Python: http://www.python.org
+ .. _Tkinter: http://www.python.org/topics/tkinter
+@@ -59,7 +59,7 @@ The following dependencies must be installed using pip:
+ + pillow                # Used by fpdf and imaging
+ + pywin32               # Windows only
+ 
+-The following dependancy should also be installed using pip:
++The following dependency should also be installed using pip:
+ 
+ + pymupdf               # Used by the Tartan PDF Viewer/Printer and Bulk Mail
+ 
+@@ -88,11 +88,11 @@ And, depending on your database needs:
+ 
+ Then download the following file from ftp://ftp.tartan.co.za
+ 
+-+ Tartan_5.x.tar.gz
+++ Tartan_6.x.tar.gz
+ 
+-Extract Tartan_5.x.tar.gz into a directory of your choice as follows:
++Extract Tartan_6.x.tar.gz into a directory of your choice as follows:
+ 
+-+ cd your.directory && tar -xvzf Tartan_5.x.tar.gz
+++ cd your.directory && tar -xvzf Tartan_6.x.tar.gz
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+@@ -100,9 +100,9 @@ Windows Binary
+ ..............
+ Download the following file from ftp://ftp.tartan.co.za or if you are in possession of a CD this is not necessary.
+ 
+-+ Tartan_5.x.exe
+++ Tartan_6.x.exe
+ 
+-Install Tartan_5.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
++Install Tartan_6.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
+ 
+ Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
+ 
+@@ -201,12 +201,12 @@ If no external pdf viewer is entered in the preferences and pymupdf is installed
+ 
+ + **Goto** - This button will alow you to enter a page number.
+ + **Zoom** - This button, depending on whether the left or right mouse button is pressed, will increase or decrease the font and page size.
+-+ **Menu** - This button wil display a menu with the following options:
+++ **Menu** - This button will display a menu with the following options:
+     + **Email** - This button, if available, will enable the emailing of the document:
+         + **From Address** - The email address of the sender.
+         + **To Address** - A comma separated list of receiving email addresses.
+-    + **Print** - This button wil open a print dialog screen.
+-    + **Save as..** - This button wil enable the saving of the document with a different/same name and/or a different directory.
++    + **Print** - This button wile open a print dialog screen.
++    + **Save as..** - This button wail enable the saving of the document with a different/same name and/or a different directory.
+     + **Send to..** - This button will open the document using the system default pdf viewer e.g. Acrobat.
+     + **Help** - This button will display the various key bindings.
+     + **Exit** - This button will close the viewer. Escape can also be used.
+diff --git a/doc/UTY.rst b/doc/UTY.rst
+index 4285292..4150054 100644
+--- a/doc/UTY.rst
++++ b/doc/UTY.rst
+@@ -27,27 +27,27 @@ Use this routine to send bulk MAIL or bulk SMSes. In order to use the MAIL facil
+ 
+ + **Delivery Type** - The available delivery types will depend on what is entered in the `System Record` and can be either E-Mail, SMS or both.
+ + **List to Use** - The available lists will depend on the systems being used and can contain Bookings, Bowls, Creditors, Debtors, Members and Directory (Telephone). In addition to the lists, CSV or XLS files can also be used, as long as they contain a name and an email address and or a cell number. Please note that Creditors and Debtors do not have SMS capabilities.
+-    + **Bookings** - This list accesses the tartan booking's contacts.
++    + **Bookings** - This list accesses the Tartan booking's contacts.
+         + **Individuals** - Allow selection of individual recipients.
+-    + **Bowls** - This list accesses the tartan bowl's tabs.
++    + **Bowls** - This list accesses the Tartan bowl's tabs.
+         + **Category** - Allow selection by category.
+         + **Gender** - Allow selection by gender.
+         + **Individuals** - Allow selection of individual recipients.
+-    + **Creditors** - This list accesses the tartan creditor's masterfile.
++    + **Creditors** - This list accesses the Tartan creditor's masterfile.
+         + **Email To** - Select the recipient.
+         + **Individuals** - Allow selection of individual recipients.
+-    + **Debtors** - This list accesses the tartan debtor's masterfile.
++    + **Debtors** - This list accesses the Tartan debtor's masterfile.
+         + **Email To** - Select the recipient.
+         + **Activity** - Allow selection by business activity.
+         + **Type** - Allow selection by business type.
+         + **Individuals** - Allow selection of individual recipients.
+-    + **Members** - This list accesses the tartan member's masterfile.
++    + **Members** - This list accesses the Tartan member's masterfile.
+         + **Category** - Allow selection by membership category.
+         + **Gender** - Allow selection by gender.
+         + **Personalise** - Allow personalising of the recipient.
+         + **Name Detail** - Select whether to use the names or initials.
+         + **Individuals** - Allow selection of individual recipients.
+-    + **Directory** - This list accesses the tartan telephone directory.
++    + **Directory** - This list accesses the Tartan telephone directory.
+         + **Group Selection** - Allow selection by group.
+         + **Include Contacts** - Include the recipient's contacts.
+         + **Individuals** - Allow selection of individual recipients.
+diff --git a/ms0000.py b/ms0000.py
+index d10e88f..bd2f4d6 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 0)
++    VERSION = (6, 1)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -290,7 +290,7 @@ Options:
+                 showError(None, "Directory Error",
+                     "Invalid -R Directory: %s" % self.rcfdir)
+                 self.doExit(dbm=False)
+-            scrn = MkWindow(tk=True, icon="tartan").newwin
++            scrn = MkWindow(icon="tartan").newwin
+             dialog = FileDialog(**{"parent": scrn, "initd": self.rcfdir})
+             self.rcfile = dialog.askopenfilename()
+             scrn.destroy()
+@@ -482,7 +482,7 @@ Options:
+             showError(scrn, "Version Error",
+                 """The Version of the Data, %s.%s, is too Old.
+ 
+-Please follow the upgrade instructions at http://www.tartan.co.za/Downloads
++Please follow the upgrade instructions at https://www.tartan.co.za/Downloads
+ 
+ or
+ 
+diff --git a/rca/rc2010.py b/rca/rc2010.py
+index 363d1a1..ab26017 100644
+--- a/rca/rc2010.py
++++ b/rca/rc2010.py
+@@ -551,7 +551,7 @@ class rc2010(object):
+             ("rot_taxamt", "VAT-Amount", 11.2, "SD", "N"),
+             ("balance", "Balance", 15.2, "SD", "N"))
+         self.otrn = SelectChoice(self.df.topPage1, None, col, data, wait=False,
+-            neww=False, live=False, modal=False, lines=9)
++            neww=False, sort=False, live=False, modal=False, lines=9)
+ 
+     def showTenantTrans(self):
+         try:
+@@ -581,7 +581,7 @@ class rc2010(object):
+             ("rtu_taxamt", "VAT-Amount", 11.2, "SD", "N"),
+             ("balance", "Balance", 15.2, "SD", "N"))
+         self.ttrn = SelectChoice(self.df.topPage2, None, col, data, wait=False,
+-            neww=False, live=False, modal=False, lines=9)
++            neww=False, sort=False, live=False, modal=False, lines=9)
+ 
+     def showTenantBalance(self):
+         bal = self.sql.getRec("rcatnt",
+diff --git a/sls/si2010.py b/sls/si2010.py
+index 05514de..7fff1df 100644
+--- a/sls/si2010.py
++++ b/sls/si2010.py
+@@ -1460,7 +1460,7 @@ class si2010(object):
+                     where=[("stt_cono", "=", self.opts["conum"]),
+                     ("stt_group", "=", grp), ("stt_code", "=", cod),
+                     ("stt_loc", "=", loc)], limit=1)
+-                if qty > bal[0]:
++                if bal[0] is None or qty > bal[0]:
+                     needpwd = True
+         if needpwd:
+             state = self.df.disableButtonsTags()
+diff --git a/tarchg.py b/tarchg.py
+index f6e1e1d..cecd99c 100644
+--- a/tarchg.py
++++ b/tarchg.py
+@@ -1,7 +1,5 @@
+-changes = """ver_6.0
+-=======
+-Tartan Systems Upgrade
+-----------------------
++changes = """ver_6.0 2021-06-19
++==================
+  1) Upgraded to Python 3 as Python 2 is no longer supported. As Python 3 is
+     not backward compatible with Python 2 many changes, in addition to those
+     listed below, needed to be done.
+@@ -28,8 +26,6 @@ If you have an older version than 5.5 please contact me for assistance.
+ 
+ ver_5.13 2021-04-14
+ ===================
+-Tartan Systems Upgrade
+-----------------------
+ 1) Fixed a problem with the file conversion module.
+ 2) Added an email address and mobile number to user records.
+ 3) Some other minor changes, fixes and enhancements.
+@@ -41,8 +37,6 @@ If you have an older version than 5.4 please contact me for assistance.
+ 
+ ver_5.12 2020-12-14
+ ===================
+-Tartan Systems Upgrade (Lockdown)
+----------------------------------
+  1) Improved the database Export and Merge routines. Greatly increased the
+     speed of the Merge routine. Please Note that any unmerged exported
+     databases MUST be merged, before upgrading to this version, otherwise
+@@ -73,8 +67,6 @@ If you have an older version than 5.4 please contact me for assistance.
+ 
+ ver_5.11 2020-03-25
+ ===================
+-Tartan Systems Upgrade
+-----------------------
+  1) Added a routine to Export a single company or linked companies to a
+     separate database named e.g. name001.db into a selected dictionary.
+     The prefix name would be the name of the database being exported and
+@@ -92,8 +84,6 @@ If you have an older version than 5.4 please contact me for assistance.
+ 
+ ver_5.10 2020-03-07
+ ===================
+-Tartan Systems Upgrade
+-----------------------
+  1) Added the 2021 PAYE tax tables.
+  2) Applied line separators in record selection routines.
+  3) Modified the loans interrogation module to show more details.
+@@ -116,8 +106,6 @@ version supporting Python 2. All future upgrades will be for Python 3.
+ 
+ ver_5.9 2020-01-03
+ ==================
+-Tartan Systems Upgrade
+-----------------------
+  1) Added a routine to flag creditor's accounts as redundant (Toolbox).
+  2) Added a routine to flag debtor's accounts as redundant (Toolbox).
+  3) Added a routine to cancel outstanding sales documents (Toolbox).
+@@ -131,8 +119,6 @@ If you have an older version than 5.4 please contact me for assistance.
+ 
+ ver_5.8 2019-12-12
+ ==================
+-Tartan Systems Upgrade
+-----------------------
+  1) Fixed an error with PAYE over 75 rebate.
+  2) Fixed an error with Salaries & Wages Interrogation.
+  3) Fixed an error with Debtor's Sales History report when exporting to XLS.
+@@ -147,8 +133,6 @@ If you have an older version than 5.0 please contact me for assistance.
+ 
+ ver_5.7 2019-09-05
+ ==================
+-Tartan Systems Upgrade
+-----------------------
+  1) Fixed an error with g/l bank statement data capture.
+  2) Some minor changes, fixes and enhancements.
+ 
+@@ -159,8 +143,6 @@ If you have an older version than 5.0 please contact me for assistance.
+ 
+ ver_5.6 2019-08-23
+ ==================
+-Tartan Systems Upgrade
+-----------------------
+  1) Fixed an error the the g/l detail maintenance module.
+  2) Put a check on importing general ledger accounts from another company.
+  3) Changed the various audit trails to include missing masterfile records.
+@@ -176,8 +158,6 @@ If you have an older version than 5.0 please contact me for assistance.
+ 
+ ver_5.5 2020-12-16
+ ==================
+-Tartan Systems Upgrade
+-----------------------
+  1) Improved the execution speed of some modules by removing multiple mainloops.
+  2) Changed the version numbering to a decimal number starting with 5.5
+  3) Fixed an error in the financial statements module.
+@@ -191,8 +171,6 @@ If you have an older version than 5.0 please contact me for assistance.
+ 
+ ver_5.4.8 2019-06-04
+ ====================
+-Tartan Systems Upgrade
+-----------------------
+  1) Fixed an error in the General Ledger Financial Statements History option
+     which was not handling Detail records correctly.
+  2) Added a 'None' option for General Ledger Financial Statements Variance
+@@ -214,8 +192,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
+ 
+ ver_5.4.7 2019-04-18
+ ====================
+-Tartan Systems Upgrade
+-----------------------
+  1) Improved the 'Report Stream' utility, as per a user request, by creating a
+     Group Record to store the selected reports. The various report variables
+     selected will also be stored.
+@@ -227,8 +203,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
+ 
+ ver_5.4.6 2019-04-07
+ ====================
+-Tartan Systems Upgrade
+-----------------------
+  1) Added History option to Financial Statements. This will print the previous
+     3 year's history as well as the current year, budget and variance totals.
+  2) Added a module in Utilities named 'Report Stream' which allows the user to
+@@ -242,8 +216,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
+ 
+ ver_5.4.5 2019-02-24
+ ====================
+-Tartan Systems Upgrade
+-----------------------
+  1) Corrected the paye calculation.
+  2) Updated the personal income tax rates for 2020.
+  3) Fixed the running batch total with petty cash data capture.
+@@ -255,8 +227,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
+ 
+ ver_5.4.4 2019-01-23
+ ====================
+-Tartan Systems Upgrade
+-----------------------
+  1) Fixed a problem with ofx bank statement importing.
+  2) Fixed a problem with stores interrogation.
+  3) Some other minor changes requested by clients.
+@@ -267,8 +237,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
+ 
+ ver_5.4.2 2019-01-22
+ ====================
+-Tartan Systems Upgrade
+-----------------------
+  1) This is a Major Upgrade leading up to Python version 3.
+  2) Converted to GPL, version 3, open source license.
+  3) Changed stores selling price capturing and added file import facility.
+@@ -307,8 +275,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
+ 
+ ver_5.4.1 2019-01-15
+ ====================
+-Tartan Systems Upgrade
+-----------------------
+  1) This is a Major Upgrade leading up to Python version 3.
+  2) Converted to GPL, version 3, open source license.
+  3) Changed stores selling price capturing and added file import facility.
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index 204f218..ee96e99 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -200,6 +200,7 @@ def loadRcFile(rcfile=None, default=False):
+     """
+ 
+     import os, sys
++    from pathlib import Path
+     from TartanClasses import FITZ
+     # Defaults
+     if FITZ:
+@@ -207,10 +208,17 @@ def loadRcFile(rcfile=None, default=False):
+     else:
+         win = os.path.join(getPrgPath(), "uty", "SumatraPDF.exe")
+         vwr = ["/usr/bin/evince", win]
++    tardir = os.path.join(Path.home(), "Tartan")
++    if not os.path.isdir(tardir):
++        os.makedirs(tardir)
+     if sys.platform == "win32":
+-        tardir = os.path.normpath("C:/Tartan")
++        test1 = os.path.normpath("C:/tartanrc")
++        test2 = os.path.normpath("C:/Tartan/tartanrc")
++        test3 = os.path.join(tardir, "tartanrc")
+     else:
+-        tardir = os.path.join(os.getenv("HOME"), "Tartan")
++        test1 = os.path.join(Path.home(), ".tartanrc")
++        test2 = None
++        test3 = os.path.join(tardir, ".tartanrc")
+     opts = {
+         "dbase": ["SQLite"],
+         "dbname": ["tartan"],
+@@ -259,17 +267,12 @@ def loadRcFile(rcfile=None, default=False):
+     if not rcfile:
+         rcfile = os.environ.get("TARTANRC")
+         if not rcfile:
+-            if sys.platform == "win32":
+-                if os.path.isfile(os.path.normpath("C:/tartanrc")):
+-                    rcfile = os.path.normpath("C:/tartanrc")
+-                elif os.path.isfile(os.path.normpath("C:/Tartan/tartanrc")):
+-                    rcfile = os.path.normpath("C:/Tartan/tartanrc")
+-                else:
+-                    rcfile = os.path.join(tardir, "tartanrc")
+-            elif os.path.isfile(os.path.join(tardir, "tartanrc")):
+-                rcfile = os.path.join(tardir, "tartanrc")
++            if os.path.isfile(test1):
++                rcfile = test1
++            elif test2 is not None and os.path.isfile(test2):
++                rcfile = test2
+             else:
+-                rcfile = os.path.join(os.path.expanduser("~"), ".tartanrc")
++                rcfile = test3
+     try:
+         rcdic = {"name": rcfile}
+         fle = open(rcfile, "r")
+@@ -2567,6 +2570,7 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
+                         data = [cono]
+                         if system == "drs":
+                             data.append(chain)
++                        data.append(acno)
+                         data.append(dtr[col.index("%s_type" % pfx)])
+                         if system == "mem":
+                             data.append(dtr[col.index("%s_refno" % pfx)])
+@@ -2584,6 +2588,7 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
+                     data = [cono]
+                     if system == "drs":
+                         data.append(chain)
++                    data.append(acno)
+                     data.append(ctr[col.index("%s_type" % pfx)])
+                     if system == "mem":
+                         data.append(ctr[col.index("%s_refno" % pfx)])
+diff --git a/tartanWork.py b/tartanWork.py
+index 5060723..7555843 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -1689,12 +1689,10 @@ tabdic = {
+             [5, "btm_curdt", "d2", 7.0, "Current Date", "Cur-Date"],
+             [6, "btm_trno", "UI", 5.0, "Number of Transactions", "TrNum"],
+             [7, "btm_trval", "SD", 13.2, "Batch Value", "Batch-Value"],
+-            [8, "btm_batby", "NA", 5.0, "Batched By", "Batby"],
+-            [9, "btm_indby", "NA", 5.0, "Captured By", "Capby"],
+-            [10, "btm_multi", "NA", 1.0, "Multi Allocations", "M"],
+-            [11, "btm_ctl", "NA", 10.0, "Control Account", "Control-Ac"],
+-            [12, "btm_ind", "NA", 1.0, "Indicator", "I"],
+-            [13, "btm_xflag", "UA", 1.0, "Export Flag", "X"]],
++            [8, "btm_multi", "NA", 1.0, "Multi Allocations", "M"],
++            [9, "btm_ctl", "NA", 10.0, "Control Account", "Control-Ac"],
++            [10, "btm_ind", "NA", 1.0, "Indicator", "I"],
++            [11, "btm_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+             ["Data Capture Batches", 1, "U", "btm_cono", "btm_styp", "btm_rtyp",
+                 "btm_batno"]]},
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 6a0cd12..25b81e1 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -11,11 +11,11 @@ import time
+ bd = os.path.expanduser("~")  # Base directory
+ sv = "root@mail"              # ftp login@server
+ vv = 6                        # Version number
+-bv = "Tartan-%s" % vv         # Version directory
++bv = "Tartan-%s" % vv         # Version base name
+ bx = "TartanExe"              # Executable directory
+ bo = "TartanOld"              # Old directory
+ bs = "TartanSve"              # Save directory
+-vd = os.path.join(bd, bv)
++vd = os.path.join(bd, bv)     # Version directory
+ if not os.path.isdir(vd):
+     print("Invalid Version Directory: %s" % vd)
+     sys.exit()
+@@ -49,7 +49,10 @@ def addPage(doc, fle, last=False):
+ def getName(nam, x, y, z=None):
+     dd = os.path.join(bd, bo)
+     if z is None:
+-        exe = "%s/Tartan_%s.%s.exe" % (dd, x, y)
++        if x > 5:
++            exe = "%s/Tartan_%s.%s-32.exe" % (dd, x, y)
++        else:
++            exe = "%s/Tartan_%s.%s.exe" % (dd, x, y)
+     else:
+         exe = "%s/Tartan_%s.%s.%s.exe" % (dd, x, y, z)
+     if os.path.isfile(exe):
+@@ -214,7 +217,14 @@ if newver and newver != "%s.%s" % VERSION:
+                     chg.write(nam + "\n")
+                     chg.write(("=" * len(nam)) + "\n")
+                     lines = open(fle, "r")
++                    skip = False
+                     for line in lines:
++                        if skip:
++                            skip = False
++                            continue
++                        if line.count("Tartan Systems Upgrade"):
++                            skip = True
++                            continue
+                         chg.write(line)
+                     chg.write("\n")
+             for y in range(999, -1, -1):
+@@ -226,13 +236,20 @@ if newver and newver != "%s.%s" % VERSION:
+                         chg.write(nam + "\n")
+                         chg.write(("=" * len(nam)) + "\n")
+                         lines = open(fle, "r")
++                        skip = False
+                         for line in lines:
++                            if skip:
++                                skip = False
++                                continue
++                            if line.count("Tartan Systems Upgrade"):
++                                skip = True
++                                continue
+                             chg.write(line)
+                         chg.write("\n")
+         chg.write('"""')
+         chg.close()
+         # Create changes rst
+-        rst = open("doc/Changes.rst", "w")
++        rst = open("doc/Changes.txt", "w")
+         chg = __import__("tarchg")
+         rst.write(chg.changes)
+         rst.close()
+@@ -254,9 +271,6 @@ if newver and newver != "%s.%s" % VERSION:
+ if os.path.exists("%s/tarzip.zip" % bd):
+     os.remove("%s/tarzip.zip" % bd)
+ exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
+-exeCmd("zip -qd %s/tarzip doc/POS.rst" % bd)
+-exeCmd("zip -qd %s/tarzip pos/*" % bd)
+-exeCmd("zip -qd %s/tarzip pos" % bd)
+ # Update the zip with tarchg.py tartan.ico and uncommitted files
+ exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py rca/*.py rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py uty/*.py wag/*.py" % bd)
+ # Create a new system directory
+@@ -354,39 +368,39 @@ if publish:
+     print("")
+     if not test:
+         # Dropbox
+-        exeCmd("rm /home/paul/Dropbox/Updates/%s*" % csys)
+-        exeCmd("cp -p %s/%s/%s_%s.%s.tgz /home/paul/Dropbox/Updates/" %
+-            (bd, bx, csys, cver[0], cver[1]))
+-        exeCmd("cp -p %s/%s/%s_%s.%s.exe /home/paul/Dropbox/Updates/" %
+-            (bd, bx, csys, cver[0], cver[1]))
++        exeCmd("rm /home/paul/Dropbox/Apps/%s/%s_6*" % (csys, csys))
++        exeCmd("rsync -az %s/%s/%s* "\
++            "/home/paul/Dropbox/Apps/Tartan/" % (bd, bx, csys))
++        exeCmd("rsync -az /tmp/Manual.pdf /home/paul/Dropbox/Apps/Tartan/")
+         # FTP Server
+         exeCmd("ssh %s rm /srv/ftp/%s*" % (sv, csys))
+-        exeCmd("rsync -az %s/%s/Tartan_4.1.14.* %s:/srv/ftp/ "\
+-            "--progress" % (bd, bo, sv))
+-        exeCmd("rsync -az %s/%s/Tartan_5.5.* %s:/srv/ftp/ "\
+-            "--progress" % (bd, bo, sv))
+-        exeCmd("rsync -az %s/%s/Tartan_5.13.* %s:/srv/ftp/ "\
+-            "--progress" % (bd, bo, sv))
+-        exeCmd("rsync -az %s/%s/current %s:/srv/ftp/ "\
+-            "--progress" % (bd, bx, sv))
+-        exeCmd("rsync -az %s/%s/%s* %s:/srv/ftp/ "\
+-            "--progress" % (bd, bx, csys, sv))
+-        exeCmd("rsync -az /tmp/Manual.pdf %s:/srv/ftp/ --progress" % sv)
++        exeCmd("rsync -az %s/%s/%s* %s:/srv/ftp/" % (bd, bx, csys, sv))
+         exeCmd("ssh %s chmod a+rx /srv/ftp/*" % sv)
+         exeCmd("ssh %s chown paul:paul /srv/ftp/*" % sv)
+         # Web documents
+         exeCmd("rsync -az %s/%s/doc/Manual.rst "\
+-            "%s:/var/www/tartan.co.za/htdocs/Manual/Manual.rst "\
+-            "--progress" % (bd, bv, sv))
++            "%s:/var/www/tartan.co.za/htdocs/Manual/Manual.rst" % (bd, bv, sv))
+         exeCmd("rsync -az %s/%s/doc/QST.rst "\
+-            "%s:/var/www/tartan.co.za/htdocs/QuickStart/QST.rst "\
+-            "--progress" % (bd, bv, sv))
++            "%s:/var/www/tartan.co.za/htdocs/QuickStart/QST.rst" % (bd, bv, sv))
+         exeCmd("rsync -az %s/%s/doc/Downloads.rst "\
+-            "%s:/var/www/tartan.co.za/htdocs/Downloads/ "\
+-            "--progress" % (bd, bv, sv))
+-        exeCmd("rsync -az %s/%s/doc/Changes.rst "\
+-            "%s:/var/www/tartan.co.za/htdocs/Changes/ "\
+-            "--progress" % (bd, bv, sv))
++            "%s:/var/www/tartan.co.za/htdocs/Downloads/" % (bd, bv, sv))
++        exeCmd("rsync -az %s/%s/doc/Changes.txt "\
++            "%s:/var/www/tartan.co.za/htdocs/Changes/" % (bd, bv, sv))
++        exeCmd("ssh %s rm /var/www/tartan.co.za/Updates/%s_6*" % (sv, csys))
++        exeCmd("rsync -az %s/%s/Tartan_4.1.14.* "\
++            "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
++        exeCmd("rsync -az %s/%s/Tartan_5.5.* "\
++            "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
++        exeCmd("rsync -az %s/%s/Tartan_5.13.* "\
++            "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
++        exeCmd("rsync -az %s/%s/current "\
++            "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, sv))
++        exeCmd("rsync -az %s/%s/%s* "\
++            "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, csys, sv))
++        exeCmd("rsync -az /tmp/Manual.pdf "\
++            "%s:/var/www/tartan.co.za/Updates/" % sv)
++        exeCmd("ssh %s chmod a+rx /var/www/tartan.co.za/Updates/*" % sv)
++        exeCmd("ssh %s chown paul:paul /var/www/tartan.co.za/Updates/*" % sv)
+         if mkcd:
+             # Create CD
+             if os.path.isdir("%s/TartanCD" % bd):
+@@ -447,7 +461,6 @@ if email and not test:
+             "admin@blueberry.co.za",
+             "alickbb@iafrica.com",
+             "cnurrish@telkomsa.net",
+-            "deonk@spargs.co.za",
+             "frikkie@lando.co.za",
+             "galloway@awe.co.za",
+             "jane@acsconsulting.co.za",
+@@ -473,10 +486,7 @@ if email and not test:
+             "tyron@i-volt.net",
+             "yolande@acsaccounting.co.za"]
+         for addr in addrs:
+-            if addr == "deonk@spargs.co.za":
+-                sendMail(serv, mfrm, addr, subj)
+-            else:
+-                sendMail(serv, mfrm, addr, subj, mess=(text, html))
++            sendMail(serv, mfrm, addr, subj, mess=(text, html))
+ shutil.rmtree("%s/tartan" % bd)
+ print("DONE")
+ # END

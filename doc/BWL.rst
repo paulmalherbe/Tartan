@@ -416,9 +416,7 @@ Clear History (BC)
 ++++++++++++++++++
 Use this routine to selectively erase historical data. Please ensure that you make a **backup** before selecting this routine as there is no going back.
 
-+ **Clear** - Select what to clear.
-    + **Tabs Draw** - All history relating to tabs draws.
-    + **League** - All history relating to league selections.
-    + **Competitions** - All history relating to competitions.
-    + **All** - All the above categories.
-+ **Opponents** - Select whether or not to also erase all opponent's details.
++ **Tabs-Inn** - Delete all history relating to tabs-inn draws.
++ **League** - Delete all history relating to league selections.
++ **Competition Entries** - Select which competition entries to delete.
++ **Competition Type** - If all entries of a type are deleted must the type also be deleted.

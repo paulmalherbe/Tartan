@@ -27,27 +27,27 @@ Use this routine to send bulk MAIL or bulk SMSes. In order to use the MAIL facil
 
 + **Delivery Type** - The available delivery types will depend on what is entered in the `System Record` and can be either E-Mail, SMS or both.
 + **List to Use** - The available lists will depend on the systems being used and can contain Bookings, Bowls, Creditors, Debtors, Members and Directory (Telephone). In addition to the lists, CSV or XLS files can also be used, as long as they contain a name and an email address and or a cell number. Please note that Creditors and Debtors do not have SMS capabilities.
-    + **Bookings** - This list accesses the tartan booking's contacts.
+    + **Bookings** - This list accesses the Tartan booking's contacts.
         + **Individuals** - Allow selection of individual recipients.
-    + **Bowls** - This list accesses the tartan bowl's tabs.
+    + **Bowls** - This list accesses the Tartan bowl's tabs.
         + **Category** - Allow selection by category.
         + **Gender** - Allow selection by gender.
         + **Individuals** - Allow selection of individual recipients.
-    + **Creditors** - This list accesses the tartan creditor's masterfile.
+    + **Creditors** - This list accesses the Tartan creditor's masterfile.
         + **Email To** - Select the recipient.
         + **Individuals** - Allow selection of individual recipients.
-    + **Debtors** - This list accesses the tartan debtor's masterfile.
+    + **Debtors** - This list accesses the Tartan debtor's masterfile.
         + **Email To** - Select the recipient.
         + **Activity** - Allow selection by business activity.
         + **Type** - Allow selection by business type.
         + **Individuals** - Allow selection of individual recipients.
-    + **Members** - This list accesses the tartan member's masterfile.
+    + **Members** - This list accesses the Tartan member's masterfile.
         + **Category** - Allow selection by membership category.
         + **Gender** - Allow selection by gender.
         + **Personalise** - Allow personalising of the recipient.
         + **Name Detail** - Select whether to use the names or initials.
         + **Individuals** - Allow selection of individual recipients.
-    + **Directory** - This list accesses the tartan telephone directory.
+    + **Directory** - This list accesses the Tartan telephone directory.
         + **Group Selection** - Allow selection by group.
         + **Include Contacts** - Include the recipient's contacts.
         + **Individuals** - Allow selection of individual recipients.

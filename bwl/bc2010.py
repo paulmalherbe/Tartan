@@ -495,7 +495,8 @@ class bc2010(object):
             ("Entered",None,self.doEntered,0,("T",1,1),None,
                 "Display a list of Entered Tabs",1),
             ("Modify",None,self.doModify,0,("T",1,7),None,
-                "Change the Ratings for this Tab in this Draw",1),
+                "Change the Position and/or Rating for this "\
+                "Tab for this Draw Only",1),
             ("Do Draw",None,self.doDraw,0,("T",1,1),None,
                 "Genetrate a New Draw",2),
             ("Edit Draw",None,self.doEdit,0,("T",1,1),None,
@@ -1084,7 +1085,8 @@ First Change the Bounce Game and then Delete It.""")
                         t.append(0)
                     dat.append("%3s %-16s" % (t[0], t[1][:16]))
             data.append(dat)
-        SelectChoice(self.opts["mf"].window, title, cols, data, live=False)
+        SelectChoice(self.opts["mf"].window, title, cols, data, sort=False,
+            live=False)
 
     def doTExit(self):
         self.at.closeProcess()
@@ -1147,7 +1149,7 @@ First Change the Bounce Game and then Delete It.""")
                     ("Delete", self.doDelTabs)]
                 SelectChoice(self.opts["mf"].window,
                     "These Tabs Are Not In Teams",
-                    cols, self.tdata, butt=but, live=False)
+                    cols, self.tdata, butt=but, sort=False, live=False)
                 if self.dogen:
                     self.doDraw()
                     return

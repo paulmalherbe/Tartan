@@ -3,7 +3,7 @@
 ==================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.0
+:Version:   6.1
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -36,7 +36,7 @@ In 2011, version 4, I dropped support for windows 9x and also replaced reportlab
 
 In 2015, version 5, I replaced PyGtk with Tkinter and ttk.
 
-In 2020, version 6.0, I dropped support for MySQL and Firebird databases.
+In 2020, version 6.1, I dropped support for MySQL and Firebird databases.
 
 .. _Python: http://www.python.org
 .. _Tkinter: http://www.python.org/topics/tkinter
@@ -59,7 +59,7 @@ The following dependencies must be installed using pip:
 + pillow                # Used by fpdf and imaging
 + pywin32               # Windows only
 
-The following dependancy should also be installed using pip:
+The following dependency should also be installed using pip:
 
 + pymupdf               # Used by the Tartan PDF Viewer/Printer and Bulk Mail
 
@@ -88,11 +88,11 @@ And, depending on your database needs:
 
 Then download the following file from ftp://ftp.tartan.co.za
 
-+ Tartan_5.x.tar.gz
++ Tartan_6.x.tar.gz
 
-Extract Tartan_5.x.tar.gz into a directory of your choice as follows:
+Extract Tartan_6.x.tar.gz into a directory of your choice as follows:
 
-+ cd your.directory && tar -xvzf Tartan_5.x.tar.gz
++ cd your.directory && tar -xvzf Tartan_6.x.tar.gz
 
 Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
 
@@ -100,9 +100,9 @@ Windows Binary
 ..............
 Download the following file from ftp://ftp.tartan.co.za or if you are in possession of a CD this is not necessary.
 
-+ Tartan_5.x.exe
++ Tartan_6.x.exe
 
-Install Tartan_5.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
+Install Tartan_6.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
 
 Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
 
@@ -201,12 +201,12 @@ If no external pdf viewer is entered in the preferences and pymupdf is installed
 
 + **Goto** - This button will alow you to enter a page number.
 + **Zoom** - This button, depending on whether the left or right mouse button is pressed, will increase or decrease the font and page size.
-+ **Menu** - This button wil display a menu with the following options:
++ **Menu** - This button will display a menu with the following options:
     + **Email** - This button, if available, will enable the emailing of the document:
         + **From Address** - The email address of the sender.
         + **To Address** - A comma separated list of receiving email addresses.
-    + **Print** - This button wil open a print dialog screen.
-    + **Save as..** - This button wil enable the saving of the document with a different/same name and/or a different directory.
+    + **Print** - This button wile open a print dialog screen.
+    + **Save as..** - This button wail enable the saving of the document with a different/same name and/or a different directory.
     + **Send to..** - This button will open the document using the system default pdf viewer e.g. Acrobat.
     + **Help** - This button will display the various key bindings.
     + **Exit** - This button will close the viewer. Escape can also be used.

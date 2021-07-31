@@ -1,7 +1,16 @@
-changes = """ver_6.0
+changes = """ver_6.1
 =======
-Tartan Systems Upgrade
-----------------------
+ 1) Removed the 'Batched By' and 'Indexed By' fields in batch records.
+ 2) Fixed an error with transaction re-allocations.
+ 3) Many other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.0 2021-06-19
+==================
  1) Upgraded to Python 3 as Python 2 is no longer supported. As Python 3 is
     not backward compatible with Python 2 many changes, in addition to those
     listed below, needed to be done.
@@ -28,8 +37,6 @@ If you have an older version than 5.5 please contact me for assistance.
 
 ver_5.13 2021-04-14
 ===================
-Tartan Systems Upgrade
-----------------------
 1) Fixed a problem with the file conversion module.
 2) Added an email address and mobile number to user records.
 3) Some other minor changes, fixes and enhancements.
@@ -41,8 +48,6 @@ If you have an older version than 5.4 please contact me for assistance.
 
 ver_5.12 2020-12-14
 ===================
-Tartan Systems Upgrade (Lockdown)
----------------------------------
  1) Improved the database Export and Merge routines. Greatly increased the
     speed of the Merge routine. Please Note that any unmerged exported
     databases MUST be merged, before upgrading to this version, otherwise
@@ -73,8 +78,6 @@ If you have an older version than 5.4 please contact me for assistance.
 
 ver_5.11 2020-03-25
 ===================
-Tartan Systems Upgrade
-----------------------
  1) Added a routine to Export a single company or linked companies to a
     separate database named e.g. name001.db into a selected dictionary.
     The prefix name would be the name of the database being exported and
@@ -92,8 +95,6 @@ If you have an older version than 5.4 please contact me for assistance.
 
 ver_5.10 2020-03-07
 ===================
-Tartan Systems Upgrade
-----------------------
  1) Added the 2021 PAYE tax tables.
  2) Applied line separators in record selection routines.
  3) Modified the loans interrogation module to show more details.
@@ -116,8 +117,6 @@ version supporting Python 2. All future upgrades will be for Python 3.
 
 ver_5.9 2020-01-03
 ==================
-Tartan Systems Upgrade
-----------------------
  1) Added a routine to flag creditor's accounts as redundant (Toolbox).
  2) Added a routine to flag debtor's accounts as redundant (Toolbox).
  3) Added a routine to cancel outstanding sales documents (Toolbox).
@@ -131,8 +130,6 @@ If you have an older version than 5.4 please contact me for assistance.
 
 ver_5.8 2019-12-12
 ==================
-Tartan Systems Upgrade
-----------------------
  1) Fixed an error with PAYE over 75 rebate.
  2) Fixed an error with Salaries & Wages Interrogation.
  3) Fixed an error with Debtor's Sales History report when exporting to XLS.
@@ -147,8 +144,6 @@ If you have an older version than 5.0 please contact me for assistance.
 
 ver_5.7 2019-09-05
 ==================
-Tartan Systems Upgrade
-----------------------
  1) Fixed an error with g/l bank statement data capture.
  2) Some minor changes, fixes and enhancements.
 
@@ -159,8 +154,6 @@ If you have an older version than 5.0 please contact me for assistance.
 
 ver_5.6 2019-08-23
 ==================
-Tartan Systems Upgrade
-----------------------
  1) Fixed an error the the g/l detail maintenance module.
  2) Put a check on importing general ledger accounts from another company.
  3) Changed the various audit trails to include missing masterfile records.
@@ -176,8 +169,6 @@ If you have an older version than 5.0 please contact me for assistance.
 
 ver_5.5 2020-12-16
 ==================
-Tartan Systems Upgrade
-----------------------
  1) Improved the execution speed of some modules by removing multiple mainloops.
  2) Changed the version numbering to a decimal number starting with 5.5
  3) Fixed an error in the financial statements module.
@@ -191,8 +182,6 @@ If you have an older version than 5.0 please contact me for assistance.
 
 ver_5.4.8 2019-06-04
 ====================
-Tartan Systems Upgrade
-----------------------
  1) Fixed an error in the General Ledger Financial Statements History option
     which was not handling Detail records correctly.
  2) Added a 'None' option for General Ledger Financial Statements Variance
@@ -214,8 +203,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
 
 ver_5.4.7 2019-04-18
 ====================
-Tartan Systems Upgrade
-----------------------
  1) Improved the 'Report Stream' utility, as per a user request, by creating a
     Group Record to store the selected reports. The various report variables
     selected will also be stored.
@@ -227,8 +214,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
 
 ver_5.4.6 2019-04-07
 ====================
-Tartan Systems Upgrade
-----------------------
  1) Added History option to Financial Statements. This will print the previous
     3 year's history as well as the current year, budget and variance totals.
  2) Added a module in Utilities named 'Report Stream' which allows the user to
@@ -242,8 +227,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
 
 ver_5.4.5 2019-02-24
 ====================
-Tartan Systems Upgrade
-----------------------
  1) Corrected the paye calculation.
  2) Updated the personal income tax rates for 2020.
  3) Fixed the running batch total with petty cash data capture.
@@ -255,8 +238,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
 
 ver_5.4.4 2019-01-23
 ====================
-Tartan Systems Upgrade
-----------------------
  1) Fixed a problem with ofx bank statement importing.
  2) Fixed a problem with stores interrogation.
  3) Some other minor changes requested by clients.
@@ -267,8 +248,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
 
 ver_5.4.2 2019-01-22
 ====================
-Tartan Systems Upgrade
-----------------------
  1) This is a Major Upgrade leading up to Python version 3.
  2) Converted to GPL, version 3, open source license.
  3) Changed stores selling price capturing and added file import facility.
@@ -307,8 +286,6 @@ You can only upgrade to this version if your current version is 4.1.10 or later.
 
 ver_5.4.1 2019-01-15
 ====================
-Tartan Systems Upgrade
-----------------------
  1) This is a Major Upgrade leading up to Python version 3.
  2) Converted to GPL, version 3, open source license.
  3) Changed stores selling price capturing and added file import facility.

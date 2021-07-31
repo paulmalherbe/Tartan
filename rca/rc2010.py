@@ -551,7 +551,7 @@ class rc2010(object):
             ("rot_taxamt", "VAT-Amount", 11.2, "SD", "N"),
             ("balance", "Balance", 15.2, "SD", "N"))
         self.otrn = SelectChoice(self.df.topPage1, None, col, data, wait=False,
-            neww=False, live=False, modal=False, lines=9)
+            neww=False, sort=False, live=False, modal=False, lines=9)
 
     def showTenantTrans(self):
         try:
@@ -581,7 +581,7 @@ class rc2010(object):
             ("rtu_taxamt", "VAT-Amount", 11.2, "SD", "N"),
             ("balance", "Balance", 15.2, "SD", "N"))
         self.ttrn = SelectChoice(self.df.topPage2, None, col, data, wait=False,
-            neww=False, live=False, modal=False, lines=9)
+            neww=False, sort=False, live=False, modal=False, lines=9)
 
     def showTenantBalance(self):
         bal = self.sql.getRec("rcatnt",

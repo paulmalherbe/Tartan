@@ -1,0 +1,10 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Removed the 'Batched By' and 'Indexed By' fields in batch records.
+ 2) Fixed an error with transaction re-allocations.
+ 3) Many other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.

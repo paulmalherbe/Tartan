@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 0)
+    VERSION = (6, 1)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -290,7 +290,7 @@ Options:
                 showError(None, "Directory Error",
                     "Invalid -R Directory: %s" % self.rcfdir)
                 self.doExit(dbm=False)
-            scrn = MkWindow(tk=True, icon="tartan").newwin
+            scrn = MkWindow(icon="tartan").newwin
             dialog = FileDialog(**{"parent": scrn, "initd": self.rcfdir})
             self.rcfile = dialog.askopenfilename()
             scrn.destroy()
@@ -482,7 +482,7 @@ Options:
             showError(scrn, "Version Error",
                 """The Version of the Data, %s.%s, is too Old.
 
-Please follow the upgrade instructions at http://www.tartan.co.za/Downloads
+Please follow the upgrade instructions at https://www.tartan.co.za/Downloads
 
 or
 

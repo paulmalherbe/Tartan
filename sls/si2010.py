@@ -1460,7 +1460,7 @@ class si2010(object):
                     where=[("stt_cono", "=", self.opts["conum"]),
                     ("stt_group", "=", grp), ("stt_code", "=", cod),
                     ("stt_loc", "=", loc)], limit=1)
-                if qty > bal[0]:
+                if bal[0] is None or qty > bal[0]:
                     needpwd = True
         if needpwd:
             state = self.df.disableButtonsTags()

@@ -11,11 +11,11 @@ import time
 bd = os.path.expanduser("~")  # Base directory
 sv = "root@mail"              # ftp login@server
 vv = 6                        # Version number
-bv = "Tartan-%s" % vv         # Version directory
+bv = "Tartan-%s" % vv         # Version base name
 bx = "TartanExe"              # Executable directory
 bo = "TartanOld"              # Old directory
 bs = "TartanSve"              # Save directory
-vd = os.path.join(bd, bv)
+vd = os.path.join(bd, bv)     # Version directory
 if not os.path.isdir(vd):
     print("Invalid Version Directory: %s" % vd)
     sys.exit()
@@ -49,7 +49,10 @@ def addPage(doc, fle, last=False):
 def getName(nam, x, y, z=None):
     dd = os.path.join(bd, bo)
     if z is None:
-        exe = "%s/Tartan_%s.%s.exe" % (dd, x, y)
+        if x > 5:
+            exe = "%s/Tartan_%s.%s-32.exe" % (dd, x, y)
+        else:
+            exe = "%s/Tartan_%s.%s.exe" % (dd, x, y)
     else:
         exe = "%s/Tartan_%s.%s.%s.exe" % (dd, x, y, z)
     if os.path.isfile(exe):
@@ -214,7 +217,14 @@ if newver and newver != "%s.%s" % VERSION:
                     chg.write(nam + "\n")
                     chg.write(("=" * len(nam)) + "\n")
                     lines = open(fle, "r")
+                    skip = False
                     for line in lines:
+                        if skip:
+                            skip = False
+                            continue
+                        if line.count("Tartan Systems Upgrade"):
+                            skip = True
+                            continue
                         chg.write(line)
                     chg.write("\n")
             for y in range(999, -1, -1):
@@ -226,13 +236,20 @@ if newver and newver != "%s.%s" % VERSION:
                         chg.write(nam + "\n")
                         chg.write(("=" * len(nam)) + "\n")
                         lines = open(fle, "r")
+                        skip = False
                         for line in lines:
+                            if skip:
+                                skip = False
+                                continue
+                            if line.count("Tartan Systems Upgrade"):
+                                skip = True
+                                continue
                             chg.write(line)
                         chg.write("\n")
         chg.write('"""')
         chg.close()
         # Create changes rst
-        rst = open("doc/Changes.rst", "w")
+        rst = open("doc/Changes.txt", "w")
         chg = __import__("tarchg")
         rst.write(chg.changes)
         rst.close()
@@ -254,9 +271,6 @@ if newver and newver != "%s.%s" % VERSION:
 if os.path.exists("%s/tarzip.zip" % bd):
     os.remove("%s/tarzip.zip" % bd)
 exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
-exeCmd("zip -qd %s/tarzip doc/POS.rst" % bd)
-exeCmd("zip -qd %s/tarzip pos/*" % bd)
-exeCmd("zip -qd %s/tarzip pos" % bd)
 # Update the zip with tarchg.py tartan.ico and uncommitted files
 exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py rca/*.py rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py uty/*.py wag/*.py" % bd)
 # Create a new system directory
@@ -354,39 +368,39 @@ if publish:
     print("")
     if not test:
         # Dropbox
-        exeCmd("rm /home/paul/Dropbox/Updates/%s*" % csys)
-        exeCmd("cp -p %s/%s/%s_%s.%s.tgz /home/paul/Dropbox/Updates/" %
-            (bd, bx, csys, cver[0], cver[1]))
-        exeCmd("cp -p %s/%s/%s_%s.%s.exe /home/paul/Dropbox/Updates/" %
-            (bd, bx, csys, cver[0], cver[1]))
+        exeCmd("rm /home/paul/Dropbox/Apps/%s/%s_6*" % (csys, csys))
+        exeCmd("rsync -az %s/%s/%s* "\
+            "/home/paul/Dropbox/Apps/Tartan/" % (bd, bx, csys))
+        exeCmd("rsync -az /tmp/Manual.pdf /home/paul/Dropbox/Apps/Tartan/")
         # FTP Server
         exeCmd("ssh %s rm /srv/ftp/%s*" % (sv, csys))
-        exeCmd("rsync -az %s/%s/Tartan_4.1.14.* %s:/srv/ftp/ "\
-            "--progress" % (bd, bo, sv))
-        exeCmd("rsync -az %s/%s/Tartan_5.5.* %s:/srv/ftp/ "\
-            "--progress" % (bd, bo, sv))
-        exeCmd("rsync -az %s/%s/Tartan_5.13.* %s:/srv/ftp/ "\
-            "--progress" % (bd, bo, sv))
-        exeCmd("rsync -az %s/%s/current %s:/srv/ftp/ "\
-            "--progress" % (bd, bx, sv))
-        exeCmd("rsync -az %s/%s/%s* %s:/srv/ftp/ "\
-            "--progress" % (bd, bx, csys, sv))
-        exeCmd("rsync -az /tmp/Manual.pdf %s:/srv/ftp/ --progress" % sv)
+        exeCmd("rsync -az %s/%s/%s* %s:/srv/ftp/" % (bd, bx, csys, sv))
         exeCmd("ssh %s chmod a+rx /srv/ftp/*" % sv)
         exeCmd("ssh %s chown paul:paul /srv/ftp/*" % sv)
         # Web documents
         exeCmd("rsync -az %s/%s/doc/Manual.rst "\
-            "%s:/var/www/tartan.co.za/htdocs/Manual/Manual.rst "\
-            "--progress" % (bd, bv, sv))
+            "%s:/var/www/tartan.co.za/htdocs/Manual/Manual.rst" % (bd, bv, sv))
         exeCmd("rsync -az %s/%s/doc/QST.rst "\
-            "%s:/var/www/tartan.co.za/htdocs/QuickStart/QST.rst "\
-            "--progress" % (bd, bv, sv))
+            "%s:/var/www/tartan.co.za/htdocs/QuickStart/QST.rst" % (bd, bv, sv))
         exeCmd("rsync -az %s/%s/doc/Downloads.rst "\
-            "%s:/var/www/tartan.co.za/htdocs/Downloads/ "\
-            "--progress" % (bd, bv, sv))
-        exeCmd("rsync -az %s/%s/doc/Changes.rst "\
-            "%s:/var/www/tartan.co.za/htdocs/Changes/ "\
-            "--progress" % (bd, bv, sv))
+            "%s:/var/www/tartan.co.za/htdocs/Downloads/" % (bd, bv, sv))
+        exeCmd("rsync -az %s/%s/doc/Changes.txt "\
+            "%s:/var/www/tartan.co.za/htdocs/Changes/" % (bd, bv, sv))
+        exeCmd("ssh %s rm /var/www/tartan.co.za/Updates/%s_6*" % (sv, csys))
+        exeCmd("rsync -az %s/%s/Tartan_4.1.14.* "\
+            "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
+        exeCmd("rsync -az %s/%s/Tartan_5.5.* "\
+            "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
+        exeCmd("rsync -az %s/%s/Tartan_5.13.* "\
+            "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
+        exeCmd("rsync -az %s/%s/current "\
+            "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, sv))
+        exeCmd("rsync -az %s/%s/%s* "\
+            "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, csys, sv))
+        exeCmd("rsync -az /tmp/Manual.pdf "\
+            "%s:/var/www/tartan.co.za/Updates/" % sv)
+        exeCmd("ssh %s chmod a+rx /var/www/tartan.co.za/Updates/*" % sv)
+        exeCmd("ssh %s chown paul:paul /var/www/tartan.co.za/Updates/*" % sv)
         if mkcd:
             # Create CD
             if os.path.isdir("%s/TartanCD" % bd):
@@ -447,7 +461,6 @@ if email and not test:
             "admin@blueberry.co.za",
             "alickbb@iafrica.com",
             "cnurrish@telkomsa.net",
-            "deonk@spargs.co.za",
             "frikkie@lando.co.za",
             "galloway@awe.co.za",
             "jane@acsconsulting.co.za",
@@ -473,10 +486,7 @@ if email and not test:
             "tyron@i-volt.net",
             "yolande@acsaccounting.co.za"]
         for addr in addrs:
-            if addr == "deonk@spargs.co.za":
-                sendMail(serv, mfrm, addr, subj)
-            else:
-                sendMail(serv, mfrm, addr, subj, mess=(text, html))
+            sendMail(serv, mfrm, addr, subj, mess=(text, html))
 shutil.rmtree("%s/tartan" % bd)
 print("DONE")
 # END
