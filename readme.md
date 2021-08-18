@@ -21,7 +21,7 @@ All modules are free software: you can redistribute them and/or modify them unde
 
 Dependencies
 ============
-Full installation of python ver >= 2.5 including tkinter, ttk and sqlite3
+Full installation of python ver >= 3.5 including tkinter, ttk and sqlite3
 
 The following dependencies can be installed using 'pip install'
 

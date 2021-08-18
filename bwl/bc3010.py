@@ -122,7 +122,8 @@ class bc3010(object):
         self.df.closeProcess()
         PrintDraw(self.opts["mf"], self.opts["conum"], self.date, self.time,
             takings=self.takings, listing=self.listing, board=self.board,
-            empty=self.empty, repprt=self.df.repprt)
+            empty=self.empty, repprt=self.df.repprt,
+            name=self.__class__.__name__)
         self.printed = True
         self.opts["mf"].closeLoop()
 

@@ -25,9 +25,9 @@ COPYING
 
 import getpass, gc, glob, io, os, platform, sys, time
 from TartanClasses import Dbase, ViewPDF, FileDialog, FITZ, GUI, GetCtl
-from TartanClasses import MainFrame, MkWindow, PwdConfirm, ScrollText
-from TartanClasses import SelectChoice, Sql, TartanConfig, TartanDialog
-from TartanClasses import TartanMenu, TartanUser
+from TartanClasses import MainFrame, MakeManual, MkWindow, PwdConfirm
+from TartanClasses import ScrollText, SelectChoice, Sql, TartanConfig
+from TartanClasses import TartanDialog, TartanMenu, TartanUser
 from tartanFunctions import askQuestion, askChoice, b64Convert, chkMod
 from tartanFunctions import copyList, dateDiff, ftpDownload, getPeriods
 from tartanFunctions import getPrgPath, loadRcFile, projectDate
@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 1)
+    VERSION = (6, 2)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -205,7 +205,8 @@ Options:
         # Check that required modules are installed
         mods = [
             ("fpdf", "fpdf", "__version__"),
-            ("PIL", "pillow", "__version__")]
+            ("PIL", "pillow", "__version__"),
+            ("fitz", "pymupdf", "version")]
         if sys.platform == "win32":
             mods.append(("win32api", "pywin32", None))
         if not self.version:
@@ -235,7 +236,6 @@ Options:
             mods.extend([
                 ("sqlite3", "pysqlite", "version"),
                 ("sqlite3", "sqlite3", "sqlite_version"),
-                ("fitz", "pymupdf", "version"),
                 ("markdown", "markdown", "__version__"),
                 ("ofxtools", "ofxtools", "__version__"),
                 ("openpyxl", "openpyxl", "__version__"),
@@ -1610,7 +1610,6 @@ System --> Change Password""")
             print(err)
 
     def doDisplay(self, doc):
-        from TartanClasses import MakeManual
         man = ""
         for ddd in doc:
             if ddd != doc[0]:
@@ -1633,6 +1632,7 @@ System --> Change Password""")
                 fle.close()
         fle = io.StringIO(str(man))
         if FITZ:
+            # Make fitz the default viewer
             vwr = self.mf.rcdic["vwr"]
             self.mf.rcdic["vwr"] = ""
         man = MakeManual(fle, vwr=self.mf.rcdic["vwr"])
@@ -1643,6 +1643,7 @@ System --> Change Password""")
         if os.path.exists(pdf):
             ViewPDF(self.mf, pdf)
         if FITZ:
+            # Restire the viewer
             self.mf.rcdic["vwr"] = vwr
 
     def doHousekeeping(self):

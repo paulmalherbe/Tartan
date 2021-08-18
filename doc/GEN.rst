@@ -444,7 +444,7 @@ As with most data capture routines you will first have to enter the `Batch Detai
 
 Bank Statements (GL)
 ++++++++++++++++++++
-Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed during this routine.
+Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also be used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed using this routine.
 
 As with most data capture routines you will first have to enter the `Batch Details`_.  The following buttons will then be available:
 

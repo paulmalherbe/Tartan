@@ -7291,7 +7291,7 @@ class SelectChoice(object):
                 self.tree.selection_set(start)
                 self.tree.focus(start)
         self.tree.update_idletasks()
-        if self.live or self.posn is not None:
+        if start is not None and (self.live or self.posn is not None):
             self.tree.see(start)
         elif last:
             # Scroll to last entry
@@ -12941,7 +12941,7 @@ class PrintCards(object):
     def doPrintCards(self):
         self.pdfnam = getModName(self.mf.rcdic["wrkdir"], __name__,
             "comp_cards", ext="pdf")
-        self.form = DrawForm(self.mf.dbm, self.tname,
+        self.form = DrawForm(self.mf.dbm, self.tname, foot=False,
             wrkdir=self.mf.rcdic["wrkdir"])
         self.doLoadStatic()
         self.form.doNewDetail()
@@ -13016,6 +13016,7 @@ class PrintDraw(object):
         self.date = date
         self.time = dtim
         defaults = {
+            "name": None,
             "cdes": None,
             "takings": "y",
             "listing": "n",
@@ -13101,7 +13102,7 @@ class PrintDraw(object):
             while len(data) != 6:
                 data.append([0, ""])
             adraw.append(data)
-        self.fpdf = MyFpdf(name=__name__, head=90)
+        self.fpdf = MyFpdf(name=self.name, head=90)
         if self.takings.lower() == "y":
             mem = 0
             vis = 0
@@ -16618,7 +16619,7 @@ class MyFpdf(fpdf.FPDF):
 
 class TartanLabel(MyFpdf):
     def __init__(self, label, unit="mm", posY=1, posX=1):
-        super().__init__(name="__name__", head=90, font="arial")
+        super().__init__(name=__name__, head=90, font="arial", foot=False)
         self.setFont(self.font[0], "", self.font[1])
         if label in tartanWork.labels:
             type_format = tartanWork.labels[label]
@@ -16671,14 +16672,15 @@ class DrawForm(MyFpdf):
 
     dbm    - A database class
     tname  - A template name or a list having template data
+    foot   - Whether to print a footer on each form, default True
     wrkdir - A directory to be used as a working directory
     """
-    def __init__(self, dbm, tname, wrkdir=None):
+    def __init__(self, dbm, tname, foot=True, wrkdir=None):
         self.dbm = dbm
         self.tname = tname
         self.wrkdir = wrkdir
         if self.setVariables():
-            super().__init__(orientation=self.ortn, fmat=self.pgsz)
+            super().__init__(orientation=self.ortn, fmat=self.pgsz, foot=foot)
             self.set_title(self.titl)
             self.set_author("Tartan Systems")
             self.set_auto_page_break(False, margin=0)
@@ -17905,6 +17907,9 @@ Only Databases of the Same Version can be Merged.""" % (self.dbnam,
         self.opts["mf"].closeLoop()
 
 class MakeManual(object):
+    """
+    This class takes a restructured document file and produces a pdf document.
+    """
     def __init__(self, docfle, vwr=""):
         if self.setVariables():
             self.fpdf.add_page()
@@ -18021,7 +18026,6 @@ class MakeManual(object):
                     continue
                 if (num + 1) < len(lines) and lines[num + 1].count("----"):
                     head2 = True
-                    line = line.split(" (")[0]
                     link = self.fpdf.add_link()
                     self.fpdf.set_link(link, -1, -1)
                     conts.append((line.strip(), self.fpdf.page_no(), 1, link))
@@ -18031,7 +18035,6 @@ class MakeManual(object):
                     continue
                 if (num + 1) < len(lines) and lines[num + 1].count("...."):
                     head3 = True
-                    line = line.split(" (")[0]
                     link = self.fpdf.add_link()
                     self.fpdf.set_link(link, -1, -1)
                     conts.append((line.strip(), self.fpdf.page_no(), 2, link))
@@ -18041,7 +18044,6 @@ class MakeManual(object):
                     continue
                 if (num + 1) < len(lines) and lines[num + 1].count("++++"):
                     head4 = True
-                    line = line.split(" (")[0]
                     link = self.fpdf.add_link()
                     self.fpdf.set_link(link, -1, -1)
                     conts.append((line.strip(), self.fpdf.page_no(), 3, link))
@@ -18051,7 +18053,6 @@ class MakeManual(object):
                     continue
                 if (num + 1) < len(lines) and lines[num + 1].count("~~~~"):
                     head5 = True
-                    line = line.split(" (")[0]
                     link = self.fpdf.add_link()
                     self.fpdf.set_link(link, -1, -1)
                     conts.append((line.strip(), self.fpdf.page_no(), 4, link))
@@ -18108,7 +18109,7 @@ class MakeManual(object):
             "bodyb": ("Arial", "B", 10),
             "bodyi": ("Arial", "I", 10),
             "bodyn": ("Arial", "", 10)}
-        self.fpdf = MyFpdf(name="Documents", head=80, font=self.fonts["bodyn"],
+        self.fpdf = MyFpdf(name="Manual", head=80, font=self.fonts["bodyn"],
             auto=True)
         return True
 
@@ -18211,22 +18212,21 @@ class MakeManual(object):
                 break
         x1 = x2 = self.fpdf.get_x()
         y1 = self.fpdf.get_y()
-        line = line.replace("**", "*")
         line = line.split()
         bold = False
         spcc = False
         font = "bodyn"
         for num, word in enumerate(line):
-            if word.startswith("*"):
+            if word.startswith(("**", "*")):
                 bold = True
                 font = "bodyb"
-            if word.endswith("*") or word.endswith("*.") or word.endswith("*,"):
+            if word.endswith(("*", "*.", "*,")):
                 bold = False
             word = word.replace("*", "")
             if word.startswith("`"):
                 bold = True
                 font = "bodyi"
-            if word.endswith("`"):
+            if word.endswith(("`", "`.", "`,")):
                 bold = False
             word = word.replace("`", "")
             if x2 + self.fpdf.get_string_width(word) > self.pmax:

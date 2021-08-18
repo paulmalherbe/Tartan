@@ -1523,7 +1523,7 @@ Names:   %s
         self.pf.closeProcess()
         if self.opt == "S":
             return
-        form = DrawForm(self.opts["mf"].dbm, self.tnamef,
+        form = DrawForm(self.opts["mf"].dbm, self.tnamef, foot=False,
             wrkdir=self.opts["mf"].rcdic["wrkdir"])
         if self.logo and "club_logo" in form.tptp:
             form.tptp["club_logo"][1] = self.logo

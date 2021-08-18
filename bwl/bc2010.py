@@ -301,7 +301,8 @@ class bc2010(object):
             tab = self.sql.getRec("bwltab", cols=["btb_surname",
                 "btb_names", "btb_gender", "btb_pos1", "btb_rate1",
                 "btb_pos2", "btb_rate2"], where=[("btb_cono", "=",
-                self.opts["conum"]), ("btb_tab", "=", draw[0])], limit=1)
+                self.opts["conum"]), ("btb_tab", "=", draw[0])],
+                limit=1)
             if tab:
                 if self.alter:
                     if self.rating == "N":
@@ -311,6 +312,8 @@ class bc2010(object):
                 else:
                     p, r = draw[4:6]
                 self.alltabs[draw[0]] = [tab[0], tab[1], tab[2], p, r, "Y"]
+                if not draw[2]:
+                    continue
             else:
                 showError(self.opts["mf"].body, "Missing Tab",
                     "Tab Number %s is Not in the Database" % draw[0])
@@ -1320,6 +1323,8 @@ Try to Allocate Different Rinks""" % self.weeks),
 
     def doPer(self, frt, pag, r, c, p, i, w):
         self.dper = w
+        if self.dtype == "S":
+            self.dw.loadEntry(frt, pag, p+1, data="N")
 
     def doHist(self, frt, pag, r, c, p, i, w):
         self.dhist = w
@@ -2236,6 +2241,8 @@ Combination Number %10s"""
         self.sql.insRec("bwldrm", data=[self.opts["conum"], self.date,
             self.time, self.mixed, self.rating, self.nbase, self.dtype,
             self.dhist, self.tsize, self.ratem.work, self.ratev.work])
+        if not self.drawn:
+            return
         # Insert bwldrt
         for x in range(0, len(self.adraw1), 2):
             one = 0
@@ -2366,7 +2373,7 @@ Combination Number %10s"""
             PrintDraw(self.opts["mf"], self.opts["conum"], self.date,
                 self.time, cdes=self.cdes, takings=self.takings,
                 listing=self.listing, board=self.board, empty=self.empty,
-                repprt=self.pd.repprt)
+                repprt=self.pd.repprt, name=self.__class__.__name__)
         if self.cards != "N":
             recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
                 cols=["bdt_rink", "bdt_tab"], where=[("bdt_cono", "=",
@@ -2585,12 +2592,26 @@ Combination Number %10s"""
 
     def doExit(self):
         if self.alltabs and not self.drawn:
-            yn = askQuestion(self.opts["mf"].body, "Exit", "This Draw has "\
-                "Not been Done. Are you Sure that you want to Exit?",
-                default="no")
-            if yn == "no":
+            but = [
+                ("Exit Without Saving", "E"),
+                ("Save and Exit", "S"),
+                ("None", "N")]
+            txt = "This Draw Has Not Been Done"
+            ok = askChoice(self.opts["mf"].body, "Exit",
+                mess=txt, butt=but, default="None")
+            if ok == "N":
                 self.df.focusField(self.df.frt, self.df.pag, self.df.col)
                 return
+            if ok == "S":
+                self.dtype = "R"
+                self.dhist = "Y"
+                self.tsize = 3
+                self.doSave()
+                for tab in self.alltabs:
+                    data = [self.opts["conum"], tab, self.date, self.time,
+                        "", "", "", 0, 0, 0, 0, 0, 0, 0, 0, "", ""]
+                    self.sql.insRec("bwldrt", data=data)
+                self.opts["mf"].dbm.commitDbase()
         self.df.closeProcess()
         self.doSetFont(self.dfs)
         self.opts["mf"].closeLoop()

@@ -3,7 +3,7 @@
 ==================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.1
+:Version:   6.2
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -18,9 +18,9 @@ About
 -----
 Tartan Systems started out in 1981 as a suite of programs I wrote in COBOL and until 1994 ran on various platforms including CPM, RSX11M, MSDOS, AT&T UNIX and SCO.
 
-In 1994 I discovered LINUX and when iBCS2 became available I modified the systems to run under LINUX and continue doing so until today.
+In 1994 I discovered LINUX and when iBCS2 became available I modified the systems to run under LINUX.
 
-In 2003 I started looking around for another programming language in which I could rewrite the systems to   run under LINUX as well as Windows without having to recompile etc. Also I was getting irritated with having to compile using SCO.
+In 2003 I started looking around for another programming language in which I could rewrite the systems to run under LINUX, as well as Windows, as I was getting irritated with having to compile using SCO.
 
 Eventually I decided on the following:
 
@@ -36,7 +36,7 @@ In 2011, version 4, I dropped support for windows 9x and also replaced reportlab
 
 In 2015, version 5, I replaced PyGtk with Tkinter and ttk.
 
-In 2020, version 6.1, I dropped support for MySQL and Firebird databases.
+In 2021, version 6, I upgraded to Python 3 and dropped support for MySQL and Firebird databases.
 
 .. _Python: http://www.python.org
 .. _Tkinter: http://www.python.org/topics/tkinter
@@ -57,11 +57,8 @@ The following dependencies must be installed using pip:
 
 + fpdf                  # Used to create all documents
 + pillow                # Used by fpdf and imaging
++ pymupdf               # Used for viewing pdf files
 + pywin32               # Windows only
-
-The following dependency should also be installed using pip:
-
-+ pymupdf               # Used by the Tartan PDF Viewer/Printer and Bulk Mail
 
 Additionally, the following dependencies should also be installed using pip:
 
@@ -158,12 +155,9 @@ Batch Details
 Most data capture routines require you to enter batch details. The reason for a batch is ease of balancing and the resolution of errors made during data capture. After you exit a data capture routine a totals summary will be displayed. If there is a discrepancy between the expected and entered values all the various systems have a routine to print the batch details thus enabling you to determine where the error is and therefore to correct it.
 
 + **Batch Number** - Any 7 character unique alphanumeric code.
-+ **Capture Date (CCYYMMDD)** - The date that this batch was first created.
 + **Current Period (CCYYMM)** - The financial period of this batch.
 + **Number of Entries** - The total number of entries comprising this batch, if known, else 0.
 + **Value of Entries** - The total value of entries comprising this batch, if known, else 0.
-+ **Batched By** - The initials of the person who pre-listed the batch.
-+ **Captured By** - The initials of the person who created the batch.
 + **Multiple Date Allocations** - Whether or not the postings are to be allocated according to the transaction date and not the current period.
 + **Bank Control** - For all batches in general ledger and other systems integrated with the general ledger, that affect the bank accounts, enter the bank control code.
 

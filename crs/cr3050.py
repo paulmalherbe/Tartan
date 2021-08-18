@@ -53,6 +53,7 @@ class cr3050(object):
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
             t[1], t[2], t[3], t[4], self.__class__.__name__)
+        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.colsh = ["Acc-Num", "Name", "Cr-Balance", "Tot-Balance",
             "Current", "30-Days", "60-Days", "90-Days", "Over-90-Days"]
         self.forms = [("NA", 7), ("NA", 30)] + [("SD", 13.2)] * 7
@@ -194,8 +195,7 @@ class cr3050(object):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"])
-        self.expheads = ["%03u %-30s %s" % (self.opts["conum"],
-            self.opts["conam"], self.sysdttm)]
+        self.expheads = [self.head + " %s" % self.sysdttm]
         self.expheads.append("Creditor's Age Analaysis up to %s" %
             self.opts["period"])
         self.expheads.append("Options: From %s To %s Low-Bal %s Dr-Bals "\

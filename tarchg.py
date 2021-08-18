@@ -1,5 +1,17 @@
-changes = """ver_6.1
+changes = """ver_6.2
 =======
+ 1) Fixed a bug in stores interrogation.
+ 2) Fixed a bug in creditors age analysis.
+ 3) Updated various items in the reference manual.
+ 4) Many other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.1 2021-07-31
+==================
  1) Removed the 'Batched By' and 'Indexed By' fields in batch records.
  2) Fixed an error with transaction re-allocations.
  3) Many other minor changes, fixes and enhancements.

@@ -479,6 +479,7 @@ class st4010(object):
                     if t[0] == rec.selection[2]:
                         typ = n + 1
                         break
+                dte = rec.selection[0]
                 doc = rec.selection[3]
                 if self.itype == "R" and typ in (7, 8):
                     bt = (("Transaction", "T"), ("Recipe", "R"))
@@ -494,6 +495,7 @@ class st4010(object):
                         ("stt_code", "=", self.code),
                         ("stt_loc", "=", self.loc),
                         ("stt_type", "=", typ),
+                        ("stt_trdt", "=", dte),
                         ("stt_ref1", "=", doc)]
                     TabPrt(self.opts["mf"], tabs="strtrn", where=wher,
                         pdia=False)

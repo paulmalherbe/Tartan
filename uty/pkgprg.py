@@ -263,7 +263,7 @@ if newver and newver != "%s.%s" % VERSION:
         if not test:
             push = input("Push Version (y/n): ")
             if push == "y":
-                exeCmd("/usr/bin/git push -u origin master")
+                exeCmd("/usr/bin/git push -u origin main")
     except Exception as err:
         print("Error Creating New Version (%s)" % err)
         sys.exit()
@@ -271,8 +271,14 @@ if newver and newver != "%s.%s" % VERSION:
 if os.path.exists("%s/tarzip.zip" % bd):
     os.remove("%s/tarzip.zip" % bd)
 exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
-# Update the zip with tarchg.py tartan.ico and uncommitted files
-exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py rca/*.py rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py uty/*.py wag/*.py" % bd)
+# Update the zip with tarchg.py tartan.ico
+exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico" % bd)
+# Update the zip with uncommitted files
+exeCmd("zip -qr %s/tarzip ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py "\
+    "csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py rca/*.py "\
+    "rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py "\
+    "TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py "\
+    "uty/*.py wag/*.py" % bd)
 # Create a new system directory
 if os.path.exists("%s/tartan" % bd):
     shutil.rmtree("%s/tartan" % bd)
@@ -354,8 +360,10 @@ if publish:
     exeCmd("mv %s/%s/%s_%s.* %s/%s/" %
         (bd, bx, csys, vv, bd, bo))
     # Create Source tgz and zip
-    exeCmd("tar -czf %s/%s/%s_%s.%s.tgz %s/tartan" %
-        (bd, bx, csys, cver[0], cver[1], bd))
+    os.chdir(bd)
+    exeCmd("tar -czf %s/%s/%s_%s.%s.tgz tartan" %
+        (bd, bx, csys, cver[0], cver[1]))
+    os.chdir(pypath)
     exeCmd("cp -p %s/%s/tartan-%s.zip %s/%s/%s_%s.%s.zip" %
         (bd, bs, vv, bd, bs, csys, cver[0], cver[1]))
     # Rename Windows exe's
@@ -401,21 +409,20 @@ if publish:
             "%s:/var/www/tartan.co.za/Updates/" % sv)
         exeCmd("ssh %s chmod a+rx /var/www/tartan.co.za/Updates/*" % sv)
         exeCmd("ssh %s chown paul:paul /var/www/tartan.co.za/Updates/*" % sv)
+        if os.path.isdir("%s/TartanCD" % bd):
+            shutil.rmtree("%s/TartanCD" % bd)
         if mkcd:
             # Create CD
-            if os.path.isdir("%s/TartanCD" % bd):
-                shutil.rmtree("%s/TartanCD" % bd)
-                exeCmd("mkdir %s/TartanCD" % bd)
+            exeCmd("mkdir %s/TartanCD" % bd)
             if os.path.isdir("%s/tempcd" % bd):
                 shutil.rmtree("%s/tempcd" % bd)
             # Executables
-            exeCmd("mkdir %s/tempcd" % bd)
-            exeCmd("mkdir %s/tempcd/Other" % bd)
+            exeCmd("mkdir -p %s/tempcd/Other" % bd)
             exeCmd("cp -p %s/%s/Tartan* %s/tempcd/" % (bd, bx, bd))
             exeCmd("cp -pr %s/%s/* %s/tempcd/Other/" % (bd, bx, bd))
             exeCmd("rm %s/tempcd/Other/Tartan*" % bd)
             exeCmd("rm %s/tempcd/Other/Rnehol*" % bd)
-            exeCmd("rm %s/tempcd/Other/??????-[5,6].exe" % bd)
+            exeCmd("rm %s/tempcd/Other/??????-[5,6]*.exe" % bd)
             auto = open("%s/tempcd/AUTORUN.INF" % bd, "w")
             auto.write("""[autorun]
     shell\install=&Install

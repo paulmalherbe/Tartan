@@ -1,0 +1,518 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index 7ca6a84..dadf67d 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -7291,7 +7291,7 @@ class SelectChoice(object):
+                 self.tree.selection_set(start)
+                 self.tree.focus(start)
+         self.tree.update_idletasks()
+-        if self.live or self.posn is not None:
++        if start is not None and (self.live or self.posn is not None):
+             self.tree.see(start)
+         elif last:
+             # Scroll to last entry
+@@ -12941,7 +12941,7 @@ class PrintCards(object):
+     def doPrintCards(self):
+         self.pdfnam = getModName(self.mf.rcdic["wrkdir"], __name__,
+             "comp_cards", ext="pdf")
+-        self.form = DrawForm(self.mf.dbm, self.tname,
++        self.form = DrawForm(self.mf.dbm, self.tname, foot=False,
+             wrkdir=self.mf.rcdic["wrkdir"])
+         self.doLoadStatic()
+         self.form.doNewDetail()
+@@ -13016,6 +13016,7 @@ class PrintDraw(object):
+         self.date = date
+         self.time = dtim
+         defaults = {
++            "name": None,
+             "cdes": None,
+             "takings": "y",
+             "listing": "n",
+@@ -13101,7 +13102,7 @@ class PrintDraw(object):
+             while len(data) != 6:
+                 data.append([0, ""])
+             adraw.append(data)
+-        self.fpdf = MyFpdf(name=__name__, head=90)
++        self.fpdf = MyFpdf(name=self.name, head=90)
+         if self.takings.lower() == "y":
+             mem = 0
+             vis = 0
+@@ -16618,7 +16619,7 @@ class MyFpdf(fpdf.FPDF):
+ 
+ class TartanLabel(MyFpdf):
+     def __init__(self, label, unit="mm", posY=1, posX=1):
+-        super().__init__(name="__name__", head=90, font="arial")
++        super().__init__(name=__name__, head=90, font="arial", foot=False)
+         self.setFont(self.font[0], "", self.font[1])
+         if label in tartanWork.labels:
+             type_format = tartanWork.labels[label]
+@@ -16671,14 +16672,15 @@ class DrawForm(MyFpdf):
+ 
+     dbm    - A database class
+     tname  - A template name or a list having template data
++    foot   - Whether to print a footer on each form, default True
+     wrkdir - A directory to be used as a working directory
+     """
+-    def __init__(self, dbm, tname, wrkdir=None):
++    def __init__(self, dbm, tname, foot=True, wrkdir=None):
+         self.dbm = dbm
+         self.tname = tname
+         self.wrkdir = wrkdir
+         if self.setVariables():
+-            super().__init__(orientation=self.ortn, fmat=self.pgsz)
++            super().__init__(orientation=self.ortn, fmat=self.pgsz, foot=foot)
+             self.set_title(self.titl)
+             self.set_author("Tartan Systems")
+             self.set_auto_page_break(False, margin=0)
+@@ -17905,6 +17907,9 @@ Only Databases of the Same Version can be Merged.""" % (self.dbnam,
+         self.opts["mf"].closeLoop()
+ 
+ class MakeManual(object):
++    """
++    This class takes a restructured document file and produces a pdf document.
++    """
+     def __init__(self, docfle, vwr=""):
+         if self.setVariables():
+             self.fpdf.add_page()
+@@ -18021,7 +18026,6 @@ class MakeManual(object):
+                     continue
+                 if (num + 1) < len(lines) and lines[num + 1].count("----"):
+                     head2 = True
+-                    line = line.split(" (")[0]
+                     link = self.fpdf.add_link()
+                     self.fpdf.set_link(link, -1, -1)
+                     conts.append((line.strip(), self.fpdf.page_no(), 1, link))
+@@ -18031,7 +18035,6 @@ class MakeManual(object):
+                     continue
+                 if (num + 1) < len(lines) and lines[num + 1].count("...."):
+                     head3 = True
+-                    line = line.split(" (")[0]
+                     link = self.fpdf.add_link()
+                     self.fpdf.set_link(link, -1, -1)
+                     conts.append((line.strip(), self.fpdf.page_no(), 2, link))
+@@ -18041,7 +18044,6 @@ class MakeManual(object):
+                     continue
+                 if (num + 1) < len(lines) and lines[num + 1].count("++++"):
+                     head4 = True
+-                    line = line.split(" (")[0]
+                     link = self.fpdf.add_link()
+                     self.fpdf.set_link(link, -1, -1)
+                     conts.append((line.strip(), self.fpdf.page_no(), 3, link))
+@@ -18051,7 +18053,6 @@ class MakeManual(object):
+                     continue
+                 if (num + 1) < len(lines) and lines[num + 1].count("~~~~"):
+                     head5 = True
+-                    line = line.split(" (")[0]
+                     link = self.fpdf.add_link()
+                     self.fpdf.set_link(link, -1, -1)
+                     conts.append((line.strip(), self.fpdf.page_no(), 4, link))
+@@ -18108,7 +18109,7 @@ class MakeManual(object):
+             "bodyb": ("Arial", "B", 10),
+             "bodyi": ("Arial", "I", 10),
+             "bodyn": ("Arial", "", 10)}
+-        self.fpdf = MyFpdf(name="Documents", head=80, font=self.fonts["bodyn"],
++        self.fpdf = MyFpdf(name="Manual", head=80, font=self.fonts["bodyn"],
+             auto=True)
+         return True
+ 
+@@ -18211,22 +18212,21 @@ class MakeManual(object):
+                 break
+         x1 = x2 = self.fpdf.get_x()
+         y1 = self.fpdf.get_y()
+-        line = line.replace("**", "*")
+         line = line.split()
+         bold = False
+         spcc = False
+         font = "bodyn"
+         for num, word in enumerate(line):
+-            if word.startswith("*"):
++            if word.startswith(("**", "*")):
+                 bold = True
+                 font = "bodyb"
+-            if word.endswith("*") or word.endswith("*.") or word.endswith("*,"):
++            if word.endswith(("*", "*.", "*,")):
+                 bold = False
+             word = word.replace("*", "")
+             if word.startswith("`"):
+                 bold = True
+                 font = "bodyi"
+-            if word.endswith("`"):
++            if word.endswith(("`", "`.", "`,")):
+                 bold = False
+             word = word.replace("`", "")
+             if x2 + self.fpdf.get_string_width(word) > self.pmax:
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index 2b53602..4dad5b0 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -301,7 +301,8 @@ class bc2010(object):
+             tab = self.sql.getRec("bwltab", cols=["btb_surname",
+                 "btb_names", "btb_gender", "btb_pos1", "btb_rate1",
+                 "btb_pos2", "btb_rate2"], where=[("btb_cono", "=",
+-                self.opts["conum"]), ("btb_tab", "=", draw[0])], limit=1)
++                self.opts["conum"]), ("btb_tab", "=", draw[0])],
++                limit=1)
+             if tab:
+                 if self.alter:
+                     if self.rating == "N":
+@@ -311,6 +312,8 @@ class bc2010(object):
+                 else:
+                     p, r = draw[4:6]
+                 self.alltabs[draw[0]] = [tab[0], tab[1], tab[2], p, r, "Y"]
++                if not draw[2]:
++                    continue
+             else:
+                 showError(self.opts["mf"].body, "Missing Tab",
+                     "Tab Number %s is Not in the Database" % draw[0])
+@@ -1320,6 +1323,8 @@ Try to Allocate Different Rinks""" % self.weeks),
+ 
+     def doPer(self, frt, pag, r, c, p, i, w):
+         self.dper = w
++        if self.dtype == "S":
++            self.dw.loadEntry(frt, pag, p+1, data="N")
+ 
+     def doHist(self, frt, pag, r, c, p, i, w):
+         self.dhist = w
+@@ -2236,6 +2241,8 @@ Combination Number %10s"""
+         self.sql.insRec("bwldrm", data=[self.opts["conum"], self.date,
+             self.time, self.mixed, self.rating, self.nbase, self.dtype,
+             self.dhist, self.tsize, self.ratem.work, self.ratev.work])
++        if not self.drawn:
++            return
+         # Insert bwldrt
+         for x in range(0, len(self.adraw1), 2):
+             one = 0
+@@ -2366,7 +2373,7 @@ Combination Number %10s"""
+             PrintDraw(self.opts["mf"], self.opts["conum"], self.date,
+                 self.time, cdes=self.cdes, takings=self.takings,
+                 listing=self.listing, board=self.board, empty=self.empty,
+-                repprt=self.pd.repprt)
++                repprt=self.pd.repprt, name=self.__class__.__name__)
+         if self.cards != "N":
+             recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
+                 cols=["bdt_rink", "bdt_tab"], where=[("bdt_cono", "=",
+@@ -2585,12 +2592,26 @@ Combination Number %10s"""
+ 
+     def doExit(self):
+         if self.alltabs and not self.drawn:
+-            yn = askQuestion(self.opts["mf"].body, "Exit", "This Draw has "\
+-                "Not been Done. Are you Sure that you want to Exit?",
+-                default="no")
+-            if yn == "no":
++            but = [
++                ("Exit Without Saving", "E"),
++                ("Save and Exit", "S"),
++                ("None", "N")]
++            txt = "This Draw Has Not Been Done"
++            ok = askChoice(self.opts["mf"].body, "Exit",
++                mess=txt, butt=but, default="None")
++            if ok == "N":
+                 self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+                 return
++            if ok == "S":
++                self.dtype = "R"
++                self.dhist = "Y"
++                self.tsize = 3
++                self.doSave()
++                for tab in self.alltabs:
++                    data = [self.opts["conum"], tab, self.date, self.time,
++                        "", "", "", 0, 0, 0, 0, 0, 0, 0, 0, "", ""]
++                    self.sql.insRec("bwldrt", data=data)
++                self.opts["mf"].dbm.commitDbase()
+         self.df.closeProcess()
+         self.doSetFont(self.dfs)
+         self.opts["mf"].closeLoop()
+diff --git a/bwl/bc3010.py b/bwl/bc3010.py
+index 8a7230d..a6b309e 100644
+--- a/bwl/bc3010.py
++++ b/bwl/bc3010.py
+@@ -122,7 +122,8 @@ class bc3010(object):
+         self.df.closeProcess()
+         PrintDraw(self.opts["mf"], self.opts["conum"], self.date, self.time,
+             takings=self.takings, listing=self.listing, board=self.board,
+-            empty=self.empty, repprt=self.df.repprt)
++            empty=self.empty, repprt=self.df.repprt,
++            name=self.__class__.__name__)
+         self.printed = True
+         self.opts["mf"].closeLoop()
+ 
+diff --git a/crs/cr3050.py b/crs/cr3050.py
+index bfd0a06..98d7ceb 100644
+--- a/crs/cr3050.py
++++ b/crs/cr3050.py
+@@ -53,6 +53,7 @@ class cr3050(object):
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.sysdttm = "(Printed on: %i/%02i/%02i at %02i:%02i) %6s" % (t[0],
+             t[1], t[2], t[3], t[4], self.__class__.__name__)
++        self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
+         self.colsh = ["Acc-Num", "Name", "Cr-Balance", "Tot-Balance",
+             "Current", "30-Days", "60-Days", "90-Days", "Over-90-Days"]
+         self.forms = [("NA", 7), ("NA", 30)] + [("SD", 13.2)] * 7
+@@ -194,8 +195,7 @@ class cr3050(object):
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+         expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
+             self.__class__.__name__, self.opts["conum"])
+-        self.expheads = ["%03u %-30s %s" % (self.opts["conum"],
+-            self.opts["conam"], self.sysdttm)]
++        self.expheads = [self.head + " %s" % self.sysdttm]
+         self.expheads.append("Creditor's Age Analaysis up to %s" %
+             self.opts["period"])
+         self.expheads.append("Options: From %s To %s Low-Bal %s Dr-Bals "\
+diff --git a/doc/GEN.rst b/doc/GEN.rst
+index 67d66c6..2fd19a1 100644
+--- a/doc/GEN.rst
++++ b/doc/GEN.rst
+@@ -444,7 +444,7 @@ As with most data capture routines you will first have to enter the `Batch Detai
+ 
+ Bank Statements (GL)
+ ++++++++++++++++++++
+-Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed during this routine.
++Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also be used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed using this routine.
+ 
+ As with most data capture routines you will first have to enter the `Batch Details`_.  The following buttons will then be available:
+ 
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 575d990..d4ac65d 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.1
++:Version:   6.2
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -18,9 +18,9 @@ About
+ -----
+ Tartan Systems started out in 1981 as a suite of programs I wrote in COBOL and until 1994 ran on various platforms including CPM, RSX11M, MSDOS, AT&T UNIX and SCO.
+ 
+-In 1994 I discovered LINUX and when iBCS2 became available I modified the systems to run under LINUX and continue doing so until today.
++In 1994 I discovered LINUX and when iBCS2 became available I modified the systems to run under LINUX.
+ 
+-In 2003 I started looking around for another programming language in which I could rewrite the systems to   run under LINUX as well as Windows without having to recompile etc. Also I was getting irritated with having to compile using SCO.
++In 2003 I started looking around for another programming language in which I could rewrite the systems to run under LINUX, as well as Windows, as I was getting irritated with having to compile using SCO.
+ 
+ Eventually I decided on the following:
+ 
+@@ -36,7 +36,7 @@ In 2011, version 4, I dropped support for windows 9x and also replaced reportlab
+ 
+ In 2015, version 5, I replaced PyGtk with Tkinter and ttk.
+ 
+-In 2020, version 6.1, I dropped support for MySQL and Firebird databases.
++In 2021, version 6, I upgraded to Python 3 and dropped support for MySQL and Firebird databases.
+ 
+ .. _Python: http://www.python.org
+ .. _Tkinter: http://www.python.org/topics/tkinter
+@@ -57,12 +57,9 @@ The following dependencies must be installed using pip:
+ 
+ + fpdf                  # Used to create all documents
+ + pillow                # Used by fpdf and imaging
+++ pymupdf               # Used for viewing pdf files
+ + pywin32               # Windows only
+ 
+-The following dependency should also be installed using pip:
+-
+-+ pymupdf               # Used by the Tartan PDF Viewer/Printer and Bulk Mail
+-
+ Additionally, the following dependencies should also be installed using pip:
+ 
+ + markdown              # Bulk Mail - Enable Markdown Format
+@@ -158,12 +155,9 @@ Batch Details
+ Most data capture routines require you to enter batch details. The reason for a batch is ease of balancing and the resolution of errors made during data capture. After you exit a data capture routine a totals summary will be displayed. If there is a discrepancy between the expected and entered values all the various systems have a routine to print the batch details thus enabling you to determine where the error is and therefore to correct it.
+ 
+ + **Batch Number** - Any 7 character unique alphanumeric code.
+-+ **Capture Date (CCYYMMDD)** - The date that this batch was first created.
+ + **Current Period (CCYYMM)** - The financial period of this batch.
+ + **Number of Entries** - The total number of entries comprising this batch, if known, else 0.
+ + **Value of Entries** - The total value of entries comprising this batch, if known, else 0.
+-+ **Batched By** - The initials of the person who pre-listed the batch.
+-+ **Captured By** - The initials of the person who created the batch.
+ + **Multiple Date Allocations** - Whether or not the postings are to be allocated according to the transaction date and not the current period.
+ + **Bank Control** - For all batches in general ledger and other systems integrated with the general ledger, that affect the bank accounts, enter the bank control code.
+ 
+diff --git a/mem/ml1010.py b/mem/ml1010.py
+index 59d53a1..e4ff42a 100644
+--- a/mem/ml1010.py
++++ b/mem/ml1010.py
+@@ -1523,7 +1523,7 @@ Names:   %s
+         self.pf.closeProcess()
+         if self.opt == "S":
+             return
+-        form = DrawForm(self.opts["mf"].dbm, self.tnamef,
++        form = DrawForm(self.opts["mf"].dbm, self.tnamef, foot=False,
+             wrkdir=self.opts["mf"].rcdic["wrkdir"])
+         if self.logo and "club_logo" in form.tptp:
+             form.tptp["club_logo"][1] = self.logo
+diff --git a/ms0000.py b/ms0000.py
+index bd2f4d6..349a1aa 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -25,9 +25,9 @@ COPYING
+ 
+ import getpass, gc, glob, io, os, platform, sys, time
+ from TartanClasses import Dbase, ViewPDF, FileDialog, FITZ, GUI, GetCtl
+-from TartanClasses import MainFrame, MkWindow, PwdConfirm, ScrollText
+-from TartanClasses import SelectChoice, Sql, TartanConfig, TartanDialog
+-from TartanClasses import TartanMenu, TartanUser
++from TartanClasses import MainFrame, MakeManual, MkWindow, PwdConfirm
++from TartanClasses import ScrollText, SelectChoice, Sql, TartanConfig
++from TartanClasses import TartanDialog, TartanMenu, TartanUser
+ from tartanFunctions import askQuestion, askChoice, b64Convert, chkMod
+ from tartanFunctions import copyList, dateDiff, ftpDownload, getPeriods
+ from tartanFunctions import getPrgPath, loadRcFile, projectDate
+@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 1)
++    VERSION = (6, 2)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -205,7 +205,8 @@ Options:
+         # Check that required modules are installed
+         mods = [
+             ("fpdf", "fpdf", "__version__"),
+-            ("PIL", "pillow", "__version__")]
++            ("PIL", "pillow", "__version__"),
++            ("fitz", "pymupdf", "version")]
+         if sys.platform == "win32":
+             mods.append(("win32api", "pywin32", None))
+         if not self.version:
+@@ -235,7 +236,6 @@ Options:
+             mods.extend([
+                 ("sqlite3", "pysqlite", "version"),
+                 ("sqlite3", "sqlite3", "sqlite_version"),
+-                ("fitz", "pymupdf", "version"),
+                 ("markdown", "markdown", "__version__"),
+                 ("ofxtools", "ofxtools", "__version__"),
+                 ("openpyxl", "openpyxl", "__version__"),
+@@ -1610,7 +1610,6 @@ System --> Change Password""")
+             print(err)
+ 
+     def doDisplay(self, doc):
+-        from TartanClasses import MakeManual
+         man = ""
+         for ddd in doc:
+             if ddd != doc[0]:
+@@ -1633,6 +1632,7 @@ System --> Change Password""")
+                 fle.close()
+         fle = io.StringIO(str(man))
+         if FITZ:
++            # Make fitz the default viewer
+             vwr = self.mf.rcdic["vwr"]
+             self.mf.rcdic["vwr"] = ""
+         man = MakeManual(fle, vwr=self.mf.rcdic["vwr"])
+@@ -1643,6 +1643,7 @@ System --> Change Password""")
+         if os.path.exists(pdf):
+             ViewPDF(self.mf, pdf)
+         if FITZ:
++            # Restire the viewer
+             self.mf.rcdic["vwr"] = vwr
+ 
+     def doHousekeeping(self):
+diff --git a/readme.md b/readme.md
+index 5cfd40f..30d8ae3 100644
+--- a/readme.md
++++ b/readme.md
+@@ -21,7 +21,7 @@ All modules are free software: you can redistribute them and/or modify them unde
+ 
+ Dependencies
+ ============
+-Full installation of python ver >= 2.5 including tkinter, ttk and sqlite3
++Full installation of python ver >= 3.5 including tkinter, ttk and sqlite3
+ 
+ The following dependencies can be installed using 'pip install'
+ 
+diff --git a/str/st4010.py b/str/st4010.py
+index c76edbc..349501e 100644
+--- a/str/st4010.py
++++ b/str/st4010.py
+@@ -479,6 +479,7 @@ class st4010(object):
+                     if t[0] == rec.selection[2]:
+                         typ = n + 1
+                         break
++                dte = rec.selection[0]
+                 doc = rec.selection[3]
+                 if self.itype == "R" and typ in (7, 8):
+                     bt = (("Transaction", "T"), ("Recipe", "R"))
+@@ -494,6 +495,7 @@ class st4010(object):
+                         ("stt_code", "=", self.code),
+                         ("stt_loc", "=", self.loc),
+                         ("stt_type", "=", typ),
++                        ("stt_trdt", "=", dte),
+                         ("stt_ref1", "=", doc)]
+                     TabPrt(self.opts["mf"], tabs="strtrn", where=wher,
+                         pdia=False)
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 25b81e1..8e3bab6 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -263,7 +263,7 @@ if newver and newver != "%s.%s" % VERSION:
+         if not test:
+             push = input("Push Version (y/n): ")
+             if push == "y":
+-                exeCmd("/usr/bin/git push -u origin master")
++                exeCmd("/usr/bin/git push -u origin main")
+     except Exception as err:
+         print("Error Creating New Version (%s)" % err)
+         sys.exit()
+@@ -271,8 +271,14 @@ if newver and newver != "%s.%s" % VERSION:
+ if os.path.exists("%s/tarzip.zip" % bd):
+     os.remove("%s/tarzip.zip" % bd)
+ exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
+-# Update the zip with tarchg.py tartan.ico and uncommitted files
+-exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py rca/*.py rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py uty/*.py wag/*.py" % bd)
++# Update the zip with tarchg.py tartan.ico
++exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico" % bd)
++# Update the zip with uncommitted files
++exeCmd("zip -qr %s/tarzip ass/*.py bkm/*.py bks/*.py bwl/*.py crs/*.py "\
++    "csh/*.py drs/*.py gen/*.py lon/*.py mem/*.py mst/*.py rca/*.py "\
++    "rtl/*.py scp/*.py sls/*.py str/*.py tab/*.py ms0000.py "\
++    "TartanClasses.py tartanFunctions.py tartanImages.py tartanWork.py "\
++    "uty/*.py wag/*.py" % bd)
+ # Create a new system directory
+ if os.path.exists("%s/tartan" % bd):
+     shutil.rmtree("%s/tartan" % bd)
+@@ -354,8 +360,10 @@ if publish:
+     exeCmd("mv %s/%s/%s_%s.* %s/%s/" %
+         (bd, bx, csys, vv, bd, bo))
+     # Create Source tgz and zip
+-    exeCmd("tar -czf %s/%s/%s_%s.%s.tgz %s/tartan" %
+-        (bd, bx, csys, cver[0], cver[1], bd))
++    os.chdir(bd)
++    exeCmd("tar -czf %s/%s/%s_%s.%s.tgz tartan" %
++        (bd, bx, csys, cver[0], cver[1]))
++    os.chdir(pypath)
+     exeCmd("cp -p %s/%s/tartan-%s.zip %s/%s/%s_%s.%s.zip" %
+         (bd, bs, vv, bd, bs, csys, cver[0], cver[1]))
+     # Rename Windows exe's
+@@ -401,21 +409,20 @@ if publish:
+             "%s:/var/www/tartan.co.za/Updates/" % sv)
+         exeCmd("ssh %s chmod a+rx /var/www/tartan.co.za/Updates/*" % sv)
+         exeCmd("ssh %s chown paul:paul /var/www/tartan.co.za/Updates/*" % sv)
++        if os.path.isdir("%s/TartanCD" % bd):
++            shutil.rmtree("%s/TartanCD" % bd)
+         if mkcd:
+             # Create CD
+-            if os.path.isdir("%s/TartanCD" % bd):
+-                shutil.rmtree("%s/TartanCD" % bd)
+-                exeCmd("mkdir %s/TartanCD" % bd)
++            exeCmd("mkdir %s/TartanCD" % bd)
+             if os.path.isdir("%s/tempcd" % bd):
+                 shutil.rmtree("%s/tempcd" % bd)
+             # Executables
+-            exeCmd("mkdir %s/tempcd" % bd)
+-            exeCmd("mkdir %s/tempcd/Other" % bd)
++            exeCmd("mkdir -p %s/tempcd/Other" % bd)
+             exeCmd("cp -p %s/%s/Tartan* %s/tempcd/" % (bd, bx, bd))
+             exeCmd("cp -pr %s/%s/* %s/tempcd/Other/" % (bd, bx, bd))
+             exeCmd("rm %s/tempcd/Other/Tartan*" % bd)
+             exeCmd("rm %s/tempcd/Other/Rnehol*" % bd)
+-            exeCmd("rm %s/tempcd/Other/??????-[5,6].exe" % bd)
++            exeCmd("rm %s/tempcd/Other/??????-[5,6]*.exe" % bd)
+             auto = open("%s/tempcd/AUTORUN.INF" % bd, "w")
+             auto.write("""[autorun]
+     shell\install=&Install
