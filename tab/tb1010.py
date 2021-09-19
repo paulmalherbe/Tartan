@@ -24,7 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os
+import json, os
 from TartanClasses import RepPrt, Sql, TartanDialog
 from tartanFunctions import askQuestion, copyList, makeArray, getPrgPath
 from tartanWork import dattyp, tabdic
@@ -269,7 +269,7 @@ class tb1010(object):
         "%s": [""" % key)
                     for fld in tabdic[tab][key]:
                         outf.write("""
-            %s""" % fld)
+            %s""" % json.dumps(fld))
                         if fld == tabdic[tab][key][-1]:
                             outf.write("""]""")
                         else:
@@ -311,7 +311,8 @@ class tb1010(object):
             self.df.focusField("C", 2, (pos * 12) + 1)
             for n, c in enumerate(dat):
                 self.df.loadEntry("C", 2, (pos * 12) + n, data=c)
-        self.df.advanceLine(2)
+            self.df.advanceLine(2)
+        self.df.focusField("C", 2, self.df.col)
 
     def doRestart(self):
         self.df.last[0] = [0, 0]

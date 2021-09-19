@@ -1,25 +1,26 @@
-pip install pip --upgrade
-pip install docutils --upgrade
-pip install fpdf --upgrade
-pip install importlib_metadata --upgrade
-pip install markdown --upgrade
-pip install ofxtools --upgrade
-pip install openpyxl --upgrade
-pip install pillow --upgrade
-pip install progress --upgrade
-pip install psycopg2 --upgrade
-pip install pyaes --upgrade
-pip install pycryptodome --upgrade
-pip install pyexcel --upgrade
-pip install pyexcel-ods --upgrade
-pip install pygal --upgrade
-pip install pyinstaller --upgrade
-pip install pymupdf --upgrade
-pip install pysmb --upgrade
-pip install pywin32 --upgrade
-pip install requests --upgrade
-pip install send2trash --upgrade
-pip install setuptools --upgrade
-pip install svglib --upgrade
-pip install tkcolorpicker --upgrade
-pip install tkinterhtml --upgrade
+echo off
+pip -q install pip --upgrade
+pip -q install docutils --upgrade
+pip -q install fpdf --upgrade
+pip -q install importlib_metadata --upgrade
+pip -q install markdown --upgrade
+pip -q install ofxtools --upgrade
+pip -q install openpyxl --upgrade
+pip -q install pillow --upgrade
+pip -q install progress --upgrade
+pip -q install psycopg2 --upgrade
+pip -q install pyaes --upgrade
+pip -q install pycryptodome --upgrade
+pip -q install pyexcel --upgrade
+pip -q install pyexcel-ods --upgrade
+pip -q install pygal --upgrade
+pip -q install pyinstaller --upgrade
+pip -q install pymupdf --upgrade
+pip -q install pysmb --upgrade
+pip -q install python-escpos --upgrade
+pip -q install pywin32 --upgrade
+pip -q install requests --upgrade
+pip -q install send2trash --upgrade
+pip -q install svglib --upgrade
+pip -q install tkcolorpicker --upgrade
+pip -q install tkinterhtml --upgrade

@@ -38,8 +38,8 @@ from TartanClasses import RepPrt, Sql, SelectChoice, ShowImage, TabPrt
 from TartanClasses import TartanDialog
 from tartanFunctions import askChoice, askQuestion, callModule, copyList
 from tartanFunctions import dateDiff, doChkCatChg, doPrinter, getModName
-from tartanFunctions import getTrn, getVatRate, mthendDate, showError
-from tartanFunctions import showWarning
+from tartanFunctions import getNextCode, getTrn, getVatRate, mthendDate
+from tartanFunctions import showError, showWarning
 from tartanWork import countries, mltrtp
 
 class ml1010(object):
@@ -52,11 +52,27 @@ class ml1010(object):
     def setVariables(self):
         tabs = ["chglog", "ctlvrf", "memadd", "memcat", "memctc", "memctk",
             "memctp", "memctl", "memcto", "memkon", "memlnk", "memmst",
-            "memsta", "memtrn", "memtrs", "bwlctl",  "bwltab", "tplmst"]
+            "memsta", "memtrn", "memtrs", "bwltab", "tplmst"]
         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
         if self.sql.error:
             return
         mc = GetCtl(self.opts["mf"])
+        ctlmst = mc.getCtl("ctlmst", self.opts["conum"])
+        if not ctlmst:
+            return
+        self.taxdf = ctlmst["ctm_taxdf"]
+        mods = ctlmst["ctm_modules"]
+        mods = [mods[i:i+2] for i in range(0, len(mods), 2)]
+        if "BC" in mods:
+            bwlctl = mc.getCtl("bwlctl", self.opts["conum"])
+            self.mlint = bwlctl["ctb_mlint"]
+            self.samen = bwlctl["ctb_samen"]
+            self.mscat = bwlctl["ctb_mscat"]
+            self.mstart = bwlctl["ctb_mstart"]
+            self.fstart = bwlctl["ctb_fstart"]
+            self.nstart = bwlctl["ctb_nstart"]
+        else:
+            self.mlint = "N"
         memctl = mc.getCtl("memctl", self.opts["conum"])
         if not memctl:
             return
@@ -69,6 +85,10 @@ class ml1010(object):
             return
         self.ldays = memctl["mcm_ldays"]
         self.lme = memctl["mcm_lme"]
+        if "PHOTODIR" in os.environ:
+            self.photo = os.environ["PHOTODIR"]
+        else:
+            self.photo = memctl["mcm_photo"]
         self.logo = memctl["mcm_logo"]
         self.cftpl = memctl["mcm_cftpl"]
         self.cbtpl = memctl["mcm_cbtpl"]
@@ -89,26 +109,6 @@ class ml1010(object):
             yy += 1
             mm -= 12
         self.nxtdt = (yy * 10000) + (mm * 100) + 1
-        ctlmst = mc.getCtl("ctlmst", self.opts["conum"])
-        if not ctlmst:
-            return
-        self.taxdf = ctlmst["ctm_taxdf"]
-        mods = []
-        for x in range(0, len(ctlmst["ctm_modules"].rstrip()), 2):
-            mods.append(ctlmst["ctm_modules"][x:x+2])
-        if "BC" in mods:
-            bwlctl = mc.getCtl("bwlctl", self.opts["conum"])
-            if bwlctl:
-                self.mlint = bwlctl["ctb_mlint"]
-                self.samen = bwlctl["ctb_samen"]
-            else:
-                self.mlint = "N"
-        else:
-            self.mlint = "N"
-        if "PHOTODIR" in os.environ:
-            self.photo = os.environ["PHOTODIR"]
-        else:
-            self.photo = memctl["mcm_photo"]
         tst = self.sql.getRec("memmst", cols=["count(*)"],
             where=[("mlm_cono", "=", self.opts["conum"]),
             ("mlm_oldno", "<>", 0)], limit=1)
@@ -1076,11 +1076,12 @@ Names:   %s
             self.opts["mf"].dbm.rollbackDbase()
             if self.new:
                 # Allocate New Member Number
-                acc = self.sql.getRec("memmst", cols=["max(mlm_memno)"],
-                    where=[("mlm_cono", "=", self.opts["conum"])], limit=1)
-                if not acc[0]:
-                    acc = [0]
-                self.memno = int(acc[0]) + 1
+                if self.mlint == "Y":
+                    self.memno = self.getNextTab()
+                else:
+                    self.memno = getNextCode(self.sql, "memmst", "mlm_memno",
+                        where=[("mlm_cono", "=", self.opts["conum"])],
+                        start=1, last=999999)
                 self.df.loadEntry("T", 0, 0, data=self.memno)
             # Check validity
             for pag in (("T", 0, None), ("T", 1, None)):
@@ -1282,6 +1283,33 @@ Names:   %s
         self.df.focusField("T", 0, 1)
         self.df.loadEntry("T", 0, 0, data=self.memno)
         self.doMemNo("T", 0, 0, 1, 0, 0, self.memno)
+
+    def getNextTab(self):
+        cats = []
+        for dat in self.df.c_work[4]:
+            if not dat[1]:
+                break
+            cats.append(dat[1:3])
+        if ["C", self.mscat] in cats:
+            if self.gender == "M":
+                start = self.mstart
+                if self.mstart < self.fstart:
+                    last = self.fstart
+                else:
+                    last = self.nstart
+            else:
+                start = self.fstart
+                if self.mstart < self.fstart:
+                    last = self.nstart
+                else:
+                    last = self.mstart
+        else:
+            start = self.nstart
+            last = 900000
+        return getNextCode(self.sql, "bwltab", "btb_tab",
+            where=[("btb_cono", "=", self.opts["conum"])],
+            start=start, last=last)
+
 
     def doTrans1(self):
         self.df.focusField("T", 6, 1)

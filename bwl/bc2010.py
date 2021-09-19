@@ -233,8 +233,9 @@ class bc2010(object):
             state = self.mf.disableButtonsTags()
             self.mf.setWidget(self.mf.mstFrame, state="hide")
             butt = [("None", "N"), ("View", "V"), ("Reprint", "R")]
-            if self.date > self.sysdt or (
-                    self.date == self.sysdt and self.time == self.stime):
+            dtyp = self.drm[self.sql.bwldrm_col.index("bdm_dtype")]
+            if dtyp == "N" or self.date > self.sysdt or (
+                    self.date == self.sysdt and self.time < self.stime):
                 butt.extend([("Alter", "A"), ("Clear", "X")])
                 text = "Would you like to View, Reprint, Alter or Clear It?"
             else:
@@ -2603,9 +2604,9 @@ Combination Number %10s"""
                 self.df.focusField(self.df.frt, self.df.pag, self.df.col)
                 return
             if ok == "S":
-                self.dtype = "R"
-                self.dhist = "Y"
-                self.tsize = 3
+                self.dtype = "N"
+                self.dhist = "N"
+                self.tsize = 0
                 self.doSave()
                 for tab in self.alltabs:
                     data = [self.opts["conum"], tab, self.date, self.time,

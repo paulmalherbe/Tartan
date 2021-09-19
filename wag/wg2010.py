@@ -26,7 +26,7 @@ COPYING
 
 import time
 from TartanClasses import GetCtl, Sql, SChoice, TartanDialog
-from tartanFunctions import callModule
+from tartanFunctions import askQuestion, callModule
 
 class wg2010(object):
     def __init__(self, **opts):
@@ -115,6 +115,19 @@ class wg2010(object):
         rec = self.readWagedc()
         if not rec:
             return "Invalid Code"
+        chk = self.sql.getRec("wagcap", where=[("wcp_cono", "=",
+            self.opts["conum"]), ("wcp_empno", "=", self.empno),
+            ("wcp_type", "=", self.rtyp), ("wcp_code", "=", self.code)])
+        if chk:
+            if self.rtyp == "E":
+                txt = "Earnings"
+            else:
+                txt = "Deduction"
+            ok = askQuestion(self.df.mstFrame, head="Duplicate",
+                mess="An Entry for this %s Code Already Exists "\
+                "for this Employee.\n\nIs This Correct?" % txt)
+            if ok == "no":
+                return "rf"
         self.df.loadEntry(frt, pag, p+1, rec[0])
         if self.rtyp == "E" and self.code == 1:
             std = self.sql.getRec("wagcod", cols=["wcd_eamt"],

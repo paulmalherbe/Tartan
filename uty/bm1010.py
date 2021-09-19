@@ -24,7 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import glob, imghdr, os, time
+import glob, imghdr, os, pathlib, time
 try:
     import requests
     REQ = True
@@ -596,7 +596,7 @@ Dear John Smith ...""")])
             w = w.split(",")
             pdf = []
             for f in w:
-                if f.split(".")[-1].lower() == "pdf" and FITZ:
+                if pathlib.Path(f).suffix == "pdf" and FITZ:
                     pdf.append(f)
                     continue
                 if not imghdr.what(f):
@@ -648,9 +648,8 @@ xbm   X Bitmap Files""")
 
     def doFitz(self, fnam):
         b = os.path.basename(fnam.replace(" ", "_"))
-        e = b.split(".")[-1]
         o = os.path.join(self.opts["mf"].rcdic["wrkdir"],
-            b.replace(".%s" % e, ""))
+            pathlib.Path(b).stem)
         f = o + "_%03i.jpg"
         doc = fitz.open(fnam)
         for num, pag in enumerate(doc):

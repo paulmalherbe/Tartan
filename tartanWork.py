@@ -1264,7 +1264,7 @@ tabdic = {
             [0, "ctb_cono", "UI", 3.0, "Club Number", "Clb"],
             [1, "ctb_mlint", "UA", 1.0, "M/L Integration", "I"],
             [2, "ctb_samen", "UA", 1.0, "Same Numbers", "S"],
-            [3, "ctb_mscat", "UI", 2.0, "M/L Sports Category", "SC"],
+            [3, "ctb_mscat", "UI", 2.0, "M/L Category Code", "CC"],
             [4, "ctb_mstart", "UI", 6.0, "Male Start", "MStart"],
             [5, "ctb_fstart", "UI", 6.0, "Female Start", "FStart"],
             [6, "ctb_nstart", "UI", 6.0, "Non-Members Start", "NStart"],
@@ -1694,8 +1694,8 @@ tabdic = {
             [10, "btm_ind", "NA", 1.0, "Indicator", "I"],
             [11, "btm_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
-            ["Data Capture Batches", 1, "U", "btm_cono", "btm_styp", "btm_rtyp",
-                "btm_batno"]]},
+            ["Data Capture Batches", 1, "U", "btm_cono", "btm_styp",
+                "btm_rtyp", "btm_batno"]]},
     "ctlctl": {
         "fld": [
             [0, "ctl_cono", "UI", 3.0, "Company Number", "Coy"],
@@ -1998,8 +1998,7 @@ tabdic = {
             [15, "drm_sls_email", "TX", 50.0, "Sales E-mail",
                 "Sales E-mail Address"],
             [16, "drm_opened", "d1", 10.0, "Date Opened", "Date-Opend"],
-            [17, "drm_registered", "d1", 10.0, "Date Registered",
-                "Date-Regst"],
+            [17, "drm_registered", "d1", 10.0, "Date Registered", "Date-Regst"],
             [18, "drm_vatno", "NA", 10.0, "VAT Number", "VAT-Number"],
             [19, "drm_delivery", "Na", 7.0, "Delivery Address", "Del-Add"],
             [20, "drm_rep", "Na", 3.0, "Rep Code", "Rep"],
@@ -3329,8 +3328,8 @@ tabdic = {
             [7, "st2_reord_qty", "UI", 7.0, "Re-Order Quantity", "Re-Qty"],
             [8, "st2_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
-            ["Stores Masterfile 2", 1, "U", "st2_cono", "st2_group", "st2_code",
-                "st2_loc"]]},
+            ["Stores Masterfile 2", 1, "U", "st2_cono", "st2_group",
+                "st2_code", "st2_loc"]]},
     "strpom": {
         "fld": [
             [0, "pom_cono", "UI", 3.0, "Company Number", "Coy"],
@@ -3457,8 +3456,8 @@ tabdic = {
             [6, "stv_ucost", "UD", 8.2, "Unit Cost Price", "Unit-Cost"],
             [7, "stv_usell", "UD", 8.2, "Unit Selling Price", "Unit-Sell"]],
         "idx": [
-            ["Stock Take Variance", 1, "U", "stv_cono", "stv_group", "stv_code",
-                "stv_loc"]]},
+            ["Stock Take Variance", 1, "U", "stv_cono", "stv_group",
+                "stv_code", "stv_loc"]]},
     "telcon": {
         "fld": [
             [0, "tdc_name", "NA", 50.0, "Name", "Name"],
@@ -4608,6 +4607,7 @@ datdic = {
         ["slsiv2", "si2_cono", "slsiv3", "si3_cono"],
         ["slsiv2", "si2_docno", "slsiv3", "si3_docno"],
         ["slsiv2", "si2_seq", "slsiv3", "si3_seq"],
+        ["telmst", "tdm_name", "telcon", "tdc_name"],
         ["wagmst", "wgm_cono", "wagtf1", "wt1_cono"],
         ["wagmst", "wgm_empno", "wagtf1", "wt1_empno"],
         ["wagtf1", "wt1_cono", "wagtf2", "wt2_cono"],

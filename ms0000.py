@@ -1643,7 +1643,7 @@ System --> Change Password""")
         if os.path.exists(pdf):
             ViewPDF(self.mf, pdf)
         if FITZ:
-            # Restire the viewer
+            # Restore the viewer
             self.mf.rcdic["vwr"] = vwr
 
     def doHousekeeping(self):

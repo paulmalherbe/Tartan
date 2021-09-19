@@ -427,9 +427,9 @@ class dr2010(object):
             if self.dis:
                 val = float(ASD(0) - ASD(self.dis))
                 data = (self.opts["conum"], self.dis_all, self.curdt,
-                    self.trndat, self.glt, self.ref1, self.bh.batno,
-                    val, 0.00, self.trndet, "N", "", recon,
-                    self.opts["capnm"], self.sysdtw, 0)
+                    self.trndat, self.glt, self.ref1, self.bh.batno, val,
+                    0.00, self.trndet, "N", "", recon, self.opts["capnm"],
+                    self.sysdtw, 0)
                 self.sql.insRec("gentrn", data=data)
 
     def doAgeNormal(self):

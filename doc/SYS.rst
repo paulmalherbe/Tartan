@@ -62,6 +62,9 @@ The following dependencies must be installed using pip:
 
 Additionally, the following dependencies should also be installed using pip:
 
++ beepy                 # Used to play a notification sound
++ docutils              # Used to display licence
++ importlib             # Used to import modules
 + markdown              # Bulk Mail - Enable Markdown Format
 + ofxtools              # OFX File Reader - bank statements
 + openpyxl              # XLSX File Reader and Writer
@@ -72,7 +75,6 @@ Additionally, the following dependencies should also be installed using pip:
 + pyexcel-ods           # ODS File Reader
 + pygal                 # SVG Charts
 + pysmb                 # Netbios File Names
-+ python-escpos         # POS Escape Commands
 + requests              # Web Scraping
 + send2trash            # Move Files to Recycle Bin
 + svglib                # SVG to PDF File Converter
@@ -81,7 +83,7 @@ Additionally, the following dependencies should also be installed using pip:
 
 And, depending on your database needs:
 
-+ Postgresql - psycopg2
++ Postgresql            # psycopg2-binary
 
 Then download the following file from ftp://ftp.tartan.co.za
 
@@ -95,11 +97,13 @@ Tartan should now be installed on your computer and you can continue with the `S
 
 Windows Binary
 ..............
-Download the following file from ftp://ftp.tartan.co.za or if you are in possession of a CD this is not necessary.
+Download the applicable file from ftp://ftp.tartan.co.za or if you are in possession of a CD this is not necessary.
 
-+ Tartan_6.x.exe
++ Tartan_6.x-XP.exe for Windows prior to Windows-10
++ Tartan_6.x-32.exe for Windows-10 32 bit architecture.
++ Tartan_6.x-64.exe for Windows-10 64 bit architecture.
 
-Install Tartan_6.x.exe by browsing to it and double clicking and then accept the defaults, except, agree to creating an icon on your desktop.
+Install Tartan by browsing to the downloaded file and double clicking and then accepting the defaults, except, agree to creating an icon on your desktop.
 
 Tartan should now be installed on your computer and you can continue with the `Startup Procedure`_.
 

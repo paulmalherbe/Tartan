@@ -247,9 +247,9 @@ class bc3020(object):
                 cwth = self.fpdf.get_string_width("X")
                 for x in range(25):
                     if left[x][1]:
-                        left[x][1] = self.getName(left[x][1])
+                        left[x][1] = self.getName(left[x][1], cls=False)
                     if right[x][1]:
-                        right[x][1] = self.getName(right[x][1])
+                        right[x][1] = self.getName(right[x][1], cls=False)
                     self.fpdf.cell(cwth*5, 8, "%5s " % left[x][0], 0, 0, "R")
                     self.fpdf.cell(cwth*24, 8, left[x][1], 0, 0, "L")
                     self.fpdf.cell(cwth*5, 8, "%5s " % right[x][0], 0, 0, "R")
@@ -264,7 +264,7 @@ class bc3020(object):
             repeml=self.df.repeml)
         self.opts["mf"].closeLoop()
 
-    def getName(self, tab):
+    def getName(self, tab, cls=True):
         self.clash = False
         if not tab:
             return ""
@@ -279,9 +279,10 @@ class bc3020(object):
             nam = rec[0]
         nam = nam.replace("VAN DER", "V D")
         nam = nam.replace("JANSE VAN", "J V")
-        if tab in self.dic[self.tab]:
-            self.clash = True
-        self.dic[self.tab].append(tab)
+        if cls:
+            if tab in self.dic[self.tab]:
+                self.clash = True
+            self.dic[self.tab].append(tab)
         return nam
 
     def pageHeading(self):

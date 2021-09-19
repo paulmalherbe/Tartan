@@ -164,8 +164,8 @@ class td1010(object):
         if self.newmst:
             self.sql.insRec("telmst", data=data)
         elif data != self.acc[:len(data)]:
-            col = self.sql.telmst_col
-            data.append(self.acc[col.index("tdm_xflag")])
+            tdm = self.sql.telmst_col
+            data.append(self.acc[tdm.index("tdm_xflag")])
             self.sql.updRec("telmst", data=data, where=[("tdm_name",
                 "=", self.name)])
         self.opts["mf"].dbm.commitDbase()
@@ -286,8 +286,8 @@ class td1010(object):
             self.sql.insRec("telcon", data=data)
             self.opts["mf"].dbm.commitDbase()
         elif self.contyp == "chg" and data != self.conchg[:len(data)]:
-            col = self.sql.telcon_col
-            data.append(self.conchg[col.index("tdc_xflag")])
+            tdc = self.sql.telcon_col
+            data.append(self.conchg[tdc.index("tdc_xflag")])
             self.sql.updRec("telcon", data=data, where=[("tdc_name",
                 "=", self.name), ("tdc_contact", "=", self.contact)])
             self.opts["mf"].dbm.commitDbase()
@@ -313,36 +313,36 @@ class td1010(object):
             commit = True
             sql = Sql(self.opts["mf"].dbm, tables="bkmcon",
                 prog=self.__class__.__name__)
-            col = sql.bkmcon_col
+            bkc = sql.bkmcon_col
             recs = sql.getRec("bkmcon")
             for rec in recs:
-                if not rec[col.index("bkc_telno")] and not \
-                        rec[col.index("bkc_faxno")] and not \
-                        rec[col.index("bkc_celno")] and not \
-                        rec[col.index("bkc_email")]:
+                if not rec[bkc.index("bkc_telno")] and not \
+                        rec[bkc.index("bkc_faxno")] and not \
+                        rec[bkc.index("bkc_celno")] and not \
+                        rec[bkc.index("bkc_email")]:
                     continue
-                nam = rec[col.index("bkc_sname")]
-                fnm = rec[col.index("bkc_names")]
+                nam = rec[bkc.index("bkc_sname")]
+                fnm = rec[bkc.index("bkc_names")]
                 if fnm:
                     nam = "%s, %s" % (nam, fnm.split()[0])
                 data = [
                     nam,
-                    rec[col.index("bkc_addr1")],
-                    rec[col.index("bkc_addr2")],
-                    rec[col.index("bkc_addr3")],
-                    rec[col.index("bkc_pcode")],
-                    rec[col.index("bkc_telno")],
-                    rec[col.index("bkc_faxno")],
-                    rec[col.index("bkc_celno")],
-                    rec[col.index("bkc_email")],
+                    rec[bkc.index("bkc_addr1")],
+                    rec[bkc.index("bkc_addr2")],
+                    rec[bkc.index("bkc_addr3")],
+                    rec[bkc.index("bkc_pcode")],
+                    rec[bkc.index("bkc_telno")],
+                    rec[bkc.index("bkc_faxno")],
+                    rec[bkc.index("bkc_celno")],
+                    rec[bkc.index("bkc_email")],
                     "BKM"]
                 chk = self.sql.getRec("telmst", where=[("tdm_name",
                     "=", nam)], limit=1)
                 if not chk:
                     self.sql.insRec("telmst", data=data)
                 elif data != chk[:len(data)]:
-                    col = self.sql.telmst_col
-                    data.append(chk[col.index("tdm_xflag")])
+                    tdm = self.sql.telmst_col
+                    data.append(chk[tdm.index("tdm_xflag")])
                     self.sql.updRec("telmst", data=data, where=[("tdm_name",
                         "=", nam)])
             grps.append(["BKM", "Bookings"])
@@ -352,36 +352,36 @@ class td1010(object):
             commit = True
             sql = Sql(self.opts["mf"].dbm, tables="bwltab",
                 prog=self.__class__.__name__)
-            col = sql.bwltab_col
+            btb = sql.bwltab_col
             recs = sql.getRec("bwltab")
             for rec in recs:
-                if not rec[col.index("btb_home")] and not \
-                        rec[col.index("btb_work")] and not \
-                        rec[col.index("btb_cell")] and not \
-                        rec[col.index("btb_mail")]:
+                if not rec[btb.index("btb_home")] and not \
+                        rec[btb.index("btb_work")] and not \
+                        rec[btb.index("btb_cell")] and not \
+                        rec[btb.index("btb_mail")]:
                     continue
-                nam = rec[col.index("btb_surname")]
-                fnm = rec[col.index("btb_names")]
+                nam = rec[btb.index("btb_surname")]
+                fnm = rec[btb.index("btb_names")]
                 if fnm:
                     nam = "%s, %s" % (nam, fnm.split()[0])
                 data = [
                     nam,
-                    rec[col.index("btb_add1")],
-                    rec[col.index("btb_add2")],
-                    rec[col.index("btb_add3")],
-                    rec[col.index("btb_pcod")],
-                    rec[col.index("btb_home")],
-                    rec[col.index("btb_work")],
-                    rec[col.index("btb_cell")],
-                    rec[col.index("btb_mail")],
+                    rec[btb.index("btb_add1")],
+                    rec[btb.index("btb_add2")],
+                    rec[btb.index("btb_add3")],
+                    rec[btb.index("btb_pcod")],
+                    rec[btb.index("btb_home")],
+                    rec[btb.index("btb_work")],
+                    rec[btb.index("btb_cell")],
+                    rec[btb.index("btb_mail")],
                     "BWL"]
                 chk = self.sql.getRec("telmst", where=[("tdm_name",
                     "=", nam)], limit=1)
                 if not chk:
                     self.sql.insRec("telmst", data=data)
                 elif data != chk[:len(data)]:
-                    col = self.sql.telmst_col
-                    data.append(chk[col.index("tdm_xflag")])
+                    tdm = self.sql.telmst_col
+                    data.append(chk[tdm.index("tdm_xflag")])
                     self.sql.updRec("telmst", data=data, where=[("tdm_name",
                         "=", nam)])
             grps.append(["BWL", "Bowls"])
@@ -391,30 +391,30 @@ class td1010(object):
             commit = True
             sql = Sql(self.opts["mf"].dbm, tables="crsmst",
                 prog=self.__class__.__name__)
-            col = sql.crsmst_col
+            crm = sql.crsmst_col
             recs = sql.getRec("crsmst", where=[("crm_stat", "<>", "X")])
             for rec in recs:
-                nam = "%s" % rec[col.index("crm_name")]
+                nam = "%s" % rec[crm.index("crm_name")]
                 data = [
                     nam,
-                    rec[col.index("crm_add1")],
-                    rec[col.index("crm_add2")],
-                    rec[col.index("crm_add3")],
-                    rec[col.index("crm_pcod")],
-                    rec[col.index("crm_tel")],
-                    rec[col.index("crm_fax")],
+                    rec[crm.index("crm_add1")],
+                    rec[crm.index("crm_add2")],
+                    rec[crm.index("crm_add3")],
+                    rec[crm.index("crm_pcod")],
+                    rec[crm.index("crm_tel")],
+                    rec[crm.index("crm_fax")],
                     "", "", "CRS"]
                 chk = self.sql.getRec("telmst", where=[("tdm_name",
                     "=", nam)], limit=1)
                 if not chk:
                     self.sql.insRec("telmst", data=data)
                 elif data != chk[:len(data)]:
-                    col = self.sql.telmst_col
-                    data.append(chk[col.index("tdm_xflag")])
+                    tdm = self.sql.telmst_col
+                    data.append(chk[tdm.index("tdm_xflag")])
                     self.sql.updRec("telmst", data=data, where=[("tdm_name",
                         "=", nam)])
-                con = rec[col.index("crm_mgr")]
-                eml = rec[col.index("crm_mgr_email")]
+                con = rec[crm.index("crm_mgr")]
+                eml = rec[crm.index("crm_mgr_email")]
                 if eml:
                     data = [nam, con, "Manager", "", "", eml]
                     chk = self.sql.getRec("telcon", where=[("tdc_name",
@@ -422,12 +422,12 @@ class td1010(object):
                     if not chk:
                         self.sql.insRec("telcon", data=data)
                     elif data != chk[:len(data)]:
-                        col = self.sql.telcon_col
-                        data.append(chk[col.index("tdc_xflag")])
+                        tdc = self.sql.telcon_col
+                        data.append(chk[tdc.index("tdc_xflag")])
                         self.sql.updRec("telcon", data=data, where=[("tdc_name",
                             "=", nam), ("tdc_contact", "=", con)])
-                con = rec[col.index("crm_acc")]
-                eml = rec[col.index("crm_acc_email")]
+                con = rec[crm.index("crm_acc")]
+                eml = rec[crm.index("crm_acc_email")]
                 if eml:
                     data = [nam, con, "Accounts", "", "", eml]
                     chk = self.sql.getRec("telcon", where=[("tdc_name",
@@ -435,12 +435,12 @@ class td1010(object):
                     if not chk:
                         self.sql.insRec("telcon", data=data)
                     elif data != chk[:len(data)]:
-                        col = self.sql.telcon_col
-                        data.append(chk[col.index("tdc_xflag")])
+                        tdc = self.sql.telcon_col
+                        data.append(chk[tdc.index("tdc_xflag")])
                         self.sql.updRec("telcon", data=data, where=[("tdc_name",
                             "=", nam), ("tdc_contact", "=", con)])
-                con = rec[col.index("crm_ord")]
-                eml = rec[col.index("crm_ord_email")]
+                con = rec[crm.index("crm_ord")]
+                eml = rec[crm.index("crm_ord_email")]
                 if eml:
                     data = [nam, con, "Orders", "", "", eml]
                     chk = self.sql.getRec("telcon", where=[("tdc_name",
@@ -448,8 +448,8 @@ class td1010(object):
                     if not chk:
                         self.sql.insRec("telcon", data=data)
                     elif data != chk[:len(data)]:
-                        col = self.sql.telcon_col
-                        data.append(chk[col.index("tdc_xflag")])
+                        tdc = self.sql.telcon_col
+                        data.append(chk[tdc.index("tdc_xflag")])
                         self.sql.updRec("telcon", data=data, where=[("tdc_name",
                             "=", nam), ("tdc_contact", "=", con)])
             grps.append(["CRS", "Creditors"])
@@ -459,30 +459,30 @@ class td1010(object):
             commit = True
             sql = Sql(self.opts["mf"].dbm, tables="drsmst",
                 prog=self.__class__.__name__)
-            col = sql.drsmst_col
+            drm = sql.drsmst_col
             recs = sql.getRec("drsmst", where=[("drm_stat", "<>", "X")])
             for rec in recs:
-                nam = "%s" % rec[col.index("drm_name")]
+                nam = "%s" % rec[drm.index("drm_name")]
                 data = [
                     nam,
-                    rec[col.index("drm_add1")],
-                    rec[col.index("drm_add2")],
-                    rec[col.index("drm_add3")],
-                    rec[col.index("drm_pcod")],
-                    rec[col.index("drm_tel")],
-                    rec[col.index("drm_fax")],
+                    rec[drm.index("drm_add1")],
+                    rec[drm.index("drm_add2")],
+                    rec[drm.index("drm_add3")],
+                    rec[drm.index("drm_pcod")],
+                    rec[drm.index("drm_tel")],
+                    rec[drm.index("drm_fax")],
                     "", "", "DRS"]
                 chk = self.sql.getRec("telmst", where=[("tdm_name",
                     "=", nam)], limit=1)
                 if not chk:
                     self.sql.insRec("telmst", data=data)
                 elif data != chk[:len(data)]:
-                    col = self.sql.telmst_col
-                    data.append(chk[col.index("tdm_xflag")])
+                    tdm = self.sql.telmst_col
+                    data.append(chk[tdm.index("tdm_xflag")])
                     self.sql.updRec("telmst", data=data, where=[("tdm_name",
                         "=", nam)])
-                con = rec[col.index("drm_mgr")]
-                eml = rec[col.index("drm_mgr_email")]
+                con = rec[drm.index("drm_mgr")]
+                eml = rec[drm.index("drm_mgr_email")]
                 if eml:
                     data = [nam, con, "Manager", "", "", eml]
                     chk = self.sql.getRec("telcon", where=[("tdc_name",
@@ -490,12 +490,12 @@ class td1010(object):
                     if not chk:
                         self.sql.insRec("telcon", data=data)
                     elif data != chk[:len(data)]:
-                        col = self.sql.telcon_col
-                        data.append(chk[col.index("tdc_xflag")])
+                        tdc = self.sql.telcon_col
+                        data.append(chk[tdc.index("tdc_xflag")])
                         self.sql.updRec("telcon", data=data, where=[("tdc_name",
                             "=", nam), ("tdc_contact", "=", con)])
-                con = rec[col.index("drm_acc")]
-                eml = rec[col.index("drm_acc_email")]
+                con = rec[drm.index("drm_acc")]
+                eml = rec[drm.index("drm_acc_email")]
                 if eml:
                     data = [nam, con, "Accounts", "", "", eml]
                     chk = self.sql.getRec("telcon", where=[("tdc_name",
@@ -503,12 +503,12 @@ class td1010(object):
                     if not chk:
                         self.sql.insRec("telcon", data=data)
                     elif data != chk[:len(data)]:
-                        col = self.sql.telcon_col
-                        data.append(chk[col.index("tdc_xflag")])
+                        tdc = self.sql.telcon_col
+                        data.append(chk[tdc.index("tdc_xflag")])
                         self.sql.updRec("telcon", data=data, where=[("tdc_name",
                             "=", nam), ("tdc_contact", "=", con)])
-                con = rec[col.index("drm_sls")]
-                eml = rec[col.index("drm_sls_email")]
+                con = rec[drm.index("drm_sls")]
+                eml = rec[drm.index("drm_sls_email")]
                 if eml:
                     data = [nam, con, "Orders", "", "", eml]
                     chk = self.sql.getRec("telcon", where=[("tdc_name",
@@ -516,8 +516,8 @@ class td1010(object):
                     if not chk:
                         self.sql.insRec("telcon", data=data)
                     elif data != chk[:len(data)]:
-                        col = self.sql.telcon_col
-                        data.append(chk[col.index("tdc_xflag")])
+                        tdc = self.sql.telcon_col
+                        data.append(chk[tdc.index("tdc_xflag")])
                         self.sql.updRec("telcon", data=data, where=[("tdc_name",
                             "=", nam), ("tdc_contact", "=", con)])
             grps.append(["DRS", "Debtors"])
@@ -527,22 +527,22 @@ class td1010(object):
             commit = True
             sql = Sql(self.opts["mf"].dbm, tables=["memmst", "memadd",
                 "memkon"], prog=self.__class__.__name__)
-            mm = sql.memmst_col
-            ma = sql.memadd_col
+            mlm = sql.memmst_col
+            mla = sql.memadd_col
             recs = sql.getRec("memmst", where=[("mlm_state", "=", "A")])
             for rec in recs:
-                coy = rec[mm.index("mlm_cono")]
-                num = rec[mm.index("mlm_memno")]
-                nam = "%s, %s" % (rec[mm.index("mlm_surname")],
-                    rec[mm.index("mlm_names")])
+                coy = rec[mlm.index("mlm_cono")]
+                num = rec[mlm.index("mlm_memno")]
+                nam = "%s, %s" % (rec[mlm.index("mlm_surname")],
+                    rec[mlm.index("mlm_names")])
                 add = sql.getRec("memadd", where=[("mla_cono",
                     "=", coy), ("mla_memno", "=", num), ("mla_type", "=",
                     "P")], limit=1)
                 if not add:
                     add = [coy, num, "P", "", "", "", "", "", "", ""]
-                add3 = add[ma.index("mla_add3")]
-                city = add[ma.index("mla_city")]
-                coun = add[ma.index("mla_country")]
+                add3 = add[mla.index("mla_add3")]
+                city = add[mla.index("mla_city")]
+                coun = add[mla.index("mla_country")]
                 if not add3:
                     if city:
                         add3 = city
@@ -569,10 +569,10 @@ class td1010(object):
                         cel = k[1]
                 data = [
                     nam,
-                    add[ma.index("mla_add1")],
-                    add[ma.index("mla_add2")],
+                    add[mla.index("mla_add1")],
+                    add[mla.index("mla_add2")],
                     add3,
-                    add[ma.index("mla_code")],
+                    add[mla.index("mla_code")],
                     tel, fax, cel, eml,
                     "MEM"]
                 chk = self.sql.getRec("telmst", where=[("tdm_name",
@@ -580,8 +580,8 @@ class td1010(object):
                 if not chk:
                     self.sql.insRec("telmst", data=data)
                 elif data != chk[:len(data)]:
-                    col = self.sql.telmst_col
-                    data.append(chk[col.index("tdm_xflag")])
+                    tdm = self.sql.telmst_col
+                    data.append(chk[tdm.index("tdm_xflag")])
                     self.sql.updRec("telmst", data=data, where=[("tdm_name",
                         "=", nam)])
             grps.append(["MEM", "Members"])
@@ -620,44 +620,44 @@ class td1010(object):
             rec = sql.getRec(tab, cols=col)
             for r in rec:
                 snam = None
-                dat = ["", "", "", "", "", "", "", "", "", grp]
+                data = ["", "", "", "", "", "", "", "", "", grp]
                 for n, c in enumerate(col):
                     x = c.split("_")[1]
                     if r[n]:
                         if x == "name":
-                            dat[0] = r[n]
+                            data[0] = r[n]
                         elif x in ("snam", "surname", "sname"):
                             snam = r[n]
                         elif snam and x in ("fnam", "names", "fname"):
-                            dat[0] = "%s, %s" % (snam, r[n].split()[0])
+                            data[0] = "%s, %s" % (snam, r[n].split()[0])
                             snam = None
                         elif x in ("add1", "addr1"):
-                            dat[1] = r[n]
+                            data[1] = r[n]
                         elif x in ("add2", "addr2"):
-                            dat[2] = r[n]
+                            data[2] = r[n]
                         elif x in ("add3", "addr3"):
-                            dat[3] = r[n]
+                            data[3] = r[n]
                         elif x in ("pcod", "pcode"):
-                            dat[4] = r[n]
+                            data[4] = r[n]
                         elif x in ("home", "work", "office", "phone"):
-                            dat[5] = r[n]
+                            data[5] = r[n]
                         elif x in ("faxno", "fax"):
-                            dat[6] = r[n]
+                            data[6] = r[n]
                         elif x in ("cell", "celno", "mobile"):
-                            dat[7] = r[n]
+                            data[7] = r[n]
                         elif x in ("mail", "email", "emadd"):
-                            dat[8] = r[n]
-                if not dat[5] and not dat[6] and not dat[7] and not dat[8]:
+                            data[8] = r[n]
+                if not data[5] and not data[6] and not data[7] and not data[8]:
                     continue
                 chk = sql.getRec("telmst", where=[("tdm_name",
-                    "=", dat[0])], limit=1)
+                    "=", data[0])], limit=1)
                 if not chk:
-                    sql.insRec("telmst", data=dat)
-                elif dat != chk[:len(dat)]:
-                    col = self.sql.telmst_col
-                    data.append(chk[col.index("tdm_xflag")])
-                    sql.updRec("telmst", data=dat, where=[("tdm_name",
-                        "=", dat[0])])
+                    sql.insRec("telmst", data=data)
+                elif data != chk[:len(data)]:
+                    tdm = self.sql.telmst_col
+                    data.append(chk[tdm.index("tdm_xflag")])
+                    sql.updRec("telmst", data=data, where=[("tdm_name",
+                        "=", data[0])])
             grps.append([grp, des])
         # Groups
         for g in grps:
@@ -669,6 +669,7 @@ class td1010(object):
         if commit:
             self.opts["mf"].dbm.commitDbase(ask=True)
         self.df.setWidget(self.df.mstFrame, state="show")
+        self.df.window.update_idletasks()
         self.df.focusField("T", 0, 1)
 
     def doLoadDetail(self, data):
@@ -691,97 +692,107 @@ class td1010(object):
             ("a", "C", 1, "UA", "N"),
             ("b", "Description", 30, "NA", "N"))
         if self.df.last[0][0] != 1:
-            data = [
-                ("A", "Print Current Card's Details"),
-                ("B", "Print Current Card's Contacts")]
+            data = [("A", "Print Card Details")]
         else:
             data = []
         data.extend([
-            ("C", "Print Cards"),
+            ("B", "Print All Details"),
+            ("C", "Print All Contacts"),
             ("D", "Print Notes")])
         ss = SelectChoice(self.df.mstFrame, titl, cols, data, sort=False)
         self.opts["mf"].updateStatus("")
-        if ss.selection:
-            state = self.df.disableButtonsTags()
-            self.df.setWidget(self.df.mstFrame, state="hide")
-            prtdia = (("Y","V"), ("Y","N"))
-            if ss.selection[1] == "A" and self.df.last[0][0] != 1:
-                whr = [("tdm_name", "=", self.name)]
-                TabPrt(self.opts["mf"], name=self.__class__.__name__,
-                    tabs="telmst", where=whr)
-            elif ss.selection[1] == "B" and self.df.last[0][0] != 1:
-                head = ["Contacts for %s" % self.name]
-                RepPrt(self.opts["mf"], name=self.__class__.__name__,
-                    tables=["telcon"], heads=head, cols=["tdc_contact",
-                    "tdc_desig", "tdc_telno", "tdc_celno", "tdc_email"],
-                    where=[("tdc_name", "=", self.name)], order="tdc_contact",
-                    prtdia=prtdia)
-            elif ss.selection[1] == "C":
-                tit = ["Telephone Directory"]
-                grp = {
-                    "stype": "R",
-                    "tables": ("telgrp",),
-                    "cols": (
-                        ("tdg_group", "UA", 3, "Grp"),
-                        ("tdg_desc", "NA", 30, "Description")),
-                    "order": "tdg_desc"}
-                fld = ((("T",0,0,0),"IUA",3,"Group","",
-                    "","N",self.prGrp,grp,None,("efld",)),)
-                self.pr = TartanDialog(self.opts["mf"], tops=True, title=tit,
-                    eflds=fld, tend=((self.prEnd,"y"),), txit=(self.prExit,),
-                    view=prtdia[0], mail=prtdia[1])
-                self.pr.mstFrame.wait_window()
-                if not self.prxit:
-                    if self.prgrp:
-                        head = ["%s for Group %s" % (tit[0], self.prgrp)]
+        if not ss.selection:
+            self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+            return
+        state = self.df.disableButtonsTags()
+        self.df.setWidget(self.df.mstFrame, state="hide")
+        if ss.selection[1] == "A":
+            head = ["Card for %s" % self.name]
+            whr = [("tdm_name", "=", self.name)]
+            TabPrt(self.opts["mf"], name=self.__class__.__name__,
+                tabs="telmst", head=head, where=whr)
+        elif ss.selection[1] == "D":
+            self.notes = NotesPrint(self.opts["mf"], 0, "", "TEL", loop=False)
+            if not self.notes.data:
+                pass
+            else:
+                data = []
+                p = ProgressBar(self.opts["mf"].body,
+                    typ="Generating the Report",
+                    mxs=len(self.notes.data), esc=True)
+                for num, dat in enumerate(self.notes.data):
+                    p.displayProgress(num)
+                    if p.quit:
+                        break
+                    desc = textFormat(dat[5], width=50)
+                    for n, d in enumerate(desc):
+                        if not n:
+                            data.append([dat[2], dat[4],
+                            CCD(dat[3], "d1", 10).disp, dat[6],
+                            CCD(dat[7], "d1", 10).disp, d])
+                        else:
+                            data.append(["", "", "", "", "", d])
+                p.closeProgress()
+                if not p.quit:
+                    name = self.__class__.__name__
+                    head = ["Telephone Directory Notes Listing"]
+                    cols = [
+                        ["a", "NA", 30, "Name",      "y"],
+                        ["b", "NA", 20, "User-Name", "y"],
+                        ["c", "NA", 10, "Cap-Date",  "y"],
+                        ["d", "UA",  1, "F",         "y"],
+                        ["e", "NA", 10, "Act-Date",  "y"],
+                        ["f", "NA", 50, "Details",   "y"]]
+                    RepPrt(self.opts["mf"], name=name, tables=data,
+                        heads=head, cols=cols, ttype="D",
+                        repprt=self.notes.df.repprt,
+                        repeml=self.notes.df.repeml)
+        else:
+            tit = ["Telephone Directory"]
+            grp = {
+                "stype": "R",
+                "tables": ("telgrp",),
+                "cols": (
+                    ("tdg_group", "UA", 3, "Grp"),
+                    ("tdg_desc", "NA", 30, "Description")),
+                "order": "tdg_desc"}
+            fld = ((("T",0,0,0),"IUA",3,"Group","",
+                "","N",self.prGrp,grp,None,("efld",)),)
+            self.pr = TartanDialog(self.opts["mf"], tops=True,
+                title=tit, eflds=fld, tend=((self.prEnd,"y"),),
+                txit=(self.prExit,))
+            self.pr.mstFrame.wait_window()
+            if not self.prxit:
+                if self.prgrp:
+                    if ss.selection[1] == "B":
+                        head = ["Details for Group %s" % self.prgrp]
                         whr = [("tdm_group", "=", self.prgrp)]
                     else:
-                        head = ["%s for All Groups" % tit[0]]
-                        whr = None
-                    odr = "tdm_name"
-                    RepPrt(self.opts["mf"], name=self.__class__.__name__,
-                        tables=["telmst"], heads=head, cols=["tdm_name",
-                        "tdm_telno", "tdm_faxno", "tdm_mobile", "tdm_email"],
-                        where=whr, order=odr, repprt=self.pr.repprt,
-                        repeml=self.pr.repeml)
-            elif ss.selection[1] == "D":
-                self.notes = NotesPrint(self.opts["mf"], 0, "", "TEL")
-                if not self.notes.data:
-                    pass
+                        head = ["Contacts for Group %s" % self.prgrp]
+                        whr = [
+                            ("tdm_group", "=", self.prgrp),
+                            ("tdc_name=tdm_name",)]
                 else:
-                    data = []
-                    p = ProgressBar(self.opts["mf"].body,
-                        typ="Generating the Report",
-                        mxs=len(self.notes.data), esc=True)
-                    for num, dat in enumerate(self.notes.data):
-                        p.displayProgress(num)
-                        if p.quit:
-                            break
-                        desc = textFormat(dat[5], width=50)
-                        for n, d in enumerate(desc):
-                            if not n:
-                                data.append([dat[2], dat[4],
-                                CCD(dat[3], "d1", 10).disp, dat[6],
-                                CCD(dat[7], "d1", 10).disp, d])
-                            else:
-                                data.append(["", "", "", "", "", d])
-                    p.closeProgress()
-                    if not p.quit:
-                        name = self.__class__.__name__
-                        head = ["Telephone Directory Notes Listing"]
-                        cols = [
-                            ["a", "NA", 30, "Name",      "y"],
-                            ["b", "NA", 20, "User-Name", "y"],
-                            ["c", "NA", 10, "Cap-Date",  "y"],
-                            ["d", "UA",  1, "F",         "y"],
-                            ["e", "NA", 10, "Act-Date",  "y"],
-                            ["f", "NA", 50, "Details",   "y"]]
-                        RepPrt(self.opts["mf"], name=name, tables=data,
-                            heads=head, cols=cols, ttype="D",
-                            repprt=self.notes.df.repprt,
-                            repeml=self.notes.df.repeml)
-            self.df.setWidget(self.df.mstFrame, state="show")
-            self.df.enableButtonsTags(state=state)
+                    if ss.selection[1] == "B":
+                        head = ["Cards for All Groups"]
+                        whr = []
+                    else:
+                        head = ["Contacts for All Groups"]
+                        whr = []
+                if ss.selection[1] == "B":
+                    tab = ["telmst"]
+                    col = ["tdm_name", "tdm_telno", "tdm_faxno",
+                        "tdm_mobile", "tdm_email"]
+                else:
+                    tab = ["telmst", "telcon"]
+                    col = ["tdm_name", "tdc_contact", "tdc_desig",
+                        "tdc_telno", "tdc_celno", "tdc_email"]
+                prtdia = (("Y","V"), ("Y","N"))
+                RepPrt(self.opts["mf"], name=self.__class__.__name__,
+                    tables=tab, heads=head, cols=col, where=whr,
+                    order="tdm_name", prtdia=prtdia)
+        self.df.setWidget(self.df.mstFrame, state="show")
+        self.df.enableButtonsTags(state=state)
         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
 
     def prGrp(self, frt, pag, r, c, p, i, w):

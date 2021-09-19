@@ -506,9 +506,11 @@ class tb1020(object):
                 where=[("ctm_cono", "=", coy[0])], limit=1)
             newm = ""
             for x in range(0, len(mods[0]), 2):
-                if mods[0][x:x+2] != "PS":
-                    newm += mods[0][x:x+2]
-            sql.updRec("ctlmst", cols=["ctm_modules"], data=[newm])
+                if mods[0][x:x+2] == "PS":
+                    continue
+                newm += mods[0][x:x+2]
+            sql.updRec("ctlmst", cols=["ctm_modules"], data=[newm],
+                where=[("ctm_cono", "=", coy[0])])
             sctl = sql.getRec("strctl", cols=["cts_plevs", "cts_automu"],
                 where=[("cts_cono", "=", coy[0])], limit=1)
             if sctl:

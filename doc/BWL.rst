@@ -85,7 +85,7 @@ The following *Buttons* are available:
 
 + **Bounce** - Use this button to enter bounce games.
 + **Teams** - Use this button to enter arranged teams.
-    **Team Size** - Enter the required team size.
+    + **Team Size** - Enter the required team size.
     + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
 + **Entered** - Use this button to display all entered players.
 + **Modify** - Use this button to change the player's position/ratings for this draw only.
@@ -124,15 +124,15 @@ All the tab numbers, names and ratings are stored in a relational database.
 
 When a draw is made the following takes place:
 
-+ **Required Positions** - Based on the number of entered players and the selected team size i.e. 3 or 4, we now calculate the number of skips, thirds, seconds and leads required. This takes split rinks into consideration as well.
++ **Required Positions** - Based on the number of entered players and the selected team size i.e. 1, 2, 3 or 4, we now calculate the number of skips, thirds, seconds and leads required. This takes split rinks into consideration as well.
 + **Ratings Only** - If only ratings are being used, i.e. no positions, the required number of players by position will be allocated by strength i.e. the required number of skips will be the highest rated players and the required number of thirds the next highest rated etc.
 + **Positions Only** - If only positions are being used, i.e. no ratings, and the required number of players, by position, is short the additional players will be randomly selected from the lower positions, in order.
 + **Combination** - If a combination of positions and ratings is used and the required number of players, by position, is short the additional players will be the highest rated from the lower positions, in order. If `Apply Percentages` has been selected, all players elevated to a higher position lose 10% of their rating, by position, for the current draw e.g. a third rated 18 could become a skip rated 16 or a second rated 20 could become a skip rated 16. The reverse also applies i.e. players can gain 10%, by position, if demoted to a lower position.
 + **Draw**
-    + **Random** - 5,000 *RANDOM* draws are now generated and the one with the least number of anomalies is selected.
+    + **Random** - 5,000 `RANDOM` draws are now generated and the one with the least number of anomalies is selected.
         + **Teams** - Teams are created by randomly selecting a skip, third, second and lead. This is repeated until all players have been placed.
         + **Anomalies**
-            + **When applying history** - If *Apply History* was selected the history period is the period entered on the bowls control record under *Weeks Between Draws* e.g. 4 weeks which equals 28 days.
+            + **When applying history** - If `Apply History` was selected the history period is the period entered on the bowls control record under `Weeks Between Draws` e.g. 4 weeks which equals 28 days.
                 + *Skips that have played against each other during the history period*
                 + *Players that have played with the same players during the history period*
                 + *Players that have played in a broken rink during the history period*
@@ -237,7 +237,7 @@ Use this routine to capture completed assessment forms as follows:
 
 Match Assessment Report (BC)
 ++++++++++++++++++++++++++++
-Use this routine to print a match assessment reports as follows:
+Use this routine to print a match assessment report as follows:
 
 + **Format Code** - The applicable league format code.
 + **Type** - Select the type of match, Fixture or Practice.

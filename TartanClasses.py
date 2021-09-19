@@ -62,10 +62,9 @@ except:
 try:
     import fpdf
     if not fpdf.fpdf.Image:
-        raise Exception
+        raise Exception("python-imaging-module")
 except Exception as e:
-    print(e)
-    print("Missing fpdf or python-imaging module")
+    print("Missing %s" % e)
     os._exit(1)
 # ========================================================
 # MuPDF
@@ -672,7 +671,7 @@ try:
                 mkw = MkWindow(trans=self.parent, decor=False, remov=False,
                     resiz=False)
                 self.msgwin = mkw.newwin
-                focus = self.msgwin.master.focus_get()
+                grabs = self.msgwin.master.grab_current()
                 # Save and clear toplevel bindings
                 self.topbinds = unbindAllWidgets(self.msgwin.master)
                 # Save and disable all buttons
@@ -764,8 +763,8 @@ try:
             else:
                 self.msgwin.focus_force()
                 self.msgwin.mainloop()
-            if self.parent and focus:
-                focus.focus_set()
+            if self.parent and grabs:
+                grabs.grab_set()
 
         def doEnter(self, event):
             event.widget.focus_set()
@@ -785,6 +784,7 @@ try:
                 # Reinstate buttons
                 for butt in self.butsve:
                     butt[0].configure(state=butt[1])
+            self.msgwin.grab_release()
             self.msgwin.destroy()
             if not self.parent:
                 self.msgwin.quit()
@@ -7145,9 +7145,8 @@ class SelectChoice(object):
         style = ttk.Style()
         style.configure(self.styl, font=self.font, rowheight=int(chgt + 2))
         style.configure("%s.Heading" % self.styl, font=self.font)
-        self.tree = ttk.Treeview(self.mstFrame, columns=nams,
-            height=self.lines, show=show, selectmode=self.mode,
-            style=self.styl)
+        self.tree = ttk.Treeview(self.mstFrame, columns=nams, height=self.lines,
+            show=show, selectmode=self.mode, style=self.styl)
         if self.chek:
             self.tree.configure(padding=[-15, 0, 0, 0])
         self.tree.grid(column=0, row=0, sticky="nswe")
@@ -7164,18 +7163,19 @@ class SelectChoice(object):
         exits = False
         if self.chek:
             accept = False
-        butt = copyList(list(self.butt))
-        for but in butt:
-            if but[0].lower() in ("exit", "quit"):
-                exits = True
-            elif self.chek and but[0].lower() == "accept":
-                accept = True
-        if self.chek and not accept:
-            butt.append(("Accept", self.doSelect))
-        if not exits:
-            butt.append(("Exit", self.doExit))
-        if len(self.cols) > 1 and self.fltr:
-            butt.insert(0, ("Filter", self.doFilter))
+        if self.butt is not False:
+            butt = copyList(list(self.butt))
+            for but in butt:
+                if but[0].lower() in ("exit", "quit"):
+                    exits = True
+                elif self.chek and but[0].lower() == "accept":
+                    accept = True
+            if self.chek and not accept:
+                butt.append(("Accept", self.doSelect))
+            if not exits:
+                butt.append(("Exit", self.doExit))
+            if len(self.cols) > 1 and self.fltr:
+                butt.insert(0, ("Filter", self.doFilter))
         self.buttons = []
         if butt:
             self.button = None
@@ -15987,14 +15987,18 @@ class NotesCreate(object):
             self.mf.dbm.closeDbase()
 
 class NotesPrint(object):
-    def __init__(self, mf, conum, conam, sys):
+    def __init__(self, mf, conum, conam, sys, loop=True):
         self.mf = mf
         self.conum = conum
         self.conam = conam
         self.sys = sys
+        self.loop = loop
         self.setVariables()
         self.mainProcess()
-        self.mf.startLoop()
+        if self.loop:
+            self.mf.startLoop()
+        else:
+            self.df.mstFrame.wait_window()
 
     def setVariables(self):
         self.sql = Sql(self.mf.dbm, "ctlnot", prog=__name__)
@@ -16071,11 +16075,13 @@ class NotesPrint(object):
         self.data = self.sql.getRec(tables=tab, where=whr, order=odr)
         if not self.data:
             showError(self.mf.body, "Error", "No Notes Selected")
-        self.mf.closeLoop()
+        if self.loop:
+            self.mf.closeLoop()
 
     def doExit(self):
         self.df.closeProcess()
-        self.mf.closeLoop()
+        if self.loop:
+            self.mf.closeLoop()
 
 class FileImport(object):
     """
@@ -18364,11 +18370,16 @@ class ViewPDF(object):
         self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat", fg=fg,
             bg=bg, font=self.font, image=imgm, compound="left", underline=0)
         self.bt4.pack(exp="no", padx=3, pady=3, side="right")
-        self.bt4.menu = tk.Menu(self.bt4, font=self.font, bg=bg, fg=fg,
-            tearoff=0)
+        self.bt4.menu = tk.Menu(self.bt4, font=self.font, tearoff=0)
+        if fg and bg:
+            self.bt4.menu.configure(fg=fg, bg=bg)
         self.bt4["menu"] = self.bt4.menu
-        mods = []
+        mods = [
+            ("Print", self.doPrint),
+            ("Send to..", self.doSend),
+            ("Help", self.doHelp)]
         if self.mf and self.mf.dbm:
+            mods.insert(1, ("Save as..", self.doSave))
             try:
                 gc = GetCtl(self.mf)
                 ctlsys = gc.getCtl("ctlsys", error=False)
@@ -18378,14 +18389,9 @@ class ViewPDF(object):
                         ctlsys["sys_mnam"], ctlsys["sys_mpwd"]]
                     if sendMail(self.server, "", "", "", check=True,
                             err=self.mf.window, wrkdir=self.mf.rcdic["wrkdir"]):
-                        mods.append(("Email", self.doEmail))
+                        mods.insert(0, ("Email", self.doEmail))
             except:
                 pass
-        mods.extend([
-            ("Print", self.doPrint),
-            ("Save as..", self.doSave),
-            ("Send to..", self.doSend),
-            ("Help", self.doHelp)])
         img = {}
         for num, text in enumerate(mods):
             img[num] = getImage(text[0], siz=(20, 20))
@@ -18437,8 +18443,8 @@ class ViewPDF(object):
         self.win.update_idletasks()
         # Scale settings
         self.scale = .75
-        self.zoom = self.scale
-        self.matrix = list(fitz.Matrix(1, 1))
+        self.zoom = 1.25
+        self.matrix = list(fitz.Matrix(self.zoom, self.zoom))
         # Other settings
         self.pgno = 1
         self.pags = []

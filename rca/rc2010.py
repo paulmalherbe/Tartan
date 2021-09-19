@@ -191,7 +191,7 @@ class rc2010(object):
             (("T",3,1,0),"OSD",11.2,"Repairs     "),
             (("T",3,2,0),"OSD",11.2,"Allocation"),
             (("C",3,0,0),"IUI",1,"M","Movement Type",
-                "","Y",self.doAllMov,mov,None,("notzero",)),
+                "","Y",self.doAllMov,mov,None,("between", 1, 6)),
             (("C",3,0,1),"ISD",11.2,"Amount","Allocation Amount",
                 "","N",self.doAllAmt,None,None,None),
             (("C",3,0,2),"IUA",1,"V","V.A.T Code",
@@ -436,8 +436,7 @@ class rc2010(object):
         self.df.clearFrame("C", 3)
         self.df.setWidget(self.df.B1, state="disabled")
         self.df.selPage("Tenant")
-        self.df.clearLine(2, int((self.df.last[2][1]-1) / self.df.colq[2]),
-            "Y")
+        self.df.clearLine(2, int((self.df.last[2][1]-1) / self.df.colq[2]), "Y")
 
     def endPage(self):
         if self.df.frt == "T" and self.df.pag == 0:
@@ -508,7 +507,6 @@ class rc2010(object):
         self.showOwnerTrans()
         if self.acno:
             self.showTenantTrans()
-        self.df.nb.grab_set()
 
     def showOwnerTrans(self):
         whr = [("rot_cono", "=", self.opts["conum"]), ("rot_acno", "=",
@@ -526,10 +524,6 @@ class rc2010(object):
         if arr and arr[0]:
             self.due = float(ASD(self.due) - ASD(arr[0]))
         self.df.loadEntry("T", 1, 2, data=self.due)
-        try:
-            self.otrn.closeProcess()
-        except:
-            pass
         tab = ["rcaowt"]
         col = ["rot_trdt", "rot_type", "rot_refno", "rot_desc", "rot_tramt",
             "rot_taxamt"]
@@ -550,14 +544,15 @@ class rc2010(object):
             ("rot_tramt", "Amount", 11.2, "SD", "N"),
             ("rot_taxamt", "VAT-Amount", 11.2, "SD", "N"),
             ("balance", "Balance", 15.2, "SD", "N"))
-        self.otrn = SelectChoice(self.df.topPage1, None, col, data, wait=False,
-            neww=False, sort=False, live=False, modal=False, lines=9)
-
-    def showTenantTrans(self):
         try:
-            self.ttrn.closeProcess()
+            self.otrn.closeProcess()
         except:
             pass
+        self.otrn = SelectChoice(self.df.topPage1, None, col, data, wait=False,
+            neww=False, butt=False, sort=False, live=False, modal=False,
+            lines=9)
+
+    def showTenantTrans(self):
         tab = ["rcatnt"]
         col = ["rtu_trdt", "rtu_type", "rtu_refno", "rtu_desc", "rtu_mtyp",
             "rtu_tramt", "rtu_taxamt"]
@@ -580,8 +575,13 @@ class rc2010(object):
             ("rtu_tramt", "Amount", 11.2, "SD", "N"),
             ("rtu_taxamt", "VAT-Amount", 11.2, "SD", "N"),
             ("balance", "Balance", 15.2, "SD", "N"))
+        try:
+            self.ttrn.closeProcess()
+        except:
+            pass
         self.ttrn = SelectChoice(self.df.topPage2, None, col, data, wait=False,
-            neww=False, sort=False, live=False, modal=False, lines=9)
+            neww=False, butt=False, sort=False, live=False, modal=False,
+            lines=9)
 
     def showTenantBalance(self):
         bal = self.sql.getRec("rcatnt",

@@ -87,18 +87,9 @@ class si3090(object):
             whr.append(("si1_rtn", "in", ("C", "I")))
         else:
             whr.append(("si1_rtn", "=", self.type))
+        whr.append(("si1_invno", "=", "cancel"))
         odr = "si1_rtn, si1_docno"
-        recs = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
-        last = {"I": None, "C": None}
-        for num, rec in enumerate(recs):
-            if last[rec[0]] is None:
-                last[rec[0]] = [rec[0], rec[1] - 1] + rec[2:]
-            while rec[1] != last[rec[0]][1] + 1:
-                last[rec[0]][1] += 1 
-                data.append(last[rec[0]][:5])
-            if rec[5] == "cancel":
-                data.append(rec[:5])
-            last[rec[0]] = rec[:]
+        data = self.sql.getRec(tables=tab, cols=col, where=whr, order=odr)
         cols = []
         dics = self.sql.slsiv1_dic.copy()
         dics.update(self.sql.drsmst_dic)
