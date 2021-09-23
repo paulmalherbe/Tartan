@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!usr/bin/env python
 
 import getopt
 import glob
@@ -28,9 +28,10 @@ from tartanFunctions import findFile, sendMail
 from ms0000 import VERSION
 
 def exeCmd(cmd):
-    ret = os.system(cmd)
-    if ret and ret < 256:
-        print("%s Command Failed" % cmd, ret)
+    try:
+        os.system(cmd)
+    except Exception as err:
+        print("%s Command Failed:" % cmd, err)
         sys.exit()
 
 def addPage(doc, fle, last=False):
@@ -94,9 +95,9 @@ Usage: python pkgprg [options]
     -i Increment Version
     -p Publish Version
     -t Temporary Work Directory
-    -u Update all modules
+    -u Update all modules (uncommitted)
     -v New Version Number
-    -w Windows Installer for Architecture 0, 7, 8, 32 and 64""")
+    -w Windows Installer for Architecture 0=all, 7, 8, 32 and 64""")
         exeCmd("python uty/mkwins.py -h")
         
         sys.exit()
@@ -220,7 +221,6 @@ if newver and newver != "%s.%s" % VERSION:
         new.close()
         # Update repository version control
         sta = "/usr/bin/git status"
-        # dif = "/usr/bin/git diff :/'ver_6.1'..:/'ver_6.2'"
         dif = "/usr/bin/git diff"
         sta += " > ver/ver_%s.%s.status" % tuple(cver)
         exeCmd(sta)
@@ -293,9 +293,9 @@ if newver and newver != "%s.%s" % VERSION:
 if os.path.exists("%s/tarzip.zip" % bd):
     os.remove("%s/tarzip.zip" % bd)
 exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
-# Update the zip with tarchg.py tartan.ico
-exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico" % bd)
 if incunc:
+    # Update the zip with tarchg.py tartan.ico
+    exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico" % bd)
     # Update the zip with uncommitted files
     exeCmd("zip -qr %s/tarzip ass/*0.py bkm/*0.py bks/*0.py bwl/*0.py "\
         "crs/*0.py csh/*0.py drs/*0.py gen/*0.py lon/*0.py mem/*0.py "\
@@ -424,13 +424,13 @@ if publish:
     print("Version Number is %s.%s" % tuple(cver))
     print("")
     # Dropbox
-    exeCmd("rm %s/Dropbox/Apps/%s/%s_6*" % (home, cs, cs))
-    exeCmd("rsync -az %s/%s/%s* "\
-        "%s/Dropbox/Apps/Tartan/" % (bd, bx, cs, home))
+    exeCmd("rm %s/Dropbox/Apps/%s/%s_%s*" % (home, cs, cs, vv))
+    exeCmd("rsync -az %s/%s/%s_%s* "\
+        "%s/Dropbox/Apps/Tartan/" % (bd, bx, cs, vv, home))
     exeCmd("rsync -az /tmp/Manual.pdf %s/Dropbox/Apps/Tartan/" % home)
     # FTP Server
-    exeCmd("ssh %s rm /srv/ftp/%s*" % (sv, cs))
-    exeCmd("rsync -az %s/%s/%s* %s:/srv/ftp/" % (bd, bx, cs, sv))
+    exeCmd("ssh %s rm /srv/ftp/%s_%s*" % (sv, cs, vv))
+    exeCmd("rsync -az %s/%s/%s_%s* %s:/srv/ftp/" % (bd, bx, cs, vv, sv))
     exeCmd("ssh %s chmod a+rx /srv/ftp/*" % sv)
     exeCmd("ssh %s chown paul:paul /srv/ftp/*" % sv)
     # Web Server
@@ -442,17 +442,11 @@ if publish:
         "%s:/var/www/tartan.co.za/htdocs/Downloads/" % (bd, bv, sv))
     exeCmd("rsync -az %s/%s/doc/Changes.txt "\
         "%s:/var/www/tartan.co.za/htdocs/Changes/" % (bd, bv, sv))
-    exeCmd("ssh %s rm /var/www/tartan.co.za/Updates/%s_6*" % (sv, cs))
-    exeCmd("rsync -az %s/%s/Tartan_4.1.14.* "\
-        "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
-    exeCmd("rsync -az %s/%s/Tartan_5.5.* "\
-        "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
-    exeCmd("rsync -az %s/%s/Tartan_5.13.* "\
-        "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
+    exeCmd("ssh %s rm /var/www/tartan.co.za/Updates/%s_%s*" % (sv, cs, vv))
     exeCmd("rsync -az %s/%s/current "\
         "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, sv))
-    exeCmd("rsync -az %s/%s/%s* "\
-        "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, cs, sv))
+    exeCmd("rsync -az %s/%s/%s_%s* "\
+        "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, cs, vv, sv))
     exeCmd("rsync -az /tmp/Manual.pdf "\
         "%s:/var/www/tartan.co.za/Updates/" % sv)
     exeCmd("ssh %s chmod a+rx /var/www/tartan.co.za/Updates/*" % sv)

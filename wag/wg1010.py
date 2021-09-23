@@ -174,7 +174,7 @@ class wg1010(object):
             ("Bank",None,("T",0,0),("T",0,1)),
             ("Earnings",None,("T",0,0),("T",0,1)),
             ("Deductions",None,("T",0,0),("T",0,1)),
-            ("Ba_lances",None,("T",0,0),("T",0,1)))
+            ("Balances",None,("T",0,0),("T",0,1)))
         tnd = (
             (self.doEnd, "n"),
             (self.doEnd, "n"),

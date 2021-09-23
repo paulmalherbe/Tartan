@@ -3,7 +3,7 @@
 ==================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.2
+:Version:   6.3
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za

@@ -216,7 +216,7 @@ class bk1010(object):
                 self.opts["mf"].rcdic["dfs"]),
             "wait": False,
             "minc": 14})
-        self.opts["mf"].startLoop()
+        self.opts["mf"].startLoop(deicon=False)
         if self.tt:
             self.tt.hideTip()
             self.tt = None

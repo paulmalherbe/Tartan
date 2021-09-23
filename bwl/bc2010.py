@@ -154,6 +154,7 @@ class bc2010(object):
         self.nstart = bwlctl["ctb_nstart"]
         self.dbase = bwlctl["ctb_dbase"]
         self.order = bwlctl["ctb_order"]
+        self.mixer = bwlctl["ctb_mixed"]
         self.ratem = CCD(bwlctl["ctb_ratem"], "UD", 6.2)
         self.ratev = CCD(bwlctl["ctb_ratev"], "UD", 6.2)
         self.greens = bwlctl["ctb_greens"]
@@ -234,15 +235,14 @@ class bc2010(object):
             self.mf.setWidget(self.mf.mstFrame, state="hide")
             butt = [("None", "N"), ("View", "V"), ("Reprint", "R")]
             dtyp = self.drm[self.sql.bwldrm_col.index("bdm_dtype")]
-            if dtyp == "N" or self.date > self.sysdt or (
-                    self.date == self.sysdt and self.time < self.stime):
+            if dtyp == "N" or self.date == self.sysdt:
                 butt.extend([("Alter", "A"), ("Clear", "X")])
                 text = "Would you like to View, Reprint, Alter or Clear It?"
             else:
                 text = "Would you like to View or Reprint It?"
-            ok = askChoice(self.opts["mf"].body, "Draw Already Exists",
-                "A Draw for this Date and Time Already Exists,\n\n%s" % text,
-                butt=butt, default="None")
+            ok = askChoice(self.opts["mf"].body, "Already Exists",
+                "A Draw or Entries for this Date and Time Already "\
+                "Exists.\n\n%s" % text, butt=butt, default="None")
             self.mf.setWidget(self.mf.mstFrame, state="show")
             self.mf.enableButtonsTags(state=state)
             if ok == "N":
@@ -270,7 +270,7 @@ class bc2010(object):
                     self.opts["conum"]), ("bdt_date", "=", self.date),
                     ("bdt_time", "=", self.time)])
                 self.opts["mf"].dbm.commitDbase()
-                return
+                return "ff1"
 
     def doLoadMst(self, drm):
         self.mixed = drm[self.sql.bwldrm_col.index("bdm_mixed")]
@@ -363,7 +363,7 @@ class bc2010(object):
 
     def doMixed(self, frt, pag, r, c, p, i, w):
         self.mixed = w
-        if self.mixed == "N":
+        if self.mixed == "N" or self.mixer == "N":
             self.rating = "N"
             self.mf.loadEntry(frt, pag, p + 1, data=self.rating)
             self.mf.loadEntry(frt, pag, p + 2, data="Y")
@@ -503,13 +503,11 @@ class bc2010(object):
                 "Tab for this Draw Only",1),
             ("Do Draw",None,self.doDraw,0,("T",1,1),None,
                 "Genetrate a New Draw",2),
-            ("Edit Draw",None,self.doEdit,0,("T",1,1),None,
-                "Change the Draw",2),
-            ("View Draw",None,self.doEdit,0,("T",1,1),None,
-                "View the Draw",2),
+            ("View/Edit",None,self.doEdit,0,("T",1,1),None,
+                "View and/or Change the Draw",2),
             ("Print",None,self.doPrint,0,("T",1,1),None,
                 "Print the Draw",2),
-            ("Exit",None,self.doExit,1,None,None,None,3,4))
+            ("Exit",None,self.doExit,1,None,None,None,2))
         tnd = (None, (self.doEnd,"n"))
         txt = (None, self.doExit)
         # Create dialog
@@ -2409,7 +2407,7 @@ Combination Number %10s"""
         self.df.setWidget(self.df.mstFrame, state="hide")
         self.adraw3 = copyList(self.adraw1)
         while True:
-            draw = self.doShowDraw("Edit of Draw", self.adraw3, True)
+            draw = self.doShowDraw("View/Edit the Draw", self.adraw3, True)
             if draw:
                 self.doChange(draw)
                 if not self.adraw3:

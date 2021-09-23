@@ -72,6 +72,7 @@ class bc1010(object):
         self.nstart = bwlctl["ctb_nstart"]
         self.dbase = bwlctl["ctb_dbase"]
         self.order = bwlctl["ctb_order"]
+        self.mixed = bwlctl["ctb_mixed"]
         self.fromad = bwlctl["ctb_emadd"]
         self.keys = (
             ("bwltab", "btb_cono", "btb_tab"),
@@ -359,7 +360,7 @@ class bc1010(object):
             self.df.loadEntry(frt, pag, p+1, data="")
             if p == 13:
                 self.df.loadEntry(frt, pag, p+3, data="")
-            if self.gender == "M":
+            if self.mixed == "N":
                 return "sk3"
             else:
                 return "sk1"
@@ -369,11 +370,11 @@ class bc1010(object):
         self.df.loadEntry(frt, pag, p+2, data=w)
         if self.dbase == "R":
             self.df.loadEntry(frt, pag, p+1, data="")
-            if self.gender == "M":
+            if self.mixed == "N":
                 return "sk2"
             else:
                 return "sk1"
-        if self.gender == "M":
+        if self.mixed == "N":
             return "sk2"
 
     def getNextTab(self):

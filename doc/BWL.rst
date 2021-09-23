@@ -13,6 +13,7 @@ Use this routine to create the bowls control record.
 + **Non-member Start Seq** - The number range for non-member's player codes. This number must be greater than the male and female numbers.
 + **Draw Base** - By pre-allocated Position, Rating or a Combination of both.
 + **Rating Order** - Whether the rating system is ascending or descending, like golf handicaps.
++ **Mixed Ratings** - Whether to use different ratings for mixed gender draws.
 + **Replace Fours** - When doing a trips tabs-in draw use pairs instead of fours for eight players.
 + **Weeks Between Draws** - The minimum number of weeks that team members should not be in the same team again. They could however be drawn to play against them.
 + **Rate - Member** - The member's rate.
@@ -96,7 +97,7 @@ The following *Buttons* are available:
     + **Team Size** - The preferred number of players per team.
     + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
     + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If 7 rinks are available this must be entered as A1234567,B etc. If there are more rinks available than needed, end rinks will be removed.
-+ **Edit Draw** - Use this button to manually change a draw i.e. move players between teams.
++ **View/Edit Draw** - Use this button to view the draw and/or manually change it i.e. move players between teams.
 + **Print** - Use this button to print a draw.
     + **Print Cards** - Select whether to print score cards.
         + **Heading** - Enter the heading to be printed on the score cards.

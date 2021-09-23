@@ -593,20 +593,6 @@ class cr2010(object):
         self.ctlctl = self.gc.getCtl("ctlctl", w)
         if not self.ctlctl:
             return "rf"
-        if self.lonmod:
-            lonctl = self.gc.getCtl("lonctl", self.allcoy)
-            if not lonctl:
-                return "Missing Loans Control"
-            self.lon_gl = lonctl["cln_glint"]
-        else:
-            self.lon_gl = "N"
-        if self.slnmod:
-            slnctl = self.gc.getCtl("wagctl", self.allcoy)
-            if not slnctl:
-                return "Missing Staff Loans Control"
-            self.sln_gl = slnctl["ctw_glint"]
-        else:
-            self.sln_gl = "N"
         self.allcoy = w
         self.allnam = nam[0]
         self.df.loadEntry(frt, pag, p+1, data=self.glac)

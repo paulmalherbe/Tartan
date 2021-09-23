@@ -1500,11 +1500,11 @@ class MainFrame(object):
             self.status.configure(background=bg, foreground=fg, text=text)
             self.window.update_idletasks()
 
-    def startLoop(self):
+    def startLoop(self, deicon=True):
         self.mloop += 1
         if self.mloop > 1:
             print("Loop Error", self.mloop)
-        if self.window.state() == "withdrawn":
+        if deicon and self.window.state() == "withdrawn":
             self.window.deiconify()
         self.window.mainloop()
 
@@ -4598,7 +4598,7 @@ Export - The report in the selected format will be opened
         if label:
             found = False
             for idx, tag in enumerate(self.tags):
-                if tag[0] == label:
+                if tag[0].replace("_", "") == label:
                     found = True
                     break
             if not found:
@@ -4666,7 +4666,8 @@ Export - The report in the selected format will be opened
             self.drawTopFlds(frame, num, fld, nxt)
         if self.vport:
             self.vport = MyLabel(frame, anchor="e", font=("Helvetica",
-                int(self.mf.rcdic["dfs"]) * 2), color=False, width=15)
+                int(self.mf.rcdic["dfs"]) * 2), color=False, width=15,
+                relief="ridge")
             col, row = frame.grid_size()
             self.vport.grid(column=col, row=0, rowspan=row, padx=5,
                 sticky="nswe")
@@ -5397,9 +5398,9 @@ Export - The report in the selected format will be opened
             sufx = sufx + ", <F5> to Delete"
         if flds[1][1:] == "TV":
             sufx = sufx + ", <F9> to Continue"
-        if flds[4][-7:] == "(noesc)":
+        if flds[4].count("(noesc)"):
             self.esc = False
-            text = flds[4][:-7]
+            text = flds[4].replace("(noesc)", "")
             cnt = sufx.rfind(",")
             if cnt != -1:
                 sufx = "%s or%s" % (sufx[:cnt], sufx[cnt+1:])

@@ -185,7 +185,7 @@ class st2020(object):
             fld = [(("T",0,0,0),("IRB",(("Yes","Y"),("No","N"))),0,
                 "Create Items","","N","N",self.doAllLoc,None,None,None,None,
                 "Create Item in this location if it is a Valid item, i.e. "\
-                "already exists in another location")]
+                "Already exists in another location")]
         else:
             impcol = []
             fld = []

@@ -1,5 +1,24 @@
-changes = """ver_6.2
+changes = """ver_6.3
 =======
+ 1) Updated various items in the reference manual.
+ 2) Fixed a problem with telephone directory import.
+ 3) Added a check for movement type in rentals data capture.
+ 4) Added a check for duplicate entries in clock card capture.
+ 5) Changed the default page size of the pdf viewer.
+ 6) Fixed a problem with department file maintenance.
+ 7) Fixed a problem with bookings calendar.
+ 8) Fixed a problem with tabs-in status report.
+ 9) Added the facility to save undrawn tabs-in entries.
+10) Added a mixed ratings flag to the bowls control record.
+11) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.2 2021-08-19
+==================
  1) Fixed a bug in stores interrogation.
  2) Fixed a bug in creditors age analysis.
  3) Updated various items in the reference manual.

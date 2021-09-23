@@ -159,10 +159,13 @@ class ms1020(object):
                 seq += 1
             elif num in (1, 4):
                 coy = dat
-                nam = self.sql.getRec("ctlmst", cols=["ctm_name"],
-                    where=[("ctm_cono", "=", coy)], limit=1)
-                self.df.loadEntry("T", 0, seq, data=coy)
-                self.df.loadEntry("T", 0, seq+1, data=nam[0])
+                if not coy:
+                    dat = ""
+                else:
+                    nam = self.sql.getRec("ctlmst", cols=["ctm_name"],
+                        where=[("ctm_cono", "=", coy)], limit=1)
+                    self.df.loadEntry("T", 0, seq, data=coy)
+                    self.df.loadEntry("T", 0, seq+1, data=nam[0])
                 seq += 2
             elif num in (2, 3, 5, 6):
                 if dat:
@@ -237,6 +240,8 @@ class ms1020(object):
             if num in (3, 5, 7, 9, 11, 13):
                 continue
             data.append(dat)
+        if self.glint == "N":
+            data.extend([0, 0, 0, 0, 0, 0])
         if self.new == "Y":
             self.sql.insRec("ctldep", data=data)
         elif data != self.old[:len(data)]:

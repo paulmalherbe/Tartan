@@ -309,9 +309,8 @@ class si2010(object):
         txt = (self.doTopExit, )
         cnd = ((self.doColEnd,"n"), )
         cxt = (None, )
-        self.df = TartanDialog(self.opts["mf"], eflds=fld,
-            rows=self.row, butt=self.but, tend=tnd, txit=txt, cend=cnd,
-            cxit=cxt, vport=True)
+        self.df = TartanDialog(self.opts["mf"], eflds=fld, rows=self.row,
+            butt=self.but, tend=tnd, txit=txt, cend=cnd, cxit=cxt, vport=True)
         self.df.setViewPort("I", 0)
 
     def doTyp(self, frt, pag, r, c, p, i, w):

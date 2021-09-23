@@ -118,7 +118,8 @@ class sc2030(object):
         but = (
             ("Import Results",None,self.doImport,0,("T",1,1),
                 (("T",1,2),("T",1,0))),
-            ("Show Entries",None,self.doShow,0,("C",1,1),("C",1,2)))
+            ("Show Entries",None,self.doShow,0,("C",1,1),
+                ("C",1,2)))
         self.df = TartanDialog(self.opts["mf"], tags=tag, eflds=fld,
             rows=(0,16), tend=tnd, txit=txt, cend=cnd, cxit=cxt, butt=but)
 

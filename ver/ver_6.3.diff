@@ -1,0 +1,541 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index 88a8514..0b54752 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -1500,11 +1500,11 @@ class MainFrame(object):
+             self.status.configure(background=bg, foreground=fg, text=text)
+             self.window.update_idletasks()
+ 
+-    def startLoop(self):
++    def startLoop(self, deicon=True):
+         self.mloop += 1
+         if self.mloop > 1:
+             print("Loop Error", self.mloop)
+-        if self.window.state() == "withdrawn":
++        if deicon and self.window.state() == "withdrawn":
+             self.window.deiconify()
+         self.window.mainloop()
+ 
+@@ -4598,7 +4598,7 @@ Export - The report in the selected format will be opened
+         if label:
+             found = False
+             for idx, tag in enumerate(self.tags):
+-                if tag[0] == label:
++                if tag[0].replace("_", "") == label:
+                     found = True
+                     break
+             if not found:
+@@ -4666,7 +4666,8 @@ Export - The report in the selected format will be opened
+             self.drawTopFlds(frame, num, fld, nxt)
+         if self.vport:
+             self.vport = MyLabel(frame, anchor="e", font=("Helvetica",
+-                int(self.mf.rcdic["dfs"]) * 2), color=False, width=15)
++                int(self.mf.rcdic["dfs"]) * 2), color=False, width=15,
++                relief="ridge")
+             col, row = frame.grid_size()
+             self.vport.grid(column=col, row=0, rowspan=row, padx=5,
+                 sticky="nswe")
+@@ -5397,9 +5398,9 @@ Export - The report in the selected format will be opened
+             sufx = sufx + ", <F5> to Delete"
+         if flds[1][1:] == "TV":
+             sufx = sufx + ", <F9> to Continue"
+-        if flds[4][-7:] == "(noesc)":
++        if flds[4].count("(noesc)"):
+             self.esc = False
+-            text = flds[4][:-7]
++            text = flds[4].replace("(noesc)", "")
+             cnt = sufx.rfind(",")
+             if cnt != -1:
+                 sufx = "%s or%s" % (sufx[:cnt], sufx[cnt+1:])
+diff --git a/bkm/bk1010.py b/bkm/bk1010.py
+index 26c7475..1c6d505 100644
+--- a/bkm/bk1010.py
++++ b/bkm/bk1010.py
+@@ -216,7 +216,7 @@ class bk1010(object):
+                 self.opts["mf"].rcdic["dfs"]),
+             "wait": False,
+             "minc": 14})
+-        self.opts["mf"].startLoop()
++        self.opts["mf"].startLoop(deicon=False)
+         if self.tt:
+             self.tt.hideTip()
+             self.tt = None
+diff --git a/bwl/bc1010.py b/bwl/bc1010.py
+index f1e97f7..4b2f2b4 100644
+--- a/bwl/bc1010.py
++++ b/bwl/bc1010.py
+@@ -72,6 +72,7 @@ class bc1010(object):
+         self.nstart = bwlctl["ctb_nstart"]
+         self.dbase = bwlctl["ctb_dbase"]
+         self.order = bwlctl["ctb_order"]
++        self.mixed = bwlctl["ctb_mixed"]
+         self.fromad = bwlctl["ctb_emadd"]
+         self.keys = (
+             ("bwltab", "btb_cono", "btb_tab"),
+@@ -359,7 +360,7 @@ class bc1010(object):
+             self.df.loadEntry(frt, pag, p+1, data="")
+             if p == 13:
+                 self.df.loadEntry(frt, pag, p+3, data="")
+-            if self.gender == "M":
++            if self.mixed == "N":
+                 return "sk3"
+             else:
+                 return "sk1"
+@@ -369,11 +370,11 @@ class bc1010(object):
+         self.df.loadEntry(frt, pag, p+2, data=w)
+         if self.dbase == "R":
+             self.df.loadEntry(frt, pag, p+1, data="")
+-            if self.gender == "M":
++            if self.mixed == "N":
+                 return "sk2"
+             else:
+                 return "sk1"
+-        if self.gender == "M":
++        if self.mixed == "N":
+             return "sk2"
+ 
+     def getNextTab(self):
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index cdf3164..288f285 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -154,6 +154,7 @@ class bc2010(object):
+         self.nstart = bwlctl["ctb_nstart"]
+         self.dbase = bwlctl["ctb_dbase"]
+         self.order = bwlctl["ctb_order"]
++        self.mixer = bwlctl["ctb_mixed"]
+         self.ratem = CCD(bwlctl["ctb_ratem"], "UD", 6.2)
+         self.ratev = CCD(bwlctl["ctb_ratev"], "UD", 6.2)
+         self.greens = bwlctl["ctb_greens"]
+@@ -234,15 +235,14 @@ class bc2010(object):
+             self.mf.setWidget(self.mf.mstFrame, state="hide")
+             butt = [("None", "N"), ("View", "V"), ("Reprint", "R")]
+             dtyp = self.drm[self.sql.bwldrm_col.index("bdm_dtype")]
+-            if dtyp == "N" or self.date > self.sysdt or (
+-                    self.date == self.sysdt and self.time < self.stime):
++            if dtyp == "N" or self.date == self.sysdt:
+                 butt.extend([("Alter", "A"), ("Clear", "X")])
+                 text = "Would you like to View, Reprint, Alter or Clear It?"
+             else:
+                 text = "Would you like to View or Reprint It?"
+-            ok = askChoice(self.opts["mf"].body, "Draw Already Exists",
+-                "A Draw for this Date and Time Already Exists,\n\n%s" % text,
+-                butt=butt, default="None")
++            ok = askChoice(self.opts["mf"].body, "Already Exists",
++                "A Draw or Entries for this Date and Time Already "\
++                "Exists.\n\n%s" % text, butt=butt, default="None")
+             self.mf.setWidget(self.mf.mstFrame, state="show")
+             self.mf.enableButtonsTags(state=state)
+             if ok == "N":
+@@ -270,7 +270,7 @@ class bc2010(object):
+                     self.opts["conum"]), ("bdt_date", "=", self.date),
+                     ("bdt_time", "=", self.time)])
+                 self.opts["mf"].dbm.commitDbase()
+-                return
++                return "ff1"
+ 
+     def doLoadMst(self, drm):
+         self.mixed = drm[self.sql.bwldrm_col.index("bdm_mixed")]
+@@ -363,7 +363,7 @@ class bc2010(object):
+ 
+     def doMixed(self, frt, pag, r, c, p, i, w):
+         self.mixed = w
+-        if self.mixed == "N":
++        if self.mixed == "N" or self.mixer == "N":
+             self.rating = "N"
+             self.mf.loadEntry(frt, pag, p + 1, data=self.rating)
+             self.mf.loadEntry(frt, pag, p + 2, data="Y")
+@@ -503,13 +503,11 @@ class bc2010(object):
+                 "Tab for this Draw Only",1),
+             ("Do Draw",None,self.doDraw,0,("T",1,1),None,
+                 "Genetrate a New Draw",2),
+-            ("Edit Draw",None,self.doEdit,0,("T",1,1),None,
+-                "Change the Draw",2),
+-            ("View Draw",None,self.doEdit,0,("T",1,1),None,
+-                "View the Draw",2),
++            ("View/Edit",None,self.doEdit,0,("T",1,1),None,
++                "View and/or Change the Draw",2),
+             ("Print",None,self.doPrint,0,("T",1,1),None,
+                 "Print the Draw",2),
+-            ("Exit",None,self.doExit,1,None,None,None,3,4))
++            ("Exit",None,self.doExit,1,None,None,None,2))
+         tnd = (None, (self.doEnd,"n"))
+         txt = (None, self.doExit)
+         # Create dialog
+@@ -2409,7 +2407,7 @@ Combination Number %10s"""
+         self.df.setWidget(self.df.mstFrame, state="hide")
+         self.adraw3 = copyList(self.adraw1)
+         while True:
+-            draw = self.doShowDraw("Edit of Draw", self.adraw3, True)
++            draw = self.doShowDraw("View/Edit the Draw", self.adraw3, True)
+             if draw:
+                 self.doChange(draw)
+                 if not self.adraw3:
+diff --git a/bwl/bcc110.py b/bwl/bcc110.py
+index 6dc5013..ad50763 100644
+--- a/bwl/bcc110.py
++++ b/bwl/bcc110.py
+@@ -54,7 +54,7 @@ class bcc110(object):
+         if not self.acc:
+             self.new = True
+             self.acc = [self.opts["conum"], "N", "N", 0, 0, 0, 0, "P",
+-                "A", "Y", 4, 0, 0, "A", "B", "", ""]
++                "A", "N", "Y", 4, 0, 0, "A", "B", "", ""]
+         else:
+             self.new = False
+             self.oldm = self.acc[self.sql.bwlctl_col.index("ctb_mstart")]
+@@ -102,23 +102,28 @@ class bcc110(object):
+                 self.acc[7],"N",self.doBase,None,None,None),
+             (("T",0,seq + 4,0),("IRB",r3s),0,"Rating Order","",
+                 self.acc[8],"N",None,None,None,None),
+-            (("T",0,seq + 5,0),("IRB",r1s),0,"Replace Fours","",
++            (("T",0,seq + 5,0),("IRB",r1s),0,"Mixed Ratings","",
+                 self.acc[9],"N",None,None,None,None,None,
+-                "When the Draw is Trips Use Pairs Instead of Fours."),
+-            (("T",0,seq + 6,0),"IUI",2,"Weeks Between Draws","",
+-                self.acc[10],"N",None,None,None,("between", 0, 4),None,
++                "Select if Different Ratings are Used for Mixed "\
++                "Gender Draws"),
++            (("T",0,seq + 6,0),("IRB",r1s),0,"Replace Fours","",
++                self.acc[10],"N",None,None,None,None,None,
++                "When the Draw is Trips Use Pairs Instead of Fours "\
++                "when Applicable."),
++            (("T",0,seq + 7,0),"IUI",2,"Weeks Between Draws","",
++                self.acc[11],"N",None,None,None,("between", 0, 4),None,
+                 "Minimum number of Weeks that Players Should Not be "\
+                 "Drawn in the Same Team."),
+-            (("T",0,seq + 7,0),"IUD",5.2,"Rate - Member","",
+-                self.acc[11],"N",None,None,None,("efld",)),
+-            (("T",0,seq + 8,0),"IUD",5.2,"Rate - Visitor","",
++            (("T",0,seq + 8,0),"IUD",5.2,"Rate - Member","",
+                 self.acc[12],"N",None,None,None,("efld",)),
+-            (("T",0,seq + 9,0),"IUA",6,"Greens","",
+-                self.acc[13],"N",self.doGreens,None,None,("notblank",)),
+-            (("T",0,seq + 10,0),("IRB",r4s),0,"Draw Format","",
+-                self.acc[14],"N",None,None,None,None),
+-            (("T",0,seq + 11,0),"ITX",50,"Email Address","",
+-                self.acc[15],"N",None,None,None,("email",))])
++            (("T",0,seq + 9,0),"IUD",5.2,"Rate - Visitor","",
++                self.acc[13],"N",None,None,None,("efld",)),
++            (("T",0,seq + 10,0),"IUA",6,"Greens","",
++                self.acc[14],"N",self.doGreens,None,None,("notblank",)),
++            (("T",0,seq + 11,0),("IRB",r4s),0,"Draw Format","",
++                self.acc[15],"N",None,None,None,None),
++            (("T",0,seq + 12,0),"ITX",50,"Email Address","",
++                self.acc[16],"N",None,None,None,("email",))])
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
+             ("Quit",None,self.doExit,1,None,None))
+diff --git a/crs/cr2010.py b/crs/cr2010.py
+index 452ae94..6309d1a 100644
+--- a/crs/cr2010.py
++++ b/crs/cr2010.py
+@@ -593,20 +593,6 @@ class cr2010(object):
+         self.ctlctl = self.gc.getCtl("ctlctl", w)
+         if not self.ctlctl:
+             return "rf"
+-        if self.lonmod:
+-            lonctl = self.gc.getCtl("lonctl", self.allcoy)
+-            if not lonctl:
+-                return "Missing Loans Control"
+-            self.lon_gl = lonctl["cln_glint"]
+-        else:
+-            self.lon_gl = "N"
+-        if self.slnmod:
+-            slnctl = self.gc.getCtl("wagctl", self.allcoy)
+-            if not slnctl:
+-                return "Missing Staff Loans Control"
+-            self.sln_gl = slnctl["ctw_glint"]
+-        else:
+-            self.sln_gl = "N"
+         self.allcoy = w
+         self.allnam = nam[0]
+         self.df.loadEntry(frt, pag, p+1, data=self.glac)
+diff --git a/doc/BWL.rst b/doc/BWL.rst
+index 8c9c37f..064c8b3 100644
+--- a/doc/BWL.rst
++++ b/doc/BWL.rst
+@@ -13,6 +13,7 @@ Use this routine to create the bowls control record.
+ + **Non-member Start Seq** - The number range for non-member's player codes. This number must be greater than the male and female numbers.
+ + **Draw Base** - By pre-allocated Position, Rating or a Combination of both.
+ + **Rating Order** - Whether the rating system is ascending or descending, like golf handicaps.
+++ **Mixed Ratings** - Whether to use different ratings for mixed gender draws.
+ + **Replace Fours** - When doing a trips tabs-in draw use pairs instead of fours for eight players.
+ + **Weeks Between Draws** - The minimum number of weeks that team members should not be in the same team again. They could however be drawn to play against them.
+ + **Rate - Member** - The member's rate.
+@@ -96,7 +97,7 @@ The following *Buttons* are available:
+     + **Team Size** - The preferred number of players per team.
+     + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
+     + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If 7 rinks are available this must be entered as A1234567,B etc. If there are more rinks available than needed, end rinks will be removed.
+-+ **Edit Draw** - Use this button to manually change a draw i.e. move players between teams.
+++ **View/Edit Draw** - Use this button to view the draw and/or manually change it i.e. move players between teams.
+ + **Print** - Use this button to print a draw.
+     + **Print Cards** - Select whether to print score cards.
+         + **Heading** - Enter the heading to be printed on the score cards.
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 0cccd43..008981d 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@
+ ==================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.2
++:Version:   6.3
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/ms0000.py b/ms0000.py
+index 2debeec..c448115 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 2)
++    VERSION = (6, 3)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+diff --git a/mst/ms1020.py b/mst/ms1020.py
+index 3ff9230..f7a6b4a 100644
+--- a/mst/ms1020.py
++++ b/mst/ms1020.py
+@@ -159,10 +159,13 @@ class ms1020(object):
+                 seq += 1
+             elif num in (1, 4):
+                 coy = dat
+-                nam = self.sql.getRec("ctlmst", cols=["ctm_name"],
+-                    where=[("ctm_cono", "=", coy)], limit=1)
+-                self.df.loadEntry("T", 0, seq, data=coy)
+-                self.df.loadEntry("T", 0, seq+1, data=nam[0])
++                if not coy:
++                    dat = ""
++                else:
++                    nam = self.sql.getRec("ctlmst", cols=["ctm_name"],
++                        where=[("ctm_cono", "=", coy)], limit=1)
++                    self.df.loadEntry("T", 0, seq, data=coy)
++                    self.df.loadEntry("T", 0, seq+1, data=nam[0])
+                 seq += 2
+             elif num in (2, 3, 5, 6):
+                 if dat:
+@@ -237,6 +240,8 @@ class ms1020(object):
+             if num in (3, 5, 7, 9, 11, 13):
+                 continue
+             data.append(dat)
++        if self.glint == "N":
++            data.extend([0, 0, 0, 0, 0, 0])
+         if self.new == "Y":
+             self.sql.insRec("ctldep", data=data)
+         elif data != self.old[:len(data)]:
+diff --git a/scp/sc2030.py b/scp/sc2030.py
+index b0a9423..0399d65 100644
+--- a/scp/sc2030.py
++++ b/scp/sc2030.py
+@@ -118,7 +118,8 @@ class sc2030(object):
+         but = (
+             ("Import Results",None,self.doImport,0,("T",1,1),
+                 (("T",1,2),("T",1,0))),
+-            ("Show Entries",None,self.doShow,0,("C",1,1),("C",1,2)))
++            ("Show Entries",None,self.doShow,0,("C",1,1),
++                ("C",1,2)))
+         self.df = TartanDialog(self.opts["mf"], tags=tag, eflds=fld,
+             rows=(0,16), tend=tnd, txit=txt, cend=cnd, cxit=cxt, butt=but)
+ 
+diff --git a/sls/si2010.py b/sls/si2010.py
+index 7fff1df..5257610 100644
+--- a/sls/si2010.py
++++ b/sls/si2010.py
+@@ -309,9 +309,8 @@ class si2010(object):
+         txt = (self.doTopExit, )
+         cnd = ((self.doColEnd,"n"), )
+         cxt = (None, )
+-        self.df = TartanDialog(self.opts["mf"], eflds=fld,
+-            rows=self.row, butt=self.but, tend=tnd, txit=txt, cend=cnd,
+-            cxit=cxt, vport=True)
++        self.df = TartanDialog(self.opts["mf"], eflds=fld, rows=self.row,
++            butt=self.but, tend=tnd, txit=txt, cend=cnd, cxit=cxt, vport=True)
+         self.df.setViewPort("I", 0)
+ 
+     def doTyp(self, frt, pag, r, c, p, i, w):
+diff --git a/str/st2020.py b/str/st2020.py
+index d1c18a8..bde27d8 100644
+--- a/str/st2020.py
++++ b/str/st2020.py
+@@ -185,7 +185,7 @@ class st2020(object):
+             fld = [(("T",0,0,0),("IRB",(("Yes","Y"),("No","N"))),0,
+                 "Create Items","","N","N",self.doAllLoc,None,None,None,None,
+                 "Create Item in this location if it is a Valid item, i.e. "\
+-                "already exists in another location")]
++                "Already exists in another location")]
+         else:
+             impcol = []
+             fld = []
+diff --git a/tab/tb1020.py b/tab/tb1020.py
+index e20023e..29d4fdd 100644
+--- a/tab/tb1020.py
++++ b/tab/tb1020.py
+@@ -382,6 +382,8 @@ class tb1020(object):
+                         new = 1
+                     elif self.table == "bwlctl" and nam == "ctb_mscat":
+                         new = 0
++                    elif self.table == "bwlctl" and nam == "ctb_mixed":
++                        new = "N"
+                     elif self.table == "bwlgme" and nam == "bcg_sfor":
+                         new = old[olddic["bcg_shots_for"][0]]
+                     elif self.table == "bwlgme" and nam == "bcg_sagt":
+diff --git a/tartanWork.py b/tartanWork.py
+index 24d73ee..89292eb 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -1270,14 +1270,15 @@ tabdic = {
+             [6, "ctb_nstart", "UI", 6.0, "Non-Members Start", "NStart"],
+             [7, "ctb_dbase", "UA", 1.0, "Draw Base (C/P/R)", "B"],
+             [8, "ctb_order", "UA", 1.0, "Rating Order (A/D)", "O"],
+-            [9, "ctb_rep42", "UA", 1.0, "Replace Fours", "R"],
+-            [10, "ctb_weeks", "UI", 1.0, "Weeks Between Games", "MW"],
+-            [11, "ctb_ratem", "UD", 5.2, "Rate - Member", "RateM"],
+-            [12, "ctb_ratev", "UD", 5.2, "Rate - Visitor", "RateV"],
+-            [13, "ctb_greens", "UA", 6.0, "Greens", "Greens"],
+-            [14, "ctb_drfmat", "UA", 1.0, "Draw Format", "F"],
+-            [15, "ctb_emadd", "TX", 50.0, "Email Address", "Email Address"],
+-            [16, "ctb_xflag", "UA", 1.0, "Export Flag", "X"]],
++            [9, "ctb_mixed", "UA", 1.0, "Mixed Ratings", "M"],
++            [10, "ctb_rep42", "UA", 1.0, "Replace Fours", "R"],
++            [11, "ctb_weeks", "UI", 1.0, "Weeks Between Games", "MW"],
++            [12, "ctb_ratem", "UD", 5.2, "Rate - Member", "RateM"],
++            [13, "ctb_ratev", "UD", 5.2, "Rate - Visitor", "RateV"],
++            [14, "ctb_greens", "UA", 6.0, "Greens", "Greens"],
++            [15, "ctb_drfmat", "UA", 1.0, "Draw Format", "F"],
++            [16, "ctb_emadd", "TX", 50.0, "Email Address", "Email Address"],
++            [17, "ctb_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+             ["Bowls Control", 1, "U", "ctb_cono"]]},
+     "bwldrm": {
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 4add361..caa9c53 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!usr/bin/env python
+ 
+ import getopt
+ import glob
+@@ -28,9 +28,10 @@ from tartanFunctions import findFile, sendMail
+ from ms0000 import VERSION
+ 
+ def exeCmd(cmd):
+-    ret = os.system(cmd)
+-    if ret and ret < 256:
+-        print("%s Command Failed" % cmd, ret)
++    try:
++        os.system(cmd)
++    except Exception as err:
++        print("%s Command Failed:" % cmd, err)
+         sys.exit()
+ 
+ def addPage(doc, fle, last=False):
+@@ -94,9 +95,9 @@ Usage: python pkgprg [options]
+     -i Increment Version
+     -p Publish Version
+     -t Temporary Work Directory
+-    -u Update all modules
++    -u Update all modules (uncommitted)
+     -v New Version Number
+-    -w Windows Installer for Architecture 0, 7, 8, 32 and 64""")
++    -w Windows Installer for Architecture 0=all, 7, 8, 32 and 64""")
+         exeCmd("python uty/mkwins.py -h")
+         
+         sys.exit()
+@@ -220,7 +221,6 @@ if newver and newver != "%s.%s" % VERSION:
+         new.close()
+         # Update repository version control
+         sta = "/usr/bin/git status"
+-        # dif = "/usr/bin/git diff :/'ver_6.1'..:/'ver_6.2'"
+         dif = "/usr/bin/git diff"
+         sta += " > ver/ver_%s.%s.status" % tuple(cver)
+         exeCmd(sta)
+@@ -293,9 +293,9 @@ if newver and newver != "%s.%s" % VERSION:
+ if os.path.exists("%s/tarzip.zip" % bd):
+     os.remove("%s/tarzip.zip" % bd)
+ exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
+-# Update the zip with tarchg.py tartan.ico
+-exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico" % bd)
+ if incunc:
++    # Update the zip with tarchg.py tartan.ico
++    exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico" % bd)
+     # Update the zip with uncommitted files
+     exeCmd("zip -qr %s/tarzip ass/*0.py bkm/*0.py bks/*0.py bwl/*0.py "\
+         "crs/*0.py csh/*0.py drs/*0.py gen/*0.py lon/*0.py mem/*0.py "\
+@@ -424,13 +424,13 @@ if publish:
+     print("Version Number is %s.%s" % tuple(cver))
+     print("")
+     # Dropbox
+-    exeCmd("rm %s/Dropbox/Apps/%s/%s_6*" % (home, cs, cs))
+-    exeCmd("rsync -az %s/%s/%s* "\
+-        "%s/Dropbox/Apps/Tartan/" % (bd, bx, cs, home))
++    exeCmd("rm %s/Dropbox/Apps/%s/%s_%s*" % (home, cs, cs, vv))
++    exeCmd("rsync -az %s/%s/%s_%s* "\
++        "%s/Dropbox/Apps/Tartan/" % (bd, bx, cs, vv, home))
+     exeCmd("rsync -az /tmp/Manual.pdf %s/Dropbox/Apps/Tartan/" % home)
+     # FTP Server
+-    exeCmd("ssh %s rm /srv/ftp/%s*" % (sv, cs))
+-    exeCmd("rsync -az %s/%s/%s* %s:/srv/ftp/" % (bd, bx, cs, sv))
++    exeCmd("ssh %s rm /srv/ftp/%s_%s*" % (sv, cs, vv))
++    exeCmd("rsync -az %s/%s/%s_%s* %s:/srv/ftp/" % (bd, bx, cs, vv, sv))
+     exeCmd("ssh %s chmod a+rx /srv/ftp/*" % sv)
+     exeCmd("ssh %s chown paul:paul /srv/ftp/*" % sv)
+     # Web Server
+@@ -442,17 +442,11 @@ if publish:
+         "%s:/var/www/tartan.co.za/htdocs/Downloads/" % (bd, bv, sv))
+     exeCmd("rsync -az %s/%s/doc/Changes.txt "\
+         "%s:/var/www/tartan.co.za/htdocs/Changes/" % (bd, bv, sv))
+-    exeCmd("ssh %s rm /var/www/tartan.co.za/Updates/%s_6*" % (sv, cs))
+-    exeCmd("rsync -az %s/%s/Tartan_4.1.14.* "\
+-        "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
+-    exeCmd("rsync -az %s/%s/Tartan_5.5.* "\
+-        "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
+-    exeCmd("rsync -az %s/%s/Tartan_5.13.* "\
+-        "%s:/var/www/tartan.co.za/Updates/" % (bd, bo, sv))
++    exeCmd("ssh %s rm /var/www/tartan.co.za/Updates/%s_%s*" % (sv, cs, vv))
+     exeCmd("rsync -az %s/%s/current "\
+         "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, sv))
+-    exeCmd("rsync -az %s/%s/%s* "\
+-        "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, cs, sv))
++    exeCmd("rsync -az %s/%s/%s_%s* "\
++        "%s:/var/www/tartan.co.za/Updates/" % (bd, bx, cs, vv, sv))
+     exeCmd("rsync -az /tmp/Manual.pdf "\
+         "%s:/var/www/tartan.co.za/Updates/" % sv)
+     exeCmd("ssh %s chmod a+rx /var/www/tartan.co.za/Updates/*" % sv)
+diff --git a/wag/wg1010.py b/wag/wg1010.py
+index 1e53317..7cc15ba 100644
+--- a/wag/wg1010.py
++++ b/wag/wg1010.py
+@@ -174,7 +174,7 @@ class wg1010(object):
+             ("Bank",None,("T",0,0),("T",0,1)),
+             ("Earnings",None,("T",0,0),("T",0,1)),
+             ("Deductions",None,("T",0,0),("T",0,1)),
+-            ("Ba_lances",None,("T",0,0),("T",0,1)))
++            ("Balances",None,("T",0,0),("T",0,1)))
+         tnd = (
+             (self.doEnd, "n"),
+             (self.doEnd, "n"),
+diff --git a/wag/wgc310.py b/wag/wgc310.py
+index f364bdc..1748a50 100644
+--- a/wag/wgc310.py
++++ b/wag/wgc310.py
+@@ -228,6 +228,12 @@ class wgc310(object):
+             if self.code == 1:
+                 self.df.loadEntry("T", 1, 1, data="V")
+                 self.df.loadEntry("T", 1, 2, data="R")
++                if self.glint != "Y":
++                    self.df.loadEntry("T", 1, p+6, data=0)
++                    self.df.loadEntry("T", 1, p+7, data=0)
++                    self.df.loadEntry("T", 1, p+9, data="N")
++                    self.df.loadEntry("T", 1, p+15, data="N")
++                    return "nd"
+                 return "sk5"
+             elif self.code == 2:
+                 self.df.loadEntry("T", 1, 1, data="V")

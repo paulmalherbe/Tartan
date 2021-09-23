@@ -228,6 +228,12 @@ class wgc310(object):
             if self.code == 1:
                 self.df.loadEntry("T", 1, 1, data="V")
                 self.df.loadEntry("T", 1, 2, data="R")
+                if self.glint != "Y":
+                    self.df.loadEntry("T", 1, p+6, data=0)
+                    self.df.loadEntry("T", 1, p+7, data=0)
+                    self.df.loadEntry("T", 1, p+9, data="N")
+                    self.df.loadEntry("T", 1, p+15, data="N")
+                    return "nd"
                 return "sk5"
             elif self.code == 2:
                 self.df.loadEntry("T", 1, 1, data="V")

@@ -382,6 +382,8 @@ class tb1020(object):
                         new = 1
                     elif self.table == "bwlctl" and nam == "ctb_mscat":
                         new = 0
+                    elif self.table == "bwlctl" and nam == "ctb_mixed":
+                        new = "N"
                     elif self.table == "bwlgme" and nam == "bcg_sfor":
                         new = old[olddic["bcg_shots_for"][0]]
                     elif self.table == "bwlgme" and nam == "bcg_sagt":

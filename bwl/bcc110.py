@@ -54,7 +54,7 @@ class bcc110(object):
         if not self.acc:
             self.new = True
             self.acc = [self.opts["conum"], "N", "N", 0, 0, 0, 0, "P",
-                "A", "Y", 4, 0, 0, "A", "B", "", ""]
+                "A", "N", "Y", 4, 0, 0, "A", "B", "", ""]
         else:
             self.new = False
             self.oldm = self.acc[self.sql.bwlctl_col.index("ctb_mstart")]
@@ -102,23 +102,28 @@ class bcc110(object):
                 self.acc[7],"N",self.doBase,None,None,None),
             (("T",0,seq + 4,0),("IRB",r3s),0,"Rating Order","",
                 self.acc[8],"N",None,None,None,None),
-            (("T",0,seq + 5,0),("IRB",r1s),0,"Replace Fours","",
+            (("T",0,seq + 5,0),("IRB",r1s),0,"Mixed Ratings","",
                 self.acc[9],"N",None,None,None,None,None,
-                "When the Draw is Trips Use Pairs Instead of Fours."),
-            (("T",0,seq + 6,0),"IUI",2,"Weeks Between Draws","",
-                self.acc[10],"N",None,None,None,("between", 0, 4),None,
+                "Select if Different Ratings are Used for Mixed "\
+                "Gender Draws"),
+            (("T",0,seq + 6,0),("IRB",r1s),0,"Replace Fours","",
+                self.acc[10],"N",None,None,None,None,None,
+                "When the Draw is Trips Use Pairs Instead of Fours "\
+                "when Applicable."),
+            (("T",0,seq + 7,0),"IUI",2,"Weeks Between Draws","",
+                self.acc[11],"N",None,None,None,("between", 0, 4),None,
                 "Minimum number of Weeks that Players Should Not be "\
                 "Drawn in the Same Team."),
-            (("T",0,seq + 7,0),"IUD",5.2,"Rate - Member","",
-                self.acc[11],"N",None,None,None,("efld",)),
-            (("T",0,seq + 8,0),"IUD",5.2,"Rate - Visitor","",
+            (("T",0,seq + 8,0),"IUD",5.2,"Rate - Member","",
                 self.acc[12],"N",None,None,None,("efld",)),
-            (("T",0,seq + 9,0),"IUA",6,"Greens","",
-                self.acc[13],"N",self.doGreens,None,None,("notblank",)),
-            (("T",0,seq + 10,0),("IRB",r4s),0,"Draw Format","",
-                self.acc[14],"N",None,None,None,None),
-            (("T",0,seq + 11,0),"ITX",50,"Email Address","",
-                self.acc[15],"N",None,None,None,("email",))])
+            (("T",0,seq + 9,0),"IUD",5.2,"Rate - Visitor","",
+                self.acc[13],"N",None,None,None,("efld",)),
+            (("T",0,seq + 10,0),"IUA",6,"Greens","",
+                self.acc[14],"N",self.doGreens,None,None,("notblank",)),
+            (("T",0,seq + 11,0),("IRB",r4s),0,"Draw Format","",
+                self.acc[15],"N",None,None,None,None),
+            (("T",0,seq + 12,0),"ITX",50,"Email Address","",
+                self.acc[16],"N",None,None,None,("email",))])
         but = (
             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
             ("Quit",None,self.doExit,1,None,None))
