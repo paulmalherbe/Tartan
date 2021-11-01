@@ -79,7 +79,7 @@ Change Batch Period
 Use this routine to change a captured batch's current date if incorrectly entered.
 
 + **System Code** - Enter the system code in which the batch was captured e.g. CRS for Creditor's Ledger.
-+ **Transaction Type** - Enter the transaction type capured.
++ **Transaction Type** - Enter the transaction type captured.
 + **Batch Number** - Enter the batch number to be altered.
 + **Captured Period** - The period originally captured will be displayed.
 + **Change to Period** - The correct period which should have been entered.
@@ -92,7 +92,7 @@ Use this routine to calculate loan repayments.
 + **Residual Value** - The residual value, if any.
 + **Number of Months** - The period of the loan in months.
 + **Repay Amount** - The monthly repayment amount or zero to calculate it once an interest rate has been entered.
-+ **Interest Rate** - The applicalble interest rate if no repayment amount was entered.
++ **Interest Rate** - The applicable interest rate if no repayment amount was entered.
 
 Password Manager
 ................
@@ -101,7 +101,7 @@ Use this routine to manage passwords.
 + **Secret Word** - Enter a master password. This password is used to encrypt your stored passwords.
 
 + **Code** - Enter a code to index the password.
-+ **Clear-Text** - Enter visble text e.g. a web usr like http://gmail.com
++ **Clear-Text** - Enter visible text e.g. a web user like http://gmail.com
 + **Encrypted-Text** - Enter the password related to the code and text.
 
 Report Generator

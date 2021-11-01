@@ -282,7 +282,7 @@ if newver and newver != "%s.%s" % VERSION:
         exeCmd("/usr/bin/git commit -am 'ver_%s.%s'" % tuple(cver))
         push = input("Push Version (y/n): ")
         if push == "y":
-            exeCmd("/usr/bin/git push -u origin main")
+            exeCmd("/usr/bin/git push -fu origin main")
     except Exception as err:
         print("Error Creating New Version (%s)" % err)
         sys.exit()
@@ -527,7 +527,6 @@ if email:
             "ruthmiles52@gmail.com",
             "tyron@i-volt.net",
             "yolande@acsaccounting.co.za"]
-        addrs = ["paul@tartan.co.za"]
         for addr in addrs:
             sendMail(serv, mfrm, addr, subj, mess=(text, html))
 shutil.rmtree("%s/%s" % (bd, sn))
