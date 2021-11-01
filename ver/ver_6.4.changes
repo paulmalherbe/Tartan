@@ -1,0 +1,25 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Fixed a bug in staff loans data capture.
+ 2) Fixed a bug in xls and xlsx file imports.
+ 3) Fixed a bug in utilities report stream module.
+ 4) Fixed a bug in password overrides when cancelled.
+ 5) Added general ledger integration to cash analysis.
+ 6) Added range option for printing pages in pdf viewer.
+ 7) Added a -P command line option for viewing pdf files.
+ 8) Added a new module for changing a batch's current period.
+ 9) Added a password option check for tabs-in Modify.
+10) Added an internet url address to the company record.
+11) Added a facility to hyperlink bulk mail embedded attachments.
+12) Added an auto-apply facility, in the preferences, for
+    trashing, deleteing or keeping work files.
+13) Removed ftp upgrade option, replaced with https.
+14) The pdf viewer zoom to default to the last one used.
+15) Updated more items in the reference manual.
+16) Updated the quick start reference guide.
+17) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.

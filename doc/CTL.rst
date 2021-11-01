@@ -50,11 +50,9 @@ Use this routine to set passwords to override certain security limitations e.g. 
 + **Code** - The relevant restrictions code. F1 will show existing overrides and the `All Codes` button will show all available restrictions.
 + **Password** - The password required to override this restriction.
 
-**Examples**
-
-.. csv-table::
+.. csv-table:: **Examples**
   :header: "System", "Code", "Description"
-  :widths: 6, 20, 50
+  :widths: 8, 20, 50
 
   "MST", "TarBck", "Allow Database Backup"
   "MST", "TarRes", "Allow Database Restore"

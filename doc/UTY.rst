@@ -67,10 +67,42 @@ Use this routine to send bulk MAIL or bulk SMSes. In order to use the MAIL facil
 + **Skip Delivery Errors** - Select whether or not to skip invalid email addresses.
 + **Subject** - The subject of the email.
 + **In-line Attachment** - Any in-line image to be included in the email.
-+ **Separate Attachment** - Any attachment to be attached to the email.
++ **Add Hyperlink** - Whether to add a hyperlink to the attachment.
++ **Add Link Text** - Whether to link the whole image or only the address.
++ **Separate Attachment** - Any files to be attached to the email.
 + **Message** - Any text message. In order to get the recipients name in the message use one of the following methods:
     + **{{name}}** - Use this method if the recipient has separate surname and names fields.
     + **{{surname}}** - Use this method if the recipient has a single name field where the surname and names are comma separated e.g. Malherbe, Paul.
+
+Change Batch Period
+...................
+Use this routine to change a captured batch's current date if incorrectly entered.
+
++ **System Code** - Enter the system code in which the batch was captured e.g. CRS for Creditor's Ledger.
++ **Transaction Type** - Enter the transaction type capured.
++ **Batch Number** - Enter the batch number to be altered.
++ **Captured Period** - The period originally captured will be displayed.
++ **Change to Period** - The correct period which should have been entered.
+
+Loan/Lease Calculator
+.....................
+Use this routine to calculate loan repayments.
+
++ **Capital Amount** - The capital amount of the loan.
++ **Residual Value** - The residual value, if any.
++ **Number of Months** - The period of the loan in months.
++ **Repay Amount** - The monthly repayment amount or zero to calculate it once an interest rate has been entered.
++ **Interest Rate** - The applicalble interest rate if no repayment amount was entered.
+
+Password Manager
+................
+Use this routine to manage passwords.
+
++ **Secret Word** - Enter a master password. This password is used to encrypt your stored passwords.
+
++ **Code** - Enter a code to index the password.
++ **Clear-Text** - Enter visble text e.g. a web usr like http://gmail.com
++ **Encrypted-Text** - Enter the password related to the code and text.
 
 Report Generator
 ................

@@ -191,7 +191,7 @@ Therefore No Emailing will be Possible.""")
             self.opts["conum"]), ("rsr_rgrp", "=", w)])
         self.smod = {}
         for rep in rsr:
-            self.smod[rep[2]] = rep[3:]
+            self.smod[rep[2]] = rep[3]
         if not self.smtp:
             self.styp = "P"
             self.df.loadEntry(frt, pag, p+1, data="P")
@@ -266,9 +266,12 @@ Therefore No Emailing will be Possible.""")
                     self.strm = None
                     continue
                 self.opts["mf"].head.configure(text="")
-                if mod[1] in self.smod:
-                    work = eval(self.smod[mod[1]][-1])
-                else:
+                try:
+                    if mod[1] in self.smod:
+                        work = eval(self.smod[mod[1]])
+                    else:
+                        raise Exception
+                except:
                     work = self.vars[mod[1]]
                 var = callModule(self.opts["mf"], None, mod[1],
                     coy=(self.opts["conum"], self.opts["conam"]),
@@ -435,6 +438,7 @@ Therefore No Emailing will be Possible.""")
         repprt = ["Y", "P", self.sprt]
         for fle in self.fles:
             doPrinter(mf=self.opts["mf"], pdfnam=fle, repprt=repprt)
+            time.sleep(1)
 
     def doExit(self):
         self.df.closeProcess()

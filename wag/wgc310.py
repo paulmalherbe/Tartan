@@ -422,7 +422,7 @@ class wgc310(object):
         self.df.focusField("T", 1, 1, clr=self.new)
 
     def doEnd1(self):
-        self.df.selPage("Detail-_B")
+        self.df.selPage("Detail-B")
         self.df.focusField("T", 2, 1, clr=self.new)
 
     def doEnd2(self):
@@ -444,7 +444,7 @@ class wgc310(object):
                 ("ced_code", "=", self.code)])
         self.opts["mf"].dbm.commitDbase()
         self.df.last[0] = [0, 0]
-        self.df.selPage("Detail-_A")
+        self.df.selPage("Detail-A")
         self.df.focusField("T", 0, 1)
 
     def doAccept(self):
@@ -496,6 +496,6 @@ class wgc310(object):
         self.df.focusField("T", 0, 1)
 
     def doExit2(self):
-        self.df.selPage("Detail-_A")
+        self.df.selPage("Detail-A")
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

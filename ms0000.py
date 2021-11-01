@@ -23,15 +23,15 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import getpass, gc, glob, io, os, platform, sys, time
+import getpass, gc, glob, io, os, platform, shutil, sys, time
 from TartanClasses import Dbase, ViewPDF, FileDialog, FITZ, GUI, GetCtl
 from TartanClasses import MainFrame, MakeManual, MkWindow, PwdConfirm
 from TartanClasses import ScrollText, SelectChoice, Sql, TartanConfig
 from TartanClasses import TartanDialog, TartanMenu, TartanUser
 from tartanFunctions import askQuestion, askChoice, b64Convert, chkMod
-from tartanFunctions import copyList, dateDiff, ftpDownload, getPeriods
+from tartanFunctions import copyList, dateDiff, httpDownload, getPeriods
 from tartanFunctions import getPrgPath, loadRcFile, projectDate
-from tartanFunctions import runModule, showError, showException
+from tartanFunctions import runModule, showError, showException, showInfo
 from tartanWork import allsys, tabdic, tarmen
 try:
     from send2trash import send2trash
@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 3)
+    VERSION = (6, 4)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -146,6 +146,10 @@ class ms0000(object):
                 self.xdisplay = False
             elif o in ("-z", "--zerobar"):
                 self.zerobar = True
+            elif o in ("-P", "--pdf") and v.endswith("pdf"):
+                if FITZ:
+                    ViewPDF(pdfnam=v)
+                sys.exit()
         if self.output:
             # Redirect stdout
             for pid in range(1000):
@@ -182,6 +186,7 @@ Options:
             -l, --loader            Try and remove module before importing
             -n, --nocheck           Do not check for system records
             -o, --output            Toggle stdout redirection to stdout.txt
+            -P, --pdf=              View a pdf file using built in viewer
             -p, --program=          Execute program directly bypassing the menu
             -q, --query=            Execute a sql query
             -R, --rcfdir=           Directory of Available Tartan RC Files
@@ -244,8 +249,8 @@ Options:
                 ("pyaes", "pyaes", "VERSION"),
                 ("pygal", "pygal", "__version__"),
                 ("Crypto", "pycryptodome", "__version__"),
-                ("pyexcel", "pyexcel", "__version__"),
-                ("pyexcel_ods", "pyexcel-ods", None),
+                ("pyexcel_ods", "pyexcel-ods", "__version__"),
+                ("pyexcel_xls", "pyexcel-xls", "__version__"),
                 ("smb", "pysmb", None),
                 ("requests", "requests", "__version__"),
                 ("send2trash", "send2trash", None),
@@ -614,97 +619,96 @@ Do You Want to Update Your Files?""", default="yes")
             chk = sql.getRec("ctlpwu")
             if len(chk) == 1:
                 user = chk[0][sql.ctlpwu_col.index("usr_name")]
-        usr = sql.getRec("ctlpwu", where=[("usr_name", "=", user)],
-            limit=1)
+        usrd = sql.getRec("ctlpwu", where=[("usr_name", "=", user)], limit=1)
         if userchk:
             if dbopend:
                 self.dbm.closeDbase()
-            return usr
-        if not usr:
+            return usrd
+        if not usrd:
             self.user = {}
         else:
             self.user = {
                 "name": user,
-                "pwd":  usr[sql.ctlpwu_col.index("usr_pwd")]}
+                "pwd":  usrd[sql.ctlpwu_col.index("usr_pwd")]}
             if "usr_last" in sql.ctlpwu_col:
-                self.user["last"] = usr[sql.ctlpwu_col.index("usr_last")]
+                self.user["last"] = usrd[sql.ctlpwu_col.index("usr_last")]
             else:
                 self.user["last"] = 0
             if "usr_coy" in sql.ctlpwu_dic:
-                self.user["acoy"] = usr[sql.ctlpwu_col.index("usr_coy")]
+                self.user["acoy"] = usrd[sql.ctlpwu_col.index("usr_coy")]
                 self.user["dcoy"] = ""
             else:
-                self.user["acoy"] = usr[sql.ctlpwu_col.index("usr_acoy")]
-                self.user["dcoy"] = usr[sql.ctlpwu_col.index("usr_dcoy")]
-            self.user["lvl"] = usr[sql.ctlpwu_col.index("usr_lvl")]
+                self.user["acoy"] = usrd[sql.ctlpwu_col.index("usr_acoy")]
+                self.user["dcoy"] = usrd[sql.ctlpwu_col.index("usr_dcoy")]
+            self.user["lvl"] = usrd[sql.ctlpwu_col.index("usr_lvl")]
             if pwdchk and self.user["pwd"] and self.userCheckPwd(pwd):
                 self.user = {}
+        if self.user:
             nos = []
             nop = []
-            if self.user:
-                self.acoy = []
-                self.dcoy = []
-                self.usrnam = self.user["name"]
-                self.pwd = self.user["pwd"]
-                acoy = self.user["acoy"]
-                dcoy = self.user["dcoy"]
-                self.lvl = self.user["lvl"]
-                if acoy:
-                    acoy = acoy.split(",")
-                else:
-                    acoy = []
-                for co in acoy:
-                    if int(co):
-                        self.acoy.append(int(co))
-                if dcoy:
-                    dcoy = dcoy.split(",")
-                else:
-                    dcoy = []
-                for co in dcoy:
-                    if int(co):
-                        self.dcoy.append(int(co))
-                # All systems not in the company and phone modules - nos
-                for sss in self.sss:
-                    if sss not in ("ms", "td"):
-                        nos.append(sss)
-                # Remove enabled systems
-                self.mods = sql.getRec("ctlmst", cols=["ctm_modules"],
-                    group="ctm_modules")
-                for mod in self.mods:
-                    for x in range(0, len(mod[0]), 2):
-                        m = mod[0][x:x+2]
-                        if m.lower() in nos:
-                            nos.remove(m.lower())
-                # All systems excluded for the user - ctlpwm - nos
-                tmp = sql.getRec("ctlpwm", cols=["mpw_sys"],
-                    where=[("mpw_usr", "=", self.user["name"]),
-                    ("mpw_prg", "=", "")])
-                if tmp:
-                    for s in tmp:
-                        if s not in nos:
-                            nos.append(s[0])
-                # All modules excluded for the user - ctlpwm - nop
-                nop = sql.getRec("ctlpwm", cols=["mpw_sys",
-                    "mpw_prg"], where=[("mpw_usr", "=", self.user["name"]),
-                    ("mpw_prg", "<>", ""), ("mpw_pwd", "=", "")])
-                # All modules enabled for the user - self.vop
-                self.vop = sql.getRec("ctlpwm", cols=["mpw_sys",
-                    "mpw_prg", "mpw_coy", "mpw_pwd"], where=[("mpw_usr",
-                    "=", self.user["name"]), ("mpw_prg", "<>", ""),
-                    ("mpw_pwd", "<>", "")])
-                if self.vop:
-                    for sss, mod, coy, ppp in self.vop:
-                        if sss in nos:
-                            # System in nos, remove system from nos
-                            nos.remove(sss)
-                            for prg in self.mod:
-                                # Add all modules in sss to nop
-                                if prg[2][:2] == sss:
-                                    nop.append([prg[2][:2], prg[2][2:]])
-                    for sss, mod, coy, ppp in self.vop:
-                        # Remove all enabled modules from nop
-                        if [sss, mod] in nop:
-                            nop.remove([sss, mod])
+            self.acoy = []
+            self.dcoy = []
+            self.usrnam = self.user["name"]
+            self.pwd = self.user["pwd"]
+            acoy = self.user["acoy"]
+            dcoy = self.user["dcoy"]
+            self.lvl = self.user["lvl"]
+            if acoy:
+                acoy = acoy.split(",")
+            else:
+                acoy = []
+            for co in acoy:
+                if int(co):
+                    self.acoy.append(int(co))
+            if dcoy:
+                dcoy = dcoy.split(",")
+            else:
+                dcoy = []
+            for co in dcoy:
+                if int(co):
+                    self.dcoy.append(int(co))
+            # All systems not in the company and phone modules - nos
+            for sss in self.sss:
+                if sss not in ("ms", "td"):
+                    nos.append(sss)
+            # Remove enabled systems
+            self.mods = sql.getRec("ctlmst", cols=["ctm_modules"],
+                group="ctm_modules")
+            for mod in self.mods:
+                for x in range(0, len(mod[0]), 2):
+                    m = mod[0][x:x+2]
+                    if m.lower() in nos:
+                        nos.remove(m.lower())
+            # All systems excluded for the user - ctlpwm - nos
+            tmp = sql.getRec("ctlpwm", cols=["mpw_sys"],
+                where=[("mpw_usr", "=", self.user["name"]),
+                ("mpw_prg", "=", "")])
+            if tmp:
+                for s in tmp:
+                    if s not in nos:
+                        nos.append(s[0])
+            # All modules excluded for the user - ctlpwm - nop
+            nop = sql.getRec("ctlpwm", cols=["mpw_sys",
+                "mpw_prg"], where=[("mpw_usr", "=", self.user["name"]),
+                ("mpw_prg", "<>", ""), ("mpw_pwd", "=", "")])
+            # All modules enabled for the user - self.vop
+            self.vop = sql.getRec("ctlpwm", cols=["mpw_sys",
+                "mpw_prg", "mpw_coy", "mpw_pwd"], where=[("mpw_usr",
+                "=", self.user["name"]), ("mpw_prg", "<>", ""),
+                ("mpw_pwd", "<>", "")])
+            if self.vop:
+                for sss, mod, coy, ppp in self.vop:
+                    if sss in nos:
+                        # System in nos, remove system from nos
+                        nos.remove(sss)
+                        for prg in self.mod:
+                            # Add all modules in sss to nop
+                            if prg[2][:2] == sss:
+                                nop.append([prg[2][:2], prg[2][2:]])
+                for sss, mod, coy, ppp in self.vop:
+                    # Remove all enabled modules from nop
+                    if [sss, mod] in nop:
+                        nop.remove([sss, mod])
             # Generate dictionary of financial companies
             self.fcoy = {}
             sql = Sql(self.dbm, ["ctlmst", "ctlynd"], prog="ms0000")
@@ -790,11 +794,9 @@ Do You Want to Update Your Files?""", default="yes")
     def userLogout(self):
         self.user = {}
 
-    def execCommand(self, typ, prg, tit="", rtn=None, menu=True, password=True):
+    def execCommand(self, typ, prg, tit="", rtn=None, menu=True, pwd=True):
         if menu:
             self.tarmen.closeMenu()
-            if self.program and prg == "ps2010":
-                self.mf.window.iconify()
         if rtn is not None:
             try:
                 rtn = int(rtn)
@@ -805,7 +807,7 @@ Do You Want to Update Your Files?""", default="yes")
             dbopend = True
         else:
             dbopend = False
-        if password and self.getCtlSys(["sys_pwmust"]) == "Y" and not \
+        if pwd and self.getCtlSys(["sys_pwmust"]) == "Y" and not \
                 self.user["pwd"] and prg not in ("chgPwd", "chgUsr", "sysEnd"):
             showError(self.mf.window, "Missing Password",
                 """Passwords are Enforced.
@@ -1087,7 +1089,7 @@ System --> Change Password""")
         self.mf.closeLoop()
 
     def doRunModule(self, *prg, **popt):
-        if self.loader:
+        if not self.debug and self.loader:
             try:
                 for mod in sys.modules:
                     if mod.count(prg[0]):
@@ -1121,9 +1123,7 @@ System --> Change Password""")
                     "%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3]))
                 sql.insRec("ctllog", data=logd)
                 self.dbm.commitDbase()
-            err = runModule(prg[0], **popt)
-            if err:
-                raise Exception(err)
+            runModule(prg[0], **popt)
         except Exception as err:
             if self.xdisplay:
                 for wgt in self.mf.window.winfo_children():
@@ -1362,12 +1362,15 @@ System --> Change Password""")
     def sysUpd(self):
         tit = ("System Upgrade",)
         typ = (("Internet", "I"), ("Local", "L"))
+        self.weburl = "https://tartan.co.za"
         fld = (
             (("T",0,0,0),("IRB",typ),0,"Upgrade Type","",
                 "I","N",self.doSysLoc,None,None,None,None),
-            (("T",0,1,0),"ONA",9,"Current Version","",
+            (("T",0,1,0),"ITX",30,"Server Address","",
+                self.weburl,"N",self.doUrl,None,None,("notblank",),None),
+            (("T",0,2,0),"ONA",9,"Current Version","",
                 "","N",None,None,None,None,None),
-            (("T",0,2,0),"ONA",9,"Upgrade Version","",
+            (("T",0,3,0),"ONA",9,"Upgrade Version","",
                 "","N",None,None,None,None,None))
         but = (
             ("Upgrade", None, self.doSysUpgrade, 0, ("T",0,0), ("T",0,1)),
@@ -1378,23 +1381,13 @@ System --> Change Password""")
 
     def doSysLoc(self, frt, pag, r, c, p, i, w):
         self.updtyp = w
-        self.upgsys = "Tartan"
         if self.updtyp == "I":
-            err = self.doSysChkUpgrade()
-            if err:
-                showError(self.mf.window, err[0], err[1])
-                return "Upgrade Error"
-            else:
-                self.su.loadEntry("T", 0, 1, data=self.cv[1])
-                self.su.loadEntry("T", 0, 2, data=self.nt)
-                return
+            return
         self.su.setWidget(self.su.mstFrame, "hide")
         if sys.platform == "win32":
-            ftype = [("Upgrade Files", "%s_%s.*.exe" %
-                (self.upgsys, self.cv[0][0]))]
+            ftype = [("Upgrade Files", "Tartan_%s.*.exe" % self.cv[0][0])]
         else:
-            ftype = [("Upgrade Files", "%s_%s.*.tgz" %
-                (self.upgsys, self.cv[0][0]))]
+            ftype = [("Upgrade Files", "Tartan_%s.*.tgz" % self.cv[0][0])]
         dialog = FileDialog(**{
             "parent": self.mf.body,
             "title": "Select Upgrade File",
@@ -1419,25 +1412,28 @@ System --> Change Password""")
             "Not Later Than Current Version.")
         return "Version Error"
 
-    def doSysChkUpgrade(self):
+    def doUrl(self, frt, pag, r, c, p, i, w):
+        self.weburl = w
         try:
-            flenam = io.BytesIO()
-            error = ftpDownload("ftp.tartan.co.za", "current", dest=flenam)
-            if error:
-                raise Exception
-            v = flenam.getvalue().strip().split(".")
-            flenam.close()
+            ver = httpDownload("%s/Updates/current" % self.weburl)
+            if ver is None:
+                raise Exception("Cannot Access Server")
+            v = ver.split(".")
             self.nv = (int(v[0]), int(v[1]))
             self.nt = "%s.%s" % self.nv
-            if self.nv[0] > self.cv[0][0]:
+            if (self.nv[0] > self.cv[0][0]) or (self.nv[0] == self.cv[0][0] \
+                    and self.nv[1] > self.cv[0][1]):
+                self.su.loadEntry("T", 0, 2, data=self.cv[1])
+                self.su.loadEntry("T", 0, 3, data=self.nt)
                 return
-            elif self.nv[0] == self.cv[0][0] and self.nv[1] > self.cv[0][1]:
-                return
-            return ("Upgrade Error", "No Upgrade Available")
-        except:
-            return ("Connection Error", "Please Ensure that You Are "\
-                "Connected to the Internet. If Not, Please Connect "\
-                "and then Try Again!""")
+            self.su.setWidget(self.su.mstFrame, "hide")
+            showInfo(self.mf.window, "Upgrade", "Your System is Up to Date")
+            return "xt"
+        except Exception as err:
+            err = "Please Ensure that You Are Connected to the Internet. "\
+                "If Not, Please Connect and then Try Again!\n\n%s" % err
+            showError(self.mf.window, "Error", err)
+            return "ff1"
 
     def doSysUpgrade(self):
         self.su.closeProcess()
@@ -1450,46 +1446,48 @@ System --> Change Password""")
 
   1) If you are running Linux the downloaded file will be in your
      '~/upg' directory. The file's name will be something like
-     '%s_5.x.tgz'.
+     'Tartan_6.x.tgz'.
 
                                  or
 
   1) If you are running Windows the downloaded file will be in your
      'C:\\Tartan\\upg' directory. The file's name will be something like
-     '%s_5.x.exe'.
+     'Tartan_6.x-32.exe' or 'Tartan_6.x-64.exe'.
   2) Restart Tartan.
   3) Execute the 'Update File Formats' routine on the 'System' menu.
-  4) If Tartan is installed on other workstations, copy the downloaded
-     file to those other workstations and either, in the case of linux,
-     extract the file into the ~/prg directory or, in the case of
-     Windows, execute the file.""" % (self.upgsys, self.upgsys))
+  4) If Tartan is installed on other workstations, copy the downloaded file
+     to those other workstations and either, in the case of linux, extract
+     the file and then move the contents of the 'tartan' directory into the
+     'prg' directory or, in the case of Windows, execute the file.""")
         try:
+            upgdir = self.mf.rcdic["upgdir"]
             if self.updtyp == "I":
                 if sys.platform == "win32":
                     if sys.maxsize > 2**32:
-                        nam = self.upgsys + "_%s.%s-64.exe" % self.nv
+                        nam = "Tartan_%s.%s-64.exe" % tuple(self.nv)
                     else:
-                        nam = self.upgsys + "_%s.%s-32.exe" % self.nv
+                        nam = "Tartan_%s.%s-32.exe" % tuple(self.nv)
                 else:
-                    nam = self.upgsys + "_%s.%s.%s.tgz" % self.nv
-                fle = os.path.join(self.mf.rcdic["upgdir"], nam)
-                error = ftpDownload("ftp.tartan.co.za", nam,
-                    word=self.email, dest=fle, close=True)
-                if error:
+                    nam = "Tartan_%s.%s.tgz" % tuple(self.nv)
+                fle = os.path.join(upgdir, nam)
+                if not httpDownload("%s/Updates/%s" % (self.weburl, nam), fle):
                     raise Exception
             else:
                 fle = self.updfle
             if sys.platform == "win32":
                 os.spawnv(os.P_NOWAIT, fle, (fle,))
             else:
-                os.spawnv(os.P_NOWAIT, "/bin/tar",
-                    ("tar", "-xzf", fle, "-C", getPrgPath()))
+                os.spawnv(os.P_WAIT, "/bin/tar",
+                    ("tar", "-xzf", fle, "-C", upgdir))
+                shutil.copytree("%s/tartan" % upgdir, getPrgPath(),
+                    dirs_exist_ok=True)
+                shutil.rmtree("%s/tartan" % upgdir)
             os._exit(0)
-        except:
+        except Exception as err:
             showError(self.mf.window, "Get Error",
                 "Upgrade File Could Not be Retrieved.\n\n"\
                 "Your System Has Not Been Upgraded.\n\n"\
-                "Please Contact Your IT Manager.")
+                "Please Contact Your IT Manager.\n\n%s" % err)
             self.doSysUpdXit()
 
     def doSysUpdXit(self):
@@ -1654,27 +1652,30 @@ System --> Change Password""")
                 "*.%s" % tp)))
         if fles:
             dft = None
-            if "wrkf" in self.mf.rcdic:
-                if self.mf.rcdic["wrkf"] == "T":
-                    dft = "Trash"
-                elif self.mf.rcdic["wrkf"] == "D":
-                    dft = "Delete"
-                else:
-                    dft = "Keep"
-            if TRASH:
-                but = [("Trash", "T", "Send files to Recycle Bin")]
-                if not dft:
-                    dft = "Trash"
+            if "wrka" in self.mf.rcdic and self.mf.rcdic["wrka"] == "Y":
+                ask = self.mf.rcdic["wrkf"]
             else:
-                but = []
-                if not dft:
-                    dft = "Delete"
-            but.extend([
-                ("Delete", "D", "Permanently Delete the files"),
-                ("Keep", "K", "Keep the files in the Work Directory")])
-            ask = askChoice(self.mf.body, "Temporary Files",
-                "What do you wish to do with the Temporary Report Files "\
-                "in the wrk Directory?", butt=but, default=dft)
+                if "wrkf" in self.mf.rcdic:
+                    if self.mf.rcdic["wrkf"] == "T":
+                        dft = "Trash"
+                    elif self.mf.rcdic["wrkf"] == "D":
+                        dft = "Delete"
+                    else:
+                        dft = "Keep"
+                if TRASH:
+                    but = [("Trash", "T", "Send files to Recycle Bin")]
+                    if not dft:
+                        dft = "Trash"
+                else:
+                    but = []
+                if  not dft:
+                        dft = "Delete"
+                but.extend([
+                    ("Delete", "D", "Permanently Delete the files"),
+                    ("Keep", "K", "Keep the files in the Work Directory")])
+                ask = askChoice(self.mf.body, "Temporary Files",
+                    "What do you wish to do with the Temporary Report Files "\
+                    "in the wrk Directory?", butt=but, default=dft)
             if ask == "T":
                 for fle in fles:
                     try:
@@ -1688,7 +1689,7 @@ System --> Change Password""")
                     except:
                         pass
 
-    def doExit(self, dbm=True, sysexit=True):
+    def doExit(self, dbm=True):
         if dbm and self.dbm.dbopen:
             self.dbm.closeDbase()
         if self.debug:
@@ -1733,8 +1734,7 @@ System --> Change Password""")
                         pass
             except:
                 pass
-        if sysexit:
-            sys.exit()
+        sys.exit()
 
     def doCheckSys(self):
         sql = Sql(self.dbm, "ctlsys", prog=self.__class__.__name__)
@@ -1745,7 +1745,7 @@ System --> Change Password""")
             try:
                 self.user = {"name": "admin", "pwd": "", "lvl": 9}
                 self.execCommand("PNNY", "msc110", tit="System Record",
-                    menu=False, password=False)
+                    menu=False, pwd=False)
                 rec = sql.getRec("ctlsys", limit=1)
             except:
                 rec = [0, "N", 0, 0, 0, "", 0, 0, 0, "", "", "N",
@@ -1761,7 +1761,7 @@ System --> Change Password""")
             return
         self.user = {"name": "admin", "pwd": "", "lvl": 9}
         self.execCommand("PNNY", "ms1010", tit="Company Record",
-            menu=False, password=False)
+            menu=False, pwd=False)
         chk = self.conoCheck(1, ctl=True)
         if chk:
             return "error"
@@ -1791,7 +1791,7 @@ System --> Change Password""")
             return
         # Check Module
         mod = prg[:2].upper()
-        if mod in ("BM", "CA", "MS", "RP", "TD"):
+        if mod in ("BM", "CP", "MS", "RP"):
             return
         for x in range(0, len(self.modul), 2):
             if self.modul[x:x + 2] == mod:
@@ -1901,11 +1901,11 @@ if __name__ == "__main__":
     # Load options
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-            "ab:c:de:f:hiklnop:q:R:r:s:t:u:vxz", [
-                "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
-                "help", "image", "loader", "nocheck", "output", "program=",
-                "query=", "rcfdir=", "rcfile=", "script=", "tcode=", "user=",
-                "version", "xdisplay", "zerobar"])
+            "ab:c:de:f:hiklnoP:p:q:R:r:s:t:u:vxz", [
+            "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
+            "help", "image", "loader", "nocheck", "output", "pdf=",
+            "program=", "query=", "rcfdir=", "rcfile=", "script=", "tcode=",
+            "user=", "version", "xdisplay", "zerobar"])
     except:
         opts, args = [("-h", "")], []
     ms0000(opts, args)

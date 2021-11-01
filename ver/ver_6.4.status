@@ -1,0 +1,70 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	new file:   csh/cs1010.py
+	new file:   csh/cs2020.py
+	new file:   csh/csc110.py
+	new file:   uty/cp1010.py
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   TartanClasses.py
+	modified:   bwl/bc1010.py
+	modified:   bwl/bc2010.py
+	modified:   bwl/bcc110.py
+	modified:   crs/cr1010.py
+	modified:   crs/cr4010.py
+	modified:   csh/cs2010.py
+	modified:   csh/cs2020.py
+	modified:   csh/cs3010.py
+	modified:   doc/CSH.rst
+	modified:   doc/CTL.rst
+	modified:   doc/GEN.rst
+	modified:   doc/QST.rst
+	modified:   doc/SYS.rst
+	modified:   doc/UTY.rst
+	modified:   drs/dr1010.py
+	modified:   drs/dr4010.py
+	modified:   drs/dr6010.py
+	modified:   gen/gl2030.py
+	modified:   gen/gl3040.py
+	modified:   gen/gl3050.py
+	modified:   gen/glc110.py
+	modified:   ms0000.py
+	modified:   mst/ms1010.py
+	modified:   mst/ms1030.py
+	modified:   mst/msc110.py
+	modified:   mst/msy010.py
+	modified:   readme.md
+	modified:   sls/si2010.py
+	modified:   sls/si3010.py
+	modified:   sls/si6020.py
+	modified:   str/st1010.py
+	modified:   str/st2010.py
+	modified:   str/st2020.py
+	modified:   str/st3020.py
+	modified:   str/st3050.py
+	modified:   str/st4010.py
+	modified:   tab/tb1020.py
+	modified:   tarchg.py
+	modified:   tartanFunctions.py
+	modified:   tartanWork.py
+	modified:   uty/bm1010.py
+	modified:   uty/cp1010.py
+	modified:   uty/dopip.bat
+	modified:   uty/mkwins.py
+	modified:   uty/pkgprg.py
+	modified:   uty/rp1020.py
+	modified:   uty/td1010.py
+	modified:   uty/windows.spec
+	modified:   ver/ver_6.3.status
+	modified:   wag/sl2020.py
+	modified:   wag/wgc310.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	ver/ver_6.4.status
+

@@ -1,5 +1,31 @@
-changes = """ver_6.3
+changes = """ver_6.4
 =======
+ 1) Fixed a bug in staff loans data capture.
+ 2) Fixed a bug in xls and xlsx file imports.
+ 3) Fixed a bug in utilities report stream module.
+ 4) Fixed a bug in password overrides when cancelled.
+ 5) Added general ledger integration to cash analysis.
+ 6) Added range option for printing pages in pdf viewer.
+ 7) Added a -P command line option for viewing pdf files.
+ 8) Added a new module for changing a batch's current period.
+ 9) Added a password option check for tabs-in Modify.
+10) Added an internet url address to the company record.
+11) Added a facility to hyperlink bulk mail embedded attachments.
+12) Added an auto-apply facility, in the preferences, for
+    trashing, deleteing or keeping work files.
+13) Removed ftp upgrade option, replaced with https.
+14) The pdf viewer zoom to default to the last one used.
+15) Updated more items in the reference manual.
+16) Updated the quick start reference guide.
+17) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.3 2021-09-23
+==================
  1) Updated various items in the reference manual.
  2) Fixed a problem with telephone directory import.
  3) Added a check for movement type in rentals data capture.
@@ -17,7 +43,7 @@ NB:
 You can only upgrade to this version if your current version is 5.5 or later.
 If you have an older version than 5.5 please contact me for assistance.
 
-ver_6.2 2021-08-19
+ver_6.2 2021-08-20
 ==================
  1) Fixed a bug in stores interrogation.
  2) Fixed a bug in creditors age analysis.
@@ -211,7 +237,7 @@ NB:
 You can only upgrade to this version if your current version is 5.0 or later.
 If you have an older version than 5.0 please contact me for assistance.
 
-ver_5.4.8 2019-06-04
+ver_5.4.8 2019-04-30
 ====================
  1) Fixed an error in the General Ledger Financial Statements History option
     which was not handling Detail records correctly.
@@ -621,7 +647,7 @@ Notes:
 ------
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.1.4 2016-02-21
+ver_5.1.4 2016-02-27
 ====================
 1) Fixed creditor's data capture module (Loans).
 2) Fixed debtor's statement module (Range).
@@ -707,7 +733,7 @@ Note:
 -----
 You can only upgrade to this version if your current version is 4.1.10 or later.
 
-ver_5.0.14 2015-05-19
+ver_5.0.14 2015-05-20
 =====================
 1) The manual has some further updates.
 2) Fixed an error in G/L data capture module.

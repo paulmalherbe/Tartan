@@ -531,6 +531,7 @@ Use this routine to produce financial statements using the information as set up
     + **Month** - Acc-Num, Description, Open-Bal, Months x 12, Close-Bal
     + **Custom** - Customised Report
 + **Consolidate Companies** - Select whether or not to print a consolidated report. This is only applicable in a multi company installation.
++ **Departments** - Select whether or not to Departmentalize the report using the Department Numbers as stipulated in the System Record.
 + **Report Number** - The relevant report number as created using `Report Generator (GL)`_.
 + **General Report** - Select whether or not the report is a general report i.e. applies to all companies.
 + **Contents** - Select which values to use in the report.

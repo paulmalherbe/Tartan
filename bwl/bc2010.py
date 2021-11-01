@@ -126,8 +126,8 @@ COPYING
 
 import random, time
 from operator import itemgetter
-from TartanClasses import CCD, GetCtl, PrintCards, PrintDraw, SplashScreen
-from TartanClasses import SelectChoice, Sql, TartanDialog
+from TartanClasses import CCD, GetCtl, PrintCards, PrintDraw, PwdConfirm
+from TartanClasses import SplashScreen, SelectChoice, Sql, TartanDialog
 from tartanFunctions import askChoice, askQuestion, callModule, getGreens
 from tartanFunctions import getNextCode, copyList, projectDate, showError
 
@@ -235,7 +235,10 @@ class bc2010(object):
             self.mf.setWidget(self.mf.mstFrame, state="hide")
             butt = [("None", "N"), ("View", "V"), ("Reprint", "R")]
             dtyp = self.drm[self.sql.bwldrm_col.index("bdm_dtype")]
-            if dtyp == "N" or self.date == self.sysdt:
+            dnxt = self.sql.getRec("bwldrm", where=[("bdm_cono", "=",
+                self.opts["conum"]), ("bdm_date", ">", self.date)],
+                limit=1)
+            if dtyp == "N" or not dnxt:
                 butt.extend([("Alter", "A"), ("Clear", "X")])
                 text = "Would you like to View, Reprint, Alter or Clear It?"
             else:
@@ -689,11 +692,18 @@ First Change the Bounce Game and then Delete It.""")
         return ("T", 1, 1)
 
     def doModify(self):
-        self.modify = True
-        if self.dbase in ("C", "P"):
-            self.df.focusField("T", 1, 5)
+        state = self.df.disableButtonsTags()
+        cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
+            system="BWL", code="Modify")
+        self.df.enableButtonsTags(state=state)
+        if cf.flag == "no":
+            self.df.focusField("T", 1, 7)
         else:
-            self.df.focusField("T", 1, 6)
+            self.modify = True
+            if self.dbase in ("C", "P"):
+                self.df.focusField("T", 1, 5)
+            else:
+                self.df.focusField("T", 1, 6)
 
     def doEnd(self):
         if self.df.pag == 0:
@@ -2594,7 +2604,7 @@ Combination Number %10s"""
             but = [
                 ("Exit Without Saving", "E"),
                 ("Save and Exit", "S"),
-                ("None", "N")]
+                ("Neither", "N")]
             txt = "This Draw Has Not Been Done"
             ok = askChoice(self.opts["mf"].body, "Exit",
                 mess=txt, butt=but, default="None")

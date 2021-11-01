@@ -662,7 +662,7 @@ class st1010(object):
                 self.df.skip[1] = [1]
                 self.df.focusField("T", 1, 2, clr=False)
         elif self.df.frt == "T" and self.df.pag == 1:
-            self.df.selPage("Basic-_B")
+            self.df.selPage("Basic-B")
         elif self.df.frt == "T" and self.df.pag == 2:
             if self.gtype == "R":
                 self.df.selPage("Recipes")
@@ -735,7 +735,7 @@ class st1010(object):
                 self.sql.insRec("strcmu", data=[self.opts["conum"],
                     self.group, self.code, self.loc, num + 1, mup])
         self.opts["mf"].dbm.commitDbase()
-        self.df.selPage("Basic-_A")
+        self.df.selPage("Basic-A")
         self.df.focusField("T", 0, 1)
 
     def doReadLoadRecipe(self):
@@ -794,7 +794,7 @@ class st1010(object):
 
     def doCancel(self):
         self.opts["mf"].dbm.rollbackDbase()
-        self.df.selPage("Basic-_A")
+        self.df.selPage("Basic-A")
         self.df.focusField("T", 0, 1)
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

@@ -598,7 +598,7 @@ class td1010(object):
                 ["rom_name", "rom_add1", "rom_add2", "rom_add3", "rom_pcod",
                     "rom_home", "rom_office", "rom_mobile", "rom_fax",
                     "rom_email"]],
-            "TNT": ["Rental Tenants", "rcatnm", "rtn_cono",
+            "TNT": ["Property Tenants", "rcatnm", "rtn_cono",
                 ["rtn_name", "rtn_addr1", "rtn_addr2", "rtn_addr3", "rtn_pcode",
                     "rtn_telno", "rtn_email"]],
             "RTL": ["Rental Tenants", "rtlmst", "rtm_cono",
@@ -692,12 +692,12 @@ class td1010(object):
             ("a", "C", 1, "UA", "N"),
             ("b", "Description", 30, "NA", "N"))
         if self.df.last[0][0] != 1:
-            data = [("A", "Print Card Details")]
+            data = [("A", "Print Card")]
         else:
             data = []
         data.extend([
-            ("B", "Print All Details"),
-            ("C", "Print All Contacts"),
+            ("B", "Print Directory"),
+            ("C", "Print Contacts"),
             ("D", "Print Notes")])
         ss = SelectChoice(self.df.mstFrame, titl, cols, data, sort=False)
         self.opts["mf"].updateStatus("")

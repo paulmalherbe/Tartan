@@ -76,6 +76,7 @@ class bm1010(object):
         if not ctlmst:
             return
         self.fadd = ctlmst["ctm_email"]
+        self.urll = ctlmst["ctm_weburl"]
         if self.smtp and not self.fadd:
             showError(self.opts["mf"].body, "From Error",
                 "There is NO Email Address on the Company Record!")
@@ -255,9 +256,15 @@ class bm1010(object):
                 "","N",self.doSubject,None,None,("notblank",)),
             (("T",0,4,0),"IFF",75,"In-line Attachment","",
                 "","N",self.doEmbed,self.fle,None,("fle","blank")),
-            (("T",0,5,0),"IFF",75,"Separate Attachment","",
+            (("T",0,5,0),("IRB",r3s),0,"Add Hyperlink","",
+                "N","N",self.doLink,None,None,None),
+            (("T",0,6,0),("IRB",r3s),0,"Add Link Text","",
+                "Y","N",self.doText,None,None,None),
+            (("T",0,7,0),"ITX",75,"Link URL","",
+                "","N",self.doSite,None,None,("efld",),None,"Link URL."),
+            (("T",0,8,0),"IFF",75,"Separate Attachment","",
                 "","N",self.doAttach,self.fle,None,("fle","blank")),
-            (("T",0,6,0),"ITV",(75,25),"Message","",
+            (("T",0,9,0),"ITV",(75,25),"Message","",
                 "","N",self.doMessage,None,None,None,None,
                 """If you selected Personalize then:
 
@@ -272,10 +279,10 @@ Dear John Smith ...""")])
         tnd = ((self.doEnd, "y"), )
         txt = (self.doExit, )
         but = (
-            ("Preview",None,self.doPreview,0,("T",0,7),
-                (("T",0,0),("T",0,2),("T",0,6))),
-            ("Send",None,self.doExecute,0,("T",0,7),
-                (("T",0,0),("T",0,2),("T",0,6))),
+            ("Preview",None,self.doPreview,0,("T",0,10),
+                (("T",0,0),("T",0,2),("T",0,9))),
+            ("Send",None,self.doExecute,0,("T",0,10),
+                (("T",0,0),("T",0,2),("T",0,9))),
             ("Quit",None,self.doExit,1,None,None))
         self.df = TartanDialog(self.opts["mf"], eflds=fld, tend=tnd, txit=txt,
             butt=but)
@@ -596,7 +603,7 @@ Dear John Smith ...""")])
             w = w.split(",")
             pdf = []
             for f in w:
-                if pathlib.Path(f).suffix == "pdf" and FITZ:
+                if pathlib.Path(f).suffix == ".pdf" and FITZ:
                     pdf.append(f)
                     continue
                 if not imghdr.what(f):
@@ -645,6 +652,31 @@ xbm   X Bitmap Files""")
                     pass
             sp.closeSplash()
         self.fle["ftype"] = (("Attachment", "*"),)
+        if not self.embed:
+            self.link = "N"
+            self.df.loadEntry(frt, pag, p+1, data="N")
+            self.df.loadEntry(frt, pag, p+2, data="N")
+            self.df.loadEntry(frt, pag, p+3, data="")
+            return "sk3"
+
+    def doLink(self, frt, pag, r, c, p, i, w):
+        self.link = w
+        if self.link == "N":
+            self.df.loadEntry(frt, pag, p+1, data="N")
+            self.df.loadEntry(frt, pag, p+2, data="")
+            return "sk2"
+
+    def doText(self, frt, pag, r, c, p, i, w):
+        self.lnktxt = w
+        self.df.loadEntry(frt, pag, p+1, data=self.urll)
+
+    def doSite(self, frt, pag, r, c, p, i, w):
+        if w:
+            try:
+                requests.get(w)
+            except:
+                return "Invalid Link"
+        self.lnkurl = w
 
     def doFitz(self, fnam):
         b = os.path.basename(fnam.replace(" ", "_"))
@@ -678,7 +710,7 @@ xbm   X Bitmap Files""")
             self.html = self.mess
 
     def doPreview(self):
-        mess = self.df.topEntry[0][6].get("1.0", "end")
+        mess = self.df.topEntry[0][9].get("1.0", "end")
         if not self.embed and not self.attach and not mess:
             return
         if self.personal == "Y":
@@ -688,7 +720,7 @@ xbm   X Bitmap Files""")
         self.df.enableButtonsTags(state=state)
 
     def doExecute(self):
-        wid, self.mess = self.df.getEntry("T", 0, 6, cr=True)
+        wid, self.mess = self.df.getEntry("T", 0, 9, cr=True)
         if not self.embed and not self.attach and not self.mess:
             return
         if "{{" in self.mess:
@@ -1088,9 +1120,13 @@ xbm   X Bitmap Files""")
                 sp = SplashScreen(self.opts["mf"].body, "E-Mailing the "\
                     "Message to %s\n\nPlease Wait........ (%s of %s)" %
                     (mail[0], num + 1, len(accs)))
+                if self.link == "Y":
+                    url = (self.lnktxt, self.lnkurl)
+                else:
+                    url = None
                 ok = sendMail(self.smtp, self.fadd, mail, self.subj,
                     mess=(mess, html), attach=self.attach, embed=self.embed,
-                    wrkdir=self.opts["mf"].rcdic["wrkdir"])
+                    lnkurl=url, wrkdir=self.opts["mf"].rcdic["wrkdir"])
                 sp.closeSplash()
                 if not ok:
                     if self.skip == "Y":

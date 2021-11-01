@@ -61,7 +61,8 @@ class msc110(object):
         self.fld = (
             (("T",0,0,0),"IUI",2,"Years to Keep History","",
                 self.acc[0],"N",self.doHist,None,None,None,None,
-                "0 for No Limit"),
+                "The number of years that historical data must be kept, "\
+                "Use 0 for No Limit"),
             (("T",0,1,0),("IRB",r1s),0,"Enforce Passwords","",
                 self.acc[1],"N",self.doMust,None,None,None),
             (("T",0,2,0),"IUI",2,"Minimum Characters","",

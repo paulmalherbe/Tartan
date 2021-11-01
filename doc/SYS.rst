@@ -1,9 +1,9 @@
-==================================
- Tartan Systems - Reference Manual
-==================================
+=================================
+Tartan Systems - Reference Manual
+=================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.3
+:Version:   6.4
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -85,7 +85,7 @@ And, depending on your database needs:
 
 + Postgresql            # psycopg2-binary
 
-Then download the following file from ftp://ftp.tartan.co.za
+Then download the following file from https://tartan.co.za
 
 + Tartan_6.x.tar.gz
 
@@ -97,7 +97,7 @@ Tartan should now be installed on your computer and you can continue with the `S
 
 Windows Binary
 ..............
-Download the applicable file from ftp://ftp.tartan.co.za or if you are in possession of a CD this is not necessary.
+Download the applicable file from https://tartan.co.za or if you are in possession of a CD this is not necessary.
 
 + Tartan_6.x-XP.exe for Windows prior to Windows-10
 + Tartan_6.x-32.exe for Windows-10 32 bit architecture.
@@ -259,13 +259,11 @@ Use this routine to create or amend user's records, permissions etc.
     + **SS** - The system code
     + **Prog** - A program module or blank for all modules of a system
     + **Password** - The password. If the password is left blank it is the same as denying the selection i.e. The user will not be able to select the module(s).
-    + **Check Password** - If the password is not blank then enter the password again for verification
+    + **Check Password** - If the password is not blank then enter the password again for verification.
 
-**Examples**
-
-.. csv-table::
+.. csv-table:: **Examples**
   :header: "Coy", "SS", "Prog", "Password", "Meaning"
-  :widths: 5, 5, 6, 10, 55
+  :widths: 6, 6, 6, 10, 55
 
   "0", "gl", "    ", "    ", "All G/L modules for all companies would be denied."
   "0", "gl", "2032", "    ", "G/L payments data capture for all companies would be denied."
@@ -276,9 +274,10 @@ Upgrade System
 ..............
 Select this routine to check if there are upgrades to Tartan and if so to install them.
 
-+ **Update Type** - Select whether to check the Tartan ftp site or a local LAN location. If Local is selected you will be able to browse for a location which will default to whatever is set in the *Upgrade Path* directory as set during the `Preferences`_ routine.
++ **Update Type** - Select whether to check the Tartan site or a local LAN location. If Local is selected you will be able to browse for a location which will default to whatever is set in the *Upgrade Path* directory as set during the `Preferences`_ routine.
++ **Server Address** - If Internet was selected, enter where to download the upgrade from. The default is *https://tartan.co.za*
 
-* If there is an update and you want to upgrade, click on the `Update` button.
+* If there is an update and you want to upgrade, click on the `Upgrade` button.
 
 Update File Formats
 ...................
@@ -387,6 +386,7 @@ Use this routine to configure Tartan, however, depending on your security level,
         + **Trash** - Send the files to the *Recycle Bin*.
         + **Delete** - Delete the files.
         + **Keep** - Keep the files in the work directory.
+    + **Automatically Apply** - Whether to automatically apply the previous action or whether to prompt for confirmation.
 + **Dialog**
     + **Menu Font**
         + **Name** - This is the font family to be used for all menu items.

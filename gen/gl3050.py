@@ -183,7 +183,8 @@ class gl3050(object):
             (("T",0,0,0),"ID2",7,"Ending Period","Ending Period (YYYYMM)",
                 self.e_per,"Y",self.doRepPer,None,None,None),
             (("T",0,1,0),"IUI",3,"Stream Number","",
-                var[1],"N",self.doRepStr,stm,None,None),
+                var[1],"N",self.doRepStr,stm,None,None,None,
+                "Use a Report Stream Record as created using Stream Records"),
             (("T",0,2,0),("IRB",r1s),0,"Report Type","",
                 var[2],"N",self.doType,None,None,None,None,
                 """Valid Report Types:
@@ -194,9 +195,12 @@ Long    - Acc-Num, Description, Current Month, Year-to-Date
 Month   - Acc-Num, Description, Opening Balance, Months x 12, Closing Balance
 Custom  - Customised Report"""),
             (("T",0,3,0),("IRB",r2s),0,"Consolidate","",
-                var[3],"N",self.doCons,None,None,None),
+                var[3],"N",self.doCons,None,None,None,None,
+                "Print a Consolidated Report of Multiple Companies"),
             (("T",0,4,0),("IRB",r2s),0,"Departments","",
-                var[4],"N",self.doDept,None,None,None),
+                var[4],"N",self.doDept,None,None,None,None,
+                "Departmentalize the report using Department Numbers as "\
+                "stipulated in the System Record."),
             (("T",0,5,0),"IUI",3,"Report Number","",
                 var[5],"N",self.doRepNum,rpt,None,("notzero",)),
             (("T",0,6,0),("IRB",r2s),0,"General Report","",

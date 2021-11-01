@@ -754,6 +754,7 @@ class bc1010(object):
         self.ip = TartanDialog(self.opts["mf"], title=tit, tops=True,
             eflds=fld, tend=((self.doImpEnd,"y"),), txit=(self.doImpExit,))
         self.ip.mstFrame.wait_window()
+        # Populate
         if self.impdet is None:
             self.df.setWidget(self.df.mstFrame, state="show")
             self.df.enableButtonsTags(state=state)
@@ -765,6 +766,8 @@ class bc1010(object):
         err = None
         for num, line in enumerate(fi.impdat):
             sp.displayProgress(num)
+            if self.mixed == "N":
+                line.extend([0, ""])
             chk = self.sql.getRec("bwltab", where=[("btb_cono", "=",
                 self.opts["conum"]), ("btb_tab", "=", line[0])], limit=1)
             if not chk:
@@ -811,6 +814,9 @@ Please Correct your Import File and then Try Again.""" % err)
             self.impskp.extend(["btb_surname", "btb_names", "btb_gender",
                 "btb_add1", "btb_add2", "btb_add3", "btb_pcod", "btb_home",
                 "btb_work", "btb_cell", "btb_mail", "btb_bsano"])
+        if self.mixed == "N":
+            self.impskp.extend(["btb_pos2", "btb_rate2"])
+        self.impskp.append("btb_xflag")
         self.ip.closeProcess()
 
     def doImpExit(self):

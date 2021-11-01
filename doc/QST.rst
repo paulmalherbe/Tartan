@@ -1,17 +1,34 @@
 ==============================
  Tartan Systems - Quick Start
 ==============================
+Installation
+............
+Download the applicable version of Tartan from http://tartan.co.za based on your architecture and then either execute the Windows binary or extract the Source archive.
 
+If you are using the source code ensure that at least the following dependencies are installed. Check the Reference Manual for more details.
+
++ fpdf                  # Used to create all documents
++ pillow                # Used by fpdf and imaging
++ pymupdf               # Used for viewing pdf files
++ pywin32               # Windows only
+
+Execution
+.........
 Once Tartan Systems has been installed, the following procedures have to be performed before any meaningful work can be done. These procedures obviously depend on which modules are going to be used but this will be explained as we progress.
 
-+ Start Tartan by either clicking on the icon on the desktop or from the command line as follows:
++ Start Tartan by either clicking on the desktop icon or from the command line as follows:
 
-    + **Linux** - `program_path/ms0000.py [options]`
+    + **Linux** - `python source_path/ms0000.py [options]`
     + **Windows** - `program_path\\ms0000.exe [options]`
 
   To find out what the available command line options are, use the -h option.
 
-+ The first time Tartan is started you will be taken to `Preferences` where you will have to set up your preferences regarding database, paths, utilities and various other choices. You will then have to enter the System record as well as a Company/Club record. For most SOHO installations there will only be one Company, however there is provision for up to 999 integrated companies. While creating the Company record you will be able to choose which systems you want to activate.
++ The first time Tartan is started you will be taken to `Preferences` where you will have to set up your preferences regarding database, paths, utilities and various other choices. Simply entering through all fields will apply the default values.
++ You will then have to create the System record. Once again, entering through all the fields will apply the default values.
++ You will then have to create a Company or Club record. For most SOHO installations there will only be one Company, however there is provision for up to 999 integrated companies. While creating the Company record you will be able to choose which systems you want to activate. Bowling clubs, for example, need only activate the one module.
++ Once the Company or Club record has been created and you have enabled any Financial modules you will have to enter the current Financial period starting and ending dates.
+
+:Note: All Entry fields must be accepted by pressing the `Enter` button.
 
 |
 
@@ -20,7 +37,7 @@ General Ledger
 If you are going to use the `General Ledger` you must perform the following procedures in order:
 
 + Create the chart of accounts using `File Maintenance -> Masterfile Records`.
-    + Select the `Populate` button to automatically populate a company's set of accounts.
+    + Select the `Populate` button to automatically populate a company's set of accounts after which you can change the account descriptions to suit your needs.
 + Create control accounts using `File Maintenance -> Control Accounts`.
 + Capture account's opening balances using `Data Caspture -> Opening Balances`.
 + Print a trial balance using `Reporting -> Trial Balance` and ensure that your accounts balance. If not, recapture the incorrect ones.
@@ -202,10 +219,10 @@ The Salaries and Wages system is at this stage fully functional and you can capt
 
 Staff Loans
 ...........
-If you are going to use `Staff Loans` you must first of all set up `Salaries and Wages` as in 14) above and then, at least, perform the following procedures in order:
+If you are going to use `Staff Loans` you must first of all set up `Salaries and Wages` as above and then, at least, perform the following procedures in order:
 
 + Ensure that there is a deduction record, in the salaries system, for loan repayments.
-+ Ensure that all employees with loans have the deduction record included in their masterfile records as a deduction, without values.
-+ Capture existing loans using `New Loans`. If Salaries are integrated with the general ledger un-integrate salaries to capture loans balances. Once all opening balances have been captured re-integrate salaries.
++ Ensure that all employees with loans have the deduction record included in their masterfile record as a deduction, without values.
++ Capture existing loans using `New Loans`. If Salaries are integrated with the general ledger first un-integrate salaries to capture the loan balances. Once all opening balances have been captured re-integrate salaries.
 
 The Staff Loans system is at this stage functional.

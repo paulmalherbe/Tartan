@@ -53,7 +53,7 @@ class bcc110(object):
             self.opts["conum"])], limit=1)
         if not self.acc:
             self.new = True
-            self.acc = [self.opts["conum"], "N", "N", 0, 0, 0, 0, "P",
+            self.acc = [self.opts["conum"], "N", "N", 0, 0, 0, 0, "C",
                 "A", "N", "Y", 4, 0, 0, "A", "B", "", ""]
         else:
             self.new = False
@@ -82,30 +82,43 @@ class bcc110(object):
         if self.memctl:
             self.fld = [
                 (("T",0,0,0),["IRB",r1s],0,"M/L Integration","",
-                    self.acc[1],"N",self.doMlint,None,None,None),
+                    self.acc[1],"N",self.doMlint,None,None,None,None,
+                    "Select whether to Integrate this system with the "\
+                    "Members Ledger System."),
                 (("T",0,1,0),("IRB",r1s),0,"Same Numbers","",
-                    self.acc[2],"N",self.doSame,None,None,None),
+                    self.acc[2],"N",self.doSame,None,None,None,None,
+                    "If the Members Ledger is Integrated select "\
+                    "whether the Tab numbers and Members Ledger numbers "\
+                    "are the Same."),
                 (("T",0,2,0),"IUI",2,"Category Code","",
-                    self.acc[3],"N",self.doCat,cat,None,None)]
+                    self.acc[3],"N",self.doCat,cat,None,None,None,
+                    "If the Members Ledger is Integrated enter which "\
+                    "Members Ledger Sports category is for Bowls.")]
             seq = 3
         else:
             self.fld = []
             seq = 0
         self.fld.extend([
             (("T",0,seq,0),"IUI",6,"Male Start Seq","",
-                self.acc[4],"N",self.doMStart,None,None,("notzero",)),
+                self.acc[4],"N",self.doMStart,None,None,("notzero",),None,
+                "The Starting Tab number for Males."),
             (("T",0,seq + 1,0),"IUI",6,"Female Start Seq","",
-                self.acc[5],"N",self.doFStart,None,None,("notzero",)),
+                self.acc[5],"N",self.doFStart,None,None,("notzero",),None,
+                "The Starting Tab number for Females."),
             (("T",0,seq + 2,0),"IUI",6,"Non-Member Start Seq","",
-                self.acc[6],"N",self.doNStart,None,None,("notzero",)),
+                self.acc[6],"N",self.doNStart,None,None,("notzero",),None,
+                "The Starting Tab number for Visitors."),
             (("T",0,seq + 3,0),("IRB",r2s),0,"Draw Base","",
-                self.acc[7],"N",self.doBase,None,None,None),
+                self.acc[7],"N",self.doBase,None,None,None,None,
+                "The Default method of doing Draws."),
             (("T",0,seq + 4,0),("IRB",r3s),0,"Rating Order","",
-                self.acc[8],"N",None,None,None,None),
+                self.acc[8],"N",None,None,None,None,None,
+                "With Ratings select whether Ratings are Ascending "\
+                "or Descending in strength."),
             (("T",0,seq + 5,0),("IRB",r1s),0,"Mixed Ratings","",
                 self.acc[9],"N",None,None,None,None,None,
                 "Select if Different Ratings are Used for Mixed "\
-                "Gender Draws"),
+                "Gender Draws."),
             (("T",0,seq + 6,0),("IRB",r1s),0,"Replace Fours","",
                 self.acc[10],"N",None,None,None,None,None,
                 "When the Draw is Trips Use Pairs Instead of Fours "\

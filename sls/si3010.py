@@ -226,7 +226,7 @@ class si3010(object):
         self.odr = CCD(data[col.index("si1_docno")], "Na", 9)
         self.si2 = self.sql.getRec("slsiv2", where=[("si2_cono",
             "=", self.opts["conum"]), ("si2_rtn", "=", self.otype),
-            ("si2_docno", "=", self.odr.work)], order="si2_seq")
+            ("si2_docno", "=", self.odr.work)], order="si2_line")
         if not self.si2:
             return
         self.mod = CCD(data[col.index("si1_mode")], "UA", 1)

@@ -241,6 +241,7 @@ def loadRcFile(rcfile=None, default=False):
         "ttip": ["Y"],
         "errs": ["Y"],
         "wrkf": ["D"],
+        "wrka": ["N"],
         "mft": ["DejaVu Sans", "Arial"],
         "mfs": [0],
         "dft": ["DejaVu Sans Mono", "Courier New"],
@@ -803,7 +804,7 @@ def findFile(start=".", name=None, ftyp="f", case="n"):
                     elif flenam.lower() == name.lower():
                         return os.path.join(root, flenam)
 
-def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False, timeout=30, local=None, err=False, wrkdir="."):
+def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False, timeout=30, local=None, lnkurl=None, err=False, wrkdir="."):
     """
     A routine to email a message, embed files and/or attach files.
 
@@ -818,6 +819,7 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
         check   = Check if the mail server is available.
         timeout = The number of seconds before timing out defaulting to 30.
         local   = The local hostname as fqdn.
+        lnkurl  = An http link to add to the embedded attachments
         err     = The widget to display the exception, defaults to False
         wrkdir  = The work directory, defaults to "."
     """
@@ -901,6 +903,11 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
     else:
         msgText = MIMEText(mess, "plain", "utf-8")
     msgAlternative.attach(msgText)
+    if lnkurl and lnkurl[0] == "Y":
+        if not mess:
+            mess = "<p><a href=\"%s\">Visit %s</a></p>" % (lnkurl[1], lnkurl[1])
+        else:
+            mess += "<a href=\"%s\">Visit %s</a></p>" % (lnkurl[1], lnkurl[1])
     if embed:
         seq = 1
         for flenam in embed:
@@ -910,12 +917,16 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
             if maintype == "image":
                 try:
                     fp = open(flenam, "rb")
-                    msgImage = MIMEImage(fp.read(), _subtype=subtype,
-                            name=name)
+                    msgImage = MIMEImage(fp.read(), _subtype=subtype, name=name)
                     fp.close()
                     msgImage.add_header("Content-ID", "<image%s>" % seq)
                     msgRelated.attach(msgImage)
-                    mess = mess + "<img src='cid:image%s'><br>" % seq
+                    if lnkurl and lnkurl[0] == "N":
+                        mess = mess + "<a href=\"%s\">" % lnkurl[1]
+                    mess = mess + "<img src=\"cid:image%s\">" % seq
+                    if lnkurl and lnkurl[0] == "N":
+                        mess = mess + "</a>"
+                    mess = mess + "<br>"
                     seq += 1
                 except:
                     pass
@@ -1510,7 +1521,8 @@ def runModule(mod, **popt):
         pkg = pkgs[mod[:2]]
         com = importlib.import_module("..%s" % mod, "%s.subpkg" % pkg)
         exe = getattr(com, mod)
-        exe(**popt)
+        # Return object for callModule
+        return exe(**popt)
     except Exception as err:
         print("Exception", err)
 
@@ -1576,33 +1588,17 @@ def doChkCatChg(mf, cono, memno, nxtdt):
         or_s = rec[sql.memctc_col.index("mcc_or_s")]
     return ret
 
-def ftpDownload(server, srce, name=None, word=None, dest=None, close=False, check=False):
-    import ftplib
-    if not name:
-        name = "anonymous"
-    if not word:
-        word = "info@tartan.co.za"
-    if not dest:
-        dest = srce
+def httpDownload(url, dest=None, check=False):
+    import requests
     try:
-        ftp = ftplib.FTP(server, name, word)
-        if check:
-            found = bool(srce in ftp.nlst())
-        else:
-            if close:
-                ofle = open(dest, "wb")
-            else:
-                ofle = dest
-            ftp.retrbinary("RETR " + srce, ofle.write)
-            if close:
-                ofle.close()
-        ftp.close()
-        if check:
-            return found
+        data = requests.get(url)
+        if dest is None:
+            return data.content.decode("utf-8").rstrip()
+        with open(dest, "wb") as file:
+            file.write(data.content)
+        return True
     except:
-        if check:
-            return False
-        return "Download Error"
+        return
 
 def doDrawTable(fpdf, rr, ppad=1, spad=1, cw=None, ld=None, font=True):
     """
@@ -2048,7 +2044,7 @@ def getCost(sql, cono, group, code, loc=None, qty=1, ind="I", recp=False, tot=Fa
                 ("si3_cono", "=", cono),
                 ("si3_rtn", "=", recp[0]),
                 ("si3_docno", "=", recp[1]),
-                ("si3_seq", "=", recp[2])]
+                ("si3_line", "=", recp[2])]
             items = sql.getRec(tab, cols=col, where=whr)
         if not items:
             tab = "strrcp"
@@ -2697,6 +2693,7 @@ def doWriteExport(**args):
         wait   - Whether to wait for the viewer to exit.
     """
     import os, sys
+    from TartanClasses import XLSX
 
     def viewFile(exe, cmd, name, wait):
         if not cmd:
@@ -2739,13 +2736,7 @@ def doWriteExport(**args):
         wait = False
     else:
         wait = args["wait"]
-    if type(args["xtype"]) == str:
-        args["xtype"] = [args["xtype"]]
-    types = []
-    for t in args["xtype"]:
-        types.append(t.upper())
-
-    if "C" in types:
+    if args["xtype"].upper() == "C":
         head = ""
         name = args["name"] + ".csv"
         flenam = open(name, "w")
@@ -2783,11 +2774,10 @@ def doWriteExport(**args):
             flenam.write(line + "\n")
         # Save the csv file
         flenam.close()
-        if view and "X" not in types:
+        if view:
             # View the csv file
             viewFile(exe, cmd, name, wait)
-        if "X" not in types:
-            return
+        return
 
     def getLetter(col):
         string = ""
@@ -2909,7 +2899,7 @@ def doWriteExport(**args):
         sheet.freeze_panes = "A%s" % (rowx + 2)
         return sheet, rowx
 
-    if "X" in types:
+    if args["xtype"] == "X" and XLSX:
         import datetime
         from openpyxl import Workbook
         from openpyxl.styles import Border, Side, Font, Alignment

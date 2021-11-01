@@ -98,11 +98,13 @@ class ms1010(object):
                 "","N",None,None,None,None),
             (("T",1,14,0),"ITX",50,"E-Mail Address","",
                 "","N",None,None,None,("email",)),
-            (("T",1,15,0),"INA",20,"Registration No","",
+            (("T",1,15,0),"ITX",50,"Internet URL","",
+                "","N",None,None,None,("efld",)),
+            (("T",1,16,0),"INA",20,"Registration No","",
                 "","N",None,None,None,None),
-            (("T",1,16,0),"INA",20,"V.A.T. Number","",
+            (("T",1,17,0),"INA",20,"V.A.T. Number","",
                 "","N",self.doVatNum,None,None,None),
-            (("T",1,17,0),"IUA",1,"V.A.T. Default","",
+            (("T",1,18,0),"IUA",1,"V.A.T. Default","",
                 "","N",self.doVatCod,None,None,("notblank",)),
             (("T",2,0,0),"INA",30,"Bank Name","",
                 "","N",None,None,None,None),
@@ -294,7 +296,7 @@ class ms1010(object):
             for x in range(0, len(self.df.t_work[3][0])):
                 if self.df.t_work[3][0][x] == "Y":
                     mod = self.sys[x]
-                    if mod not in ("BC", "BS", "CS", "SC"):
+                    if mod not in ("BC", "BS", "SC"):
                         fin = True
                     mods = mods + mod
             data.append(mods)

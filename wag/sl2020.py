@@ -167,6 +167,15 @@ class sl2020(object):
             return "Invalid Employee Number"
         self.name = acc[0]
         self.df.loadEntry("C", pag, p+1, data=self.name)
+        chk = self.sql.getRec("waglmf", where=[("wlm_cono", "=",
+            self.opts["conum"]), ("wlm_empno", "=", self.empno)])
+        if len(chk) == 1:
+            self.acc = chk[0]
+            self.loan = self.acc[self.col.index("wlm_loan")]
+            desc = self.acc[self.col.index("wlm_desc")]
+            self.df.loadEntry("C", pag, p+2, data=self.loan)
+            self.df.loadEntry("C", pag, p+3, data=desc)
+            return "sk3"
 
     def doLoan(self, frt, pag, r, c, p, i, w):
         self.loan = w
@@ -190,7 +199,7 @@ class sl2020(object):
 
     def doRef(self, frt, pag, r, c, p, i, w):
         self.ref = w
-        per = self.acc[self.col.index("wlm_int_per")]
+        per = self.acc[self.col.index("wlm_rate")]
         self.df.loadEntry("C", pag, p+1, data=per)
 
     def doPer(self, frt, pag, r, c, p, i, w):
@@ -201,11 +210,13 @@ class sl2020(object):
 
     def doInt(self, frt, pag, r, c, p, i, w):
         self.intp = w
+        self.pay = 0
+        self.ded = 0
         return "sk2"
 
     def doPay(self, frt, pag, r, c, p, i, w):
         self.pay = w
-        amt = self.acc[self.col.index("wlm_ded_amt")]
+        amt = self.acc[self.col.index("wlm_repay")]
         self.df.loadEntry("C", pag, p+1, data=amt)
 
     def doDed(self, frt, pag, r, c, p, i, w):
@@ -236,7 +247,7 @@ class sl2020(object):
             self.glt = 4
             desc = "Interest Adj"
             self.val = self.intp
-            ded = self.acc[self.col.index("wlm_ded_amt")]
+            ded = self.acc[self.col.index("wlm_repay")]
             cap = 0.00
         elif self.typ == 3:
             self.glt = 2
@@ -256,7 +267,7 @@ class sl2020(object):
             self.val = self.pay
             ded = self.ded
             cap = 0.00
-        self.sql.updRec("waglmf", cols=["wlm_int_per", "wlm_ded_amt"],
+        self.sql.updRec("waglmf", cols=["wlm_rate", "wlm_repay"],
             data=[self.per, ded], where=[("wlm_cono", "=", self.opts["conum"]),
             ("wlm_empno", "=", self.empno), ("wlm_loan", "=", self.loan)])
         self.sql.insRec("wagltf", data=[self.opts["conum"], self.empno,

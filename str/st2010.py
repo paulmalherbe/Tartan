@@ -787,7 +787,7 @@ class st2010(object):
         state = self.df.disableButtonsTags()
         cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
             system="STR", code="NewCrs")
-        if cf.flag != "no":
+        if cf.flag == "yes":
             callModule(self.opts["mf"], self.df, "cr1010",
                 coy=(self.opts["conum"], self.opts["conam"]), period=None,
                 user=self.opts["capnm"])
@@ -798,7 +798,7 @@ class st2010(object):
         state = self.df.disableButtonsTags()
         cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
             system="STR", code="NewStr")
-        if cf.flag != "no":
+        if cf.flag == "yes":
             callModule(self.opts["mf"], self.df, "st1010",
                 coy=(self.opts["conum"], self.opts["conam"]), period=None,
                 user=self.opts["capnm"])

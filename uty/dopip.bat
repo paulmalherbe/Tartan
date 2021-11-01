@@ -1,5 +1,6 @@
 echo off
 pip -q install pip --upgrade
+pip -q install beepy --upgrade
 pip -q install docutils --upgrade
 pip -q install fpdf --upgrade
 pip -q install importlib_metadata --upgrade
@@ -11,13 +12,12 @@ pip -q install progress --upgrade
 pip -q install psycopg2 --upgrade
 pip -q install pyaes --upgrade
 pip -q install pycryptodome --upgrade
-pip -q install pyexcel --upgrade
 pip -q install pyexcel-ods --upgrade
+pip -q install pyexcel-xls --upgrade
 pip -q install pygal --upgrade
 pip -q install pyinstaller --upgrade
 pip -q install pymupdf --upgrade
 pip -q install pysmb --upgrade
-pip -q install python-escpos --upgrade
 pip -q install pywin32 --upgrade
 pip -q install requests --upgrade
 pip -q install send2trash --upgrade

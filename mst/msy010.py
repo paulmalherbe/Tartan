@@ -302,7 +302,6 @@ Please select Control --> System Record Maintenance and change the Years to Keep
             ["lontrn", "lnt_curdt", ["lnt_tramt"], "lonmf2"],
             ["memtrn", "mlt_curdt", ["mlt_tramt"], "memmst"],
             ["memtrs", "mst_trdt", []],
-            ["posmst", "psm_date", []],
             ["rcaowt", "rot_curdt", ["rot_tramt"], "rcaowm"],
             ["rcatnt", "rtu_curdt", ["rtu_tramt"], "rcatnm"],
             ["rtltrn", "rtt_curdt", ["rtt_tramt"], "rtlmst"],
@@ -422,21 +421,6 @@ Please select Control --> System Record Maintenance and change the Years to Keep
                 elif tab[0] == "memtrs":
                     whrt.append((tab[1], "<=", sdate))
                     sql.delRec(tab[0], where=whrt)
-                elif tab[0] == "posmst":
-                    whrt.append((tab[1], "<=", edate))
-                    recs = sql.getRec(tables=tab[0], where=whrt)
-                    for num, rec in enumerate(recs):
-                        if "args" not in self.opts and not num % 10:
-                            pb.displayProgress()
-                        sql.delRec(tab[0], where=[("psm_cono", "=", rec[0]),
-                            ("psm_host", "=", rec[1]), ("psm_docno", "=",
-                            rec[2])])
-                        sql.delRec("postrn", where=[("pst_cono", "=", rec[0]),
-                            ("pst_host", "=", rec[1]), ("pst_docno", "=",
-                            rec[3])])
-                        sql.delRec("posrcp", where=[("prp_cono", "=", rec[0]),
-                            ("prp_host", "=", rec[1]), ("prp_docno", "=",
-                            rec[3])])
                 elif tab[0] == "strpom":
                     whrt.append((tab[1], "<=", edate))
                     recs = sql.getRec(tables=tab[0], where=whrt)

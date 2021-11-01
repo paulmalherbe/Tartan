@@ -58,4 +58,4 @@ Optional
 
 The Author
 ==========
-My name is Paul Malherbe. I have been involved in designing, writing and implementing computerised financial systems since the mid 70's. I currently consult to a number of clients in the financial services arena and develop and maintain Tartan in my spare time.
+My name is Paul Malherbe. I have been involved in designing, writing and implementing computerised financial systems since the mid 70's. I currently consult to a number of clients in the financial services arena.

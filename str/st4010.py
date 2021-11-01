@@ -502,7 +502,7 @@ class st4010(object):
                 elif typ == 7:
                     rct = "Recipe Details"
                     rcc = (
-                        ("si3_seq", "", 0, ""),
+                        ("si3_line", "", 0, ""),
                         ("si3_rgroup", "", 0, ""),
                         ("si3_rcode", "", 0, ""),
                         ("st1_desc", "", 0, ""),
@@ -515,7 +515,7 @@ class st4010(object):
                         ("st1_cono=si3_cono",),
                         ("st1_group=si3_rgroup",),
                         ("st1_code=si3_rcode",))
-                    rco = "si3_seq"
+                    rco = "si3_line"
                     SRec(self.opts["mf"], title=rct, tables=["slsiv3",
                         "strmf1"], cols=rcc, where=rcw, order=rco)
                 else:

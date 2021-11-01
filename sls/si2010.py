@@ -644,18 +644,18 @@ class si2010(object):
         self.doClearTots()
         slsiv2 = self.sql.getRec("slsiv2", where=[("si2_cono", "=",
             self.opts["conum"]), ("si2_rtn", "=", self.typs), ("si2_docno",
-            "=", self.docno)], order="si2_seq")
+            "=", self.docno)], order="si2_line")
         if not slsiv2:
             return
         for seq, line in enumerate(slsiv2):
             self.doExtractData(line)
-            self.sql.updRec("slsiv2", cols=["si2_seq"], data=[seq],
+            self.sql.updRec("slsiv2", cols=["si2_line"], data=[seq],
                 where=[("si2_cono", "=", self.opts["conum"]), ("si2_rtn", "=",
-                self.typs), ("si2_docno", "=", self.docno), ("si2_seq", "=",
+                self.typs), ("si2_docno", "=", self.docno), ("si2_line", "=",
                 self.oldline)])
-            self.sql.updRec("slsiv3", cols=["si3_seq"], data=[seq],
+            self.sql.updRec("slsiv3", cols=["si3_line"], data=[seq],
                 where=[("si3_cono", "=", self.opts["conum"]), ("si3_rtn", "=",
-                self.typs), ("si3_docno", "=", self.docno), ("si3_seq", "=",
+                self.typs), ("si3_docno", "=", self.docno), ("si3_line", "=",
                 self.oldline)])
             if seq >= self.row[0]:
                 self.df.scrollScreen(0)
@@ -808,7 +808,7 @@ class si2010(object):
             try:
                 self.sql.delRec("slsiv3", where=[("si3_cono", "=",
                     self.opts["conum"]), ("si3_rtn", "=", self.typs),
-                    ("si3_docno", "=", self.docno), ("si3_seq", "=",
+                    ("si3_docno", "=", self.docno), ("si3_line", "=",
                     self.lineno)])
             except:
                 pass
@@ -848,10 +848,10 @@ class si2010(object):
         elif atype == "C":
             self.recipe = self.sql.getRec("slsiv3", where=[("si3_cono",
                 "=", self.opts["conum"]), ("si3_rtn", "=", self.typs),
-                ("si3_docno", "=", self.docno), ("si3_seq", "=", self.lineno)])
+                ("si3_docno", "=", self.docno), ("si3_line", "=", self.lineno)])
             self.sql.delRec("slsiv3", where=[("si3_cono", "=",
                 self.opts["conum"]), ("si3_rtn", "=", self.typs), ("si3_docno",
-                "=", self.docno), ("si3_seq", "=", self.lineno)])
+                "=", self.docno), ("si3_line", "=", self.lineno)])
             self.doRecChg()
             if self.rectyp == "quit":
                 return "Quit"
@@ -862,7 +862,7 @@ class si2010(object):
             self.tcost = 0
             recipe = self.sql.getRec("slsiv3", where=[("si3_cono", "=",
                 self.opts["conum"]), ("si3_rtn", "=", self.typs), ("si3_docno",
-                "=", self.docno), ("si3_seq", "=", self.lineno)])
+                "=", self.docno), ("si3_line", "=", self.lineno)])
             for item in recipe:
                 quant = item[6] * self.qty
                 icost, tcost = getCost(self.sql, self.opts["conum"], item[4],
@@ -1007,6 +1007,13 @@ class si2010(object):
         self.df.loadEntry(frt, pag, p+1, data=self.rrp)
 
     def doPri(self, frt, pag, r, c, p, i, w):
+        if not w:
+            state = self.df.disableButtonsTags()
+            cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
+                system="INV", code="NoCharge")
+            self.df.enableButtonsTags(state=state)
+            if cf.flag == "no":
+                return "rf"
         if self.gtype == "R":
             self.doRecipe(atype="U", lineno=self.newline)
             icost = self.icost
@@ -1170,11 +1177,11 @@ class si2010(object):
 
     def doEdit(self):
         # Display document items and allow editing of desc, qty and price
-        data = self.sql.getRec("slsiv2", cols=["si2_seq", "si2_group",
+        data = self.sql.getRec("slsiv2", cols=["si2_line", "si2_group",
             "si2_code", "si2_desc", "si2_loc", "si2_qty", "si2_vat_code",
             "si2_price", "si2_disc_per"], where=[("si2_cono", "=",
             self.opts["conum"]), ("si2_rtn", "=", self.typs), ("si2_docno",
-            "=", self.docno)], order="si2_seq")
+            "=", self.docno)], order="si2_line")
         if data:
             titl = "Document Product Lines"
             head = ("Seq","Grp","Product-Code", "Description","L", "Quantity",
@@ -1262,10 +1269,10 @@ class si2010(object):
         seq = self.change[0]
         self.sql.delRec("slsiv2", where=[("si2_cono", "=", self.opts["conum"]),
             ("si2_rtn", "=", self.typs), ("si2_docno", "=", self.docno),
-            ("si2_seq", "=", seq)])
+            ("si2_line", "=", seq)])
         self.sql.delRec("slsiv3", where=[("si3_cono", "=", self.opts["conum"]),
             ("si3_rtn", "=", self.typs), ("si3_docno", "=", self.docno),
-            ("si3_seq", "=", seq)])
+            ("si3_line", "=", seq)])
         if self.acttyp == "A":
             self.amend = True
         self.doReadLoadStr()
@@ -1277,7 +1284,7 @@ class si2010(object):
             "si2_disc_per"], data=[self.desc, self.qty, self.price,
             self.disrat], where=[("si2_cono", "=", self.opts["conum"]),
             ("si2_rtn", "=", self.typs), ("si2_docno", "=", self.docno),
-            ("si2_seq", "=", seq)])
+            ("si2_line", "=", seq)])
         if self.acttyp == "A":
             self.amend = True
         self.doReadLoadStr()
@@ -1470,7 +1477,7 @@ class si2010(object):
                 return "NoQty"
 
     def doExtractData(self, line):
-        self.oldline = line[self.sql.slsiv2_col.index("si2_seq")]
+        self.oldline = line[self.sql.slsiv2_col.index("si2_line")]
         self.grp = line[self.sql.slsiv2_col.index("si2_group")]
         self.code = line[self.sql.slsiv2_col.index("si2_code")]
         self.desc = line[self.sql.slsiv2_col.index("si2_desc")]
@@ -1652,7 +1659,7 @@ class si2010(object):
                     self.sql.updRec("slsiv2", cols=["si2_vat_rate"],
                         data=[chk], where=[("si2_cono", "=", rec[0]),
                         ("si2_rtn", "=", rec[1]), ("si2_docno", "=",
-                        rec[2]), ("si2_seq", "=", rec[3])])
+                        rec[2]), ("si2_line", "=", rec[3])])
             if chg:
                 self.doReadLoadStr()
         else:
@@ -1700,7 +1707,7 @@ class si2010(object):
             if gtype[0] == "R":
                 items = self.sql.getRec("slsiv3", where=[("si3_cono",
                     "=", self.opts["conum"]), ("si3_rtn", "=", self.typs),
-                    ("si3_docno", "=", self.othno), ("si3_seq", "=",
+                    ("si3_docno", "=", self.othno), ("si3_line", "=",
                     self.oldline)])
                 for item in items:
                     quan = item[6] * qty

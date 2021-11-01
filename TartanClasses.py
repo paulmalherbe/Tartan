@@ -78,7 +78,7 @@ except:
 # Excel import and export modules
 # ========================================================
 try:
-    import pyexcel
+    from pyexcel_xls import get_data as getxls
     XLS = True
 except:
     XLS = False
@@ -258,17 +258,13 @@ try:
 
         def execButCmd(self, event=None):
             try:
-                self.update_idletasks()
-                self.event_generate("<Leave>")
                 if str(self.cget("state")) == "normal":
-                    if sys.platform == "win32":
-                        self.state(("!active", "!focus", "!pressed"))
-                    else:
-                        self.state(("!active", "!focus", "!pressed", "!hover"))
                     if type(self.cmd) in (list, tuple):
                         self.cmd[0](self.cmd[1])
                     else:
                         self.cmd()
+                self.event_generate("<Leave>")
+                self.update_idletasks()
             except:
                 pass
             return "break"
@@ -659,6 +655,7 @@ try:
             self.event_generate("<Button-1>")
             self.event_generate("<ButtonRelease-1>")
             self.event_generate("<Leave>")
+            self.update_idletasks()
 
     class MyMessageBox(object):
         def __init__(self, parent, dtype, title, mess, butt=None, dflt=None):
@@ -760,6 +757,7 @@ try:
             if self.parent:
                 self.msgwin.focus_set()
                 self.msgwin.wait_window()
+                self.parent.update_idletasks()
             else:
                 self.msgwin.focus_force()
                 self.msgwin.mainloop()
@@ -2186,8 +2184,11 @@ class Dbase(object):
         else:
             if not mess:
                 mess = "Would you like to COMMIT All Changes?"
-            self.commit = askQuestion(self.screen, "Commit?", mess,
-                default=default)
+            if self.screen is None:
+                scrn = "text"
+            else:
+                scrn = self.screen
+            self.commit = askQuestion(scrn, "Commit?", mess, default=default)
         if self.commit == "yes":
             self.db.commit()
         elif rback:
@@ -4005,7 +4006,10 @@ class TartanDialog(object):
                     self.butt.append(list(but))
             else:
                 setattr(self, arg, args[arg])
+        # Window and title
         self.window = self.mf.window
+        if not self.tops and not self.mf.head.cget("text"):
+            self.mf.head.configure(text=self.title)
         # Save window bindings
         self.svebind = []
         for bind in self.window.bind():
@@ -7827,14 +7831,6 @@ class ProgressBar(object):
         if self.typ == "G":
             mode = "indeterminate"
         else:
-            if self.mxs > 100000:
-                self.mxp = 10000
-            elif self.mxs > 10000:
-                self.mxp = 1000
-            elif self.mxs > 1000:
-                self.mxp = 100
-            else:
-                self.mxp = 1
             mode = "determinate"
         if self.typ in ("G", "P") and not text:
             text = "Generating the Report ... Please Wait"
@@ -7875,7 +7871,7 @@ class ProgressBar(object):
     def displayProgress(self, value=0):
         if self.typ == "G":
             self.pbar.step()
-        elif not value % self.mxp:
+        else:
             self.pbar.configure(value=value + 1)
         self.scrn.update()
 
@@ -8177,6 +8173,8 @@ class TartanConfig(object):
                 self.rcdic["errs"].upper(),"N",None,None,None,None),
             (("T",2,13,0),("IRB",r5s),0,"Work Files","",
                 self.rcdic["wrkf"].upper(),"N",None,None,None,None),
+            (("T",2,14,0),("IRB",r3s),0,"Automatically Apply","",
+                self.rcdic["wrka"].upper(),"N",None,None,None,None),
             (("T",3,0,0),"INA",30,"Menu Font Name","",
                 self.rcdic["mft"],"N",self.doFtNam,aft,None,("in",self.aft),
                 None,"The Font to be used for the Menu"),
@@ -8194,7 +8192,8 @@ class TartanConfig(object):
                 None,"The Theme to be used"),
             (("T",3,3,0),("IRB",r6s),0,"Label Colour Scheme","",
                 self.rcdic["lsc"],"N",self.doScheme,None,None,None,
-                None,"The Colour Scheme to be used"),
+                None,"The Colour Scheme to be used. Default is the "\
+                "selected theme's colour scheme."),
             (("T",3,4,0),"INA",20,"Normal Label      FG","",
                 self.rcdic["nfg"],"N",self.doColour,fgc,None,("notblank",),
                 None,"Normal Label Foreground Colour"),
@@ -8204,7 +8203,8 @@ class TartanConfig(object):
             (("T",3,4,0),"OTv",10," "),
             (("T",3,5,0),("IRB",r6s),0,"Button Colour Scheme","",
                 self.rcdic["bsc"],"N",self.doScheme,None,None,None,
-                None,"The Colour Scheme to be used"),
+                None,"The Colour Scheme to be used. Default is the "\
+                "selected theme's colour scheme."),
             (("T",3,6,0),"INA",20,"Normal Button     FG","",
                 self.rcdic["bfg"],"N",self.doColour,fgc,None,("notblank",),
                 None,"Normal Label and Button Foreground Colour"),
@@ -8557,6 +8557,7 @@ class TartanConfig(object):
         self.df.loadEntry("T",2,11,self.rcdic["ttip"].upper())
         self.df.loadEntry("T",2,12,self.rcdic["errs"].upper())
         self.df.loadEntry("T",2,13,self.rcdic["wrkf"].upper())
+        self.df.loadEntry("T",2,14,self.rcdic["wrka"].upper())
         # Font and Theme
         self.df.loadEntry("T",3,0,self.rcdic["mft"])
         self.df.loadEntry("T",3,1,self.rcdic["mfs"])
@@ -8650,6 +8651,7 @@ class TartanConfig(object):
             ["ttip", self.df.t_work[2][0][11]],
             ["errs", self.df.t_work[2][0][12]],
             ["wrkf", self.df.t_work[2][0][13]],
+            ["wrka", self.df.t_work[2][0][14]],
             ["mft", self.df.t_work[3][0][0]],
             ["mfs", self.df.t_work[3][0][1]],
             ["dft", self.df.t_work[3][0][2]],
@@ -9936,7 +9938,7 @@ class FinReport(object):
     ---  ----------  --  ----  ------------------------------  -----------
       0  glr_cono    UI   3.0  Company Number                  Coy
       1  glr_repno   UI   3.0  Report Number                   No
-      2  glr_seq     UI   5.0  Sequence                        Seq
+      2  glr_seq     UD   7.2  Sequence                        Seq-Num
       3  glr_type    UA   1.0  Type                            T
       4  glr_desc    NA  30.0  Description                     Description
       5  glr_high    UA   1.0  Highlight (y/n)                 H
@@ -9963,6 +9965,7 @@ class FinReport(object):
      26  glr_ctype   UA   1.0  Calculation Type (+ - * /)      C
      27  glr_camnt   SD  13.2  Percent or Amount               Amount
      28  glr_label   NA  10.0  Chart Label, Space = None       Label
+     29 glr_xflag    UA   1.0  Export Flag                     X
 
     as well as the following parameters:
 
@@ -10993,6 +10996,11 @@ and Create It.""",
 Bowl's Clubs -> File Maintenance -> Control Record
 
 and Create It.""",
+            "cshctl": """Missing cshctl Record for Company %s, Please Run
+
+Cash Analysis -> Control Record
+
+and Create It.""",
             "crsctl": """Missing crsctl Record for Company %s, Please Run
 
 Creditor's Ledger -> File Maintenance -> Control Record
@@ -11939,6 +11947,7 @@ class PrintInvoice(object):
         tdc = self.form.sql.tpldet_col
         self.doLoadStatic()
         self.form.doNewDetail()
+        printed = False
         for doc in self.docs:
             self.docno = CCD(doc[0], "UI", 9.0)
             # slsiv1
@@ -11947,7 +11956,7 @@ class PrintInvoice(object):
                 self.docno.work)], limit=1)
             si2 = self.sql.getRec("slsiv2", where=[("si2_cono", "=",
                 self.conum), ("si2_rtn", "=", self.dtype), ("si2_docno", "=",
-                self.docno.work)], order="si2_seq")
+                self.docno.work)], order="si2_line")
             if not si1 or not si2:
                 continue
             if self.splash:
@@ -12011,7 +12020,8 @@ class PrintInvoice(object):
             if self.repeml[1] == "Y" and not self.emadd:
                 self.repeml[2] = eml
                 self.doPrint()
-        if self.repeml[1] == "N" or self.emadd:
+            printed = True
+        if printed and (self.repeml[1] == "N" or self.emadd):
             self.repeml[2] = self.emadd
             self.doPrint()
 
@@ -13427,7 +13437,7 @@ class PwdConfirm(object):
         if w not in (self.pwd, self.sup, self.mf.override):
             self.tries += 1
             if self.tries == 3:
-                return "nd"
+                return "xt"
             else:
                 return "Invalid Password"
         self.flag = "ok"
@@ -13437,7 +13447,7 @@ class PwdConfirm(object):
         self.pc.closeProcess()
 
     def doExit(self):
-        self.flag = None
+        self.flag = "no"
         self.pc.closeProcess()
 
 class BankImport(object):
@@ -14969,18 +14979,19 @@ class TartanUser(object):
         if not s:
             return "Invalid System"
         self.sys = w
+        self.chk = []
         data = []
         for mod in self.mod[self.sys]:
             new = copyList(list(mod))
             if new[0] <= self.lvl:
-                if new[1][3] != "0":
-                    new[1] = "%s0" % new[1][:3]
-                    new[2] = "Data Capture"
                 if new not in data:
                     data.append(new)
+                    self.chk.append(new[1])
         self.df.colf[pag][2][8]["data"] = data
 
     def doMod(self, frt, pag, r, c, p, i, w):
+        if w and w not in self.chk:
+            return "Invalid Module"
         self.prg = w
         if not self.prg:
             if self.con:
@@ -16120,11 +16131,14 @@ class FileImport(object):
         self.impdlg = True
         self.impign = "N"
         self.chgcol = {}
+        self.colchg = {}
         for x in range(52):
             if x > 25:
                 self.chgcol["A" + chr(x + 39)] = x
+                self.colchg[x] = "A" + chr(x + 39)
             else:
                 self.chgcol[chr(x + 65)] = x
+                self.colchg[x] = chr(x + 65)
         if "impcol" in args:
             self.impcol = args["impcol"]
             sql = Sql(self.mf.dbm, "ffield")
@@ -16288,8 +16302,9 @@ class FileImport(object):
         elif name.split(".")[-1].lower() == "xls" and XLS:
             self.ftype = "xls"
             try:
-                self.workbk = pyexcel.get_book(file_name=name)
-                self.sht["data"] = self.workbk.sheet_names()
+                self.workbk = getxls(name)
+                self.sht["data"] = list(self.workbk.keys())
+                self.sht["data"].sort()
             except Exception as err:
                 return "Invalid xls File (%s)" % err
         elif name.split(".")[-1].lower() == "xlsx" and XLSX:
@@ -16330,6 +16345,55 @@ class FileImport(object):
         if w:
             self.impcol[p-3-self.index][1] = self.chgcol[w.strip()]
 
+    def doImpEnd(self):
+        if self.impdlg:
+            self.ip.closeProcess()
+        self.impdat = []
+        try:
+            if self.ftype == "csv":
+                data = csv.reader(self.csvfle, quoting=csv.QUOTE_MINIMAL)
+            else:
+                data = self.worksh
+            for row, rdd in enumerate(data):
+                if not rdd:
+                    continue
+                try:
+                    lin = []
+                    for col, cdd in enumerate(self.impcol):
+                        dat = rdd[cdd[1]]
+                        if self.ftype in ("xls", "xlsx"):
+                            if cdd[2] in ("D1", "d1"):
+                                if isinstance(dat, datetime.date):
+                                    dat = int(dat.strftime("%Y%m%d"))
+                                elif isinstance(dat, datetime.datetime):
+                                    dat = int(rdd.strftime("%Y%m%d"))
+                                else:
+                                    try:
+                                        dat = int(dat)
+                                    except:
+                                        dat = 0
+                                        cdd[2] = "d1"
+                        d = CCD(dat, cdd[2], cdd[3])
+                        if d.err:
+                            raise Exception
+                        lin.append(d.work)
+                    self.impdat.append(lin)
+                except Exception as err:
+                    if self.impign == "N":
+                        showError(self.mf.body, "Column Error",
+                            "Row %s, Column %s %s\n\n%s is Invalid" %
+                            (row + 1, self.colchg[col], cdd[0], dat))
+                        raise Exception(err)
+        except:
+            self.impdat = []
+        try:
+            infle = open(self.lastdir, "w")
+            infle.write(os.path.dirname(os.path.normpath(self.impfle)))
+            infle.close()
+        except:
+            pass
+
+    """
     def doImpEnd(self):
         if self.impdlg:
             self.ip.closeProcess()
@@ -16382,23 +16446,23 @@ class FileImport(object):
         elif self.ftype in ("xls", "xlsx"):
             try:
                 self.impdat = []
-                for row, rec in enumerate(self.worksh):
+                for row, dat in enumerate(self.worksh):
                     try:
                         lin = []
-                        for col, dat in enumerate(rec):
-                            fmt = self.impcol[col]
-                            if fmt[2] in ("D1", "d1"):
-                                if isinstance(dat, datetime.date):
-                                    dat = int(dat.strftime("%Y%m%d"))
-                                elif isinstance(dat, datetime.datetime):
-                                    dat = int(dat.strftime("%Y%m%d"))
+                        for col, rec in enumerate(self.impcol):
+                            cdd = dat[rec[1]]
+                            if rec[2] in ("D1", "d1"):
+                                if isinstance(cdd, datetime.date):
+                                    cdd = int(cdd.strftime("%Y%m%d"))
+                                elif isinstance(cdd, datetime.datetime):
+                                    cdd = int(dat.strftime("%Y%m%d"))
                                 else:
                                     try:
-                                        dat = int(dat)
+                                        cdd = int(cdd)
                                     except:
-                                        dat = 0
-                                        fmt[2] = "d1"
-                            d = CCD(dat, fmt[2], fmt[3])
+                                        cdd = 0
+                                        rec[2] = "d1"
+                            d = CCD(cdd, rec[2], rec[3])
                             if d.err:
                                 raise Exception
                             lin.append(d.work)
@@ -16407,7 +16471,7 @@ class FileImport(object):
                         if self.impign == "N":
                             showError(self.mf.body, "Column Error",
                                 "Row %s, Column %s %s\n\n%s is Invalid" %
-                                (row + 1, col + 1, fmt[0], dat))
+                                (row + 1, col + 1, rec[0], cdd))
                             raise Exception(err)
             except:
                 imperr = True
@@ -16422,6 +16486,7 @@ class FileImport(object):
                 infle.close()
             except:
                 pass
+    """
 
     def doImpExit(self):
         self.impdat = []
@@ -17982,6 +18047,7 @@ class MakeManual(object):
                     continue
                 if line.count(".. csv-table::"):
                     table = True
+                    self.title = line.split("::")[1].lstrip().replace("**", "")
                     self.heads = []
                     self.widths = []
                     self.table = []
@@ -18071,7 +18137,7 @@ class MakeManual(object):
                     paras.append(line)
                     continue
                 if paras:
-                    if not line.strip() and \
+                    if not line.strip() and lines[num + 1].strip() and \
                             lines[num + 1].lstrip()[0] in ("+", ":"):
                         # Blank line in a paragraph
                         paras.append(line)
@@ -18198,6 +18264,8 @@ class MakeManual(object):
                 self.printText(text, x=x)
 
     def printTable(self):
+        self.fpdf.drawText(self.title, font="B")
+        self.fpdf.drawText()
         for num, dat in enumerate(self.heads):
             txt = dat.replace('",', "").replace('"', "")
             wid = int(self.widths[num].replace(',', "")) * self.fpdf.cwth
@@ -18445,6 +18513,15 @@ class ViewPDF(object):
         # Scale settings
         self.scale = .75
         self.zoom = 1.25
+        if self.mf:
+            try:
+                chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
+                if os.path.isfile(chk):
+                    cnf = open(chk, "r")
+                    self.zoom = float(cnf.read())
+                    cnf.close()
+            except:
+                pass
         self.matrix = list(fitz.Matrix(self.zoom, self.zoom))
         # Other settings
         self.pgno = 1
@@ -18536,8 +18613,11 @@ class ViewPDF(object):
         self.pgd.focus_set()
 
     def enterPage(self, event=None):
-        pgno = int(self.pgd.get())
-        if pgno < 1 or pgno > self.lastpg:
+        try:
+            pgno = int(self.pgd.get())
+            if pgno < 1 or pgno > self.lastpg:
+                raise Exception
+        except:
             self.pgd.selection_range(0, "end")
             return
         self.pgno = pgno
@@ -18784,7 +18864,9 @@ class ViewPDF(object):
                 for data in getData(page):
                     if data[0] <= cnts[0]:
                         continue
-                    text = "%s%s" % ("  " * spcs.index(data[0]), data[1])
+                    text = "%s%s" % ("  " * (spcs.index(data[0]) - 1), data[1])
+                    if text.count("F2"):
+                        continue
                     tabs.append((text, data[2]))
                     if len(text) > mxss:
                         mxss = len(text)
@@ -18796,11 +18878,12 @@ class ViewPDF(object):
             return
         sp.closeSplash()
         cols = (
-            (0, "Description", mxss, "TX", "Y"),
+            (0, "Description", mxss, "NA", "Y"),
             (1, "Page", 4, "UI", None))
         self.doUnbind()
+        print(tabs[0])
         sc = SelectChoice(self.cv, titl="Table of Contents", deco=False,
-            modal=True, cols=cols, data=tabs, font=self.font, sort=True)
+            modal=True, cols=cols, data=tabs, font="Courier", sort=False)
         self.doUnbind(False)
         if sc.selection:
             for page in self.doc:
@@ -18977,8 +19060,18 @@ class ViewPDF(object):
                     fle = self.pdfnam
                 else:
                     if sel == "P":
-                        wrk = ent.get().split(",")
-                        wrk = list(dict.fromkeys(wrk))
+                        wrk = ent.get()
+                        if wrk.count(",") and wrk.count("-"):
+                            raise Exception("Invalid Range Selected")
+                        if wrk.count(","):
+                            wrk = wrk.split(",")
+                            wrk = list(dict.fromkeys(wrk))
+                        else:     
+                            rng = wrk.split("-")
+                            rng = list(dict.fromkeys(rng))
+                            wrk = []
+                            for x in range(int(rng[0]), int(rng[1]) + 1):
+                                wrk.append(x)
                         pag = []
                         for w in wrk:
                             p = int(w) - 1
@@ -19052,7 +19145,7 @@ class ViewPDF(object):
             value="P", command=doPages, style="pdf.TRadiobutton")
         rb3.grid(row=3, column=0, sticky="nsew")
         ent = MyEntry(fr2, style="pdf.TEntry")
-        ToolTip(ent, "Enter page numbers separated by commas.")
+        ToolTip(ent, "Enter page numbers separated by commas or one dash.")
         ent.bind("<Return>", doExec)
         ent.bind("<KP_Enter>", doExec)
         ent.configure(state="disabled")
@@ -19080,6 +19173,14 @@ class ViewPDF(object):
         self.showPage()
 
     def doClose(self, event=None):
+        if self.mf:
+            try:
+                chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
+                cnf = open(chk, "w")
+                cnf.write("%s" % self.zoom)
+                cnf.close()
+            except:
+                pass
         self.doc.close()
         self.win.destroy()
 

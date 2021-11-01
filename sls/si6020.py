@@ -35,7 +35,7 @@ class si6020(object):
             self.opts["mf"].startLoop()
 
     def setVariables(self):
-        self.sql = Sql(self.opts["mf"].dbm, ["slsiv1", "slsiv2", "slsiv3"],
+        self.sql = Sql(self.opts["mf"].dbm, "slsiv1",
             prog=self.__class__.__name__)
         if self.sql.error:
             return

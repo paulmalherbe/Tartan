@@ -145,21 +145,24 @@ class ms1030(object):
     def doPwd(self, frt, pag, r, c, p, i, w):
         self.pwd = w
 
+    def doEnd(self):
+        if self.pwd:
+            pwd = b64Convert("encode", self.pwd)
+            if self.new == "y":
+                self.sql.insRec("ctlpwr", data=[self.coy, self.sys, self.code,
+                    self.desc, pwd])
+            else:
+                self.sql.updRec("ctlpwr", cols=["pwd_desc", "pwd_pass"],
+                    data=[self.desc, pwd], where=[("pwd_cono", "=", self.coy),
+                    ("pwd_sys", "=", self.sys), ("pwd_code", "=", self.code)])
+            self.opts["mf"].dbm.commitDbase()
+            self.df.focusField("T", 0, 1)
+        elif self.new == "n":
+            self.doDelete()
+
     def doDelete(self):
         self.sql.delRec("ctlpwr", where=[("pwd_cono", "=", self.coy),
             ("pwd_sys", "=", self.sys), ("pwd_code", "=", self.code)])
-        self.opts["mf"].dbm.commitDbase()
-        self.df.focusField("T", 0, 1)
-
-    def doEnd(self):
-        pwd = b64Convert("encode", self.pwd)
-        if self.new == "y":
-            self.sql.insRec("ctlpwr", data=[self.coy, self.sys, self.code,
-                self.desc, pwd])
-        else:
-            self.sql.updRec("ctlpwr", cols=["pwd_desc", "pwd_pass"],
-                data=[self.desc, pwd], where=[("pwd_cono", "=", self.coy),
-                ("pwd_sys", "=", self.sys), ("pwd_code", "=", self.code)])
         self.opts["mf"].dbm.commitDbase()
         self.df.focusField("T", 0, 1)
 

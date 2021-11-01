@@ -236,7 +236,7 @@ class cr1010(object):
         if self.df.pag == 0:
             self.df.focusField("T", 1, 1, clr=self.new)
         elif self.df.pag == 1:
-            self.df.selPage("Basic-_B")
+            self.df.selPage("Basic-B")
             self.df.focusField("T", 2, 1, clr=self.new)
 
     def doAccept(self):
@@ -277,7 +277,7 @@ class cr1010(object):
         else:
             self.opts["mf"].dbm.commitDbase()
             self.df.last[0] = [0, 0]
-            self.df.selPage("Basic-_A")
+            self.df.selPage("Basic-A")
             self.df.focusField("T", 0, 1)
 
     def doPrint(self):
@@ -353,7 +353,7 @@ Please Correct your Import File and then Try Again.""" % err)
     def doCancel(self):
         self.opts["mf"].dbm.rollbackDbase()
         self.df.last[0] = [0, 0]
-        self.df.selPage("Basic-_A")
+        self.df.selPage("Basic-A")
         self.df.focusField("T", 0, 1)
 
     def doExit(self):
@@ -362,7 +362,7 @@ Please Correct your Import File and then Try Again.""" % err)
         elif self.df.pag == 1:
             self.df.focusField("T", 0, 1)
         else:
-            self.df.selPage("Basic-_A")
+            self.df.selPage("Basic-A")
 
     def doQuit(self):
         self.df.closeProcess()

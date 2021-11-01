@@ -25,7 +25,7 @@ COPYING
 """
 
 import time
-from TartanClasses import ASD, TartanDialog, Sql
+from TartanClasses import ASD, GetCtl, TartanDialog, Sql
 from tartanFunctions import askQuestion, callModule, getVatRate
 
 class cs2010(object):
@@ -36,10 +36,34 @@ class cs2010(object):
             self.opts["mf"].startLoop()
 
     def setVariables(self):
-        self.sql = Sql(self.opts["mf"].dbm, ["cshana", "cshcnt", "genmst"],
+        gc = GetCtl(self.opts["mf"])
+        ctlmst = gc.getCtl("ctlmst", self.opts["conum"])
+        if not ctlmst:
+            return
+        self.taxdf = ctlmst["ctm_taxdf"]
+        if not self.taxdf:
+            self.taxdf = "N"
+        cshctl = gc.getCtl("cshctl", self.opts["conum"])
+        if not cshctl:
+            return
+        self.glint = cshctl["ccc_glint"]
+        if self.glint == "Y":
+            tabs = ["genmst"]
+        else:
+            tabs = ["cshmst"]
+        tabs.extend(["cshana", "cshcnt"])
+        self.sql = Sql(self.opts["mf"].dbm, tables=tabs,
             prog=self.__class__.__name__)
         if self.sql.error:
             return
+        if self.glint == "Y":
+            self.ctl = [["csh_ctl", "Cash Control", 0]]
+            ctlctl = gc.getCtl("ctlctl", self.opts["conum"])
+            if not ctlctl:
+                return
+            for num, ctl in enumerate(self.ctl):
+                if ctl[0] in ctlctl:
+                    self.ctl[num][2] = ctlctl[ctl[0]]
         t = time.localtime()
         self.sysdtw = ((t[0] * 10000) + (t[1] * 100) + t[2])
         self.denoms = (
@@ -71,14 +95,24 @@ class cs2010(object):
                 ("cct_date", "", 0, "Date"),),
             "where": [("cct_cono", "=", self.opts["conum"])],
             "group": "cct_date"}
-        cod = {
-            "stype": "R",
-            "tables": ("genmst",),
-            "cols": (
-                ("glm_acno", "", 0, "Acc-Num"),
-                ("glm_desc", "", 0, "Description", "Y")),
-            "where": [("glm_cono", "=", self.opts["conum"])],
-            "order": "glm_acno"}
+        if self.glint == "Y":
+            self.cod = {
+                "stype": "R",
+                "tables": ("genmst",),
+                "cols": (
+                    ("glm_acno", "", 0, "Acc-Num"),
+                    ("glm_desc", "", 0, "Description", "Y")),
+                "where": [("glm_cono", "=", self.opts["conum"])],
+                "order": "glm_acno"}
+        else:
+            self.cod = {
+                "stype": "R",
+                "tables": ("cshmst",),
+                "cols": (
+                    ("ccm_acno", "", 0, "Acc-Num"),
+                    ("ccm_desc", "", 0, "Description", "Y")),
+                "where": [("ccm_cono", "=", self.opts["conum"])],
+                "order": "ccm_acno"}
         des = {
             "stype": "R",
             "tables": ("cshana",),
@@ -101,7 +135,7 @@ class cs2010(object):
             (("C",1,0,0),"I@can_trdt",0,"","",
                 "","N",None,None,None,("efld",)),
             (("C",1,1,0),"I@can_code",0,"","",
-                "","N",self.doCode,cod,None,None),
+                "","N",self.doCode,self.cod,None,None),
             (("C",1,2,0),"I@can_desc",0,"","",
                 "","N",self.doDesc,des,None,("notblank",)),
             (("C",1,3,0),"I@can_vatcod",0,"","",
@@ -113,7 +147,7 @@ class cs2010(object):
             (("C",2,0,0),"I@can_trdt",0,"","",
                 "","N",None,None,None,("efld",)),
             (("C",2,1,0),"I@can_code",0,"","",
-                "","N",self.doCode,cod,None,None),
+                "","N",self.doCode,self.cod,None,None),
             (("C",2,2,0),"I@can_desc",0,"","",
                 "","N",self.doDesc,des,None,("notblank",)),
             (("C",2,3,0),"I@can_vatcod",0,"","",
@@ -153,8 +187,8 @@ class cs2010(object):
                 (("C",1,1),("C",2,1)),
                 (("C",1,2),("C",2,2))),
             ("Edit",None,self.doEdit,0,
-                (("C",1,1),("C",2,1),("C",3,1)),
-                (("C",1,2),("C",2,2),("C",3,2))),
+                (("C",1,1),("C",2,1)),
+                (("C",1,2),("C",2,2))),
             ("Quit",None,self.doQuit,0,("T",0,0),("T",0,1)))
         self.df = TartanDialog(self.opts["mf"], tags=tag, eflds=fld,
             tend=tnd, txit=txt, cend=cnd, cxit=cxt, butt=but, focus=False)
@@ -189,8 +223,8 @@ class cs2010(object):
         for rr in rec:
             self.itotal = float(ASD(self.itotal) + ASD(rr[7]))
         self.df.loadEntry(frt, pag, p+2, data=self.itotal)
-        self.rec = self.sql.getRec("cshcnt", where=[("cct_cono",
-            "=", self.opts["conum"]), ("cct_type", "=", "T"), ("cct_date",
+        self.rec = self.sql.getRec("cshcnt", where=[("cct_cono", "=",
+            self.opts["conum"]), ("cct_type", "=", "T"), ("cct_date",
             "=", self.date)], limit=1)
         if self.rec and self.trtp == "C":
             self.amend = True
@@ -198,18 +232,23 @@ class cs2010(object):
             return "nc"
 
     def doCode(self, frt, pag, r, c, p, i, w):
-        if not w:
+        if self.glint == "N" and not w:
             ok = askQuestion(self.opts["mf"].body, "Code Maintenance",
                 "Do You Want to Add or Edit Codes?", default="no")
             if ok == "no":
                 return "rf"
-            w = callModule(self.opts["mf"], self.df, "gl1010",
+            w = callModule(self.opts["mf"], self.df, "cs1010",
                 coy=[self.opts["conum"], self.opts["conam"]],
                 user=self.opts["capnm"], args=True, ret="acno")
             self.df.loadEntry(frt, pag, p, data=w)
-        acc = self.sql.getRec("genmst", cols=["glm_desc", "glm_vat"],
-            where=[("glm_cono", "=", self.opts["conum"]), ("glm_acno", "=",
-            w)], limit=1)
+        if self.glint == "Y":
+            acc = self.sql.getRec("genmst", cols=["glm_desc", "glm_vat"],
+                where=[("glm_cono", "=", self.opts["conum"]), ("glm_acno",
+                "=", w)], limit=1)
+        else:
+            acc = self.sql.getRec("cshmst", cols=["ccm_desc", "ccm_vat"],
+                where=[("ccm_cono", "=", self.opts["conum"]), ("ccm_acno",
+                "=", w)], limit=1)
         if not acc:
             return "Invalid Code"
         self.code = w
@@ -273,7 +312,12 @@ class cs2010(object):
             "=", self.date)])
         data = []
         for rec in ana:
-            data.append(rec[3:])
+            dat = []
+            for n, d in enumerate(rec):
+                if n in (0, 1, 2, 9):
+                    continue
+                dat.append(d)
+            data.append(dat)
         titl = "Analysis"
         head = ("Date", "Code", "Description", "V", "Inc-Amount", "VAT-Amount",
             "Seq")
@@ -281,8 +325,8 @@ class cs2010(object):
             "stype": "C",
             "titl": titl,
             "head": head,
-            "typs": (("D1", 10), ("UI", 5), ("NA", 30), ("UA", 1),
-                ("SD", 13.2), ("SD", 13.2), ("US", 10)),
+            "typs": (("D1", 10), ("UI", 7), ("NA", 30), ("UA", 1),
+                ("SD", 13.2), ("SD", 13.2), ("UA", 1), ("US", 10)),
             "data": data}
         state = self.df.disableButtonsTags()
         self.opts["mf"].updateStatus("Select a Line to Edit")
@@ -296,47 +340,13 @@ class cs2010(object):
         self.doLoadAnalysis()
         self.df.enableButtonsTags(state=state)
 
-    def doEditPage3(self):
-        titl = "Denominations"
-        data = []
-        for num, rec in enumerate(self.df.c_work[3]):
-            data.append([self.denoms[num][0], rec[0], rec[1]])
-        lin = {
-            "stype": "C",
-            "deco": True,
-            "titl": titl,
-            "head": ("Denom", "Qty", "Value"),
-            "typs": (("NA", 4), ("UI", 5), ("SD", 13.2)),
-            "data": data,
-            "retn": "I"}
-        state = self.df.disableButtonsTags()
-        self.opts["mf"].updateStatus("Select a Denomination to Edit")
-        chg = self.df.selChoice(lin)
-        self.df.enableButtonsTags(state=state)
-        if chg and chg.selection:
-            self.edit = self.df.col
-            qty, val = self.df.c_work[3][chg.selection[0]]
-            self.ctotal = float(ASD(self.ctotal) - ASD(val))
-            self.df.focusField("C", 3, (chg.selection[0] * 2) + 1)
-        else:
-            self.edit = None
-            self.df.focusField("C", 3, self.df.col)
-
     def doChgChanges(self):
         tit = ("Change Line",)
-        cod = {
-            "stype": "R",
-            "tables": ("genmst",),
-            "cols": (
-                ("glm_acno", "", 0, "Acc-Num"),
-                ("glm_desc", "", 0, "Description", "Y")),
-            "where": [("glm_cono", "=", self.opts["conum"])],
-            "order": "glm_acno"}
         fld = (
             (("T",0,0,0),"I@can_trdt",10,"","",
                 "","N",self.doChgDate,None,None,("efld",)),
             (("T",0,1,0),"I@can_code",0,"","",
-                "","N",None,cod,None,None),
+                "","N",None,self.cod,None,None),
             (("T",0,2,0),"I@can_desc",0,"","",
                 "","N",None,None,None,("efld",)),
             (("T",0,3,0),"I@can_vatcod",0,"","",
@@ -352,7 +362,7 @@ class cs2010(object):
         for num, dat in enumerate(self.edit[3:9]):
             self.cg.loadEntry("T", 0, num, data=dat)
         self.cg.focusField("T", 0, 1, clr=False)
-        self.cg.nstFrame.wait_window()
+        self.cg.mstFrame.wait_window()
 
     def doChgDate(self, frt, pag, r, c, p, i, w):
         self.chgdte = w
@@ -386,6 +396,32 @@ class cs2010(object):
     def doChgExit(self):
         self.cg.closeProcess()
 
+    def doEditPage3(self):
+        titl = "Denominations"
+        data = []
+        for num, rec in enumerate(self.df.c_work[3]):
+            data.append([self.denoms[num][0], rec[0], rec[1]])
+        lin = {
+            "stype": "C",
+            "deco": True,
+            "titl": titl,
+            "head": ("Denom", "Qty", "Value"),
+            "typs": (("NA", 4), ("UI", 5), ("SD", 13.2)),
+            "data": data,
+            "retn": "I"}
+        state = self.df.disableButtonsTags()
+        self.opts["mf"].updateStatus("Select a Denomination to Edit")
+        chg = self.df.selChoice(lin)
+        self.df.enableButtonsTags(state=state)
+        if chg and chg.selection:
+            self.edit = self.df.col
+            qty, val = self.df.c_work[3][chg.selection[0]]
+            self.ctotal = float(ASD(self.ctotal) - ASD(val))
+            self.df.focusField("C", 3, (chg.selection[0] * 2) + 1)
+        else:
+            self.edit = None
+            self.df.focusField("C", 3, self.df.col)
+
     def doTopEnd(self):
         if self.df.pag == 0:
             if self.trtp == "P":
@@ -414,7 +450,7 @@ class cs2010(object):
             if self.trtp == "P":
                 data = [self.opts["conum"], self.trtp, self.date]
                 data.extend(self.df.c_work[1][self.df.row])
-                data.append(0)
+                data.append("N")
                 self.sql.insRec("cshana", data=data)
                 self.etotal = float(ASD(self.etotal) + ASD(self.iamt))
                 self.df.loadEntry("T", 0, 2, data=self.etotal)
@@ -422,7 +458,7 @@ class cs2010(object):
             else:
                 data = [self.opts["conum"], self.trtp, self.date]
                 data.extend(self.df.c_work[2][self.df.row])
-                data.append(0)
+                data.append("N")
                 self.sql.insRec("cshana", data=data)
                 self.itotal = float(ASD(self.itotal) + ASD(self.iamt))
                 self.df.loadEntry("T", 0, 3, data=self.itotal)
@@ -454,7 +490,7 @@ class cs2010(object):
 
     def doLoadCash(self):
         self.df.doInvoke(["T", 3, 1, self.doCheq], self.rec[3])
-        for num, qty in enumerate(self.rec[4:]):
+        for num, qty in enumerate(self.rec[4:-1]):
             col = (num * 2) + 1
             self.df.doInvoke(["C", 3, col, self.doQty], qty)
 
@@ -467,8 +503,8 @@ class cs2010(object):
             pag = 2
         self.df.clearFrame("C", pag)
         ana = self.sql.getRec("cshana", where=[("can_cono", "=",
-            self.opts["conum"]), ("can_type", "=", self.trtp), ("can_date",
-            "=", self.date)], order="can_seq")
+            self.opts["conum"]), ("can_type", "=", self.trtp),
+            ("can_date", "=", self.date)], order="can_seq")
         if not ana:
             self.df.focusField("C", pag, 1)
         else:

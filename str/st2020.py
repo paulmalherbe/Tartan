@@ -45,13 +45,6 @@ class st2020(object):
         if self.sql.error:
             return
         gc = GetCtl(self.opts["mf"])
-        ctlsys = gc.getCtl("ctlsys")
-        if not ctlsys:
-            return
-        if ctlsys["sys_msvr"]:
-            self.email = "Y"
-        else:
-            self.email = "N"
         strctl = gc.getCtl("strctl", self.opts["conum"])
         if not strctl:
             return

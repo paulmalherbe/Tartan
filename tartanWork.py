@@ -55,8 +55,9 @@ pkgs = {
     "ar": "ass", "bk": "bkm", "bs": "bks", "bc": "bwl", "cr": "crs",
     "cs": "csh", "dr": "drs", "gl": "gen", "ln": "lon", "ml": "mem",
     "ms": "mst", "rc": "rca", "rt": "rtl", "sc": "scp", "si": "sls",
-    "st": "str", "tb": "tab", "bm": "uty", "fc": "uty", "pm": "uty",
-    "rp": "uty", "td": "uty", "tp": "uty", "sl": "wag", "wg": "wag"}
+    "st": "str", "tb": "tab", "bm": "uty", "cp": "uty", "fc": "uty",
+    "pm": "uty", "rp": "uty", "td": "uty", "tp": "uty", "sl": "wag",
+    "wg": "wag"}
 #---------------------
 # Month Names and Days
 #---------------------
@@ -376,6 +377,8 @@ pwctrl = (
     ("BKM", "Super", "Supervisor Password"),
     ("BKS", "Super", "Supervisor Password"),
     ("BWL", "Super", "Supervisor Password"),
+    ("BWL", "Delete", "Allow the Deletion of Draw"),
+    ("BWL", "Modify", "Allow the Modification of Ratings"),
     ("CSH", "Super", "Supervisor Password"),
     ("CRS", "NewAcc", "Allow Capture of New Account"),
     ("CRS", "Super", "Supervisor Password"),
@@ -393,7 +396,6 @@ pwctrl = (
     ("INV", "ExQty", "Allow Overide of Quantity Limit"),
     ("INV", "Invoices", "Allow Invoices and Credit Notes"),
     ("INV", "NoCharge", "Allow No Charge Sale"),
-    ("INV", "Refund", "Allow Refunds"),
     ("INV", "Super", "Supervisor Password"),
     ("INV", "UserPwd", "User Password"),
     ("LON", "Super", "Supervisor Password"),
@@ -410,6 +412,7 @@ pwctrl = (
     ("MST", "YearEnd", "Allow Year End to be Run for a Finalised Period"),
     ("RCA", "DateOver", "Allow Override of Transaction Date"),
     ("RCA", "Overpaid", "Allow Override of Overpayment"),
+    ("RCA", "Super", "Supervisor Password"),
     ("RTL", "NewAcc", "Allow Capture of New Account"),
     ("RTL", "Super", "Supervisor Password"),
     ("SCP", "Super", "Supervisor Password"),
@@ -972,7 +975,7 @@ tabdic = {
     "assctl": {
         "fld": [
             [0, "cta_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "cta_glint", "UA", 1.0, "Integration", "I"],
+            [1, "cta_glint", "UA", 1.0, "G/L Integration", "I"],
             [2, "cta_rordp", "UA", 1.0, "Receiver Dep", "R"],
             [3, "cta_lastp", "D2", 7.0, "Last Dep Period", "Last-DP"],
             [4, "cta_emadd", "TX", 50.0, "Email Address", "Email Address"],
@@ -1073,7 +1076,7 @@ tabdic = {
     "bkmctl": {
         "fld": [
             [0, "cbk_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "cbk_glint", "UA", 1.0, "Integration", "I"],
+            [1, "cbk_glint", "UA", 1.0, "G/L Integration", "I"],
             [2, "cbk_bkgtpl", "NA", 20.0, "Booking Template",
                 "Booking-Template"],
             [3, "cbk_invtpl", "NA", 20.0, "Invoice Template",
@@ -1292,8 +1295,8 @@ tabdic = {
             [6, "bdm_dtype", "UA", 1.0, "Draw Type", "T"],
             [7, "bdm_dhist", "UA", 1.0, "History", "H"],
             [8, "bdm_tsize", "UI", 1.0, "Team Size", "S"],
-            [9, "bdm_mrate", "UD", 5.2, "Member Rate", "MEM"],
-            [10, "bdm_vrate", "UD", 5.2, "Visitor Rate", "VIS"],
+            [9, "bdm_mrate", "UD", 5.2, "Member Rate", "M-Rte"],
+            [10, "bdm_vrate", "UD", 5.2, "Visitor Rate", "V-Rte"],
             [11, "bdm_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Tabs Draw - Master", 1, "U", "bdm_cono", "bdm_date",
@@ -1652,8 +1655,9 @@ tabdic = {
             [6, "can_vatcod", "UA", 1.0, "VAT Code", "V"],
             [7, "can_incamt", "SD", 13.2, "Inclusive Amount", "Inc-Amount"],
             [8, "can_vatamt", "SD", 13.2, "VAT Amount", "VAT-Amount"],
-            [9, "can_xflag", "UA", 1.0, "Export Flag", "X"],
-            [10, "can_seq", "US", 10.0, "Sequence", "Sequence"]],
+            [9, "can_gflag", "UA", 1.0, "Integrated Flag", "G"],
+            [10, "can_xflag", "UA", 1.0, "Export Flag", "X"],
+            [11, "can_seq", "US", 10.0, "Sequence", "Sequence"]],
         "idx": [
             ["Cash Analysis", 1, "U", "can_seq"],
             ["", 2, "N", "can_cono", "can_type", "can_date"]]},
@@ -1680,6 +1684,23 @@ tabdic = {
             [18, "cct_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Cash Count", 1, "U", "cct_cono", "cct_type", "cct_date"]]},
+    "cshctl": {
+        "fld": [
+            [0, "ccc_cono", "UI", 3.0, "Company Number", "Coy"],
+            [1, "ccc_glint", "UA", 1.0, "G/L Integration", "I"],
+            [2, "ccc_emadd", "TX", 50.0, "Email Address", "Email Address"],
+            [3, "ccc_xflag", "UA", 1.0, "Export Flag", "X"]],
+        "idx": [
+            ["Cash Control", 1, "U", "ccc_cono"]]},
+    "cshmst": {
+        "fld": [
+            [0, "ccm_cono", "UI", 3.0, "Companu Number", "Coy"],
+            [1, "ccm_acno", "UI", 7.0, "Account Number", "Acc-Num"],
+            [2, "ccm_desc", "NA", 30.0, "Decsription", "Description"],
+            [3, "ccm_vat", "UA", 1.0, "VAT Code", "V"],
+            [4, "ccm_xflag", "UA", 1.0, "Export Flag", "X"]],
+        "idx": [
+            ["Cash Takings Accounts", 1, "U", "ccm_cono", "ccm_acno"]]},
     "ctlbat": {
         "fld": [
             [0, "btm_cono", "UI", 3.0, "Company Number", "Coy"],
@@ -1759,23 +1780,24 @@ tabdic = {
                 "Street Address Line 2"],
             [8, "ctm_sadd3", "NA", 30.0, "Street Address Line 3",
                 "Street Address Line 3"],
-            [9, "ctm_spcode", "NA", 4.0, "Street Postal Code", "Street Pcod"],
+            [9, "ctm_spcode", "NA", 4.0, "Street Postal Code", "Street-Pcod"],
             [10, "ctm_contact", "NA", 30.0, "Contact Person", "Contact"],
-            [11, "ctm_tel", "NA", 15.0, "Telephone Number", "Telephone Number"],
-            [12, "ctm_fax", "NA", 15.0, "Fax Number", "Fax Number"],
-            [13, "ctm_cell", "NA", 15.0, "Cell Number", "Cell Number"],
-            [14, "ctm_email", "TX", 50.0, "E-Mail Address", "E-Mail Address"],
-            [15, "ctm_regno", "NA", 20.0, "Registration Code",
+            [11, "ctm_tel", "NA", 15.0, "Telephone Number", "Telephone-Number"],
+            [12, "ctm_fax", "NA", 15.0, "Fax Number", "Fax-Number"],
+            [13, "ctm_cell", "NA", 15.0, "Cell Number", "Cell-Number"],
+            [14, "ctm_email", "TX", 50.0, "E-Mail Address", "E-Mail-Address"],
+            [15, "ctm_weburl", "TX", 50.0, "Internet URL", "Internet-URL"],
+            [16, "ctm_regno", "NA", 20.0, "Registration Code",
                 "Registration-Code"],
-            [16, "ctm_taxno", "NA", 20.0, "V.A.T. Number", "VAT Number"],
-            [17, "ctm_taxdf", "UA", 1.0, "V.A.T. Default", "V"],
-            [18, "ctm_b_name", "NA", 30.0, "Bank Name", "B-Name"],
-            [19, "ctm_b_branch", "NA", 30.0, "Bank Branch", "B-Branch"],
-            [20, "ctm_b_ibt", "NA", 8.0, "Bank IBT Number", "B-Ibt"],
-            [21, "ctm_b_acno", "NA", 16.0, "Bank Account Number", "B-Accno"],
-            [22, "ctm_modules", "UA", 40.0, "System Modules", "System Modules"],
-            [23, "ctm_logo", "TX", 50.0, "Company Logo Image", "Logo Image"],
-            [24, "ctm_xflag", "UA", 1.0, "Export Flag", "X"]],
+            [17, "ctm_taxno", "NA", 20.0, "V.A.T. Number", "VAT-Number"],
+            [18, "ctm_taxdf", "UA", 1.0, "V.A.T. Default", "V"],
+            [19, "ctm_b_name", "NA", 30.0, "Bank Name", "B-Name"],
+            [20, "ctm_b_branch", "NA", 30.0, "Bank Branch", "B-Branch"],
+            [21, "ctm_b_ibt", "NA", 8.0, "Bank IBT Number", "B-Ibt"],
+            [22, "ctm_b_acno", "NA", 16.0, "Bank Account Number", "B-Accno"],
+            [23, "ctm_modules", "UA", 40.0, "System Modules", "System-Modules"],
+            [24, "ctm_logo", "TX", 50.0, "Company Logo Image", "Logo-Image"],
+            [25, "ctm_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Company Records", 1, "U", "ctm_cono"]]},
     "ctlnot": {
@@ -2037,7 +2059,7 @@ tabdic = {
         "fld": [
             [0, "dct_cono", "UI", 3.0, "Company Number", "Coy"],
             [1, "dct_num", "UI", 3.0, "Number", "Jnl-Num"],
-            [2, "dct_seq", "UI", 3.0, "Sequence", "seq"],
+            [2, "dct_seq", "UI", 3.0, "Sequence", "Seq"],
             [3, "dct_chain", "UI", 3.0, "Chain Store", "Chn"],
             [4, "dct_acno", "NA", 7.0, "Account Number", "Acc-Num"],
             [5, "dct_detail", "TX", 30.0, "Charge Details", "Charge-Details"],
@@ -2196,7 +2218,7 @@ tabdic = {
         "fld": [
             [0, "gjt_cono", "UI", 3.0, "Company Number", "Coy"],
             [1, "gjt_num", "Na", 9.0, "Number", "Jnl-Num"],
-            [2, "gjt_seq", "UI", 3.0, "Sequence", "seq"],
+            [2, "gjt_seq", "UI", 3.0, "Sequence", "Seq"],
             [3, "gjt_acno", "UI", 7.0, "Account Number", "Acc-Num"],
             [4, "gjt_vatc", "UA", 1.0, "V.A.T. Indicator", "V"],
             [5, "gjt_amnt", "SD", 13.2, "Amount", "Amount"],
@@ -2421,7 +2443,7 @@ tabdic = {
     "lonctl": {
         "fld": [
             [0, "cln_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "cln_glint", "UA", 1.0, "Integration", "I"],
+            [1, "cln_glint", "UA", 1.0, "G/L Integration", "I"],
             [2, "cln_ityp", "UA", 1.0, "Interest Method", "M"],
             [3, "cln_capb", "UA", 1.0, "Capitalization Base", "B"],
             [4, "cln_capf", "UA", 1.0, "Capitalization Freq", "F"],
@@ -2597,7 +2619,7 @@ tabdic = {
     "memctl": {
         "fld": [
             [0, "mcm_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "mcm_glint", "UA", 1.0, "Integration", "I"],
+            [1, "mcm_glint", "UA", 1.0, "G/L Integration", "I"],
             [2, "mcm_ldays", "UI", 2.0, "Days Limit", "DL"],
             [3, "mcm_lme", "d1", 10.0, "Last Month End", "LME-Date"],
             [4, "mcm_photo", "TX", 50.0, "Photo Directory", "Photo-Directory"],
@@ -2763,7 +2785,7 @@ tabdic = {
     "rcactl": {
         "fld": [
             [0, "cte_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "cte_glint", "UA", 1.0, "Integration", "I"],
+            [1, "cte_glint", "UA", 1.0, "G/L Integration", "I"],
             [2, "cte_glbnk", "UI", 7.0, "G/L Bank Account", "Bank-Ac"],
             [3, "cte_lme", "d1", 10.0, "Last Month End", "LME-Date"],
             [4, "cte_tplown", "NA", 20.0, "Owner Template", "Owner-Template"],
@@ -2996,7 +3018,7 @@ tabdic = {
     "rtlctl": {
         "fld": [
             [0, "ctr_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "ctr_glint", "UA", 1.0, "Integration", "I"],
+            [1, "ctr_glint", "UA", 1.0, "G/L Integration", "I"],
             [2, "ctr_lme", "d1", 10.0, "Last Month End", "LME-Date"],
             [3, "ctr_tplnam", "NA", 20.0, "Statement Template",
                 "Template-Name"],
@@ -3200,7 +3222,7 @@ tabdic = {
             [0, "si2_cono", "UI", 3.0, "Company Number", "Coy"],
             [1, "si2_rtn", "NA", 1.0, "Document Type", "T"],
             [2, "si2_docno", "UI", 9.0, "Document Number", "Doc-Num"],
-            [3, "si2_seq", "UI", 3.0, "Sequence", "Seq"],
+            [3, "si2_line", "UI", 3.0, "Sequence", "Seq"],
             [4, "si2_group", "UA", 3.0, "Product Group", "Grp"],
             [5, "si2_code", "NA", 20.0, "Product Code", "Product-Code"],
             [6, "si2_loc", "UA", 1.0, "Location", "L"],
@@ -3216,22 +3238,22 @@ tabdic = {
             [16, "si2_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Sales Invoice Transactions", 1, "U", "si2_cono", "si2_rtn",
-                "si2_docno", "si2_seq"]]},
+                "si2_docno", "si2_line"]]},
     "slsiv3": {
         "fld": [
             [0, "si3_cono", "UI", 3.0, "Company Number", "Coy"],
             [1, "si3_rtn", "NA", 1.0, "Document Type", "T"],
             [2, "si3_docno", "UI", 9.0, "Document Number", "Doc-Num"],
-            [3, "si3_seq", "UI", 3.0, "Invoice Line", "Seq"],
+            [3, "si3_line", "UI", 3.0, "Invoice Line", "Seq"],
             [4, "si3_rgroup", "UA", 3.0, "Product Group", "Grp"],
             [5, "si3_rcode", "NA", 20.0, "Product Code", "Product-Code"],
             [6, "si3_rqty", "UD", 11.2, "Quantity", "Quantity"],
             [7, "si3_cost", "SD", 11.2, "Cost Price", "Cost-Price"],
             [8, "si3_xflag", "UA", 1.0, "Export Flag", "X"],
-            [9, "si3_seqnum", "US", 10.0, "Sequence", "Sequence"]],
+            [9, "si3_seq", "US", 10.0, "Sequence", "Sequence"]],
         "idx": [
-            ["Sales Recipe Transactions", 1, "U", "si3_seqnum"],
-            ["", 2, "N", "si3_cono", "si3_rtn", "si3_docno", "si3_seq"]]},
+            ["Sales Recipe Transactions", 1, "U", "si3_seq"],
+            ["", 2, "N", "si3_cono", "si3_rtn", "si3_docno", "si3_line"]]},
     "strcmu": {
         "fld": [
             [0, "smc_cono", "UI", 3.0, "Company Number", "Coy"],
@@ -3257,7 +3279,7 @@ tabdic = {
     "strctl": {
         "fld": [
             [0, "cts_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "cts_glint", "UA", 1.0, "Integration", "I"],
+            [1, "cts_glint", "UA", 1.0, "G/L Integration", "I"],
             [2, "cts_locs", "UA", 1.0, "Multiple Locations", "L"],
             [3, "cts_plevs", "UI", 1.0, "Selling Price Levels", "P"],
             [4, "cts_automu", "UA", 1.0, "Automatic Markup", "M"],
@@ -3595,7 +3617,7 @@ tabdic = {
     "wagctl": {
         "fld": [
             [0, "ctw_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "ctw_glint", "UA", 1.0, "Integration", "I"],
+            [1, "ctw_glint", "UA", 1.0, "G/L Integration", "I"],
             [2, "ctw_regno", "NA", 10.0, "Registration Number", "Reg-Num"],
             [3, "ctw_sdlno", "NA", 10.0, "SDL Number", "SDL-Num"],
             [4, "ctw_uifno", "NA", 10.0, "UIF Number", "UIF-Num"],
@@ -3905,6 +3927,7 @@ tarmen = {
         ["PYYY","ms_ye","msy010",6,"Financial Year End Routine"],
         ["PYYY","ms_ye","msy020",6,"Change Year End Date"],
         ["PYNN","mm_uy","bm1010",3,"Bulk Mail/SMS Utility"],
+        ["PYYY","mm_uy","cp1010",2,"Change Batch Period"],
         ["PNNN","mm_uy","fc1010",0,"Loan/Lease Calculator"],
         ["PNNY","mm_uy","pm1010",0,"Password Manager"],
         ["PNNY","mm_uy","rp1010",2,"Report Generator"],
@@ -4367,7 +4390,10 @@ tarmen = {
     # Cash Analysis Routines
     "csmen": [],
     "csmod": [
+        ["PYNY","mm_cs","csc110",5,"Control Record"],
+        ["PYNY","mm_cs","cs1010",3,"Cash Records"],
         ["PYNY","mm_cs","cs2010",0,"Cash Takings"],
+        ["PYYY","mm_cs","cs2020",0,"Cash Merge"],
         ["PYNY","mm_cs","cs3010",0,"Cash Report"],
         ["F","mm_cs","doManual CSH",0,"Help"]],
 
@@ -4607,7 +4633,7 @@ datdic = {
         ["slsiv1", "si1_docno", "slsiv3", "si3_docno"],
         ["slsiv2", "si2_cono", "slsiv3", "si3_cono"],
         ["slsiv2", "si2_docno", "slsiv3", "si3_docno"],
-        ["slsiv2", "si2_seq", "slsiv3", "si3_seq"],
+        ["slsiv2", "si2_line", "slsiv3", "si3_line"],
         ["telmst", "tdm_name", "telcon", "tdc_name"],
         ["wagmst", "wgm_cono", "wagtf1", "wt1_cono"],
         ["wagmst", "wgm_empno", "wagtf1", "wt1_empno"],
@@ -6273,7 +6299,7 @@ datdic = {
         ["statement_normal", 24.0, "C", "C", "N", "", "", 0, "#000000", "",
             "", "", "", "", "", 0.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0,
             "carried_forward", "courier", 10, "#000000", "Y", "N", "N", "R",
-            "LRB", "N", 129.0, 22, 178.0, 244.0, 5.0, 249.0, 1, 1],
+            "TLRB", "N", 129.0, 22, 178.0, 244.0, 5.0, 249.0, 1, 1],
         ["statement_normal", 25.0, "C", "C", "H", "120+ days", "courier", 10,
             "#000000", "Y", "N", "N", "R", "TLRB", "Y", 15.0, 11, 40.0,
             244.0, 5.0, 249.0, 0.0, "120_day_balance", "courier", 10,
@@ -6423,7 +6449,7 @@ datdic = {
         ["statement_other", 23.0, "C", "C", "N", "", "", 0, "#000000", "",
             "", "", "", "", "", 0.0, 0, 0.0, 0.0, 0, 0.0, 0.0,
             "carried_forward", "courier", 10, "#000000", "Y", "N", "N", "R",
-            "LRB", "N", 124.0, 22, 173.0, 244.0, 5, 249.0, 1, 1],
+            "TLRB", "N", 124.0, 22, 173.0, 244.0, 5, 249.0, 1, 1],
         ["statement_other", 24.0, "C", "C", "H", "Arrears", "courier", 10,
             "#000000", "Y", "N", "N", "R", "TLRB", "Y", 10.0, 22, 59.0,
             244.0, 5, 249.0, 0.0, "total_arrears", "courier", 10, "#000000",

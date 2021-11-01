@@ -661,7 +661,7 @@ class gl2030(object):
                         "","N",self.doSlnEmp,wgm,None,None],
                     [["C",self.slnpag,0,1],"ONA",20,"Name"],
                     [["C",self.slnpag,0,2],"IUI",2,"Ln","Loan Number",
-                        "","N",self.doSlnNum,lmf,None,("notzero",)],
+                        "","N",self.doSlnNum,lmf,None,None],
                     [["C",self.slnpag,0,3],"INA",20,"Description","",
                         "","N",self.doSlnDes,None,None,("notblank",)],
                     [["C",self.slnpag,0,4],"ISD",13.2,"Amount","",
@@ -1061,19 +1061,11 @@ class gl2030(object):
                         othrtn = 5
                         self.glrtn = 2
                         self.vtyp = "I"
-                    elif trtp == "R":
+                    else:
                         # Receipts
                         othrtn = 2
                         self.glrtn = 6
                         self.vtyp = "O"
-                    else:
-                        # Journals
-                        self.glrtn = 4
-                        othrtn = 3
-                        if amount < 0:
-                            self.vtyp = "I"
-                        else:
-                            self.vtyp = "O"
                     self.trndte = date
                     self.trnref = refno
                     self.allamt = amount
@@ -2431,11 +2423,20 @@ class gl2030(object):
         self.empnum = w
         empnam = "%s, %s" % (acc[0], acc[1].split()[0])
         self.df.loadEntry(frt, pag, p+1, data=empnam)
+        chk = self.sql.getRec("waglmf", where=[("wlm_cono", "=",
+            self.opts["conum"]), ("wlm_empno", "=", self.empnum)])
+        if len(chk) == 1:
+            acc = chk[0]
+            self.newsln = False
+            self.doLoadLoan(acc)
+            self.df.loadEntry(frt, pag, p+2, data=self.slnnum)
+            self.df.loadEntry(frt, pag, p+3, data=self.slndes)
+            return "sk3"
 
     def doSlnNum(self, frt, pag, r, c, p, i, w):
         if not w:
             if self.glrtn == 6:
-                return "Loan Does Not Exist"
+                return "Invalid Loan"
             ok = askQuestion(self.opts["mf"].body, head="New Loan",
                 mess="Is This a New Loan?", default="no")
             if ok == "yes":
@@ -2444,21 +2445,25 @@ class gl2030(object):
                     where=[("wlm_cono", "=", self.allcoy), ("wlm_empno",
                     "=", self.empnum)], start=1, last=99999)
                 self.df.loadEntry(frt, pag, p, data=self.slnnum)
+            else:
+                return "Invalid Loan"
         else:
             acc = self.sql.getRec("waglmf", where=[("wlm_cono",
                 "=", self.allcoy), ("wlm_empno", "=", self.empnum),
-                ("wlm_loan", "=", self.slnnum)], limit=1)
+                ("wlm_loan", "=", w)], limit=1)
             if not acc:
                 return "Loan Does Not Exist"
-            self.slnnum = w
             self.newsln = False
-            self.slndes = acc[self.sql.waglmf_col.index("wlm_desc")]
-            self.slncod = acc[self.sql.waglmf_col.index("wlm_code")]
-            self.slnrte = acc[self.sql.waglmf_col.index("wlm_rate")]
-            self.slndat = acc[self.sql.waglmf_col.index("wlm_start")]
-            self.slnded = acc[self.sql.waglmf_col.index("wlm_repay")]
+            self.doLoadLoan(acc)
             self.df.loadEntry(frt, pag, p+1, data=self.slndes)
             return "sk1"
+
+    def doLoadLoan(self, acc):
+        self.slnnum = acc[self.sql.waglmf_col.index("wlm_loan")]
+        self.slndes = acc[self.sql.waglmf_col.index("wlm_desc")]
+        self.slncod = acc[self.sql.waglmf_col.index("wlm_code")]
+        self.slnrte = acc[self.sql.waglmf_col.index("wlm_rate")]
+        self.slnded = acc[self.sql.waglmf_col.index("wlm_repay")]
 
     def doSlnDes(self, frt, pag, r, c, p, i, w):
         self.slndes = w
@@ -2483,15 +2488,15 @@ class gl2030(object):
         self.df.loadEntry(frt, pag, p+1, data=acc[0])
         self.slncod = w
         if not self.newsln:
-            self.newrte = 0
+            self.slnrte = 0
             self.slnded = 0
-            self.df.loadEntry(frt, pag, p+1, data=0)
             self.df.loadEntry(frt, pag, p+2, data=0)
+            self.df.loadEntry(frt, pag, p+3, data=0)
             return "nd"
         self.df.loadEntry(frt, pag, p+2, data=self.slnrte)
 
     def doSlnInt(self, frt, pag, r, c, p, i, w):
-        self.newrte = w
+        self.slnrte = w
         if not self.newsln:
             self.df.loadEntry(frt, pag, p+2, data=self.slnded)
 
@@ -2509,11 +2514,11 @@ class gl2030(object):
             self.othrtn = 2
             cap = self.othamt
             self.sql.insRec("waglmf", data=[self.allcoy, self.empnum,
-                self.slnnum, self.slndes, self.slncod, self.newrte,
+                self.slnnum, self.slndes, self.slncod, self.slnrte,
                 self.trndte, self.slnded])
         else:
             # Staff Loans Ledger Masterfile
-            self.sql.updRec("waglmf", cols=["wlm_int_per"], data=[self.newrte],
+            self.sql.updRec("waglmf", cols=["wlm_rate"], data=[self.slnrte],
                 where=[("wlm_cono", "=", self.allcoy), ("wlm_empno", "=",
                 self.empnum), ("wlm_loan", "=", self.slnnum)])
             if self.glrtn == 6:
@@ -2525,7 +2530,7 @@ class gl2030(object):
         # Staff Loans Ledger Transaction
         data = [self.allcoy, self.empnum, self.slnnum, self.bh.batno,
             self.othrtn, self.trndte, self.trnref, tramt, cap, self.slnded,
-            self.newrte, self.curdt, self.alldet, "", self.opts["capnm"],
+            self.slnrte, self.curdt, self.alldet, "", self.opts["capnm"],
             self.sysdtw, 0]
         self.sql.insRec("wagltf", data=data)
         if self.othtot != self.allamt:

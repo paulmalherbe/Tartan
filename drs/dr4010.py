@@ -489,7 +489,7 @@ class dr4010(object):
         self.df.enableButtonsTags(state=state)
 
     def doClear(self):
-        self.df.selPage("Basic-_A")
+        self.df.selPage("Basic-A")
         self.df.focusField("T", 0, 1)
 
     def doPrint(self):

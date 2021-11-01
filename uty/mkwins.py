@@ -3,7 +3,7 @@ import getopt, os, pathlib, shutil, subprocess, sys
 from zipfile import ZipFile
 
 # Generate Tartan Executable
-def dofind(name=None, path="C:\\"):
+def doFind(name=None, path="C:\\"):
     found = None
     for ddd in ("Program Files", "Program Files (x86)"):
         temp = os.path.join(path, ddd)
@@ -15,6 +15,40 @@ def dofind(name=None, path="C:\\"):
         if found:
             break
     return found
+
+def doUpgrade():
+    for mod in [
+            "pip",
+            "beepy",
+            "docutils",
+            "fpdf",
+            "importlib_metadata",
+            "markdown",
+            "ofxtools",
+            "openpyxl",
+            "pillow",
+            "progress",
+            "psycopg2",
+            "pyaes",
+            "pycryptodome",
+            "pyexcel-ods",
+            "pyexcel-xls",
+            "pygal",
+            "pyinstaller",
+            "pymupdf",
+            "pysmb",
+            "pywin32",
+            "reportlab",
+            "requests",
+            "send2trash",
+            "svglib",
+            "tkcolorpicker",
+            "tkinterhtml"]:
+        try:
+            os.system("pip -q install %s --upgrade" % mod)
+        except:
+            pass
+
 HOM = str(pathlib.Path.home())
 if "WINEPREFIX" in os.environ:
     MAP = "x:"
@@ -36,14 +70,14 @@ for o, v in opts:
         EXE = v
     elif o == "-h":
         print("""
-Usage: python maker.py [options]
+Usage: python mkwins.py [options]
 
     -a Architecture as in 7, 8, 32 and 64
     -d The Installed Path e.g. c:\Tartan\prg
-    -e The Storage Path e.g. x:\TartanExe
-    -s Source path e.g. x:\TartanSve
+    -e The Destination Path e.g. x:\TartanExe
+    -s The Source path e.g. x:\TartanSve
     -t Temporary Work Directory e.g. x:\Temp
-    -u Upgrade modules
+    -u Upgrade python modules
 """)
         sys.exit()
     elif o == "-s":
@@ -59,13 +93,16 @@ if PFX is None:
     else:
         PFX = input("Archtecture: ")
 # Set default variables
-ISC = dofind("iscc.exe")
+ISC = doFind("iscc.exe")
 ISS = "tartan.iss"
 fle = open(os.path.join(EXE, "current"), "r")
 VER = fle.read().strip()
 fle.close()
 # Open the log file
 out = open("%s\\log" % HOM, "w")
+# Upgrade
+if UPG:
+    doUpgrade()
 # Delete installation directories
 shutil.rmtree(DPT, ignore_errors=True)
 shutil.rmtree(TMP, ignore_errors=True)
@@ -79,9 +116,6 @@ os.chdir(TMP)
 # Unzip sources
 with ZipFile(os.path.join(SRC, "tartan-6.zip"), "r") as zipObj:
    zipObj.extractall()
-# Upgrade
-if UPG:
-    os.system("tartan\\uty\\dopip.bat")
 # Generate pygal css directory
 try:
     import pygal
@@ -98,10 +132,11 @@ subprocess.call(["pyinstaller", "windows.spec"], stdout=out, stderr=out)
 shutil.copy("tartan.ico", DPT)
 shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
 # Create installers and Copy installers to EXE
-if PFX == "7":
-    shutil.copy("ucrtbase.7", os.path.join(DPT, "ucrtbase.dll"))
-elif PFX == "8":
-    shutil.copy("ucrtbase.8", os.path.join(DPT, "ucrtbase.dll"))
+if "WINEPREFIX" in os.environ:
+    if PFX == "7":
+        shutil.copy("ucrtbase.7", os.path.join(DPT, "ucrtbase.dll"))
+    elif PFX == "8":
+        shutil.copy("ucrtbase.8", os.path.join(DPT, "ucrtbase.dll"))
 subprocess.call([ISC, ISS], stdout=out, stderr=out)
 shutil.copy(os.path.join("Output", "Tartan.exe"),
     os.path.join(EXE, "tartan-6-%s.exe" % PFX))

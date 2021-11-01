@@ -24,7 +24,8 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from TartanClasses import ASD, CCD, MyFpdf, ProgressBar, Sql, TartanDialog
+from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+from TartanClasses import TartanDialog
 from tartanFunctions import getModName, doPrinter
 
 class cs3010(object):
@@ -35,7 +36,18 @@ class cs3010(object):
             self.opts["mf"].startLoop()
 
     def setVariables(self):
-        self.sql = Sql(self.opts["mf"].dbm, ["cshcnt", "cshana", "genmst"],
+        gc = GetCtl(self.opts["mf"])
+        cshctl = gc.getCtl("cshctl", self.opts["conum"])
+        if not cshctl:
+            return
+        self.glint = cshctl["ccc_glint"]
+        self.fromad = cshctl["ccc_emadd"]
+        if self.glint == "Y":
+            tabs = ["genmst"]
+        else:
+            tabs = ["cshmst"]
+        tabs.extend(["cshcnt", "cshana"])
+        self.sql = Sql(self.opts["mf"].dbm, tables=tabs,
             prog=self.__class__.__name__)
         if self.sql.error:
             return
@@ -73,12 +85,12 @@ class cs3010(object):
                 self.dte,"Y",self.doFrom,dte,None,("efld",)),
             (("T",0,1,0),"Id1",10,"To   Date","To Date",
                 "","Y",self.doTo,dte,None,("efld",)),
-            (("T",0,2,0),"ISD",13.2,"Float","Petty Cash Float",
+            (("T",0,2,0),"ISD",13.2,"Float","Cash Float",
                 2000,"Y",self.doFloat,None,None,("notzero",)))
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
-            tend=tnd, txit=txt, view=("N","V"))
+            tend=tnd, txit=txt, view=("N","V"), mail = ("Y","N"))
 
     def doFrom(self, frt, pag, r, c, p, i, w):
         self.fm = w
@@ -96,7 +108,7 @@ class cs3010(object):
             self.opts["conum"]), ("cct_type", "=", "T"), ("cct_date",
             "between", self.fm, self.to)])
         if not csh:
-            return "Invalid Cash Capture Dates"
+            return "ff1|Invalid Cash Capture Dates"
 
     def doFloat(self, frt, pag, r, c, p, i, w):
         self.float = CCD(w, "SD", 13.2)
@@ -112,11 +124,13 @@ class cs3010(object):
         self.head = "%03u %-78s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.pglin = 999
-        self.pageHeading()
-        self.printExpTak(self.tk1, 1)
-        if not self.quit:
+        if self.tk1:
             self.pageHeading()
-            self.printExpTak(self.tk2, 2)
+            self.printExpTak(self.tk1, 1)
+        if not self.quit:
+            if self.tk2:
+                self.pageHeading()
+                self.printExpTak(self.tk2, 2)
             if not self.quit:
                 self.doSummary()
         if not self.quit:
@@ -125,7 +139,7 @@ class cs3010(object):
             self.fpdf.output(pdfnam, "F")
             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
                 pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
-                repeml=self.df.repeml)
+                fromad=self.fromad, repeml=self.df.repeml)
         self.closeProcess()
 
     def printExpTak(self, recs, ptyp=None):
@@ -178,19 +192,33 @@ class cs3010(object):
 
     def doSummary(self):
         self.pageHeading()
-        recs = self.sql.getRec(tables=["cshana", "genmst"], cols=["can_code",
-            "glm_desc", "sum(can_incamt)", "sum(can_vatamt)"],
-            where=[("can_cono", "=", self.opts["conum"]), ("can_type", "=",
-            "P"), ("can_date", "between", self.fm, self.to),
-            ("glm_cono=can_cono",), ("glm_acno=can_code",)],
-            group="can_code, glm_desc", order="can_code")
+        if self.glint == "Y":
+            tab = ["cshana", "genmst"]
+            col = ["can_code", "glm_desc", "sum(can_incamt)", "sum(can_vatamt)"]
+            whr = [
+                ("can_cono", "=", self.opts["conum"]),
+                ("can_date", "between", self.fm, self.to),
+                ("glm_cono=can_cono",),
+                ("glm_acno=can_code",)]
+            grp = "can_code, glm_desc"
+        else:
+            tab = ["cshana", "cshmst"]
+            col = ["can_code", "ccm_desc", "sum(can_incamt)", "sum(can_vatamt)"]
+            whr = [
+                ("can_cono", "=", self.opts["conum"]),
+                ("can_date", "between", self.fm, self.to),
+                ("ccm_cono=can_cono",),
+                ("ccm_acno=can_code",)]
+            grp = "can_code, ccm_desc"
+        w = whr[:]
+        w.insert(2, ("can_type", "=", "P"))
+        recs = self.sql.getRec(tables=tab, cols=col, where=w, group=grp,
+            order="can_code")
         self.printSummary(recs, 1)
-        recs = self.sql.getRec(tables=["cshana", "genmst"], cols=["can_code",
-            "glm_desc", "sum(can_incamt)", "sum(can_vatamt)"],
-            where=[("can_cono", "=", self.opts["conum"]), ("can_type", "=",
-            "T"), ("can_date", "between", self.fm, self.to),
-            ("glm_cono=can_cono",), ("glm_acno=can_code",)],
-            group="can_code, glm_desc", order="can_code")
+        w = whr[:]
+        w.insert(2, ("can_type", "=", "T"))
+        recs = self.sql.getRec(tables=tab, cols=col, where=w, group=grp,
+            order="can_code")
         self.printSummary(recs, 2)
 
     def printSummary(self, recs, ptyp=None):
@@ -273,7 +301,7 @@ class cs3010(object):
         self.fpdf.drawText()
         self.fpdf.drawText("%-26s %42s %s" % ("Total Takings", "",
             self.tak.disp))
-        self.fpdf.drawText("%-26s %42s %s" % ("Total Reimbursement", "",
+        self.fpdf.drawText("%-26s %42s %s" % ("Total Expended", "",
             self.exp.disp))
         self.fpdf.drawText("%69s %-12s" % ("", self.fpdf.suc*12))
         dif = CCD(float(ASD(self.tak.work) - ASD(self.exp.work)), "SD", 13.2)

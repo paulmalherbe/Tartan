@@ -423,7 +423,7 @@ class dr1010(object):
         self.df.focusField("T", 1, 1, clr=self.new)
 
     def doEnd2(self):
-        self.df.selPage("Basic-_B")
+        self.df.selPage("Basic-B")
         self.df.focusField("T", 2, 1, clr=self.new)
 
     def doAccept(self):
@@ -478,7 +478,7 @@ class dr1010(object):
             else:
                 self.opts["mf"].dbm.commitDbase()
                 self.df.last[0] = [0, 0]
-                self.df.selPage("Basic-_A")
+                self.df.selPage("Basic-A")
                 self.df.focusField("T", 0, 1)
 
     def doImport(self):
@@ -545,7 +545,7 @@ Please Correct your Import File and then Try Again.""" % err)
     def doCancel(self):
         self.opts["mf"].dbm.rollbackDbase()
         self.df.last[0] = [0, 0]
-        self.df.selPage("Basic-_A")
+        self.df.selPage("Basic-A")
         self.df.focusField("T", 0, 1)
 
     def doExit1(self):
@@ -557,6 +557,6 @@ Please Correct your Import File and then Try Again.""" % err)
         self.df.focusField("T", 0, 1)
 
     def doExit3(self):
-        self.df.selPage("Basic-_A")
+        self.df.selPage("Basic-A")
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

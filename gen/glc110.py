@@ -89,6 +89,11 @@ class glc110(object):
             if crsctl and crsctl["ctc_glint"] == "Y":
                 self.glctrl.extend([
                     ("dis_rec", "Discount Received")])
+        if mod.count("CS"):
+            cshctl = gc.getCtl("cshctl", self.opts["conum"], error=False)
+            if cshctl and cshctl["ccc_glint"] == "Y":
+                self.glctrl.extend([
+                    ("csh_ctl", "Cash Control")])
         if mod.count("DR"):
             drsctl = gc.getCtl("drsctl", self.opts["conum"], error=False)
             if drsctl and drsctl["ctd_glint"] == "Y":
@@ -123,10 +128,7 @@ class glc110(object):
             if strctl and strctl["cts_glint"] == "Y":
                 self.glctrl.extend([
                     ("stk_soh", "Stock on Hand"),
-                    ("stk_susp", "Stock Reconciliation"),
-                    ("pos_cash", "Cash Takings"),
-                    ("pos_card", "Card Takings"),
-                    ("pos_vchr", "Vouchers")])
+                    ("stk_susp", "Stock Reconciliation")])
         if mod.count("WG") or mod.count("SL"):
             wagctl = gc.getCtl("wagctl", self.opts["conum"], error=False)
             if wagctl and wagctl["ctw_glint"] == "Y":

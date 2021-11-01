@@ -183,6 +183,8 @@ class st3020(object):
 
     def doTots(self, frt, pag, r, c, p, i, w):
         self.totsonly = w
+        if "args" in self.opts and "noprint" in self.opts["args"]:
+            return
         if self.totsonly == "Y":
             self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
             self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")

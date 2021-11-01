@@ -44,7 +44,6 @@ class dr6010(object):
             ("drstrn", "drt_cono", "drt_chain", "drt_acno"),
             ("drsage", "dra_cono", "dra_chain", "dra_acno"),
             ("genrcc", "grc_cono", "grc_achn", "grc_adrs"),
-            ("posmst", "psm_cono", "psm_chain", "psm_acno"),
             ("slsiv1", "si1_cono", "si1_chain", "si1_acno"),
             ("strmf1", "st1_cono", "st1_chn_excl", "st1_acc_excl"),
             ("strtrn", "stt_cono", "stt_chain", "stt_acno", "stt_styp"))

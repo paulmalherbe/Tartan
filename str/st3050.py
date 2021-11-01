@@ -72,7 +72,6 @@ class st3050(object):
         r2s = (("Yes","Y"), ("No","N"))
         if self.locs == "N":
             self.loc = "1"
-            self.locd = "Location One"
             fld = []
         else:
             fld = [[("T",0,0,0),"IUA",1,"Location","",
@@ -96,7 +95,6 @@ class st3050(object):
         if not acc:
             return "Invalid Location"
         self.loc = w
-        self.locd = acc[0]
 
     def doGroup(self, frt, pag, r, c, p, i, w):
         if not w:
@@ -155,21 +153,23 @@ class st3050(object):
                 break
             grp = CCD(dat[st1.index("st1_group")], "UA", 3)
             cod = CCD(dat[st1.index("st1_code")], "NA", 20)
+            dsc = CCD(dat[st1.index("st1_desc")], "NA", 30)
             whr = [
                 ("srr_cono", "=", self.opts["conum"]),
                 ("srr_group", "=", grp.work),
-                ("srr_code", "=", cod.work),
-                ("srr_loc", "=", self.loc)]
+                ("srr_code", "=", cod.work)]
+            if self.locs == "Y":
+                whr.append(("srr_loc", "=", self.loc))
             odr = "srr_rgroup, srr_rcode"
             rec = self.sql.getRec("strrcp", where=whr, order=odr)
             if not rec:
                 continue
             newrec = "%s%s" % (grp.work, cod.work)
             if oldrec and newrec != oldrec:
-                self.pageHeading(grp.disp, cod.disp, chg=True)
+                self.pageHeading(grp, cod, dsc, chg=True)
             for z in rec:
                 if self.pglin > self.fpdf.lpp:
-                    self.pageHeading(grp.disp, cod.disp)
+                    self.pageHeading(grp, cod, dsc)
                 gp = CCD(z[srr.index("srr_rgroup")], "UA", 3)
                 cd = CCD(z[srr.index("srr_rcode")],  "NA", 20)
                 qt = CCD(z[srr.index("srr_rqty")], "UD", 11.2)
@@ -193,7 +193,7 @@ class st3050(object):
                 pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
                 fromad=self.fromad, repeml=self.df.repeml)
 
-    def pageHeading(self, grp, cod, chg=False):
+    def pageHeading(self, grp, cod, dsc, chg=False):
         if self.page == "N" and chg and self.pglin < (self.fpdf.lpp - 10):
             self.fpdf.drawText()
             self.fpdf.drawText()
@@ -208,8 +208,13 @@ class st3050(object):
                 self.sysdtd))
             self.fpdf.drawText()
             self.pglin = 4
-        self.fpdf.drawText("%-5s %3s  %-4s %s  %-8s %s %s" % ("Group", grp,
-            "Code", cod, "Location", self.loc, self.locd))
+        if self.locs == "Y":
+            self.fpdf.drawText("%-5s %s  %-4s %s  %-8s %s %s" %
+                ("Group", grp.disp, "Code", cod.disp, dsc.disp,
+                "Loc", self.loc))
+        else:
+            self.fpdf.drawText("%-5s %s  %-4s %s %s" % ("Group", grp.disp,
+                "Code", cod.disp, dsc.disp))
         self.fpdf.drawText()
         self.fpdf.drawText("%-3s %-20s %-38s %11s" % ("Grp", "Product-Code",
             "Description", "Quantity"))

@@ -146,7 +146,7 @@ class tb1020(object):
             "rcaowt": ["rot_capdt", "rot_seq"],
             "rcatnt": ["rtu_capdt", "rtu_seq"],
             "rtltrn": ["rtt_capdt", "rtt_seq"],
-            "slsiv3": ["si3_seqnum"],
+            "slsiv3": ["si3_seq"],
             "strpot": ["pot_capdt", "pot_seq"],
             "strtrn": ["stt_capdt", "stt_seq"],
             "tpldet": ["tpd_name", "tpd_detseq"],
@@ -314,7 +314,10 @@ class tb1020(object):
             cols = getattr(sql, "%s_col" % self.table)
             order = ""
             if self.table in self.tabord:
-                ords = self.tabord[self.table]
+                if self.table == "slsiv3" and "si3_seqnum" in cols:
+                    ords = ["si3_seqnum"]
+                else:
+                    ords = self.tabord[self.table]
                 for fld in ords:
                     if fld in cols:
                         if not order:
@@ -370,6 +373,8 @@ class tb1020(object):
                                 new = ""
                             else:
                                 new = 0
+                    elif self.table == "cshana" and nam == "can_gflag":
+                        new = "N"
                     elif self.table == "ctlrep" and nam == "rep_cono":
                         new = old[olddic["rpm_cono"][0]]
                     elif self.table == "ctlrep" and nam == "rep_code":
@@ -396,6 +401,12 @@ class tb1020(object):
                         new = "N"
                     elif self.table == "drsmst" and nam == "drm_stat":
                         new = "N"
+                    elif self.table == "slsiv2" and nam == "si2_line":
+                        new = old[olddic["si2_seq"][0]]
+                    elif self.table == "slsiv3" and nam == "si3_line":
+                        new = old[olddic["si3_seq"][0]]
+                    elif self.table == "slsiv3" and nam == "si3_seq":
+                        new = 0
                     elif typ[1].lower() in ("a", "x"):
                         new = ""
                     else:
@@ -610,6 +621,7 @@ class tb1020(object):
                 pass
         # Close Splash
         if self.opts["mf"] and self.opts["mf"].window:
+            self.opts["mf"].updateStatus("")
             spl.closeSplash()
         self.dbm.commitDbase()
 
@@ -624,24 +636,31 @@ class tb1020(object):
                 sql.insRec(table, data=dat)
 
     def doFixAge(self):
+        if self.opts["mf"] and self.opts["mf"].window:
+            spl = SplashScreen(self.opts["mf"].body,
+                "Checking Age Records\n\nPlease Wait")
+            self.opts["mf"].updateStatus("Checking Age Records")
+        elif self.opts["bar"]:
+            print("Checking Age Records .... Please Wait")
         for sss in ("crs", "drs"):
             sql = Sql(self.dbm, ["%smst" % sss, "%sage" % sss], prog=__name__)
             if sss == "drs":
-                col = ["drm_cono", "drm_chain", "drm_acno"]
-                whr = ["dra_seq", "="]
-                idx = 10
+                col = ["dra_cono", "dra_chain", "dra_acno"]
+                grp = "dra_cono, dra_chain, dra_acno"
             else:
-                col = ["crm_cono", "crm_acno"]
-                whr = ["cra_seq", "="]
-                idx = 9
-            accs = sql.getRec("%smst" % sss, cols=col)
-            recs = sql.getRec("%sage" % sss)
+                col = ["cra_cono", "cra_acno"]
+                grp = "cra_cono, cra_acno"
+            recs = sql.getRec("%sage" % sss, cols=col, group=grp)
             for rec in recs:
-                if rec[:len(col)] not in accs:
-                    w = whr[:]
-                    w.append(rec[idx])
-                    sql.delRec("%sage" % sss, where=[w])
+                whr = []
+                for n, c in enumerate(col):
+                    whr.append((c.replace("a_", "m_"), "=", rec[n]))
+                if not sql.getRec("%smst" % sss, where=whr):
+                    sql.delRec("%sage" % sss, cols=col, data=rec)
             self.dbm.commitDbase()
+        if self.opts["mf"] and self.opts["mf"].window:
+            self.opts["mf"].updateStatus("")
+            spl.closeSplash()
 
     def doFinal(self):
         chg = False

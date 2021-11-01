@@ -12,7 +12,7 @@ import time
 sn = "tartan"
 cs = sn.capitalize()
 bd = os.path.expanduser("~")  # Base directory
-sv = "root@mail"              # ftp login@server
+sv = "root@mail"              # http login@server
 vv = 6                        # Version number
 bv = "Tartan-%s" % vv         # Version base name
 bx = "TartanExe"              # Executable directory
@@ -48,17 +48,16 @@ def addPage(doc, fle, last=False):
     data.close()
 
 def getName(nam, x, y, z=None):
-    dd = os.path.join(bd, bo)
-    if z is None:
-        if x > 5:
-            exe = "%s/Tartan_%s.%s-32.exe" % (dd, x, y)
+    for src in (bo, bx):
+        dd = os.path.join(bd, src)
+        if z is None:
+            tgz = "%s/Tartan_%s.%s.tgz" % (dd, x, y)
         else:
-            exe = "%s/Tartan_%s.%s.exe" % (dd, x, y)
-    else:
-        exe = "%s/Tartan_%s.%s.%s.exe" % (dd, x, y, z)
-    if os.path.isfile(exe):
-        dt = time.localtime(os.path.getmtime(exe))
-        nam = "%s %04i-%02i-%02i" % (nam, dt.tm_year, dt.tm_mon, dt.tm_mday)
+            tgz = "%s/Tartan_%s.%s.%s.tgz" % (dd, x, y, z)
+        if os.path.isfile(tgz):
+            dt = time.localtime(os.path.getmtime(tgz))
+            nam = "%s %04i-%02i-%02i" % (nam, dt.tm_year, dt.tm_mon, dt.tm_mday)
+            break
     return nam
 
 bits = ["7", "8", "32", "64"]
@@ -84,9 +83,8 @@ for o, v in opts:
         else:
             os.system("cls")
         print("""
-Usage: python pkgprg [options]
+Usage: python pkgprg.py [options]
 
-    -a Architecture as in 7, 8, 32 and 64
     -b Base Directory
     -c Create a cd
     -e Email changes
@@ -95,11 +93,10 @@ Usage: python pkgprg [options]
     -i Increment Version
     -p Publish Version
     -t Temporary Work Directory
-    -u Update all modules (uncommitted)
+    -u Upgrade python modules
     -v New Version Number
     -w Windows Installer for Architecture 0=all, 7, 8, 32 and 64""")
         exeCmd("python uty/mkwins.py -h")
-        
         sys.exit()
     elif o == "-b":
         bd = v
@@ -294,7 +291,7 @@ if os.path.exists("%s/tarzip.zip" % bd):
     os.remove("%s/tarzip.zip" % bd)
 exeCmd("/usr/bin/git archive --format=zip HEAD -o %s/tarzip.zip" % bd)
 if incunc:
-    # Update the zip with tarchg.py tartan.ico
+    # Update the zip with tarchg.py and tartan.ico
     exeCmd("zip -qr %s/tarzip tarchg.py tartan.ico" % bd)
     # Update the zip with uncommitted files
     exeCmd("zip -qr %s/tarzip ass/*0.py bkm/*0.py bks/*0.py bwl/*0.py "\
@@ -344,7 +341,7 @@ if windows:
         url = "\\\\\\\\192.168.0.1\\\\paul\\\\Tartan-6\\\\uty"
         for name in ("win10", "win8", "win7"):
             if name in names and name == "win10":
-                bitw = ["32"]
+                bitw = ["64"]
             elif name in names and name == "win8":
                 bitw = ["8"]
             elif name in names and name == "win7":
@@ -357,22 +354,20 @@ if windows:
                     bits.remove(bit)
                 cmd = "%s\\\\mkwins.py -a%s" % (url, bit)
                 if upgpip:
+                    # Update dependancies
                     cmd = "%s -u" % cmd
                 exeCmd("ssh %s python %s" % (name, cmd))
     for bit in bits:
         print("Packaging %s bit" % bit)
-        if upgpip:
-            # Update dependancies
-            exeCmd("wine%s cmd /c %s/uty/dopip.bat" % (bit, bv))
         xpth = "/home/paul/.wine%s/dosdevices/x:" % bit
         if not os.path.exists(xpth):
             os.symlink(home, xpth)
+        cmd = "wine_%s cmd /c python %s/uty/mkwins.py -a%s" % (bit, bv, bit)
+        if upgpip:
+            cmd += " -u"
         if tmpfle:
-            exeCmd("wine%s cmd /c python %s/uty/mkwins.py -a%s -t%s" %
-                (bit, bv, bit, tmpfle))
-        else:
-            exeCmd("wine%s cmd /c python %s/uty/mkwins.py -a%s" %
-                (bit, bv, bit))
+            cmd += " -t%s" % tmpfle
+        exeCmd(cmd)
 if publish:
     # Publish
     # Change to pypath directory
@@ -428,11 +423,6 @@ if publish:
     exeCmd("rsync -az %s/%s/%s_%s* "\
         "%s/Dropbox/Apps/Tartan/" % (bd, bx, cs, vv, home))
     exeCmd("rsync -az /tmp/Manual.pdf %s/Dropbox/Apps/Tartan/" % home)
-    # FTP Server
-    exeCmd("ssh %s rm /srv/ftp/%s_%s*" % (sv, cs, vv))
-    exeCmd("rsync -az %s/%s/%s_%s* %s:/srv/ftp/" % (bd, bx, cs, vv, sv))
-    exeCmd("ssh %s chmod a+rx /srv/ftp/*" % sv)
-    exeCmd("ssh %s chown paul:paul /srv/ftp/*" % sv)
     # Web Server
     exeCmd("rsync -az %s/%s/doc/Manual.rst "\
         "%s:/var/www/tartan.co.za/htdocs/Manual/Manual.rst" % (bd, bv, sv))
@@ -537,6 +527,7 @@ if email:
             "ruthmiles52@gmail.com",
             "tyron@i-volt.net",
             "yolande@acsaccounting.co.za"]
+        addrs = ["paul@tartan.co.za"]
         for addr in addrs:
             sendMail(serv, mfrm, addr, subj, mess=(text, html))
 shutil.rmtree("%s/%s" % (bd, sn))

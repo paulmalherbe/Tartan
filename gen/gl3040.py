@@ -171,25 +171,6 @@ class gl3040(object):
                 vals[2].work, vals[3].work, vals[4].work]])
         p.closeProgress()
         self.grandTotal()
-        a = open("name", "w")
-        a.write(expnam)
-        a.close()
-        a = open("heads", "w")
-        for l in expheads:
-            a.write(l + "\n")
-        a.close()
-        a = open("colsh", "w")
-        for l in expcolsh:
-            a.write(str(l) + "\n")
-        a.close()
-        a = open("forms", "w")
-        for l in expforms:
-            a.write(str(l) + "\n")
-        a.close()
-        a = open("datas", "w")
-        for l in self.expdatas:
-            a.write(str(l) + "\n")
-        a.close()
         doWriteExport(xtype=self.repprt[1], name=expnam,
             heads=expheads, colsh=expcolsh, forms=expforms,
             datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
