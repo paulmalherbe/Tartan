@@ -478,6 +478,7 @@ if publish:
         shutil.rmtree("%s/tempcd" % bd)
 if email:
     # Email Users
+    from emladd import addrs
     chgfle = "%s/ver/ver_%s.%s.changes" % (pypath, cver[0], cver[1])
     if os.path.isfile(chgfle):
         serv = ["mail", 465, 2, 1, "paul", "Pakati!@"]
@@ -495,38 +496,6 @@ if email:
                 text = "%s%s" % (text, dat)
         html = "<pre>%s</pre>" % text
         mess = (text, html)
-        addrs = [
-            "admin@amadlelo.co.za",
-            "admin@blueberry.co.za",
-            "alickbb@iafrica.com",
-            "barry@dowsoftware.co.za",
-            "cnurrish@telkomsa.net",
-            "frikkie@lando.co.za",
-            "galloway@awe.co.za",
-            "jane@acsconsulting.co.za",
-            "joannej@buildinn-el.co.za",
-            "keith@barrowdale.co.za",
-            "lawrence@hawcweb.co.za",
-            "liezelstroud@gmail.com",
-            "lorraine@acsaccounting.co.za",
-            "lorraine@multitrust.net",
-            "marindag@buildinn-el.co.za",
-            "marlene@acsonline.co.za",
-            "marlene@fourthquadrant.co.za",
-            "mcbagro@gmail.com",
-            "mel@acsaccounting.co.za",
-            "mike@annettelaing.co.za",
-            "no2pigstash@hotmail.com",
-            "oldoakbc@gmail.com",
-            "paul@tartan.co.za",
-            "paulabergh@mweb.co.za",
-            "pevensey@futurenet.co.za",
-            "rob@itennis.co.za",
-            "robbie.rhodes@gmail.com",
-            "rene@agfin.co.za",
-            "ruthmiles52@gmail.com",
-            "tyron@i-volt.net",
-            "yolande@acsaccounting.co.za"]
         for addr in addrs:
             sendMail(serv, mfrm, addr, subj, mess=(text, html))
 shutil.rmtree("%s/%s" % (bd, sn))
