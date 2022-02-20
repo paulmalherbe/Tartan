@@ -1,5 +1,22 @@
-changes = """ver_6.4
+changes = """ver_6.5
 =======
+ 1) Changed security levels for scripts and queries.
+ 2) Added a new module to rentals(e) ledger, Owners Account Listing.
+ 3) Fixed a graphics problem when selecting individual items.
+ 4) Fixed a problem with financial periods exceeding 12 months.
+ 5) Added a default team size to the bowls control record.
+ 6) Added a default template field to the bowls control record.
+ 7) Added a new module to bowls clubs to print competition envelopes.
+ 8) Updated more items in the reference manual.
+ 9) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.4 2021-11-01
+==================
  1) Fixed a bug in staff loans data capture.
  2) Fixed a bug in xls and xlsx file imports.
  3) Fixed a bug in utilities report stream module.

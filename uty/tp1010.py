@@ -228,7 +228,7 @@ class tp1010(object):
                 "","N",self.doX2,None,None,("notzero",)),
             (("T",2,1,0),"I@tpd_y1",0,"","",
                 "","N",self.doY1,None,None,("efld",)),
-            (("T",2,1,0),"I@tpd_lh",0,"LHgt","",
+            (("T",2,1,0),"I@tpd_lh",0,"RHgt","",
                 "","N",self.doLh,None,None,("efld",)),
             (("T",2,1,0),"I@tpd_y2",0,"","",
                 "","N",self.doY2,None,None,("efld",)),
@@ -240,7 +240,7 @@ class tp1010(object):
                 0,"N",self.doX2,None,None,("efld",)),
             (("T",3,1,0),"I@tpd_y1",0,"","",
                 0,"N",self.doY1,None,None,("efld",)),
-            (("T",3,1,0),"I@tpd_lh",0,"LHgt","",
+            (("T",3,1,0),"I@tpd_lh",0,"IHgt","",
                 "","N",self.doLh,None,None,("efld",)),
             (("T",3,1,0),"I@tpd_y2",0,"","",
                 0,"N",self.doY2,None,None,("efld",)),
@@ -403,6 +403,7 @@ class tp1010(object):
 
     def doTemplate(self, frt, pag, r, c, p, i, w):
         self.template = w
+        self.cpytpm = False
         tpm = self.sql.getRec("tplmst", where=[("tpm_tname", "=",
             self.template)], limit=1)
         if tpm:
@@ -745,7 +746,11 @@ class tp1010(object):
             "order": "tpm_tname"}
         fld = (
             (("T",0,1,0),"INA",20,"Template Name","",
-                "","N",self.doCpyNam,tpm,None,None),)
+                "","N",self.doCpyNam,tpm,None,None),
+            (("T",0,2,0),"ISI",3,"Adjust X Margin By","",
+                "","N",self.doCpyXmg,None,None,None),
+            (("T",0,3,0),"ISI",3,"Adjust Y Margin By","",
+                "","N",self.doCpyYmg,None,None,None))
         state = self.df.disableButtonsTags()
         self.df.setWidget(self.df.mstFrame, state="hide")
         self.cp = TartanDialog(self.opts["mf"], title=tit, tops=True,
@@ -757,13 +762,19 @@ class tp1010(object):
         self.df.focusField("T", 0, 2)
 
     def doCpyNam(self, frt, pag, r, c, p, i, w):
-        self.cpymst = self.sql.getRec("tplmst", where=[("tpm_tname",
-            "=", w)], limit=1)
+        self.cpymst = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w)],
+            limit=1)
         if not self.cpymst:
             return "Invalid Template Name"
         self.cpynam = w
         for s, t in enumerate(self.cpymst[1:]):
             self.df.loadEntry(frt, pag, p+s+1, data=t)
+
+    def doCpyXmg(self, frt, pag, r, c, p, i, w):
+        self.chgx = w
+
+    def doCpyYmg(self, frt, pag, r, c, p, i, w):
+        self.chgy = w
 
     def doCpyEnd(self):
         self.cpymst[0] = self.template
@@ -772,11 +783,27 @@ class tp1010(object):
             self.cpynam)])
         for line in det:
             line[0] = self.template
+            if self.chgx:
+                if line[self.sql.tpldet_col.index("tpd_x1")]:
+                    line[self.sql.tpldet_col.index("tpd_x1")] += self.chgx
+                    line[self.sql.tpldet_col.index("tpd_x2")] += self.chgx
+                if line[self.sql.tpldet_col.index("tpd_mrg_x1")]:
+                    line[self.sql.tpldet_col.index("tpd_mrg_x1")] += self.chgx
+                    line[self.sql.tpldet_col.index("tpd_mrg_x2")] += self.chgx
+            if self.chgy:
+                if line[self.sql.tpldet_col.index("tpd_y1")]:
+                    line[self.sql.tpldet_col.index("tpd_y1")] += self.chgy
+                    line[self.sql.tpldet_col.index("tpd_y2")] += self.chgy
+                if line[self.sql.tpldet_col.index("tpd_mrg_y1")]:
+                    line[self.sql.tpldet_col.index("tpd_mrg_y1")] += self.chgy
+                    line[self.sql.tpldet_col.index("tpd_mrg_y2")] += self.chgy
             self.sql.insRec("tpldet", data=line)
+        self.cpytpm = True
         self.newtpm = False
         self.doCpyCloseProcess()
 
     def doCpyExit(self):
+        self.cpytpm = False
         self.doCpyCloseProcess()
 
     def doCpyCloseProcess(self):

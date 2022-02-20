@@ -627,6 +627,10 @@ try:
     class MyMenuButton(tk.Menubutton):
         def __init__(self, parent, font="TkMenuFont", fg=None, bg=None, af=None, ab=None, relief="raised", fill="both", exp="yes", side="left", **kwargs):
             super().__init__(parent, **kwargs)
+            if not fg:
+                fg = "#000000"
+            if not bg:
+                bg = "#ffffff"
             if ab is None:
                 af = fg
                 try:
@@ -4513,6 +4517,7 @@ Export - The report in the selected format will be opened
 
     def emlExit(self):
         self.repeml[3] = ""
+        self.loadEntry("T", 0, 2, data="N")
         self.dg.closeProcess()
 
     def setPrint(self, frt, pag, r, c, p, i, w):
@@ -4602,7 +4607,7 @@ Export - The report in the selected format will be opened
         if label:
             found = False
             for idx, tag in enumerate(self.tags):
-                if tag[0].replace("_", "") == label:
+                if tag[0].replace("_", "") == label.replace("_", ""):
                     found = True
                     break
             if not found:
@@ -5401,7 +5406,7 @@ Export - The report in the selected format will be opened
         if flds[9]:
             sufx = sufx + ", <F5> to Delete"
         if flds[1][1:] == "TV":
-            sufx = sufx + ", <F9> to Continue"
+            sufx = sufx.replace("Enter", "<F9>")
         if flds[4].count("(noesc)"):
             self.esc = False
             text = flds[4].replace("(noesc)", "")
@@ -6664,6 +6669,9 @@ class SRec(object):
                             produces 'Purchases'
         where   :   A list of tuples of where conditions e.g.
                     [("omb_recon", "=", "Y")]
+                            OR
+                    A list of data if wtype = 'D'
+                            OR
                     None = No where statement
         group   :   A string for the 'group' statement
                     e.g. "omb_date, omb_state, omb_recon"
@@ -7208,8 +7216,8 @@ class SelectChoice(object):
         if self.chek:
             try:
                 # Create images for check and uncheck
-                self.unchek = getImage("uncheck")
-                self.dochek = getImage("check")
+                self.unchek = getImage("uncheck", siz=(20, 20))
+                self.dochek = getImage("check", siz=(20, 20))
                 self.tree.heading("#0", image=self.unchek, anchor="e",
                     command=functools.partial(self.doToggle, "all"))
                 self.tree.column("#0", anchor="e", width=43, minwidth=43,
@@ -7217,7 +7225,8 @@ class SelectChoice(object):
             except:
                 if self.neww:
                     placeWindow(self.window, parent=self.scrn, expose=True)
-                showError(self.window, "Image", "Missing check or uncheck gif")
+                showError(self.window, "Image",
+                    "Missing check or uncheck image data.")
                 return
         for num, col in enumerate(self.cols):
             if not col:
@@ -10033,11 +10042,12 @@ class FinReport(object):
         self.pers[0]["o_dte"] = self.period[1][0]
         self.pers[0]["i_per"] = int(self.period[1][0] / 100)
         self.pers[0]["e_per"] = int(self.period[2][0] / 100)
-        df = dateDiff(self.period[2][0], self.period[1][0], "months") + 1
+        df = dateDiff(self.period[1][0], self.period[2][0], "months") + 1
+        print(self.period, df)
         if df > 12:
             self.pers[0]["d_per"] = df - 12
-            yr = int(self.i_per / 100)
-            mt = self.i_per % 100
+            yr = int(self.pers[0]["i_per"] / 100)
+            mt = self.pers[0]["i_per"] % 100
             for _ in range(self.pers[0]["d_per"]):
                 mt += 1
                 if mt > 12:
@@ -12911,7 +12921,14 @@ class PrintCards(object):
             self.doPrintCards()
 
     def doVariables(self):
-        self.sql = Sql(self.mf.dbm, "tplmst", prog=__name__)
+        self.sql = Sql(self.mf.dbm, ("bwlctl", "tplmst"), prog=__name__)
+        if self.sql.error:
+            return
+        gc = GetCtl(self.mf)
+        bwlctl = gc.getCtl("bwlctl", self.conum)
+        if not bwlctl:
+            return
+        self.tplnam = bwlctl["ctb_tplnam"]
         return True
 
     def doMainProcess(self):
@@ -12925,7 +12942,7 @@ class PrintCards(object):
             "where": [("tpm_type", "=", "C")],
             "order": "tpm_tname"}
         fld = ((("T",0,0,0),"INA",20,"Template Name","",
-                "comp_cards","N",self.doTplNam,tpm,None,None),)
+            self.tplnam,"N",self.doTplNam,tpm,None,None),)
         tnd = ((self.doEnd,"Y"),)
         txt = (self.doExit,)
         self.df = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
@@ -12961,16 +12978,17 @@ class PrintCards(object):
         fil = tdc.index("tpd_mrg_fill")
         bdr = tdc.index("tpd_mrg_border")
         y1 = tdc.index("tpd_mrg_y1")
+        lh = tdc.index("tpd_mrg_lh")
         y2 = tdc.index("tpd_mrg_y2")
-        mm = round(115.0 / (self.ends + 1), 2)
+        ff = self.form.newdic["%s_C%02i" % (self.form.body[0], 0)]
+        y3 = ff[y1]
+        mm = round((23 * ff[lh]) / (self.ends + 1), 2)
+        y4 = y3 + mm
         for x in range(self.ends + 1):
-            y3 = (x * mm) + 28
             if x == self.ends:
-                y4 = 145
-                fill = True
                 dat = "Total"
+                fill = True
             else:
-                y4 = y3 + mm
                 dat = end = x + 1
                 fill = bool(self.skins == "Y" and not end % self.sends)
             for nam in self.form.body:
@@ -12983,6 +13001,8 @@ class PrintCards(object):
                     if fill:
                         self.form.newdic[fld][fil] = 1
                         self.form.newdic[fld][bdr] = "TLRB"
+            y3 = y4
+            y4 = y3 + mm
         for grn, skp, opp in self.skips:
             self.form.add_page()
             if "skip_C00" in self.form.newdic:
@@ -13817,6 +13837,7 @@ class RepPrt(object):
     stots   :   A list of lists of columns, in least significant order, to be
                 breaks for sub-totalling as follows:
                 [] = No sub-totals
+                                        OR
                     column or "as" name
                     description or another column's contents
                     flag denoting new page after each sub-total (Y/N)
@@ -16821,9 +16842,8 @@ class DrawForm(MyFpdf):
                 self.tptp[mrgcod] = copyList(
                     tartanWork.tptrtp[self.tptyp]["codes"][mrgcod])
             else:
-                fld = self.sql.getRec("ffield", cols=["ff_tabl",
-                    "ff_type", "ff_size"], where=[("ff_name", "=", mrgcod)],
-                    limit=1)
+                fld = self.sql.getRec("ffield", cols=["ff_tabl", "ff_type",
+                    "ff_size"], where=[("ff_name", "=", mrgcod)], limit=1)
                 if fld:
                     self.tptp[mrgcod] = [[fld[0], fld[1], fld[2], ""], []]
         return True
@@ -16845,6 +16865,8 @@ class DrawForm(MyFpdf):
             if align == "C":
                 text = text.rstrip()
             self.setFont(font, style, size)
+            if border and not self.line_width:
+                self.set_line_width(0.2)
             self.set_xy(x1, y1)
             self.cell(w=x2-x1, h=y2-y1, txt=text, border=border, ln=ln,
                 align=align, fill=fill)
@@ -16862,6 +16884,8 @@ class DrawForm(MyFpdf):
             if uline:
                 style += "U"
             self.setFont(font, style, size)
+            if border and not self.line_width:
+                self.set_line_width(0.2)
             self.set_xy(x1, y1)
             self.multi_cell(w=x2-x1, h=y2-y1, txt=text, border=border,
                 fill=fill)
@@ -16996,7 +17020,7 @@ class DrawForm(MyFpdf):
         self.mrg_y2 = 0
         for line in self.tpldet:
             mrgcod = line[tdc.index("tpd_mrgcod")]
-            if line[tdc.index("tpd_place")] == "A":
+            if mrgcod and line[tdc.index("tpd_place")] == "A":
                 self.head.append(mrgcod)
             elif line[tdc.index("tpd_place")] == "B":
                 self.body.append(mrgcod)
@@ -17030,7 +17054,7 @@ class DrawForm(MyFpdf):
         if not repeat:
             repeat = 1
         nl = self.doToggleStyle(nl)
-        if nl[tdc.index("tpd_type")] == "I":
+        if nl[tdc.index("tpd_type")] in ("I", "R"):
             if mrgcod:
                 nl[tdc.index("tpd_text")] = self.doGetData(mrgcod)
                 nl[tdc.index("tpd_mrgcod")] = ""
@@ -18334,6 +18358,8 @@ class ViewPDF(object):
         if self.mf and self.mf.window:
             self.mf.window.withdraw()
         try:
+            if pdfnam is None:
+                pdfnam = self.doGetFile()
             if pdfnam and os.path.isfile(pdfnam):
                 if self.mf:
                     vwr = mf.rcdic["vwr"]
@@ -18365,11 +18391,18 @@ class ViewPDF(object):
                     self.win.title(pdfnam)
                     self.doDisplay()
             else:
-                showError(None, "Error", "Invalid File Name\n\n%s" % pdfnam)
+                raise Exception("Invalid File Name\n\n%s" % pdfnam)
         except Exception as err:
             showError(None, "Error", "Cannot Display Report.\n\n%s" % err)
         if self.mf:
             self.mf.window.deiconify()
+
+    def doGetFile(self):
+        dialog = FileDialog(**{
+            "title": "Select PDF File",
+            "ftype": (("PDF Files", "*.pdf"),),
+            "multi": False})
+        return dialog.askopenfilename()
 
     def doDisplay(self):
         # Window dimensions and Image sizes
@@ -18739,13 +18772,18 @@ class ViewPDF(object):
         self.ltime = 0
         self.cv.delete("all")
         page = self.doc[self.pgno - 1]
-        dlist = page.getDisplayList()
         self.pgd.configure(state="normal")
         self.pgd.delete(0, "end")
         self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
         self.pgd.configure(state="disabled")
-        pix = dlist.getPixmap(matrix=self.matrix, alpha=False)
-        self.ti = tk.PhotoImage(data=pix.getImageData("ppm"))
+        try:
+            dlist = page.get_displaylist()
+            pix = dlist.get_pixmap(matrix=self.matrix, alpha=False)
+            self.ti = tk.PhotoImage(data=pix.tobytes("ppm"))
+        except:
+            dlist = page.getDisplayList()
+            pix = dlist.getPixmap(matrix=self.matrix, alpha=False)
+            self.ti = tk.PhotoImage(data=pix.getImageData("ppm"))
         self.cv.create_image(0, 0, image=self.ti, anchor="nw", tags="img")
         self.cv.configure(width=self.ti.width(), height=self.ti.height())
         # Limit display size to %-tage of screen size
@@ -18881,7 +18919,6 @@ class ViewPDF(object):
             (0, "Description", mxss, "NA", "Y"),
             (1, "Page", 4, "UI", None))
         self.doUnbind()
-        print(tabs[0])
         sc = SelectChoice(self.cv, titl="Table of Contents", deco=False,
             modal=True, cols=cols, data=tabs, font="Courier", sort=False)
         self.doUnbind(False)

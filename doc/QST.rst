@@ -209,10 +209,8 @@ Salaries and Wages
 If you are going to use `Salaries and Wages` you must at least perform the following procedures in order:
 
 + Create a control record using `File Maintenance -> Control Record`.
-+ If you elected to integrate with the General Ledger you must create the `wag_ctl`, `wag_slc` and `wag_sli` controls as per above.
-+ Create at least one branch record using `File Maintenance -> Branch Records`.
-+ Create at least one department record using `File Maintenance -> Department Records`.
 + Create all necessary earnings and deduction records using `File Maintenance -> Earning and Deduction Codes`.
++ Create at least one department record using `Control -> File Maintenance -> Department Records`.
 + Create employee records using `File Maintenance -> Employee Masterfile`.
 
 The Salaries and Wages system is at this stage fully functional and you can capture clock cards and produce payslips etc.

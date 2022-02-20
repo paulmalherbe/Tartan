@@ -165,8 +165,8 @@ class wg3030(object):
             "SD", 13.2)
         self.fpdf.drawText("%-71s %13s" % ("Control Total", totl.disp))
         self.fpdf.drawText()
-        self.fpdf.drawText("Summary of SDL Payment")
-        self.fpdf.underLine(txt=self.head)
+        self.fpdf.drawText("Summary of SDL Payment", font="B")
+        self.fpdf.underLine(txt="X" * 84)
         keys = list(emp.keys())
         keys.sort()
         for k in keys:
@@ -176,7 +176,7 @@ class wg3030(object):
             n = "%s, %s" % (name[0].strip(), name[1].strip())
             t = CCD(emp[k][0], "SD", 13.2)
             s = CCD((int(emp[k][1]) / 100.0), "SD", 13.2)
-            self.fpdf.drawText("%2s %-30s %13s %13s" % (k, n, t.disp, s.disp))
+            self.fpdf.drawText("%2s %-54s %13s %13s" % (k, n, t.disp, s.disp))
         self.fpdf.output(pdfnam, "F")
         doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
             header=self.tit, repprt=self.df.repprt,

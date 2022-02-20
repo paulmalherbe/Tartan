@@ -108,8 +108,8 @@ class msc110(object):
         self.df.focusField("T", 0, 1, clr=False)
 
     def doHist(self, frt, pag, r, c, p, i, w):
-        if w and w < 5:
-            return "At least 5 Years of History should be kept"
+        if w and w < 7:
+            return "At least 7 Years of History should be kept"
 
     def doMust(self, frt, pag, r, c, p, i, w):
         if w == "N":

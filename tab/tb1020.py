@@ -137,7 +137,6 @@ class tb1020(object):
             "drstrn": ["drt_capdt", "drt_seq"],
             "genrct": ["grt_seq", "grt_date"],
             "gentrn": ["glt_capdt", "glt_seq"],
-            "ibttrn": ["ibt_capdt", "ibt_seq"],
             "lontrn": ["lnt_capdt", "lnt_seq"],
             "memage": ["mta_curdt", "mta_seq"],
             "memsta": ["mls_date", "mls_seq"],
@@ -389,6 +388,10 @@ class tb1020(object):
                         new = 0
                     elif self.table == "bwlctl" and nam == "ctb_mixed":
                         new = "N"
+                    elif self.table == "bwlctl" and nam == "ctb_tsize":
+                        new = 4
+                    elif self.table == "bwlctl" and nam == "ctb_tplnam":
+                        new = "comp_cards"
                     elif self.table == "bwlgme" and nam == "bcg_sfor":
                         new = old[olddic["bcg_shots_for"][0]]
                     elif self.table == "bwlgme" and nam == "bcg_sagt":

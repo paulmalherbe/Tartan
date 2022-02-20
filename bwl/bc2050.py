@@ -118,8 +118,8 @@ class bc2050(object):
                 "each other."),
             (("T",0,4,0),"IUI",1,"Number of Groups","",
                 0,"N",self.doGrpNum,None,None,("in", (0, 2, 3))),
-            (("T",0,5,0),("IRB",r2s),0,"Smallest Group","",
-                "L","N",self.doGrpSml,None,None,None),
+            (("T",0,5,0),("IRB",r2s),0,"Smallest Groups","",
+                "F","N",self.doGrpSml,None,None,None),
             (("T",0,6,0),"IUA",30,"Greens","Greens (A,B,C)",
                 "","N",self.doGreens,None,None,("notblank",),None,"Available "\
                 "Greens in the format A,B or A,B345 showing Green Code and "\
@@ -141,8 +141,6 @@ class bc2050(object):
         self.df.setWidget(self.df.topEntry[0][12][2][0], state="hide")
         if len(self.df.topEntry[0][12]) == 4:
             self.df.setWidget(self.df.topEntry[0][12][3][0], state="hide")
-        if "args" in self.opts:
-            self.df.doKeyPressed("T", 0, 0, data=self.opts["args"])
 
     def doCmpCod(self, frt, pag, r, c, p, i, w):
         dogme = False
@@ -476,7 +474,7 @@ class bc2050(object):
             group="bcg_game, bcg_type, bcg_date", limit=1)
         if not chk:
             return "Invalid Game, Missing, Skipped or Abandoned"
-        if w > self.game and chk[1] in ("", "S"):
+        if not self.reprint and w > self.game and chk[1] in ("", "S"):
             return "Invalid Game Number, Previous Games Unfinished"
         if not self.reprint and chk[2]:
             ok = askQuestion(self.opts["mf"].body, "Game Drawn",
@@ -548,6 +546,38 @@ class bc2050(object):
 
     def doGrpSml(self, frt, pag, r, c, p, i, w):
         self.grpsml = w
+        col = [
+            "bcg_scod",
+            "sum(bcg_points) as pts",
+            "sum(bcg_sfor - bcg_sagt) as diff",
+            "sum(bcg_sagt) as agt"]
+        whr = [
+            ("bcg_cono", "=", self.opts["conum"]),
+            ("bcg_ccod", "=", self.ccod)]
+        grp = "bcg_scod"
+        odr = "pts desc, diff desc, agt asc"
+        chk = self.sql.getRec("bwlgme", cols=col, where=whr,
+            group=grp, order=odr)
+        totskp = len(chk)
+        grpcnt = self.grpnum
+        gqty = int(totskp / grpcnt)
+        if gqty % 2:
+            gqty -= 1
+        self.grps = [gqty] * grpcnt
+        ovrs = int((totskp - (gqty * grpcnt)) / 2)
+        for x in range(ovrs):
+            if self.grpsml == "F":
+                self.grps[grpcnt - 1 - x] += 2
+            else:
+                self.grps[x] += 2
+        mess = ""
+        grps = ["A", "B", "C", "D", "E"]
+        for num, grp in enumerate(self.grps):
+            mess += "%s with %s Skips %s Rinks\n" % (grps[num], grp, int(grp/2))
+        mess += "\nIs this Correct?"
+        ok = askQuestion(self.df.window, head="Group Allocations", mess=mess)
+        if ok == "no":
+            return "Invalid Selection"
 
     def doGreens(self, frt, pag, r, c, p, i, w):
         self.greens, self.first, self.endrks, err = getGreens(
@@ -810,35 +840,11 @@ class bc2050(object):
         # Strength versus Strength
         if self.grpsel:
             # Allocate Into Groups
-            col = [
-                "bcg_scod",
-                "sum(bcg_points) as pts",
-                "sum(bcg_sfor - bcg_sagt) as diff",
-                "sum(bcg_sagt) as agt"]
-            whr = [
-                ("bcg_cono", "=", self.opts["conum"]),
-                ("bcg_ccod", "=", self.ccod)]
-            grp = "bcg_scod"
-            odr = "pts desc, diff desc, agt asc"
-            chk = self.sql.getRec("bwlgme", cols=col, where=whr,
-                group=grp, order=odr)
-            totskp = len(chk)
-            grpcnt = self.grpnum
             start = 0
-            for grpcod in range(1, grpcnt + 1):
-                qty = int(totskp / grpcnt)
-                if totskp % grpcnt:
-                    if grpcod == 1 and self.grpsml == "F":
-                        qty -= 1
-                    else:
-                        qty += 1
-                if qty % 2:
-                    qty += 1
-                totskp -= qty
-                grpcnt -= 1
+            for num, qty in enumerate(self.grps):
                 for skp in range(start, start + qty):
                     self.sql.updRec("bwlgme", cols=["bcg_group"],
-                        data=[grpcod], where=[("bcg_cono", "=",
+                        data=[num + 1], where=[("bcg_cono", "=",
                         self.opts["conum"]), ("bcg_ccod", "=",
                         self.ccod), ("bcg_scod", "=", chk[skp][0])])
                 start += qty

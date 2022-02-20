@@ -350,8 +350,8 @@ class dr2030(object):
                     [13, 1.5]]]]}
         if self.ctm_b_name:
             r1["rows"].extend([
-                [22, 35, [[32, 1.5, .8, "Banking Details", False]]],
-                [22, 36.5, [[32, 5.5]]]])
+                [22, 35, [[40, 1.5, .8, "Banking Details", False]]],
+                [22, 36.5, [[40, 5.5]]]])
         doDrawTable(self.fpdf, r1, cw=cw, ld=ld, font=False)
 
     def printTotals(self, cw, ld, ica, iva):

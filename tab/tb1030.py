@@ -42,6 +42,7 @@ class tb1030(object):
         if self.sql.error:
             return
         self.doGetTable()
+        self.opts["mf"].startLoop()
         if not self.table:
             return
         self.sql = Sql(self.opts["mf"].dbm, ["ftable", self.table],
@@ -68,7 +69,6 @@ class tb1030(object):
         txt = (self.doTabExit, )
         self.tb = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=fld, tend=tnd, txit=txt)
-        self.tb.mstFrame.wait_window()
 
     def doTabNam(self, frt, pag, r, c, p, i, w):
         desc = self.sql.getRec("ftable", cols=["ft_desc"],
@@ -84,6 +84,7 @@ class tb1030(object):
 
     def doTabEnd(self):
         self.tb.closeProcess()
+        self.opts["mf"].closeLoop()
 
     def mainProcess(self):
         self.dics = getattr(self.sql, "%s_dic" % self.table)

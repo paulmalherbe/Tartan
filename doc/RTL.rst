@@ -47,31 +47,91 @@ Receipts (RT)
 +++++++++++++
 This routine is used to capture receipts.
 
++ **Prm-Cod** - Enter the premises code.
++ **Acc-Num** - Enter the account number.
++ **Seq** - Enter the contract sequence number.
++ **Reference** - Enter the transaction reference number.
++ **Date** - Enter the transactions date.
++ **Amount** - Enter the transaction amount.
++ **Details** - Enter the transaction description.
+
 Payments (RT)
 +++++++++++++
 This routine is used to capture payments.
+
++ **Prm-Cod** - Enter the premises code.
++ **Acc-Num** - Enter the account number.
++ **Seq** - Enter the contract sequence number.
++ **Reference** - Enter the transaction reference number.
++ **Date** - Enter the transactions date.
++ **Amount** - Enter the transaction amount.
++ **Details** - Enter the transaction description.
+
+Journals (RT)
++++++++++++++
+This routine is used to capture journal entries.
+
++ **Prm-Cod** - Enter the premises code.
++ **Acc-Num** - Enter the account number.
++ **Seq** - Enter the contract sequence number.
++ **Reference** - Enter the transaction reference number.
++ **Date** - Enter the transactions date.
++ **Amount** - Enter the transaction amount.
++ **V** - Enter the VAT Code, if applicable.
++ **V.A.T** - Enter the VAT Amount, if applicable.
++ **Details** - Enter the transaction description.
 
 Reporting (RT)
 ..............
 Batch Error Listing (RT)
 ++++++++++++++++++++++++
-This routine is used to produce a batch error listing.
+Use this routine to print any unbalanced batches.
+
++ **Type** - The transaction type or 0 for all.
++ **Batch-Number** - The batch number or blank for all.
 
 Transaction Audit Trail (RT)
 ++++++++++++++++++++++++++++
-This routine is used to produce a transaction audit trail.
+Use this routine to print lists of transactions either by financial period or date of capture.
+
++ **Period Type** - Financial or Capture.
++ **Starting Period** - The first financial period to include in the report.
++ **Ending Period** - The last financial period to include in the report.
++ **Starting Date** - The from date to include in the report.
++ **Ending Date** - The to date to include in the report.
++ **Type** - The transaction type or 0 for all.
++ **Batch-Number** - The batch number or blank for all.
++ **Totals Only** - Yes or No.
 
 Master Listing (RT)
 +++++++++++++++++++
 This routine is used to produce a master listing.
 
++ **Report Date** - Enter the cut-off date for the report.
++ **Contracts** - Select which contracts to report on.
++ **Months to Expiry** - If *Expiring* was selected, enter the number of months.
++ **Consolidate** - Whether or not to consolidate all contracts.
+
 Statements (RT)
 +++++++++++++++
 This routine is used to produce statements.
 
++ **Template Name** - The name of the template to use.
++ **Whole File** - Select whole file or individual accounts.
++ **Zero Balances** - Select whether to include accounts with zero balances.
++ **Minus Balances** - Select whether to include accounts with minus balances.
++ **Message Number** - The message number to print, if applicable.
++ **Statement Date** - The date to be used for the cut-off.
+
 Notes Listing (RT)
 ++++++++++++++++++
 This routine is used to produce a tenant's note listing.
+
++ **Action Flag** - Normal or Urgent.
++ **From Capture Date** - The starting creation date.
++ **To Capture Date** - The ending creation date.
++ **From Action Date** - The starting action date.
++ **To Action Date** - The ending action date.
 
 Toolbox (RT)
 ............
@@ -86,3 +146,6 @@ This routine is used to interrogate records.
 Month End Routine (RT)
 ......................
 This routine is used to close off a month and raise rentals for the following month.
+
++ **Last Month End Date** - The last month-end date is displayed.
++ **This Month End Date** - Enter the required month-end date.

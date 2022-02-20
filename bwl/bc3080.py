@@ -35,6 +35,7 @@ class bc3080(object):
             if "args" in self.opts:
                 self.ctyp = self.opts["args"][0]
                 self.cnam = self.opts["args"][1]
+                self.notes = False
                 self.card = False
                 self.qty = 1
                 self.doEnd()

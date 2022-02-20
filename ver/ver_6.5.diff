@@ -1,0 +1,2108 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index a905ec0..e647a95 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -627,6 +627,10 @@ try:
+     class MyMenuButton(tk.Menubutton):
+         def __init__(self, parent, font="TkMenuFont", fg=None, bg=None, af=None, ab=None, relief="raised", fill="both", exp="yes", side="left", **kwargs):
+             super().__init__(parent, **kwargs)
++            if not fg:
++                fg = "#000000"
++            if not bg:
++                bg = "#ffffff"
+             if ab is None:
+                 af = fg
+                 try:
+@@ -4513,6 +4517,7 @@ Export - The report in the selected format will be opened
+ 
+     def emlExit(self):
+         self.repeml[3] = ""
++        self.loadEntry("T", 0, 2, data="N")
+         self.dg.closeProcess()
+ 
+     def setPrint(self, frt, pag, r, c, p, i, w):
+@@ -4602,7 +4607,7 @@ Export - The report in the selected format will be opened
+         if label:
+             found = False
+             for idx, tag in enumerate(self.tags):
+-                if tag[0].replace("_", "") == label:
++                if tag[0].replace("_", "") == label.replace("_", ""):
+                     found = True
+                     break
+             if not found:
+@@ -5401,7 +5406,7 @@ Export - The report in the selected format will be opened
+         if flds[9]:
+             sufx = sufx + ", <F5> to Delete"
+         if flds[1][1:] == "TV":
+-            sufx = sufx + ", <F9> to Continue"
++            sufx = sufx.replace("Enter", "<F9>")
+         if flds[4].count("(noesc)"):
+             self.esc = False
+             text = flds[4].replace("(noesc)", "")
+@@ -6664,6 +6669,9 @@ class SRec(object):
+                             produces 'Purchases'
+         where   :   A list of tuples of where conditions e.g.
+                     [("omb_recon", "=", "Y")]
++                            OR
++                    A list of data if wtype = 'D'
++                            OR
+                     None = No where statement
+         group   :   A string for the 'group' statement
+                     e.g. "omb_date, omb_state, omb_recon"
+@@ -7208,8 +7216,8 @@ class SelectChoice(object):
+         if self.chek:
+             try:
+                 # Create images for check and uncheck
+-                self.unchek = getImage("uncheck")
+-                self.dochek = getImage("check")
++                self.unchek = getImage("uncheck", siz=(20, 20))
++                self.dochek = getImage("check", siz=(20, 20))
+                 self.tree.heading("#0", image=self.unchek, anchor="e",
+                     command=functools.partial(self.doToggle, "all"))
+                 self.tree.column("#0", anchor="e", width=43, minwidth=43,
+@@ -7217,7 +7225,8 @@ class SelectChoice(object):
+             except:
+                 if self.neww:
+                     placeWindow(self.window, parent=self.scrn, expose=True)
+-                showError(self.window, "Image", "Missing check or uncheck gif")
++                showError(self.window, "Image",
++                    "Missing check or uncheck image data.")
+                 return
+         for num, col in enumerate(self.cols):
+             if not col:
+@@ -10033,11 +10042,12 @@ class FinReport(object):
+         self.pers[0]["o_dte"] = self.period[1][0]
+         self.pers[0]["i_per"] = int(self.period[1][0] / 100)
+         self.pers[0]["e_per"] = int(self.period[2][0] / 100)
+-        df = dateDiff(self.period[2][0], self.period[1][0], "months") + 1
++        df = dateDiff(self.period[1][0], self.period[2][0], "months") + 1
++        print(self.period, df)
+         if df > 12:
+             self.pers[0]["d_per"] = df - 12
+-            yr = int(self.i_per / 100)
+-            mt = self.i_per % 100
++            yr = int(self.pers[0]["i_per"] / 100)
++            mt = self.pers[0]["i_per"] % 100
+             for _ in range(self.pers[0]["d_per"]):
+                 mt += 1
+                 if mt > 12:
+@@ -12911,7 +12921,14 @@ class PrintCards(object):
+             self.doPrintCards()
+ 
+     def doVariables(self):
+-        self.sql = Sql(self.mf.dbm, "tplmst", prog=__name__)
++        self.sql = Sql(self.mf.dbm, ("bwlctl", "tplmst"), prog=__name__)
++        if self.sql.error:
++            return
++        gc = GetCtl(self.mf)
++        bwlctl = gc.getCtl("bwlctl", self.conum)
++        if not bwlctl:
++            return
++        self.tplnam = bwlctl["ctb_tplnam"]
+         return True
+ 
+     def doMainProcess(self):
+@@ -12925,7 +12942,7 @@ class PrintCards(object):
+             "where": [("tpm_type", "=", "C")],
+             "order": "tpm_tname"}
+         fld = ((("T",0,0,0),"INA",20,"Template Name","",
+-                "comp_cards","N",self.doTplNam,tpm,None,None),)
++            self.tplnam,"N",self.doTplNam,tpm,None,None),)
+         tnd = ((self.doEnd,"Y"),)
+         txt = (self.doExit,)
+         self.df = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
+@@ -12961,16 +12978,17 @@ class PrintCards(object):
+         fil = tdc.index("tpd_mrg_fill")
+         bdr = tdc.index("tpd_mrg_border")
+         y1 = tdc.index("tpd_mrg_y1")
++        lh = tdc.index("tpd_mrg_lh")
+         y2 = tdc.index("tpd_mrg_y2")
+-        mm = round(115.0 / (self.ends + 1), 2)
++        ff = self.form.newdic["%s_C%02i" % (self.form.body[0], 0)]
++        y3 = ff[y1]
++        mm = round((23 * ff[lh]) / (self.ends + 1), 2)
++        y4 = y3 + mm
+         for x in range(self.ends + 1):
+-            y3 = (x * mm) + 28
+             if x == self.ends:
+-                y4 = 145
+-                fill = True
+                 dat = "Total"
++                fill = True
+             else:
+-                y4 = y3 + mm
+                 dat = end = x + 1
+                 fill = bool(self.skins == "Y" and not end % self.sends)
+             for nam in self.form.body:
+@@ -12983,6 +13001,8 @@ class PrintCards(object):
+                     if fill:
+                         self.form.newdic[fld][fil] = 1
+                         self.form.newdic[fld][bdr] = "TLRB"
++            y3 = y4
++            y4 = y3 + mm
+         for grn, skp, opp in self.skips:
+             self.form.add_page()
+             if "skip_C00" in self.form.newdic:
+@@ -13817,6 +13837,7 @@ class RepPrt(object):
+     stots   :   A list of lists of columns, in least significant order, to be
+                 breaks for sub-totalling as follows:
+                 [] = No sub-totals
++                                        OR
+                     column or "as" name
+                     description or another column's contents
+                     flag denoting new page after each sub-total (Y/N)
+@@ -16821,9 +16842,8 @@ class DrawForm(MyFpdf):
+                 self.tptp[mrgcod] = copyList(
+                     tartanWork.tptrtp[self.tptyp]["codes"][mrgcod])
+             else:
+-                fld = self.sql.getRec("ffield", cols=["ff_tabl",
+-                    "ff_type", "ff_size"], where=[("ff_name", "=", mrgcod)],
+-                    limit=1)
++                fld = self.sql.getRec("ffield", cols=["ff_tabl", "ff_type",
++                    "ff_size"], where=[("ff_name", "=", mrgcod)], limit=1)
+                 if fld:
+                     self.tptp[mrgcod] = [[fld[0], fld[1], fld[2], ""], []]
+         return True
+@@ -16845,6 +16865,8 @@ class DrawForm(MyFpdf):
+             if align == "C":
+                 text = text.rstrip()
+             self.setFont(font, style, size)
++            if border and not self.line_width:
++                self.set_line_width(0.2)
+             self.set_xy(x1, y1)
+             self.cell(w=x2-x1, h=y2-y1, txt=text, border=border, ln=ln,
+                 align=align, fill=fill)
+@@ -16862,6 +16884,8 @@ class DrawForm(MyFpdf):
+             if uline:
+                 style += "U"
+             self.setFont(font, style, size)
++            if border and not self.line_width:
++                self.set_line_width(0.2)
+             self.set_xy(x1, y1)
+             self.multi_cell(w=x2-x1, h=y2-y1, txt=text, border=border,
+                 fill=fill)
+@@ -16996,7 +17020,7 @@ class DrawForm(MyFpdf):
+         self.mrg_y2 = 0
+         for line in self.tpldet:
+             mrgcod = line[tdc.index("tpd_mrgcod")]
+-            if line[tdc.index("tpd_place")] == "A":
++            if mrgcod and line[tdc.index("tpd_place")] == "A":
+                 self.head.append(mrgcod)
+             elif line[tdc.index("tpd_place")] == "B":
+                 self.body.append(mrgcod)
+@@ -17030,7 +17054,7 @@ class DrawForm(MyFpdf):
+         if not repeat:
+             repeat = 1
+         nl = self.doToggleStyle(nl)
+-        if nl[tdc.index("tpd_type")] == "I":
++        if nl[tdc.index("tpd_type")] in ("I", "R"):
+             if mrgcod:
+                 nl[tdc.index("tpd_text")] = self.doGetData(mrgcod)
+                 nl[tdc.index("tpd_mrgcod")] = ""
+@@ -18334,6 +18358,8 @@ class ViewPDF(object):
+         if self.mf and self.mf.window:
+             self.mf.window.withdraw()
+         try:
++            if pdfnam is None:
++                pdfnam = self.doGetFile()
+             if pdfnam and os.path.isfile(pdfnam):
+                 if self.mf:
+                     vwr = mf.rcdic["vwr"]
+@@ -18365,12 +18391,19 @@ class ViewPDF(object):
+                     self.win.title(pdfnam)
+                     self.doDisplay()
+             else:
+-                showError(None, "Error", "Invalid File Name\n\n%s" % pdfnam)
++                raise Exception("Invalid File Name\n\n%s" % pdfnam)
+         except Exception as err:
+             showError(None, "Error", "Cannot Display Report.\n\n%s" % err)
+         if self.mf:
+             self.mf.window.deiconify()
+ 
++    def doGetFile(self):
++        dialog = FileDialog(**{
++            "title": "Select PDF File",
++            "ftype": (("PDF Files", "*.pdf"),),
++            "multi": False})
++        return dialog.askopenfilename()
++
+     def doDisplay(self):
+         # Window dimensions and Image sizes
+         self.win.resizable(0, 0)
+@@ -18739,13 +18772,18 @@ class ViewPDF(object):
+         self.ltime = 0
+         self.cv.delete("all")
+         page = self.doc[self.pgno - 1]
+-        dlist = page.getDisplayList()
+         self.pgd.configure(state="normal")
+         self.pgd.delete(0, "end")
+         self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
+         self.pgd.configure(state="disabled")
+-        pix = dlist.getPixmap(matrix=self.matrix, alpha=False)
+-        self.ti = tk.PhotoImage(data=pix.getImageData("ppm"))
++        try:
++            dlist = page.get_displaylist()
++            pix = dlist.get_pixmap(matrix=self.matrix, alpha=False)
++            self.ti = tk.PhotoImage(data=pix.tobytes("ppm"))
++        except:
++            dlist = page.getDisplayList()
++            pix = dlist.getPixmap(matrix=self.matrix, alpha=False)
++            self.ti = tk.PhotoImage(data=pix.getImageData("ppm"))
+         self.cv.create_image(0, 0, image=self.ti, anchor="nw", tags="img")
+         self.cv.configure(width=self.ti.width(), height=self.ti.height())
+         # Limit display size to %-tage of screen size
+@@ -18881,7 +18919,6 @@ class ViewPDF(object):
+             (0, "Description", mxss, "NA", "Y"),
+             (1, "Page", 4, "UI", None))
+         self.doUnbind()
+-        print(tabs[0])
+         sc = SelectChoice(self.cv, titl="Table of Contents", deco=False,
+             modal=True, cols=cols, data=tabs, font="Courier", sort=False)
+         self.doUnbind(False)
+diff --git a/ass/arc210.py b/ass/arc210.py
+index fd1c436..1bf8383 100644
+--- a/ass/arc210.py
++++ b/ass/arc210.py
+@@ -51,7 +51,7 @@ class arc210(object):
+             "stype": "R",
+             "tables": ("assdep",),
+             "cols": (
+-                ("asd_code", "", 0, "Grp"),
++                ("asd_code", "", 0, "Cod"),
+                 ("asd_desc", "", 0, "Description", "Y")),
+             "where": [("asd_cono", "=", self.opts["conum"])],
+             "order": "asd_code"}
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index e086715..b94b83d 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -149,6 +149,7 @@ class bc2010(object):
+             return
+         self.mlint = bwlctl["ctb_mlint"]
+         self.samen = bwlctl["ctb_samen"]
++        self.dsize = bwlctl["ctb_tsize"]
+         self.rep42 = bwlctl["ctb_rep42"]
+         self.weeks = bwlctl["ctb_weeks"]
+         self.nstart = bwlctl["ctb_nstart"]
+@@ -179,7 +180,7 @@ class bc2010(object):
+                 self.stime,"N",self.doTime,None,None,None),
+             (("T",0,2,0),("IRB",r2s),0,"Mixed Gender","",
+                 "Y","N",self.doMixed,None,None,None,None,"Select whether "\
+-                "the draw is Gender based or Mixed."),
++                "the Draw is Gender based or Mixed."),
+             (("T",0,3,0),("IRB",r2s),0,"Mixed Rating","",
+                 "Y","N",self.doMixedRating,None,None,None,None,"If "\
+                 "available, Select whether or not to use the Alternative "\
+@@ -190,7 +191,7 @@ class bc2010(object):
+                 "Tab to Equalize the Numbers."),
+             (("T",0,5,0),("IRB",r3s),0,"Draw By","",
+                 self.dbase,"N",self.doBase,None,None,None,None,"Select "\
+-                "whether to base the draw on Positions, Ratings or a "\
++                "whether to base the Draw on Positions, Ratings or a "\
+                 "Combination of Both."),
+             (("T",0,6,0),"IUD",5.2,"Fees - Member R","",
+                 self.ratem.work,"N",self.doRate,None,None,("efld",)),
+@@ -223,6 +224,7 @@ class bc2010(object):
+     def doTime(self, frt, pag, r, c, p, i, w):
+         self.time = w
+         self.alter = False
++        self.repeat = False
+         if self.time == "A":
+             self.timed = "Afternoon"
+         else:
+@@ -239,8 +241,9 @@ class bc2010(object):
+                 self.opts["conum"]), ("bdm_date", ">", self.date)],
+                 limit=1)
+             if dtyp == "N" or not dnxt:
+-                butt.extend([("Alter", "A"), ("Clear", "X")])
+-                text = "Would you like to View, Reprint, Alter or Clear It?"
++                butt.extend([("Alter", "A"), ("Clear", "X"), ("Another", "Z")])
++                text = "Would you like to View, Reprint, Alter or Clear the"\
++                    " Draw or Do Another Draw with the Same Tabs?"
+             else:
+                 text = "Would you like to View or Reprint It?"
+             ok = askChoice(self.opts["mf"].body, "Already Exists",
+@@ -265,13 +268,36 @@ class bc2010(object):
+             elif ok == "A":
+                 self.alter = True
+                 self.doLoadMst(self.drm)
+-            else:
+-                self.sql.delRec("bwldrm", where=[("bdm_cono", "=",
++            elif ok == "Z":
++                self.time = self.time.lower()
++                chk = self.sql.getRec("bwldrm", where=[("bdm_cono", "=",
+                     self.opts["conum"]), ("bdm_date", "=", self.date),
+                     ("bdm_time", "=", self.time)])
++                if chk:
++                    return "Another Already Exists"
++                self.repeat = True
++                self.dofix = False
++                self.drm[self.sql.bwldrm_col.index("bdm_time")] = self.time
++                self.sql.insRec("bwldrm", data=self.drm)
++                self.doLoadMst(self.drm)
++                recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
++                    cols=["bdt_tab", "bdt_pos", "bdt_rate", "btb_surname",
++                    "btb_names", "btb_gender"], where=[("bdt_cono", "=",
++                    self.opts["conum"]), ("bdt_date", "=", self.date),
++                    ("bdt_time", "=", self.time.upper()),
++                    ("btb_cono=bdt_cono",), ("btb_tab=bdt_tab",)])
++                self.alltabs = {}
++                for rec in recs:
++                    self.alltabs[rec[0]] = [rec[3], rec[4], rec[5], rec[1],
++                        rec[2], "Y"]
++                return "nc"
++            elif ok == "X":
++                self.sql.delRec("bwldrm", where=[("bdm_cono", "=",
++                    self.opts["conum"]), ("bdm_date", "=", self.date),
++                    ("bdm_time", "in", (self.time, self.time.lower()))])
+                 self.sql.delRec("bwldrt", where=[("bdt_cono", "=",
+                     self.opts["conum"]), ("bdt_date", "=", self.date),
+-                    ("bdt_time", "=", self.time)])
++                    ("bdt_time", "in", (self.time, self.time.lower()))])
+                 self.opts["mf"].dbm.commitDbase()
+                 return "ff1"
+ 
+@@ -417,11 +443,15 @@ class bc2010(object):
+         if self.viewer:
+             self.doShowDraw("Current Draw", self.adraw1)
+             self.mf.focusField("T", 0, 1)
+-            return
+         elif self.reprint:
+             self.doPrint(self.mf)
+             self.mf.focusField("T", 0, 1)
+-            return
++        elif self.repeat:
++            self.mf.closeProcess()
++            self.doDraw()
++            if self.drawn:
++                self.doPrint(self.mf)
++            self.doExit()
+         else:
+             self.mf.closeProcess()
+             self.doTabs()
+@@ -521,7 +551,7 @@ class bc2010(object):
+             for b in range(4, 7):
+                 wid = getattr(self.df, "B%i" % b)
+                 self.df.setWidget(wid, "normal")
+-        else:
++        elif not self.repeat:
+             self.alltabs = {}
+         self.doShowQuantity()
+         self.df.focusField("T", 1, 1)
+@@ -1197,7 +1227,7 @@ Do you still want to continue?""" % np, default="no")
+             fld = [
+                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
+                     "S","N",self.doType,None,None,None,None,
+-                    """Strength: The draw will try and Pair the teams by Strength.
++                    """Strength: The Draw will Try and Pair the teams by Strength.
+ Random: The teams will be Randomly Paired.""")]
+             x = 1
+             self.dhist = "N"
+@@ -1206,7 +1236,7 @@ Random: The teams will be Randomly Paired.""")]
+             fld = [
+                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
+                     "R","N",self.doType,None,None,None,None,
+-                    """Strength: The draw will try and Draw the teams by Strength.
++                    """Strength: The Draw will Try and Draw the teams by Strength.
+ Random: The teams will be Randomly Drawn.""")]
+             x = 1
+         else:
+@@ -1215,6 +1245,10 @@ Random: The teams will be Randomly Drawn.""")]
+             self.dtype = "R"
+             self.dhist = "Y"
+         if not self.teams:
++            if self.repeat:
++                tsiz = self.tsize
++            else:
++                tsiz = self.dsize
+             if self.dbase == "C":
+                 fld.append((("T",0,x,0),("IRB",r2s),0,"Apply Percentages","",
+                     "Y","N",self.doPer,None,None,None,None,
+@@ -1232,7 +1266,7 @@ Try Not to Pair the Same Skips
+ Try to Avoid Broken Rink Repeats
+ Try to Allocate Different Rinks""" % self.weeks),
+                 (("T",0,x + 1,0),("IRB",r3s),0,"Team Size","",
+-                    "4","N",self.doSize,None,None,None),
++                    str(tsiz),"N",self.doSize,None,None,None),
+                 (("T",0,x + 2,0),("IRB",r2s),0,"Prefer Pairs","",
+                     self.rep42,"N",self.doRep42,None,None,None,None,
+                     "In the case of Trips select whether to Replace "\
+@@ -1246,15 +1280,17 @@ Try to Allocate Different Rinks""" % self.weeks),
+                 "will Default to 6. To enter 7 rinks enter A7, B7 etc."))
+         self.gpos = x
+         but = (("Cancel",None,self.doCancel,1,None,None,None,1),)
+-        state = self.df.disableButtonsTags()
+-        self.df.setWidget(self.df.mstFrame, state="hide")
++        if not self.repeat:
++            state = self.df.disableButtonsTags()
++            self.df.setWidget(self.df.mstFrame, state="hide")
+         self.dw = TartanDialog(self.opts["mf"], title=tit, tops=True,
+             eflds=fld, tend=((self.doDrawEnd,"y"),), txit=(self.doCancel,),
+             butt=but)
+         self.dw.mstFrame.wait_window()
+-        self.df.setWidget(self.df.mstFrame, state="show")
+-        self.df.enableButtonsTags(state)
+-        self.df.focusField("T", 1, 1)
++        if not self.repeat:
++            self.df.setWidget(self.df.mstFrame, state="show")
++            self.df.enableButtonsTags(state)
++            self.df.focusField("T", 1, 1)
+ 
+     def doGenTeams(self):
+         self.dogen = True
+@@ -2302,7 +2338,8 @@ Combination Number %10s"""
+                     self.sql.insRec("bwldrt", data=rec)
+                 side = "R"
+         self.opts["mf"].dbm.commitDbase()
+-        self.df.setWidget(self.df.topEntry[1][0], state="disabled")
++        if not self.repeat:
++            self.df.setWidget(self.df.topEntry[1][0], state="disabled")
+ 
+     def doPrint(self, dg=None):
+         if not dg:
+@@ -2310,11 +2347,14 @@ Combination Number %10s"""
+         if not self.drawn:
+             showError(self.opts["mf"].body, "Error",
+                 "The Draw Has Not Yet Been Done")
+-            dg.focusField("T", 1, 1)
++            if not self.repeat:
++                dg.focusField("T", 1, 1)
+             return
+         dg.setWidget(dg.mstFrame, state="hide")
+         if not self.ratem.work and not self.ratev.work:
+             rated = "N"
++        elif self.repeat:
++            rated = "N"
+         else:
+             rated = "Y"
+         r1s = (("No", "N"), ("Yes", "Y"), ("Only", "O"))
+@@ -2339,7 +2379,7 @@ Combination Number %10s"""
+             txit=(self.doPExit,), view=("N","V"))
+         self.pd.mstFrame.wait_window()
+         dg.setWidget(dg.mstFrame, state="show")
+-        if not self.reprint:
++        if not self.reprint and not self.repeat:
+             dg.focusField("T", 1, 1)
+ 
+     def doCards(self, frt, pag, r, c, p, i, w):
+@@ -2601,13 +2641,16 @@ Combination Number %10s"""
+ 
+     def doExit(self):
+         if self.alltabs and not self.drawn:
+-            but = [
+-                ("Exit Without Saving", "E"),
+-                ("Save and Exit", "S"),
+-                ("Neither", "N")]
+-            txt = "This Draw Has Not Been Done"
+-            ok = askChoice(self.opts["mf"].body, "Exit",
+-                mess=txt, butt=but, default="None")
++            if self.repeat:
++                ok = "E"
++            else:
++                but = [
++                    ("Exit Without Saving", "E"),
++                    ("Save and Exit", "S"),
++                    ("Neither", "N")]
++                txt = "This Draw Has Not Been Done"
++                ok = askChoice(self.opts["mf"].body, "Exit",
++                    mess=txt, butt=but, default="None")
+             if ok == "N":
+                 self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+                 return
+@@ -2621,7 +2664,8 @@ Combination Number %10s"""
+                         "", "", "", 0, 0, 0, 0, 0, 0, 0, 0, "", ""]
+                     self.sql.insRec("bwldrt", data=data)
+                 self.opts["mf"].dbm.commitDbase()
+-        self.df.closeProcess()
++        if not self.repeat:
++            self.df.closeProcess()
+         self.doSetFont(self.dfs)
+         self.opts["mf"].closeLoop()
+ 
+diff --git a/bwl/bc2050.py b/bwl/bc2050.py
+index 831fed1..077e7cb 100755
+--- a/bwl/bc2050.py
++++ b/bwl/bc2050.py
+@@ -118,8 +118,8 @@ class bc2050(object):
+                 "each other."),
+             (("T",0,4,0),"IUI",1,"Number of Groups","",
+                 0,"N",self.doGrpNum,None,None,("in", (0, 2, 3))),
+-            (("T",0,5,0),("IRB",r2s),0,"Smallest Group","",
+-                "L","N",self.doGrpSml,None,None,None),
++            (("T",0,5,0),("IRB",r2s),0,"Smallest Groups","",
++                "F","N",self.doGrpSml,None,None,None),
+             (("T",0,6,0),"IUA",30,"Greens","Greens (A,B,C)",
+                 "","N",self.doGreens,None,None,("notblank",),None,"Available "\
+                 "Greens in the format A,B or A,B345 showing Green Code and "\
+@@ -141,8 +141,6 @@ class bc2050(object):
+         self.df.setWidget(self.df.topEntry[0][12][2][0], state="hide")
+         if len(self.df.topEntry[0][12]) == 4:
+             self.df.setWidget(self.df.topEntry[0][12][3][0], state="hide")
+-        if "args" in self.opts:
+-            self.df.doKeyPressed("T", 0, 0, data=self.opts["args"])
+ 
+     def doCmpCod(self, frt, pag, r, c, p, i, w):
+         dogme = False
+@@ -476,7 +474,7 @@ class bc2050(object):
+             group="bcg_game, bcg_type, bcg_date", limit=1)
+         if not chk:
+             return "Invalid Game, Missing, Skipped or Abandoned"
+-        if w > self.game and chk[1] in ("", "S"):
++        if not self.reprint and w > self.game and chk[1] in ("", "S"):
+             return "Invalid Game Number, Previous Games Unfinished"
+         if not self.reprint and chk[2]:
+             ok = askQuestion(self.opts["mf"].body, "Game Drawn",
+@@ -548,6 +546,38 @@ class bc2050(object):
+ 
+     def doGrpSml(self, frt, pag, r, c, p, i, w):
+         self.grpsml = w
++        col = [
++            "bcg_scod",
++            "sum(bcg_points) as pts",
++            "sum(bcg_sfor - bcg_sagt) as diff",
++            "sum(bcg_sagt) as agt"]
++        whr = [
++            ("bcg_cono", "=", self.opts["conum"]),
++            ("bcg_ccod", "=", self.ccod)]
++        grp = "bcg_scod"
++        odr = "pts desc, diff desc, agt asc"
++        chk = self.sql.getRec("bwlgme", cols=col, where=whr,
++            group=grp, order=odr)
++        totskp = len(chk)
++        grpcnt = self.grpnum
++        gqty = int(totskp / grpcnt)
++        if gqty % 2:
++            gqty -= 1
++        self.grps = [gqty] * grpcnt
++        ovrs = int((totskp - (gqty * grpcnt)) / 2)
++        for x in range(ovrs):
++            if self.grpsml == "F":
++                self.grps[grpcnt - 1 - x] += 2
++            else:
++                self.grps[x] += 2
++        mess = ""
++        grps = ["A", "B", "C", "D", "E"]
++        for num, grp in enumerate(self.grps):
++            mess += "%s with %s Skips %s Rinks\n" % (grps[num], grp, int(grp/2))
++        mess += "\nIs this Correct?"
++        ok = askQuestion(self.df.window, head="Group Allocations", mess=mess)
++        if ok == "no":
++            return "Invalid Selection"
+ 
+     def doGreens(self, frt, pag, r, c, p, i, w):
+         self.greens, self.first, self.endrks, err = getGreens(
+@@ -810,35 +840,11 @@ class bc2050(object):
+         # Strength versus Strength
+         if self.grpsel:
+             # Allocate Into Groups
+-            col = [
+-                "bcg_scod",
+-                "sum(bcg_points) as pts",
+-                "sum(bcg_sfor - bcg_sagt) as diff",
+-                "sum(bcg_sagt) as agt"]
+-            whr = [
+-                ("bcg_cono", "=", self.opts["conum"]),
+-                ("bcg_ccod", "=", self.ccod)]
+-            grp = "bcg_scod"
+-            odr = "pts desc, diff desc, agt asc"
+-            chk = self.sql.getRec("bwlgme", cols=col, where=whr,
+-                group=grp, order=odr)
+-            totskp = len(chk)
+-            grpcnt = self.grpnum
+             start = 0
+-            for grpcod in range(1, grpcnt + 1):
+-                qty = int(totskp / grpcnt)
+-                if totskp % grpcnt:
+-                    if grpcod == 1 and self.grpsml == "F":
+-                        qty -= 1
+-                    else:
+-                        qty += 1
+-                if qty % 2:
+-                    qty += 1
+-                totskp -= qty
+-                grpcnt -= 1
++            for num, qty in enumerate(self.grps):
+                 for skp in range(start, start + qty):
+                     self.sql.updRec("bwlgme", cols=["bcg_group"],
+-                        data=[grpcod], where=[("bcg_cono", "=",
++                        data=[num + 1], where=[("bcg_cono", "=",
+                         self.opts["conum"]), ("bcg_ccod", "=",
+                         self.ccod), ("bcg_scod", "=", chk[skp][0])])
+                 start += qty
+diff --git a/bwl/bc3010.py b/bwl/bc3010.py
+index a6b309e..0441689 100644
+--- a/bwl/bc3010.py
++++ b/bwl/bc3010.py
+@@ -25,7 +25,7 @@ COPYING
+ """
+ 
+ import time
+-from TartanClasses import CCD, PrintDraw, Sql, TartanDialog
++from TartanClasses import CCD, PrintCards, PrintDraw, Sql, TartanDialog
+ 
+ class bc3010(object):
+     def __init__(self, **opts):
+@@ -60,6 +60,7 @@ class bc3010(object):
+         r1s = (("Morning", "M"), ("Afternoon", "A"))
+         r2s = (("Yes", "Y"), ("No", "N"))
+         r3s = (("Position", "P"), ("Rating", "R"), ("Combination", "C"))
++        r4s = (("No", "N"), ("Yes", "Y"), ("Only", "O"))
+         fld = (
+             (("T",0,0,0),"ID1",10,"Date","",
+                 self.sysdt,"Y",self.doDate,dte,None,("efld",)),
+@@ -68,13 +69,19 @@ class bc3010(object):
+             (("T",0,2,0),("ORB",r2s),0,"Mixed Gender"),
+             (("T",0,3,0),("ORB",r2s),0,"Mixed Rating"),
+             (("T",0,4,0),("ORB",r3s),0,"Draw By"),
+-            (("T",0,5,0),("IRB",r2s),0,"Cash Takings Sheet","",
++            (("T",0,5,0),("IRB",r4s),0,"Print Cards","",
++                "N","Y",self.doCards,None,None,None),
++            (("T",0,6,0),"INA",30,"Heading","",
++                "","Y",self.doHead,None,None,("notblank",)),
++            (("T",0,7,0),"IUI",2,"Number of Ends","",
++                0,"Y",self.doEnds,None,None,("notzero",)),
++            (("T",0,8,0),("IRB",r2s),0,"Cash Takings Sheet","",
+                 "N","Y",self.doTakings,None,None,None),
+-            (("T",0,6,0),("IRB",r2s),0,"Tabs Draw Listing","",
++            (("T",0,9,0),("IRB",r2s),0,"Tabs Draw Listing","",
+                 "N","Y",self.doListing,None,None,None),
+-            (("T",0,7,0),("IRB",r2s),0,"Tabs Draw Board","",
++            (("T",0,10,0),("IRB",r2s),0,"Tabs Draw Board","",
+                 "Y","Y",self.doBoard,None,None,None),
+-            (("T",0,8,0),("IRB",r2s),0,"Include Empty Rinks","",
++            (("T",0,11,0),("IRB",r2s),0,"Include Empty Rinks","",
+                 "N","Y",self.doEmpty,None,None,None))
+         tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+@@ -101,6 +108,22 @@ class bc3010(object):
+         self.df.loadEntry(frt, pag, p+2, data=chk[1])
+         self.df.loadEntry(frt, pag, p+3, data=chk[2])
+ 
++    def doCards(self, frt, pag, r, c, p, i, w):
++        self.cards = w
++        if self.cards == "N":
++            self.cdes = None
++            return "sk2"
++
++    def doHead(self, frt, pag, r, c, p, i, w):
++        self.cdes = w
++        if self.cards == "N":
++            return "sk1"
++
++    def doEnds(self, frt, pag, r, c, p, i, w):
++        self.ends = w
++        if self.cards == "O":
++            return "nd"
++
+     def doTakings(self, frt, pag, r, c, p, i, w):
+         self.takings = w
+ 
+@@ -120,10 +143,31 @@ class bc3010(object):
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+-        PrintDraw(self.opts["mf"], self.opts["conum"], self.date, self.time,
+-            takings=self.takings, listing=self.listing, board=self.board,
+-            empty=self.empty, repprt=self.df.repprt,
+-            name=self.__class__.__name__)
++        if self.cards != "O":
++            PrintDraw(self.opts["mf"], self.opts["conum"], self.date,
++                self.time, cdes=self.cdes, takings=self.takings,
++                listing=self.listing, board=self.board, empty=self.empty,
++                repprt=self.df.repprt, name=self.__class__.__name__)
++        if self.cards != "N":
++            recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
++                cols=["bdt_rink", "bdt_tab"], where=[("bdt_cono", "=",
++                self.opts["conum"]), ("bdt_date", "=", self.date),
++                ("bdt_time", "=", self.time), ("bdt_pos", "=", 4)],
++                group="bdt_rink, bdt_tab", order="bdt_rink")
++            skips = []
++            for x in range(0, len(recs), 2):
++                grn = recs[x][0]
++                skp = self.sql.getRec("bwltab", cols=["btb_tab",
++                    "btb_surname", "btb_names"], where=[("btb_cono", "=",
++                    self.opts["conum"]), ("btb_tab", "=", recs[x][1])],
++                    limit=1)
++                opp = self.sql.getRec("bwltab", cols=["btb_tab",
++                    "btb_surname", "btb_names"], where=[("btb_cono", "=",
++                    self.opts["conum"]), ("btb_tab", "=", recs[x+1][1])],
++                    limit=1)
++                skips.append((grn, skp, opp))
++            PrintCards(self.opts["mf"], self.opts["conum"], self.cdes, 1,
++                self.dated, skips, self.ends, "N", 0)
+         self.printed = True
+         self.opts["mf"].closeLoop()
+ 
+diff --git a/bwl/bc3020.py b/bwl/bc3020.py
+index 7d10894..4bb6af3 100644
+--- a/bwl/bc3020.py
++++ b/bwl/bc3020.py
+@@ -146,14 +146,8 @@ class bc3020(object):
+         l = ""
+         self.dic = {}
+         for r in rec:
+-            dte = CCD(r[c.index("bdt_date")], "D1", 10)
+-            tim = r[c.index("bdt_time")]
+-            bdm = self.sql.getRec("bwldrm", where=[("bdm_cono", "=",
+-                self.opts["conum"]), ("bdm_date", "=", dte.work),
+-                ("bdm_time", "=", tim)], limit=1)
+-            if bdm[self.sql.bwldrm_col.index("bdm_dhist")] == "N":
+-                continue
+             self.clash = ""
++            dte = CCD(r[c.index("bdt_date")], "D1", 10)
+             side = [["", ""], ["", ""], ["", ""], ["", ""]]
+             self.tab = r[c.index("bdt_tab")]
+             if self.tab not in self.dic:
+diff --git a/bwl/bc3080.py b/bwl/bc3080.py
+index 1e48ba7..efab61c 100644
+--- a/bwl/bc3080.py
++++ b/bwl/bc3080.py
+@@ -35,6 +35,7 @@ class bc3080(object):
+             if "args" in self.opts:
+                 self.ctyp = self.opts["args"][0]
+                 self.cnam = self.opts["args"][1]
++                self.notes = False
+                 self.card = False
+                 self.qty = 1
+                 self.doEnd()
+diff --git a/bwl/bc6030.py b/bwl/bc6030.py
+index 7fa5bfc..651637b 100644
+--- a/bwl/bc6030.py
++++ b/bwl/bc6030.py
+@@ -27,7 +27,7 @@ COPYING
+ from TartanClasses import MyFpdf, Sql, TartanDialog
+ from tartanFunctions import doPrinter, getModName
+ 
+-class bc6040:
++class bc6030:
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+@@ -99,22 +99,28 @@ class bc6040:
+         self.df.closeProcess()
+         grps = ("A", "B", "C")
+         poss = ("First Place", "Second Place", "Third Place")
+-        mems = ("Skip", "Third", "Second", "Lead")
++        if self.mems == 2:
++            mems = ("Skip", "Lead")
++        elif self.mems == 3:
++            mems = ("Skip", "Second", "Lead")
++        elif self.mems == 4:
++            mems = ("Skip", "Third", "Second", "Lead")
+         font=("Courier", "B", 24)
+-        fpdf = MyFpdf(name=self.__class__.__name__, head=80)
++        fpdf = MyFpdf(name=__name__, orientation="P", fmat="A4", head=80,
++            foot=False)
++        pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
++            self.__class__.__name__, self.opts["conum"], ext="pdf")
+         for x in range(self.grps):
+             for y in range(self.przs):
+                 for z in range(self.mems):
+                     fpdf.add_page()
+-                    fpdf.drawText(x=0, y=20, align="C", txt=self.name,
++                    fpdf.drawText(x=0, y=30, align="C", txt=self.name,
+                         font=font)
+-                    fpdf.drawText(x=0, y=35, align="C", txt="Group %s - %s" %
++                    fpdf.drawText(x=0, y=45, align="C", txt="Group %s - %s" %
+                         (grps[x], poss[y]), font=font)
+                     if self.mems > 1:
+-                        fpdf.drawText(x=0, y=50, align="C", txt=mems[z],
++                        fpdf.drawText(x=0, y=60, align="C", txt=mems[z],
+                             font=font)
+-        pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
+-            self.__class__.__name__, self.opts["conum"], ext="pdf")
+         fpdf.output(pdfnam, "F")
+         doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+             pdfnam=pdfnam, header="Envelopes", repprt=self.df.repprt)
+@@ -124,11 +130,4 @@ class bc6040:
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+ 
+-if __name__ == "__main__":
+-    from TartanClasses import Dbase, MainFrame
+-    mf = MainFrame()
+-    mf.dbm = Dbase(rcdic=mf.rcdic)
+-    mf.dbm.openDbase()
+-    rpt = bc6040(**{"mf": mf, "conum": 1, "conam": "Company One"})
+-
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+diff --git a/bwl/bc6040.py b/bwl/bc6040.py
+index 3686c80..7710f36 100644
+--- a/bwl/bc6040.py
++++ b/bwl/bc6040.py
+@@ -27,7 +27,7 @@ COPYING
+ import time
+ from TartanClasses import TartanDialog, Sql
+ 
+-class bc6030(object):
++class bc6040(object):
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+@@ -35,9 +35,9 @@ class bc6030(object):
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwlent", "bwlgme",
+-            "bwlrnd", "bwltyp", "bwlpts", "bwlfls", "bwlflm", "bwlflt",
+-            "bwlflo"], prog=self.__class__.__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwldrm", "bwldrt",
++            "bwlent", "bwlgme", "bwlrnd", "bwltyp", "bwlpts", "bwlfls",
++            "bwlflm", "bwlflt", "bwlflo"], prog=self.__class__.__name__)
+         if self.sql.error:
+             return
+         t = time.localtime()
+diff --git a/bwl/bcc110.py b/bwl/bcc110.py
+index 523eaf9..f28746b 100644
+--- a/bwl/bcc110.py
++++ b/bwl/bcc110.py
+@@ -37,7 +37,7 @@ class bcc110(object):
+ 
+     def setVariables(self):
+         self.sql = Sql(self.opts["mf"].dbm, ["memctl", "memctc", "memmst",
+-            "memadd", "memkon", "bwlctl", "bwltab", "chglog"],
++            "memadd", "memkon", "bwlctl", "bwltab", "chglog", "tplmst"],
+             prog=self.__class__.__name__)
+         if self.sql.error:
+             if self.sql.error == ["memctl"]:
+@@ -54,7 +54,7 @@ class bcc110(object):
+         if not self.acc:
+             self.new = True
+             self.acc = [self.opts["conum"], "N", "N", 0, 0, 0, 0, "C",
+-                "A", "N", "Y", 4, 0, 0, "A", "B", "", ""]
++                "A", "N", 4, "Y", 4, 0, 0, "A", "B", "comp_cards", "", ""]
+         else:
+             self.new = False
+             self.oldm = self.acc[self.sql.bwlctl_col.index("ctb_mstart")]
+@@ -75,6 +75,17 @@ class bcc110(object):
+             "where": (
+                 ("mcc_cono", "=", self.opts["conum"]),
+                 ("mcc_type", "=", "C"))}
++        tpm = {
++            "stype": "R",
++            "tables": ("tplmst",),
++            "cols": (
++                ("tpm_tname", "", 0, "Template"),
++                ("tpm_title", "", 0, "Title"),
++                ("tpm_type", "", 0, "T")),
++            "where": [
++                ("tpm_type", "=", "C"),
++                ("tpm_system", "=", "BWL")],
++            "order": "tpm_tname"}
+         r1s = (("Yes","Y"),("No","N"))
+         r2s = (("Position","P"),("Rating","R"),("Combined","C"))
+         r3s = (("Ascending","A"),("Descending","D"))
+@@ -119,24 +130,31 @@ class bcc110(object):
+                 self.acc[9],"N",None,None,None,None,None,
+                 "Select if Different Ratings are Used for Mixed "\
+                 "Gender Draws."),
+-            (("T",0,seq + 6,0),("IRB",r1s),0,"Replace Fours","",
++            (("T",0,seq + 6,0),"IUI",1,"Default Team Size","",
+                 self.acc[10],"N",None,None,None,None,None,
++                "When the Draw is Done, Default to this Size."),
++            (("T",0,seq + 7,0),("IRB",r1s),0,"Replace Fours","",
++                self.acc[11],"N",None,None,None,None,None,
+                 "When the Draw is Trips Use Pairs Instead of Fours "\
+                 "when Applicable."),
+-            (("T",0,seq + 7,0),"IUI",2,"Weeks Between Draws","",
+-                self.acc[11],"N",None,None,None,("between", 0, 4),None,
++            (("T",0,seq + 8,0),"IUI",2,"Weeks Between Draws","",
++                self.acc[12],"N",None,None,None,("between", 0, 4),None,
+                 "Minimum number of Weeks that Players Should Not be "\
+                 "Drawn in the Same Team."),
+-            (("T",0,seq + 8,0),"IUD",5.2,"Rate - Member","",
+-                self.acc[12],"N",None,None,None,("efld",)),
+-            (("T",0,seq + 9,0),"IUD",5.2,"Rate - Visitor","",
+-                self.acc[13],"N",None,None,None,("efld",)),
+-            (("T",0,seq + 10,0),"IUA",6,"Greens","",
+-                self.acc[14],"N",self.doGreens,None,None,("notblank",)),
+-            (("T",0,seq + 11,0),("IRB",r4s),0,"Draw Format","",
+-                self.acc[15],"N",None,None,None,None),
+-            (("T",0,seq + 12,0),"ITX",50,"Email Address","",
+-                self.acc[16],"N",None,None,None,("email",))])
++            (("T",0,seq + 9,0),"IUD",5.2,"Rate - Member","",
++                self.acc[13],"N",None,None,None,("efld",),None,
++                "Member's Tabs-Inn Fee."),
++            (("T",0,seq + 10,0),"IUD",5.2,"Rate - Visitor","",
++                self.acc[14],"N",None,None,None,("efld",),None,
++                "Visitor's Tabs-Inn Fee."),
++            (("T",0,seq + 11,0),"IUA",6,"Greens","",
++                self.acc[15],"N",self.doGreens,None,None,("notblank",)),
++            (("T",0,seq + 12,0),("IRB",r4s),0,"Draw Format","",
++                self.acc[16],"N",None,None,None,None),
++            (("T",0,seq + 13,0),"INA",20,"Cards Template","",
++                self.acc[17],"N",self.doTplNam,tpm,None,("efld",)),
++            (("T",0,seq + 14,0),"ITX",50,"Email Address","",
++                self.acc[18],"N",None,None,None,("email",))])
+         but = (
+             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
+             ("Quit",None,self.doExit,1,None,None))
+@@ -229,6 +247,12 @@ class bcc110(object):
+         w = w.strip().replace(" ", "")
+         self.df.loadEntry(frt, pag, p, data=w)
+ 
++    def doTplNam(self, frt, pag, r, c, p, i, w):
++        acc = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w),
++            ("tpm_type", "=", "C"), ("tpm_system", "=", "BWL")], limit=1)
++        if not acc:
++            return "Invalid Template Name"
++
+     def doEnd(self):
+         err = None
+         if self.same == "Y":
+diff --git a/crs/cr4010.py b/crs/cr4010.py
+index 50f0fa1..6b09536 100644
+--- a/crs/cr4010.py
++++ b/crs/cr4010.py
+@@ -63,9 +63,12 @@ class cr4010(object):
+             "stype": "R",
+             "tables": ("crsmst",),
+             "cols": (
++                ("crm_stat", "", 0, "S"),
+                 ("crm_acno", "", 0, "Acc-Num"),
+                 ("crm_name", "", 0, "Name", "Y")),
+-            "where": [("crm_cono", "=", self.opts["conum"])]}
++            "where": [("crm_cono", "=", self.opts["conum"])],
++            "order": "crm_stat, crm_acno",
++            "index": 1}
+         tag = (
+             ("Basic-_A", self.doTagSelect, ("T",0,2), ("T",0,1)),
+             ("Basic-_B", self.doTagSelect, ("T",0,2), ("T",0,1)),
+diff --git a/doc/BWL.rst b/doc/BWL.rst
+index 064c8b3..b8752f9 100644
+--- a/doc/BWL.rst
++++ b/doc/BWL.rst
+@@ -14,6 +14,7 @@ Use this routine to create the bowls control record.
+ + **Draw Base** - By pre-allocated Position, Rating or a Combination of both.
+ + **Rating Order** - Whether the rating system is ascending or descending, like golf handicaps.
+ + **Mixed Ratings** - Whether to use different ratings for mixed gender draws.
+++ **Default Team Size** - When doing a tabs-in draw use this as the default team size.
+ + **Replace Fours** - When doing a trips tabs-in draw use pairs instead of fours for eight players.
+ + **Weeks Between Draws** - The minimum number of weeks that team members should not be in the same team again. They could however be drawn to play against them.
+ + **Rate - Member** - The member's rate.
+@@ -61,7 +62,13 @@ Tabs-In Draw (BC)
+ Use this routine to make a new draw or to amend a current draw.
+ 
+ + **Date** - The date of the draw.
+-+ **Time** - The time of the draw.
+++ **Time** - The time of the draw. If a draw with the same date and time already exists the following options will be avaliable:
++    + **None** - Do nothing, retun to the time entry.
++    + **View** - View the existing draw.
++    + **Reprint** - Reprint the existing draw.
++    + **Alter** - Alter the existing draw.
++    + **Clear** - Clear, delete, the existing draw.
++    + **Another** - Do another draw with the same tab entries.
+ + **Mixed Gender** - Whether or not the draw is mixed.
+ + **Mixed Rating** - Whether or not to use the alternative ratings.
+ + **Draw By** - If available select whether to base the draw on Positions, Ratings or a Combination of both.
+@@ -413,6 +420,15 @@ Use this routine to delete visitor's tabs without competition history and re-num
+ 
+ + **Minimum Tabs-In** - Enter the minimum number of times a visitor must have played tabs-in to stay in the system.
+ 
++Competition Envelopes (BC)
++++++++++++++++++++++++++++
++Use this routine to print envelopes for competition prizes.
++
+++ **Competition Code** - The relevant competition code.
+++ **Groups** - The number of groups, if applicable.
+++ **Prizes** - The number of prizes per group.
+++ **Members** - The number of players per team.
++
+ Clear History (BC)
+ ++++++++++++++++++
+ Use this routine to selectively erase historical data. Please ensure that you make a **backup** before selecting this routine as there is no going back.
+diff --git a/doc/GEN.rst b/doc/GEN.rst
+index 598faad..05eaa98 100644
+--- a/doc/GEN.rst
++++ b/doc/GEN.rst
+@@ -463,7 +463,7 @@ As with most data capture routines you will first have to enter the `Batch Detai
+ 
+   Select a transaction to process by clicking on it or moving the cursor to it. You can now either hit the `Enter` key and  Continue from the `Details` field in the following section or click *Create Import Record* and follow the same procedure as outlined above in *Bank Import Control* and then click *Process Bank Data* again.
+ 
+-+ **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocated these using the `Process Bank Data` routine, before continuing.
+++ **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocate these, using the `Process Bank Data` routine, before continuing.
+ 
+     + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
+     + **Ref-Num** - Enter the reference number. If the transaction already exists on your database it will be flagged as either paid or received i.e. will not appear on the bank reconciliation statement. If the transaction does not already exist you can capture it by entering the following fields:
+diff --git a/doc/QST.rst b/doc/QST.rst
+index eec358b..587c382 100644
+--- a/doc/QST.rst
++++ b/doc/QST.rst
+@@ -209,10 +209,8 @@ Salaries and Wages
+ If you are going to use `Salaries and Wages` you must at least perform the following procedures in order:
+ 
+ + Create a control record using `File Maintenance -> Control Record`.
+-+ If you elected to integrate with the General Ledger you must create the `wag_ctl`, `wag_slc` and `wag_sli` controls as per above.
+-+ Create at least one branch record using `File Maintenance -> Branch Records`.
+-+ Create at least one department record using `File Maintenance -> Department Records`.
+ + Create all necessary earnings and deduction records using `File Maintenance -> Earning and Deduction Codes`.
+++ Create at least one department record using `Control -> File Maintenance -> Department Records`.
+ + Create employee records using `File Maintenance -> Employee Masterfile`.
+ 
+ The Salaries and Wages system is at this stage fully functional and you can capture clock cards and produce payslips etc.
+diff --git a/doc/RCA.rst b/doc/RCA.rst
+index 6935b06..db24010 100644
+--- a/doc/RCA.rst
++++ b/doc/RCA.rst
+@@ -126,39 +126,104 @@ Reporting (RC)
+ ..............
+ Owners Audit Trail (RC)
+ +++++++++++++++++++++++
+-This routine is used to produce an owner's transaction audit trail.
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Owners Statements (RC)
++++++++++++++++++++++++
++Use this routine to produce owner's statements.
++
+++ **Template Name** - The name of the template to use.
+++ **Whole File** - Select whole file or individual accounts.
+++ **Zero Balances** - Select whether to include accounts with zero balances.
+++ **Debit Balances** - Select whether to include accounts with debit balances.
+++ **Message Number** - The message number to print, if applicable.
+++ **Statement Date** - The date to be used for the cut-off.
+ 
+ Owners Master Listing (RC)
+ ++++++++++++++++++++++++++
+ This routine is used to produce an owner's master listing.
+ 
+-Owners Statements (RC)
+-++++++++++++++++++++++
+-This routine is used to produce owner's statements.
+++ **Cut-Off Period** - Enter the ending period to include in the listing.
+++ **Totals Only** - Only print the totals.
+++ **Zero Balances** - Select whether to include accounts with zero balances.
++
++Owners Account Listing (RC)
+++++++++++++++++++++++++++++
++Use this routine to produce statements for owners's accounts.
++
+++ **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
+++ **From Account** - If range was selected enter the starting account number.
+++ **To Account** - If range was selected enter the ending account number.
+++ **Starting Period** - The starting financial period in the financial year.
+++ **Ending Period** - The ending financial period in the financial year.
+++ **Separate Pages** - Select whether or not to print each account on a new page
+ 
+ Owners Notes Listing (RC)
+ +++++++++++++++++++++++++
+-This routine is used to produce an owner's note listing.
++Use this routine to print any notes on the owner's ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
+ 
+ Tenants Audit Trail (RC)
+ ++++++++++++++++++++++++
+-This routine is used to produce a tenant's transaction audit trail.
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
++
++Tenants Statements (RC)
+++++++++++++++++++++++++
++Use this routine to produce tenant's statements.
++
+++ **Template Name** - The name of the template to use.
+++ **Whole File** - Select whole file or individual accounts.
+++ **Zero Balances** - Select whether to include accounts with zero balances.
+++ **Debit Balances** - Select whether to include accounts with minus balances.
+++ **Message Number** - The message number to print, if applicable.
+++ **Statement Date** - The date to be used for the cut-off.
+ 
+ Tenants Master Listing (RC)
+ +++++++++++++++++++++++++++
+ This routine is used to produce a tenant's master listing.
+ 
+-Tenants Statements (RC)
+-+++++++++++++++++++++++
+-This routine is used to produce tenant's statements.
+++ **Report Date** - Enter the cut-off date for the report.
+++ **Contracts** - Select which contracts to report on.
+++ **Months to Expiry** - If *Expiring* was selected, enter the number of months.
+ 
+ Tenants Notes Listing (RC)
+ ++++++++++++++++++++++++++
+-This routine is used to produce a tenant's note listing.
++Use this routine to print any notes on the tenant's ledger accounts.
++
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
+ 
+ Tenants Deposit Listing (RC)
+ ++++++++++++++++++++++++++++
+-This routine is used to produce a listing of deposits.
++This routine is used to produce a listing of tenant's deposits.
++
+++ **Report Date** - Enter the cut-off date for the report.
+ 
+ Statement Messages (RC)
+ +++++++++++++++++++++++
+@@ -191,3 +256,6 @@ This routine is used to check for missing records.
+ Month End Routine (RC)
+ ......................
+ This routine is used to close off a month and raise rentals for the following month.
++
+++ **Last Month End Date** - The last month-end date is displayed.
+++ **This Month End Date** - Enter the required month-end date.
+diff --git a/doc/RTL.rst b/doc/RTL.rst
+index 7247aaf..6829a6f 100644
+--- a/doc/RTL.rst
++++ b/doc/RTL.rst
+@@ -47,32 +47,92 @@ Receipts (RT)
+ +++++++++++++
+ This routine is used to capture receipts.
+ 
+++ **Prm-Cod** - Enter the premises code.
+++ **Acc-Num** - Enter the account number.
+++ **Seq** - Enter the contract sequence number.
+++ **Reference** - Enter the transaction reference number.
+++ **Date** - Enter the transactions date.
+++ **Amount** - Enter the transaction amount.
+++ **Details** - Enter the transaction description.
++
+ Payments (RT)
+ +++++++++++++
+ This routine is used to capture payments.
+ 
+++ **Prm-Cod** - Enter the premises code.
+++ **Acc-Num** - Enter the account number.
+++ **Seq** - Enter the contract sequence number.
+++ **Reference** - Enter the transaction reference number.
+++ **Date** - Enter the transactions date.
+++ **Amount** - Enter the transaction amount.
+++ **Details** - Enter the transaction description.
++
++Journals (RT)
+++++++++++++++
++This routine is used to capture journal entries.
++
+++ **Prm-Cod** - Enter the premises code.
+++ **Acc-Num** - Enter the account number.
+++ **Seq** - Enter the contract sequence number.
+++ **Reference** - Enter the transaction reference number.
+++ **Date** - Enter the transactions date.
+++ **Amount** - Enter the transaction amount.
+++ **V** - Enter the VAT Code, if applicable.
+++ **V.A.T** - Enter the VAT Amount, if applicable.
+++ **Details** - Enter the transaction description.
++
+ Reporting (RT)
+ ..............
+ Batch Error Listing (RT)
+ ++++++++++++++++++++++++
+-This routine is used to produce a batch error listing.
++Use this routine to print any unbalanced batches.
++
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+ 
+ Transaction Audit Trail (RT)
+ ++++++++++++++++++++++++++++
+-This routine is used to produce a transaction audit trail.
++Use this routine to print lists of transactions either by financial period or date of capture.
++
+++ **Period Type** - Financial or Capture.
+++ **Starting Period** - The first financial period to include in the report.
+++ **Ending Period** - The last financial period to include in the report.
+++ **Starting Date** - The from date to include in the report.
+++ **Ending Date** - The to date to include in the report.
+++ **Type** - The transaction type or 0 for all.
+++ **Batch-Number** - The batch number or blank for all.
+++ **Totals Only** - Yes or No.
+ 
+ Master Listing (RT)
+ +++++++++++++++++++
+ This routine is used to produce a master listing.
+ 
+++ **Report Date** - Enter the cut-off date for the report.
+++ **Contracts** - Select which contracts to report on.
+++ **Months to Expiry** - If *Expiring* was selected, enter the number of months.
+++ **Consolidate** - Whether or not to consolidate all contracts.
++
+ Statements (RT)
+ +++++++++++++++
+ This routine is used to produce statements.
+ 
+++ **Template Name** - The name of the template to use.
+++ **Whole File** - Select whole file or individual accounts.
+++ **Zero Balances** - Select whether to include accounts with zero balances.
+++ **Minus Balances** - Select whether to include accounts with minus balances.
+++ **Message Number** - The message number to print, if applicable.
+++ **Statement Date** - The date to be used for the cut-off.
++
+ Notes Listing (RT)
+ ++++++++++++++++++
+ This routine is used to produce a tenant's note listing.
+ 
+++ **Action Flag** - Normal or Urgent.
+++ **From Capture Date** - The starting creation date.
+++ **To Capture Date** - The ending creation date.
+++ **From Action Date** - The starting action date.
+++ **To Action Date** - The ending action date.
++
+ Toolbox (RT)
+ ............
+ Change Account Numbers (RT)
+@@ -86,3 +146,6 @@ This routine is used to interrogate records.
+ Month End Routine (RT)
+ ......................
+ This routine is used to close off a month and raise rentals for the following month.
++
+++ **Last Month End Date** - The last month-end date is displayed.
+++ **This Month End Date** - Enter the required month-end date.
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 0a221e5..0b94e97 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.4
++:Version:   6.5
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/doc/UTY.rst b/doc/UTY.rst
+index 8627ffe..1ecdf4b 100644
+--- a/doc/UTY.rst
++++ b/doc/UTY.rst
+@@ -190,12 +190,14 @@ Use this routine to create, edit or delete templates. All templates hard coded i
+     + **X1 Co-Ordinate** - The left hand position of the rectangle in mm.
+     + **X2 Co-Ordinate** - The right hand position of the rectangle in mm.
+     + **Y1 Co-Ordinate** - The top position of the rectangle in mm.
++    + **RHgt** - The height of the rectangle in mm.
+     + **Y2 Co-Ordinate** - The bottom position of the rectangle in mm.
+     + **Line Thickness** - The thickness of the line.
+ + **Image**
+     + **X1 Co-Ordinate** - The left hand position of the image in mm.
+     + **X2 Co-Ordinate** - The right hand position of the image in mm.
+     + **Y1 Co-Ordinate** - The top position of the image in mm.
++    + **IHgt** - The height of the image in mm.
+     + **Y2 Co-Ordinate** - The bottom position of the image in mm.
+     + **File name** - The full path of the file name of the image.
+     + **Merge Code** - The merge code containing the path to the image e.g. ctlmst ctm_logo.
+diff --git a/drs/dr2030.py b/drs/dr2030.py
+index 1a1f022..4b3df68 100644
+--- a/drs/dr2030.py
++++ b/drs/dr2030.py
+@@ -350,8 +350,8 @@ class dr2030(object):
+                     [13, 1.5]]]]}
+         if self.ctm_b_name:
+             r1["rows"].extend([
+-                [22, 35, [[32, 1.5, .8, "Banking Details", False]]],
+-                [22, 36.5, [[32, 5.5]]]])
++                [22, 35, [[40, 1.5, .8, "Banking Details", False]]],
++                [22, 36.5, [[40, 5.5]]]])
+         doDrawTable(self.fpdf, r1, cw=cw, ld=ld, font=False)
+ 
+     def printTotals(self, cw, ld, ica, iva):
+diff --git a/drs/dr4010.py b/drs/dr4010.py
+index eab18f8..9b3c8cf 100644
+--- a/drs/dr4010.py
++++ b/drs/dr4010.py
+@@ -81,15 +81,18 @@ class dr4010(object):
+             "stype": "R",
+             "tables": ("drsmst",),
+             "cols": (
++                ("drm_stat", "", 0, "S"),
+                 ("drm_acno", "", 0, "Acc-Num"),
+                 ("drm_name", "", 0, "Name", "Y"),
+                 ("drm_add1", "", 0, "Address Line 1"),
+                 ("drm_rating", ("RR", ratings), 4, "RATE")),
+-            "where": [("drm_cono", "=", self.opts["conum"])]}
++            "where": [("drm_cono", "=", self.opts["conum"])],
++            "index": 1}
+         if self.chains == "Y":
+             drm["whera"] = [["T", "drm_chain", 0]]
+         else:
+             drm["where"].append(("drm_chain", "=", 0))
++        drm["order"] = "drm_stat, drm_chain, drm_acno"
+         tag = (
+             ("Basic-_A", self.doTagSelect, ("T",0,0), ("T",0,1)),
+             ("Basic-_B", self.doTagSelect, ("T",0,0), ("T",0,1)),
+diff --git a/ms0000.py b/ms0000.py
+index 4d88476..204028e 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 4)
++    VERSION = (6, 5)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -165,9 +165,6 @@ class ms0000(object):
+                         break
+                 except:
+                     pass
+-        if self.script:
+-            exec("import %s" % self.script)
+-            self.doExit(dbm=False)
+         if self.help:
+             print("""
+ Tartan Systems Help
+@@ -392,9 +389,15 @@ Options:
+         if not self.user:
+             # Exit if not valid user
+             self.doExit()
++        if self.script:
++            if self.user["lvl"] > 6:
++                exec("import %s" % self.script)
++            else:
++                print("Invalid Security Level")
++            self.doExit()
+         if self.query:
+             # Excecute sql query
+-            if self.user["lvl"] == 9:
++            if self.user["lvl"] > 6:
+                 err = self.doSqlCmd()
+             else:
+                 err = "Invalid Security Level"
+diff --git a/mst/ms3010.py b/mst/ms3010.py
+index 0a216a2..4a222b8 100644
+--- a/mst/ms3010.py
++++ b/mst/ms3010.py
+@@ -630,18 +630,20 @@ class ms3010(object):
+         l = CCD(tots[2], "SD", 13.2)
+         m = CCD(tots[3], "SD", 13.2)
+         tvat = CCD(float(ASD(tots[1]) + ASD(tots[3])), "SD", 13.2)
++        if tvat.work >= 0:
++            tdes = "Total Net Tax Due"
++        else:
++            tdes = "Total Net Tax Owed"
+         if ttype == "P":
+             self.fpdf.drawText("%-37s %s %s %s %s" % (d.disp, j.disp, k.disp,
+                 l.disp, m.disp), font="B")
+             self.fpdf.drawText()
+-            self.fpdf.drawText("%-79s %13s" % ("Total Net Tax Due/Owed",
+-                tvat.disp), font="B")
++            self.fpdf.drawText("%-79s %13s" % (tdes, tvat.disp), font="B")
+         else:
+             line = ["TOTAL", [d.disp, "", j.work, k.work, l.work, m.work]]
+             self.expdatas.append(line)
+             self.expdatas.append(["BLANK"])
+-            line = ["TOTAL", ["Total Net Tax Due/Owed", "", "", "", "",
+-                tvat.work]]
++            line = ["TOTAL", [tdes, "", "", "", "", tvat.work]]
+             self.expdatas.append(line)
+         if not self.genleg:
+             return
+diff --git a/mst/msc110.py b/mst/msc110.py
+index 5cd4612..ad7ba99 100644
+--- a/mst/msc110.py
++++ b/mst/msc110.py
+@@ -108,8 +108,8 @@ class msc110(object):
+         self.df.focusField("T", 0, 1, clr=False)
+ 
+     def doHist(self, frt, pag, r, c, p, i, w):
+-        if w and w < 5:
+-            return "At least 5 Years of History should be kept"
++        if w and w < 7:
++            return "At least 7 Years of History should be kept"
+ 
+     def doMust(self, frt, pag, r, c, p, i, w):
+         if w == "N":
+diff --git a/rca/rc3030.py b/rca/rc3030.py
+index e421ed5..a861129 100644
+--- a/rca/rc3030.py
++++ b/rca/rc3030.py
+@@ -59,8 +59,8 @@ class rc3030(object):
+                 int(self.sysdtw / 100),"Y",self.doCutOff,None,None,None),
+             (("T",0,1,0),("IRB",r1s),0,"Totals Only","",
+                 "Y","Y",self.doTots,None,None,None),
+-            (("T",0,2,0),("IRB",r1s),0,"Ignore Zero Balances",
+-                "Ignore Zero Balances","Y","Y",self.doZero,None,None,None))
++            (("T",0,2,0),("IRB",r1s),0,"Zero Balances",
++                "Include Zero Balances","N","Y",self.doZero,None,None,None))
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+@@ -73,7 +73,7 @@ class rc3030(object):
+     def doTots(self, frt, pag, r, c, p, i, w):
+         self.totsonly = w
+         if self.totsonly == "Y":
+-            self.zero = "Y"
++            self.zero = "N"
+             self.df.loadEntry(frt, pag, p+1, data=self.zero)
+             return "sk1"
+ 
+@@ -106,7 +106,7 @@ class rc3030(object):
+             bals = self.sql.getRec("rcaowt", cols=["sum(rot_tramt)"],
+                 where=[("rot_cono", "=", self.opts["conum"]), ("rot_acno", "=",
+                 acc.work), ("rot_curdt", "<=", self.cutoff)], limit=1)
+-            if self.zero == "Y" and not bals[0]:
++            if self.zero == "N" and not bals[0]:
+                 continue
+             bal = CCD(bals[0], "SD", 13.2)
+             if self.totsonly != "Y":
+@@ -139,7 +139,7 @@ class rc3030(object):
+             "Report up to", self.opts["period"]))
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-27s%-1s%-1s" % ("(Options: "\
+-            "Ignore-Zero-Bal: ", self.df.t_disp[0][0][2], ")"))
++            "Include-Zero-Bal: ", self.df.t_disp[0][0][2], ")"))
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-7s %-53s %13s" % ("Acc-Num", "Name", "Balance "))
+         self.fpdf.underLine(txt=self.head)
+diff --git a/rca/rc3100.py b/rca/rc3100.py
+index 75cf5fb..a5bb3f6 100644
+--- a/rca/rc3100.py
++++ b/rca/rc3100.py
+@@ -52,8 +52,6 @@ class rc3100(object):
+             "Remarks", "Debit", "Credit", "Balance"]
+         self.forms = [("UI", 3), ("NA", 7), ("NA", 30), ("D1", 10), ("Na", 9),
+             ("NA", 3), ("NA", 30), ("SD", 13.2), ("SD", 13.2), ("SD", 13.2)]
+-        self.s_per = int(self.opts["period"][1][0] / 100)
+-        self.e_per = int(self.opts["period"][2][0] / 100)
+         self.recs = None
+         return True
+ 
+@@ -88,9 +86,9 @@ class rc3100(object):
+             (("T",0,2,0),"IUI",7,"To Account","",
+                 var[2],"N",self.doEndAcc,glm,None,("efld",)),
+             (("T",0,3,0),"Id2",7,"Starting Period","",
+-                self.s_per,"N",self.doStartPer,None,None,("efld",)),
++                0,"N",self.doStartPer,None,None,("efld",)),
+             (("T",0,4,0),"Id2",7,"Ending Period","",
+-                self.e_per,"N",self.doEndPer,None,None,("efld",)),
++                0,"N",self.doEndPer,None,None,("efld",)),
+             (("T",0,5,0),("IRB",r2s),7,"Separate Pages","",
+                 var[5],"N",self.doPages,None,None,None))
+         tnd = ((self.doEnd,"y"), )
+@@ -136,16 +134,15 @@ class rc3100(object):
+             return "yes"
+ 
+     def doStartPer(self, frt, pag, r, c, p, i, w):
+-        if w < self.s_per or w > self.e_per:
+-            return "Invalid Period, Outside Financial Period"
+-        self.sdate = CCD(w, "D2", 7)
++        self.sdate = CCD(w, "d2", 7)
+ 
+     def doEndPer(self, frt, pag, r, c, p, i, w):
+-        if w < self.sdate.work:
++        if w and w < self.sdate.work:
+             return "Invalid Period, Before Start Period"
+-        if w > self.e_per:
+-            return "Invalid Period, Outside Financial Period"
+-        self.edate = CCD(w, "D2", 7)
++        if not w:
++            self.edate = CCD(999912, "D2", 7)
++        else:
++            self.edate = CCD(w, "D2", 7)
+ 
+     def doPages(self, frt, pag, r, c, p, i, w):
+         self.pages = w
+@@ -248,7 +245,7 @@ class rc3100(object):
+                     self.pageHeading()
+                     bf = CCD(acctot, "SD", 13.2)
+                     if bf.work:
+-                        self.fpdf.drawText("%32s %-30s %27s %13s" % ("",
++                        self.fpdf.drawText("%24s %-30s %27s %13s" % ("",
+                             "Brought Forward", "", bf.disp))
+                         self.pglin += 1
+                 acctot = float(ASD(acctot) + ASD(amt.work))
+@@ -276,8 +273,7 @@ class rc3100(object):
+         name = CCD(str(data[dic["rom_name"][1]]), "NA", 30)
+         o = self.sql.getRec("rcaowt", cols=["round(sum(rot_tramt), 2)"],
+             where=[("rot_cono", "=", self.opts["conum"]), ("rot_acno", "=",
+-            acno.work), ("rot_curdt", ">=", self.s_per), ("rot_curdt",
+-            "<", self.sdate.work)], limit=1)
++            acno.work), ("rot_curdt", "<", self.sdate.work)], limit=1)
+         if o and o[0]:
+             ob = CCD(o[0], "SD", 13.2)
+         else:
+diff --git a/tab/tb1020.py b/tab/tb1020.py
+index 3122449..c502dd3 100644
+--- a/tab/tb1020.py
++++ b/tab/tb1020.py
+@@ -137,7 +137,6 @@ class tb1020(object):
+             "drstrn": ["drt_capdt", "drt_seq"],
+             "genrct": ["grt_seq", "grt_date"],
+             "gentrn": ["glt_capdt", "glt_seq"],
+-            "ibttrn": ["ibt_capdt", "ibt_seq"],
+             "lontrn": ["lnt_capdt", "lnt_seq"],
+             "memage": ["mta_curdt", "mta_seq"],
+             "memsta": ["mls_date", "mls_seq"],
+@@ -389,6 +388,10 @@ class tb1020(object):
+                         new = 0
+                     elif self.table == "bwlctl" and nam == "ctb_mixed":
+                         new = "N"
++                    elif self.table == "bwlctl" and nam == "ctb_tsize":
++                        new = 4
++                    elif self.table == "bwlctl" and nam == "ctb_tplnam":
++                        new = "comp_cards"
+                     elif self.table == "bwlgme" and nam == "bcg_sfor":
+                         new = old[olddic["bcg_shots_for"][0]]
+                     elif self.table == "bwlgme" and nam == "bcg_sagt":
+diff --git a/tab/tb1030.py b/tab/tb1030.py
+index 6090bd1..531e4fd 100644
+--- a/tab/tb1030.py
++++ b/tab/tb1030.py
+@@ -42,6 +42,7 @@ class tb1030(object):
+         if self.sql.error:
+             return
+         self.doGetTable()
++        self.opts["mf"].startLoop()
+         if not self.table:
+             return
+         self.sql = Sql(self.opts["mf"].dbm, ["ftable", self.table],
+@@ -68,7 +69,6 @@ class tb1030(object):
+         txt = (self.doTabExit, )
+         self.tb = TartanDialog(self.opts["mf"], tops=True, title=tit,
+             eflds=fld, tend=tnd, txit=txt)
+-        self.tb.mstFrame.wait_window()
+ 
+     def doTabNam(self, frt, pag, r, c, p, i, w):
+         desc = self.sql.getRec("ftable", cols=["ft_desc"],
+@@ -84,6 +84,7 @@ class tb1030(object):
+ 
+     def doTabEnd(self):
+         self.tb.closeProcess()
++        self.opts["mf"].closeLoop()
+ 
+     def mainProcess(self):
+         self.dics = getattr(self.sql, "%s_dic" % self.table)
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index 2f0c575..313992c 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -1837,8 +1837,12 @@ def getGreens(text, needed, keep=None):
+         keep = []
+     greens = {}
+     rinks = 0
++    errs = None
+     grns = text.split(",")
+     for n, g in enumerate(grns):
++        if not g:
++            errs = True
++            break
+         if not n:
+             # First Green
+             first = g[0]
+@@ -1860,8 +1864,10 @@ def getGreens(text, needed, keep=None):
+                         rinks += 1
+                 except:
+                     pass
++    if errs:
++        return None, None, None, "Invalid Entry"
+     if rinks < needed:
+-        return None, None, None, "Not Enough Rinks, %s Needed" % needed
++        return None, None, None, "Rinks Entered %s, %s Needed" % (rinks, needed)
+     # End rinks
+     endrks = []
+     for g in greens:
+@@ -2284,7 +2290,7 @@ def getFileName(path, wrkdir=None, check=False):
+         svr = path.replace("/", "|").replace("\\", "|")
+         svr = svr.split("|")
+         con = SMBConnection("", "", "", svr[2])
+-        con.connect(svr[2])
++        con.connect(svr[2], timeout=5)
+         for p in svr[4:]:
+             if not pth:
+                 pth = p
+@@ -2601,6 +2607,8 @@ def getImage(name, siz=None, fle=None):
+     from TartanClasses import Image, ImageTk
+     from tartanImages import aliases, images
+     stk = name.lower().split()[0]
++    if stk.count("/"):
++        stk = stk.split("/")[0]
+     if stk not in images and stk not in aliases:
+         return
+     if stk in aliases:
+@@ -2612,7 +2620,7 @@ def getImage(name, siz=None, fle=None):
+     if fle:
+         img.save(fle)
+     else:
+-        return ImageTk.PhotoImage(img)
++        return ImageTk.PhotoImage(img.convert(mode="RGBA"))
+ 
+ def printPDF(prt, fle, cpy=1):
+     import sys
+@@ -2625,15 +2633,20 @@ def printPDF(prt, fle, cpy=1):
+         fd = fitz.open(fle)
+         for pge in fd:
+             # Fitz
++            buf = io.BytesIO()
+             rect = pge.MediaBox
+             siz = [int(rect[2]), int(rect[3])]
+             mat = fitz.Matrix(4.16667, 4.16667)
+             clp = fitz.Rect(0, 0, siz[0], siz[1])
+             dst = (0, 0, int(rect[2] * 20), int(rect[3] * -20))
+-            lst = pge.getDisplayList()
+-            pix = lst.getPixmap(matrix=mat, clip=clp, alpha=False)
+-            buf = io.BytesIO()
+-            buf.write(pix.getImageData(output="ppm"))
++            try:
++                lst = pge.get_displaylist()
++                pix = lst.get_pixmap(matrix=mat, clip=clp, alpha=False)
++                buf.write(pix.tobytes(output="ppm"))
++            except:
++                lst = pge.getDisplayList()
++                pix = lst.getPixmap(matrix=mat, clip=clp, alpha=False)
++                buf.write(pix.getImageData(output="ppm"))
+             # Win32
+             img = Image.open(buf)
+             dib = ImageWin.Dib(img)
+diff --git a/tartanImages.py b/tartanImages.py
+index d14b57f..c3dae50 100644
+--- a/tartanImages.py
++++ b/tartanImages.py
+@@ -56,6 +56,7 @@ aliases = {
+     "deposits": "print",
+     "detail": "show",
+     "display": "show",
++    "do": "execute",
+     "doabout": "about",
+     "domanual": "help",
+     "doquick": "help",
+@@ -144,7 +145,7 @@ images = {
+     "export": "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",
+     "filter": "R0lGODlhMAAwAPZhAC8xQD4+TkI/T0NBT0JCUUxMXFFOXlRUZFhXZ1xcbF5fcWBdbmBfcF5hc2RjdGtod2VmeWZoemtqe3Jvf3Nwf25ugG5whHNzhXt4hnV3iXd5i3t7jH1+koF+jH+BlIOAjoKDlIiGl4SGmImHmIaJmoqMnpCOnIyPoo6QoY+TqJOUpZaXqZaZq5ucrZuesJ+gr5+hsaOjs6ils6aot6qptqanuKepuausvLCvva6wv7Gwva+vwK6xwbO0xLe5xrm5x7W3yLa4yby9y7/Azr7B0MHCzsPE0snH0sfI1srK1czN2s/Q3dLT3tTV4tbY4tna5tXZ6dzd6eDf7N/g5t/g7OLj7unp7uXm8ejn8ufo8uvs9e7v+O/w+vHx9vLz+/f4//39/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAGEAIf8LSW1hZ2VNYWdpY2sNZ2FtbWE9MC40NTQ1NQAsAAAAADAAMAAAB/6AYYKDhIWGh4iJiogxMTQ3OkBBQkWVRUNCPz04NDIyjouKNjEzMzc3Oz9FSEtRrlFNQjk2Mz1MVVNLOS8vjjo6oWFJRTElJy0xPEJGS1BUWVxfYGBaSUE7N0Na019FLSUiISYtQkmKwx4WHCkzQENISlBRVdDS1EpAPDdGW9NgSTFUoDgBIoIDHUXOtUCRAgYPd0aUNHlCRUu0aVrw6TOyDcyXJC5UiCzhwUQRJopiKFlixMiQIUeSSHxypR5GjTeIdASjhIajHkVi0liUwUaRJUyYNEkKZSK9LV6+fNHCBMklJlq6dLHCRIkRITRKPOjwYZGGGUOWPNuKywkTlv4viRQxkmTJkiRJrP7A8UJFhwkLDAiY0GHRhhhC1Hrx50+LkRszePhIQoVLlytPlBTBIUNFiL+BBzzAYJZFD8qLGVNDYuNUECRXPGqJwqRIj84hMEgI7cBBqA0zYNtjrAXJDFJAjMT+kiWK5tsqRvxlYKDAgWAJzjLJohpMFySQb/QwUkWqlipMjAS58e3DhQQCCgxQFKVHFiQQRNxQcuUityZxRcQdGF5EkYQQ7KmQTgIEEGDAOVEI0oQHEbAgxBMW2eOFEy8J4cMQVXh0xRJBjKKCCBlEUIAA1yUCgSEIeLBfFVqk9kUURfygiRAhelEFEj3cEJII7zn4YDCERP6wQhEYdiHVF1Wot2N5WzxhRJABgVBBdS0iSUgHOyyBRY1SXYFEED0AVYUXV0ChHg8BcdBAAQl4acgBKxghxRZamNdEEJoUQeMVTXyVQ0AXIIBAl4lkgAgAEOzQhBZbbPHFFoWiKehsLAnRQzESIFBnKCLMYAgKChDQgnJcQFXgV8ldcUUUSyDhaQsbJOAbkkFoMQgQQpgaBgc6PMHFsWza+poUsy7hVQ8qSODAqEhqYVEURAhBSAtIYOGFF3wWKgQSVTTr1Q0i9GbnIFk0ccgOT3zLp5sRMdvUEkK0cMGL6y6Sp7d8SuHVLVXc+wMJBvUbyg1NQLXFiMxIIYUTTtUg8cIFESgcjBB7YkEoEky40kQTPXQggcbBwKAEFlhU0QQ8TzSFhAoVnIxyKJJeIUWhRiylhA373szrRE3MhYQRQHSgrtChvNDzEkUsE8QKEDDANJI7wPOVEDVgQO3Vi5CjRBJftRAq2Ei+IJFXZqPtpQ9PCBHDBW572UMVQHiwa92hDOHFEBTyHUwSXyARuOCLLPHFEiJYgPgiTIDRBAoaPK5I5FCowIHliUQeBQsecI6I56CLfogTYEBRuumFoP556KwT4sQXULggQuyye1E7Cbi7HQgAOw==",
+     "find": "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",
+-    "first": "",
++    "first": "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",
+     "gnu-head": "R0lGODlhMAAuAPfnACoqKj09PUBAQEJCQkVFRUdHR0lJSUtLS01NTU9PT1FRUVNTU1VVVVZWVlhYWFpaWlxcXF1dXV9fX2JiYmNjY2VlZWZmZmhoaGlpaWpqamxsbG5ubnBwcHFxcXJycnNzc3V1dXd3d3h4eHp6en19fX5+fn9/f4GBgYKCgoODg4SEhIWFhYaGhoeHh4iIiIqKiouLi4yMjI2NjY6Ojo+Pj5GRkZKSkpOTk5SUlJSUlJWVlZaWlpeXl5iYmJmZmZqampubm5ubm52dnZ6enp+fn5+fn6CgoKGhoaKioqOjo6Ojo6SkpKWlpaampqenp6enp6ioqKqqqqqqqqurq6ysrK2tra6urq+vr6+vr7CwsLGxsbKysrKysrOzs7S0tLS0tLW1tba2tra2tre3t7i4uLm5ubm5ubq6uru7u7u7u7y8vL29vb29vb6+vr+/v8DAwMDAwMHBwcLCwsLCwsPDw8TExMTExMXFxcXFxcbGxsfHx8fHx8jIyMjIyMnJycrKysrKysvLy8vLy8zMzM3Nzc3Nzc7Ozs7Ozs/Pz9DQ0NDQ0NHR0dHR0dLS0tLS0tPT09TU1NTU1NXV1dXV1dbW1tbW1tfX19fX19jY2NjY2NnZ2dra2tra2tvb29vb29zc3Nzc3N3d3d7e3t7e3t/f39/f3+Dg4ODg4OHh4eLi4uLi4uPj4+Pj4+Tk5OTk5OXl5eXl5ebm5ubm5ufn5+fn5+jo6Ojo6Onp6enp6erq6urq6uvr6+vr6+zs7Ozs7O3t7e3t7e7u7u7u7u7u7u/v7+/v7/Dw8PDw8PHx8fHx8fLy8vLy8vPz8/Pz8/T09PT09PX19fX19fb29vb29vb29vf39/f39/j4+Pj4+Pn5+fn5+fr6+vr6+vv7+/v7+/v7+/z8/Pz8/P39/f39/f7+/v7+/v///////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAAIf8LSW1hZ2VNYWdpY2sOZ2FtbWE9MC40NTQ1NDUALAAAAAAwAC4AAAj+AM+dM0fQ3DlyyoLZOqXKlq9m58pJLGfQoMCLBQ8yIzaMWLNxAylaFEiw3DlSZ2Y9S7YNGSZnpsSQIzny4sCbqdb42iYtGiw8fwYSpCkw2RlQ1upsSYDiBAwUVWi1adVnqM2bz3hdqkRJyYotPgoBi8ZGllBzJs/B6vLtjooMLbDVwvNFj69w5yypuXk1Yq9T4bR1K3aq1TMSBbYcw9QnIsVyzsyc80JgArVXaRIlGxdsEZw7pSLWvGjS0yFCgBjJ8jQHlbEKCnRtuhXynJpvdhrYOBfm2My+V0tStFmRJrg0z2Aw+GXlpqxH53ogiIOHWUSMBm+BYoRokSZgB8/+BRNFCVMqXddvmtM2iQ4CQt7WCARz7g+CI89cicZ4rs+vcuPc4os5m/hxziqdnKPMMOdAwwdwkuRiggnaLKINNpGcM0oBLZgiTU0A9lEMLUkcQEAAEAACDBgWgOGDAQOEgEg2hIAz3HVphJCCN8Egw8wt3ajQAC1l8HWRI8/0AcGSD0DggANGXCNNGJ8E0QAED9xwDSV8mURIFgmkgowxyTBohgKEuIHdOYaU0oYATWK5pAMS/HJOkXHE4MADChCRiiZEyUGDB8sMM4wyvHgDwwKniMEfK7No4gAEETgQwQNNPkCBL+ekIswjMkwKwQKKtMKMRAbFMUUFvAwjzDP+rZzjyAE+XFLNUJwcwgkCBgRwQRN4+PGFHcSQE4hApLCSyhM22JDAAZks8o1By/gBAgjFCBPMNoqU0wcFJ2SjJjmsLELLBB9wQhI5yAQzEDnabHEJHgJhsss5zpRgwTF0VNPNGdh84EQ5wIC3xYEXUAAFMJFY4okaKZpkUCddHNCLQZpIIR4TzwSSRyTTnLNNCRTM8Yl+CCiQRTmRRHPOJbHm4IAFXGDSygIINCLUOeLM0AcN33iDTDnJ8GKNLOUg4Asz6JUTTAUNmACIARA0oHEW15XBjR0KjIrlAlqo580b0uDS0jDOyHEOItyckwsLzEDDy1BMOMBA1w5M0Y3+GdkQRM4wopAzSQcRLJnBMuNY9Mw504pTyx5wGDGOMMqcwwwTUQBBDFrmhFIABBJgQAY0vaxSkEGQWBKNL1yAwIEQO1sUGi5v0ABAK+OIg41ASkjwgSh8xVDDFbw8kwsd5FhlECOggHMNMkWc0pcvsJzDTR2kOCHNMqdH88McuWBkjArkVINKHjuTZBIubogRSg4k2YQ1qsk8E0wsIRmUyRuyWETQJFdAxebSEhyDdIMRaMBIOchBDRT0pSKcM4gdeiAIawjEJGEACXCwYw5roI8oaMDaVQhoE2EMQRuB4AIxBMKKLmzQfwZJRKwqUg46BMIcnhihKsCABTTggiT+PbgFNajhBzTUQQ202aD6znGE/YBjCasQyDYSZxFleEEJwjDHK8LwDXKIwxGQGARE0mIV4JhDHHYgxDmEIYo4OGEJ0UieSC6yDAuAgxKaGEc5/DANDSrDLGU0o0AuoYtoqCEIf7CgHoRxFmkQ4hsSeYU1HKCIOBxEGwVJhrqM9MCL/IEJUMBDMTAhkEb8AoLdEMczqDEODZ4jE9aA4STQM5LRXEUcGpRFKARiCXpdsCJ4uAU48geNkbzhg0oMjk1oMYqh7CB9BpEGFdJjEXDoIgyLiF0ygYOLStwEB7MIBwzP0QjrXIUc4NgGFaCxzfj1ZRh0uEkvvJCJYRbHGmf+AMdIujGMYjiDD5ZopxKxgQSaWMMMTnBnObSBgzE8Qg880EEPRLCBT3BSoDYZQjVsEgTrjGQ4wziPTfYyHFsKlBhYcMw55KAEd6GFgMIZSnPQgtFO2gEacjzHKzywBHHYpBuLSMMRYPACNAhihjV9YDmmEU+RmIQI0TCFM26iTmGEIkGiuVFSa2ILQOyHDUfgQgQOsdGRGINLSW2nOYyhH5MIowM1aAAIDoIWcnBqmmndpkmMgYvEneMYPFiBBkhxkWdgAg2Q6GRe+1IOcXDuHC7oAgPUtokKIGCXixVoSczxDCxI4hwV0AEjEuAABKhiTZlNZgerB4cRIIAMV6I/FBVQsQ2TppY457BgHGYxgSdFYAEQGMAkyEHC2xYwI8/QRAlawAMqkEAOyaCpcQWJW2pgIxrY4EY2kmfbqwQEADs=",
+     "groups": "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",
+     "gtk": "R0lGODlhMAAwAPcAALwGHLkWFq4YF7wIIboGIqcTKKMPJbIkI8sKC8UNCNQGBtwEBNIJC9sHCcwUDcMCHMkHF8UaGd0QFeMBAusAAOwADvMAAOUAEuwAEfYAEMMHIcgRI8cnKdYqLcY6OdY9OOMyMc9COtdJSNxXWcxQUvZOUv9VU+xLUN9fYN1padhzdf9tdP9ycu1ybXbvA3ntA3XuCXvqDHnmCXXyAWztHGnvFn3mFXXsFXzpE37mG3TqHHrpG2LzGnzeNmzsJXvkI3TqInPlLHXoJH7bRIzdHoTlDYXnBoLlFIniE4LjHIrhGYXcLIneKofbJoTcMYrdM4zdPYXYOpLbNILiIoTjLInkOaPrP/+Pf4jaRJLbQ5jcSZjeVZHOVZflRpvzTpzjVI/iT6btTaPqXajoWq3+XaXxV6H/Sarec57nY6LkZKnka6foaKf5ZrT6Z7XreLXxdLf0drTvdXecvGyczG2awXSbxnufxHOdzHeXyW2f1W6f2XKe0nGd2nmU01yk1myjzHikymyh1Gai3HGg0m2a4nKZ4oqZuIeivdGQmemJifmKm/WYmOqNj/eusvmpqrjphbn0h7zokrzxlf/DnsDtjsf0mMv0kf/HpP/JpP/Lq/7Nsvjbvcvzosb4qNL5qtj7t87wuuL+t4KezYemx4yyxoir2Ja53pi11Ziw06Gv3Ki42py+45q24bDMz6zD3K/F0rfT3KrEz5fC4rfK5bzQ5rTW8s3X2ffJyP/RzPvX1/LO1cTqw9b71dX00uv/y+P+xOz91/L/3PL/0f/n1Mjb7szd9czV7v/Z5t3t/tfk9s/s7v/j4v/s6/jo6Oj/6f/x7/v+6/b/4+Pu+vjq8uv2/+z//+b6+v/09PX99/z+9f/2/vX+//7+/fL3/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAAIf8LSW1hZ2VNYWdpY2sNZ2FtbWE9MC40NTQ1NQAsAAAAADAAMAAACP4AuQkcSJBgtmwFCW4riDChw4cQH2IT2DDhxIgYCy40WPHgQW4buX3MSJJjxW7SupUkGXKgx4rbqBVzhcrVLFrVRCJsufLhNYLIaKEaBegOHVar7KBKRrFnwooDq80cVafOnUGD9NwxJWvOHkCuqHGD9pEnRGwXsW2rFhSVnKpz8mAdlCfQ1lV39OShM6qYSm4XWbJFNrXOnDtX+ezhoxjQnkF1TK2qMyhQID50TiH7KzLiwmzYXgE6XGdPoDyP99wBVAfPY8RIrea5c7mOnVnSdEI1uG3bMkS5TPkR1AfPoD3I71iFjNyuZNfKjyuXQwpWTofbflartuzAiFy1/v7MRnxHNfK50iXfQc0a8Z45cwKV8tvZoLZq25gFaNChUTJAfwhiV3nlqTbXXXhYVl4ejBVSCB99GGLLNoGBdNB2z0RggQURMDJNKXUdZx5WiEGGlHEkxrUHHniwoowzv4ACjULcXLPWNQdQYMEECaRwjCqsqUagclfdceJsdQAyyiGx7MLLJ3FogcUjMw60jTYgVcMMBwtQMMGOIdxCzCh43GFHcovxsZUsdOhRCiqvGONMKI9oQYQMLsQQR5UV9naNB19OwECXEiyiS1eowZeHHoT0kcosqcACiieWlFFFDC/YMEUOOFBBSTZYTrTNTtU8A+iOXVKwQAAp6GKMeP4Q4lEHKa0owwsokqixBRVUTHEEDjn4GgMTlTS0k0jdaCnCAjtOMAEFXk7wgX+A0JEKLb2AUkklcTxBhA05wIBDEsBO4asMT3DCDZYCZZflNct6ucACzuo4QQSJNOMML52ooUUWYoyRhAt54jDuDjYkMQUOMTzxCUXH2ljNNSN0OUED89L7ZQUAaPLIEFMgYYMQYZTRxA03HKFwEkckzCkOUPyijTbYHJvNjSgoEO2zEyzQAAUYPIDJGDS4YAQMOnhRxhJA/MCEwi8n8TIUwkA8kDY3pqCzl9B62cAEFxCQCRo+yGAEDj94EUYSO+xARQxtjzsFuTZkAYxANYNUY/7WDFggb73Ohj22DzYgoUQPARPxAgxHFLED2+MmEYMNWgSzbmejvqsCA/IqoPGXGUCACRpAJEHEEljA8UYTOMAgwxHmJgEup0l8EU1Tekt8TSIIQDsvz89WILQaQTRhBRtsrAFHG1H8YMMROUgttQ0xJJFGNFiWpc3NEyeSwIZ+23vBAhAUoEkkbJARRhVVUFFFGXBA0cQOBqu8cAxEuFFlWeveuEgC9nLWAhiAAAeUQBHDkAQWniAFJvwAB0egwhfaoIUp3MBgCttBDJrgBmO16xoS48b/LuaACGygAydgwRVOYIBLnCEIOUBCEi5YBCX8oAttEAMUfjC9G8TgB/6fwl1IcuIIAUgABB8YAQtWIAIBJOACD7jEF2pgNBsAIQdKOMINhLCEOLShC5t6mROKZbWQqOQWJCiBCUwAAgcggIBgiyIaavCCIuRABzlQ2Q10kAQndIEMZYDCwnDABE9cbjcg2cY0VMABBzDgazraEMc0QTzTTeEHOyjC9IyQqSoorwsxkAETHoa7drVrG7cIAbN69iwvQTETYqBBDGSISSWwzQbgYtgUvgCHNTghCqE45EQQeQ1cxIsCXwseADKRBiAcwZY62AH0bLADG0pvClQwAxm44AuS4CcX8apAAxpgAQwMIBNrCIINbOnDlungB0qYG7liAIMcbIETFf6CyFq2AU7OOSuOg5tlDnaARSUAYQciYxiwqLCFSNxtJb3JxQjIqSrhMZMGdUyCEJIQTx34MAY4mEIX1MAJYFSpJFjqzTJS0DsKVOCcpHvmJW9QhCLcIGFP+IIbPnG7yzklkcy4wvdeyswgcHSGMDDCEYQQhTVU4hczWgi78vmQ3mBDO9xJxAKgiIk0lA0JNs1BE7rwhk8IYyIz+6kprXTVK2zgAZNIAw+M9oMebMESvnAGVQGj1t5sbxvWgIYiCnAJMfggB1JQgyeC8Qx2ZS9vanUINqyhDURs4gxbcEMoTsquyHqmRjnRBjQ+4YsZdVYke/UsQVKKFoRg6bSqxRuIWmp0NcBggyyxZYlDPJJaRMZ2IT8ZidV+GhAAOw==",
+@@ -199,6 +200,8 @@ images = {
+     "warning": "R0lGODlhMAAwAPYAAAAAABgAABUVFSAgIC0tLTc3Nzs7O0EjAHxhC1VJI0VFRU1NTVZWVl5eXmlpaXR0dH19fZNoAIFmEIZrFYhtF5R2FIpzKY54MYZ/aM+cANOhBOOtAOSxDuSxEea1G9+4Oee5JOe9N+rBPZiERZuITKGPVq+cXurDQ+vFS+zHUezIVO3LXN/Fcd3GfeLFZ+7NY+PFaO3Oau/QbuTKdOnOd+nOeu/RcezSffDTdfDVe4SEhJKSkqampqysrLCwsLy8vNjHkNvLlt/Pme3Tg/HXgvLYh/LZiuvXl+PTne7amfPdk/PenefXoerapO3dqfPfoOrfu/LgpvPjrcfHx83NzdXQwdPT093b1Nzc3PDlwOXj2+nm2+zp3/jv0uTj4+nn4ezq4+zs7PDt5vHv6PTy6/n27vT09Pn38f368v39/QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAGoAIf8LSW1hZ2VNYWdpY2sNZ2FtbWE9MC40NTQ1NQAsAAAAADAAMAAAB/6AaoKDhIWGh4iJiouMjY6PkJGMO1NmZlM7kpqDCmZpaZafYQqbkQ2WYV6qqpYNpY+oq6pYXpavjT9pYampslhmP7eKDqC7YWBbWlqyaa7Ch7Vmu1xRT9bLXr9ez4bE0rtLSuJKScwO3IS/lmZZREbv71CrYVrogt6WZET7/PvYXmnOocMCCpQTHDhyJMyh0Mk8LOiIFTRjI4YMGzZkaLz4ZVVAbgQ/nYnyoqQLDBhgxCjZ5OEziZ/MrFCxYoWJBg1M1KwJxqPAVyE/PUGRomgJBgxKFE2B4kivMBBfPfj0CY2IEyiykliwgERWFCc89Ez1sVTQNDk2gLh6goQCBf4jTpwAsWHDjF1eoJaCUDBNmQ51N3gAYcFAAQseOATuwKVXWUkE190IHBiBAAEIKNe9ayxqJL7ryADWLGHAAAmaN3AAY+zxo1phLA1JvYECAQITaHPe5dmRDl27xnigbZsABdocxLT+2eiXsSGKUxc/TruGMTO9F/1WdSwx8dvUU3dgvcu1ory8atCuO339hhpjdmFvtF3VltG0K9yu4J5D/PLMIYJFL17M4N4GGiSQgAYH1iCNJdkZwhcWtGgR3YEYbtABGfKZV8iAFBaY4Ygb3IDKfIhMZQWFV1xIonsbfuOhILRQiAULGWZwwAEZZGjiOhGq4YAZVqzYYoYRBMkQQAQZckAGKh4OWKQVLYyoI48jJrEOioSkgcWUH7z4YgxbplEAISpaQYUVYYo5YgighAIBITykoeaaQLg5ogwTpeEDIT2k4QUVa1pRRRCIJioEEowyysSjTUTqxKROSGHppV3E5EkawXACCqGFTrmijdnMg558W25K1armRQZqqF/aSIssxly3DqusmmHIApuqKeqKo9Yoy6kn3oprGg8gApAo89R6XWyphkKVqqs6g4gOPyx77LbcrmoGFTuciQ4A5Npj7rnoBgIAOw==",
+     "white": "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",
+     "yes": "R0lGODlhMAAwAPYAAD+7DkC7D0WkH0apH0W9FEi/F0eyHka7GEm+GUeoIEmuIVKsKU2zIlK8JVWyKlmzLVy7LlyzMF69MGOzNWW9Nma2OGe6OGy8PE3BG1HEHlXFJFjGJlrJJlfAKFrGKVzJK1/KMGHGL2PNLmTDM2PLM2nKNm3FOmrNOmfQMWvSNW7QPnLUPHfYP3rMRXPSQ3vVRHzaRHfTSXvWTn3ZS3/XUoHeR4PeSYDXU4PaVIjeV4TZWIncXIXgTIrgVY/hXYzdYZDeZZLgZ5bha5nlapzkc6Hld6PmeqbofgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAEgAIf8LSW1hZ2VNYWdpY2sNZ2FtbWE9MC40NTQ1NQAsAAAAADAAMAAAB/6ASIKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnI8vNi2djzU2paGii58+Qzk8L6iJpD5GR0U5MK+whBcwNT5FRsFFPTW5uhcvNTtFzM1EPTAwuiYvMD9EREXY2No5LMacJiwwO9vm2ELeLxWJJisWkeLk2EBEQvdCREHeKxftKwApPDrxbUcQIAjtAQnCEAfACYlKpGAxA6CJRidSkDuI8McPhEB+vGChQlHGFzt+4FCR4qKiEitQepxJ80eMFCcUkUjxQseOnzRUoBgRMYWLn0iT7tCxIkWJlylU0MCBQ4dVGS5SEC0UQaILq2B14FiqQwbLrYhIiJBKo61bGv4yToBAiyQCCRQr3rq9wXdGChJ0DY1AIcKFDBlwDx+OEcPFUEERUOBVTFmxC7WBD40QgcIFY8+NGTdOIQKEhA8eXIAGLbqxCBECG0H4sFa17dsuSnz4AAK37xO7H0CCwOGDUd+qT7gAoTy5C+XNQeyOIOnBBw7MSchdPuIECebLe58YTx5Ehw8LKDnYoOEDiRK9QciXSz+79u8eNGy4tECDBg/yBSjggPJ9wF4HmfSXgQYgAOgBgA02+CCAH/jXACcdYOCffw9uuIEHG4SYQQYXdtIABhgsuOGKGmSAYominIjijDO6WAAGDOiCBAM0oogAigQgkKOOSBhAwJFHFjCQ5JBE7ogkkggo0CQhChAAwJUHJDBlIQMcAAABAmxpiAAGiGnmmWimqeaabLaZSSAAOw==",
+-    "zoom": "R0lGODlhMAAwAPYAACwsLjMzNzU2Oj8+QklJTU1LUVZUW1hWXlpYX11bYl9eaGFfZmBfaWNhZ2Riamlnbmtpb2dmcmxqcm1senFvdXFvfHl2f49LAJFNA5FPCJRTD5ZXFqZbArRhALdmDa9yGppcI4xlLJxiJ51hKdNzAdR3Cdt/C9V6ENd+Gt2BEOiKAPKUBP+aAvCYF/+kG9eCJtiCJdmFK+uUIP+jI/ekKv+lKf+oLPWoM/+vM/+xNbeIQvyzRf+6Tf+7UXNyg3p3gHx5gnd3iXl4i3x8kIF+hoJ/iYWCi4mGjoqIj4mHkYyKk4WFnI+NmZGPm5ORnoqLpI6PqpeWo5qZppGSrpudu6Sks6iot6yru6GjxKSnyaepzairz7Cxwbe3yby9z6ut0q6x16+y2L6/0bK13La54ri75Ly/6b7B7cHC1cPF2MbI28nL38zO4sjL6c7Q5NDS5tPV6tfZ78HF8sXJ98bK+dvd89TX+dTY+d7h9+Hk+wAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAHoAIf8LSW1hZ2VNYWdpY2sNZ2FtbWE9MC40NTQ1NQAsAAAAADAAMAAAB/6AeoKDhIWGhkaJFkBEiUqHkJGSgolAFpeYl0BARpOekUZAP5pGTE1NTEdEmJyfroKiFj9JVWhvdbh1cGpXTZYWRK+emxZHXHF5ycrLdV5MpMKQqxZSbMvX13FWlhIS0YWWQFV12OXLXRQGBxTflJfj5vF4d1QJBgntSZZR5PHmdnToPDlwoME3UUCs+SsHkM4cMxPURVNiqcoyPMkwxgM4R86cOVQOGDD4alURhQuXNXT48UxEfK/2aVQ2s9ydjzhxQlHnzZUlLv5q5rGTMyedLfYcuDryA0ialMpuFs1JxsFIVyZRLrzDcmrLl66UWDDyBipRrznP+JD46YiFIv5uFs5DW1QtW09EfhDRapNuUYgGGLhC8uMHGn9S/X6kQ4ZBwZgWrMTj2tUvnSz2SH6y1KTftZWKFy+5J8xI06fXuHoMPYdOmQikhVmSUpMr65xTDASOZmSRF2Vnb38cYxVBO1FKynIUPueMEHVKv7m14KRNQOF05Iw2sKCdoEsPgoyprNjMEpEw2xEo0EBkBCyrF8shP+fL2gPpXfXYIYjAgAACIIDeEFqc0VpALGU3xhIL6HZANDzkIKEO/wEQgB4O2HOPD09gAcYYY4CRxRRBKKDOY8JEiIOEN4RgISEJaKiOAg00oIBIDibQ0ys74OCjjy6s8MEhCyRAkG4OHqaAQAMQfPNCCjT86AILVEpCwQIPQJDAA97pEUMJJJgQ5ZRUsuBCl67EQMKaYbZQJpU2oOmJmmyS0AEHKpQZp5ySfFlnBxhcgCcLM/DZJ5hsAnrBohzIYGgkfia66KQgPAoJnYkGekGglVp6CKJrKrpoBp16WggKf2p6AammfprppBiU2iohJ4SqagYjzHoIDHYG6muuuh7iwa3ABnsICBpksIGxkAQCADs="}
++    "zoom": "R0lGODlhMAAwAPYAACwsLjMzNzU2Oj8+QklJTU1LUVZUW1hWXlpYX11bYl9eaGFfZmBfaWNhZ2Riamlnbmtpb2dmcmxqcm1senFvdXFvfHl2f49LAJFNA5FPCJRTD5ZXFqZbArRhALdmDa9yGppcI4xlLJxiJ51hKdNzAdR3Cdt/C9V6ENd+Gt2BEOiKAPKUBP+aAvCYF/+kG9eCJtiCJdmFK+uUIP+jI/ekKv+lKf+oLPWoM/+vM/+xNbeIQvyzRf+6Tf+7UXNyg3p3gHx5gnd3iXl4i3x8kIF+hoJ/iYWCi4mGjoqIj4mHkYyKk4WFnI+NmZGPm5ORnoqLpI6PqpeWo5qZppGSrpudu6Sks6iot6yru6GjxKSnyaepzairz7Cxwbe3yby9z6ut0q6x16+y2L6/0bK13La54ri75Ly/6b7B7cHC1cPF2MbI28nL38zO4sjL6c7Q5NDS5tPV6tfZ78HF8sXJ98bK+dvd89TX+dTY+d7h9+Hk+wAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAHoAIf8LSW1hZ2VNYWdpY2sNZ2FtbWE9MC40NTQ1NQAsAAAAADAAMAAAB/6AeoKDhIWGhkaJFkBEiUqHkJGSgolAFpeYl0BARpOekUZAP5pGTE1NTEdEmJyfroKiFj9JVWhvdbh1cGpXTZYWRK+emxZHXHF5ycrLdV5MpMKQqxZSbMvX13FWlhIS0YWWQFV12OXLXRQGBxTflJfj5vF4d1QJBgntSZZR5PHmdnToPDlwoME3UUCs+SsHkM4cMxPURVNiqcoyPMkwxgM4R86cOVQOGDD4alURhQuXNXT48UxEfK/2aVQ2s9ydjzhxQlHnzZUlLv5q5rGTMyedLfYcuDryA0ialMpuFs1JxsFIVyZRLrzDcmrLl66UWDDyBipRrznP+JD46YiFIv5uFs5DW1QtW09EfhDRapNuUYgGGLhC8uMHGn9S/X6kQ4ZBwZgWrMTj2tUvnSz2SH6y1KTftZWKFy+5J8xI06fXuHoMPYdOmQikhVmSUpMr65xTDASOZmSRF2Vnb38cYxVBO1FKynIUPueMEHVKv7m14KRNQOF05Iw2sKCdoEsPgoyprNjMEpEw2xEo0EBkBCyrF8shP+fL2gPpXfXYIYjAgAACIIDeEFqc0VpALGU3xhIL6HZANDzkIKEO/wEQgB4O2HOPD09gAcYYY4CRxRRBKKDOY8JEiIOEN4RgISEJaKiOAg00oIBIDibQ0ys74OCjjy6s8MEhCyRAkG4OHqaAQAMQfPNCCjT86AILVEpCwQIPQJDAA97pEUMJJJgQ5ZRUsuBCl67EQMKaYbZQJpU2oOmJmmyS0AEHKpQZp5ySfFlnBxhcgCcLM/DZJ5hsAnrBohzIYGgkfia66KQgPAoJnYkGekGglVp6CKJrKrpoBp16WggKf2p6AammfprppBiU2iohJ4SqagYjzHoIDHYG6muuuh7iwa3ABnsICBpksIGxkAQCADs=",
++
++    }
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+diff --git a/tartanWork.py b/tartanWork.py
+index 77a2a42..3c4d8f4 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -192,8 +192,7 @@ sttrtp = [
+     ("Tfo", "Transfer Out"),
+     ("Jli", "Journal In"),
+     ("Jlo", "Journal Out"),
+-    ("Sal", "Inv Sale"),
+-    ("Pos", "Pos Sale")]
++    ("Sal", "Invoice Sale")]
+ #
+ # Templates
+ #----------
+@@ -204,9 +203,6 @@ stdtpl = [
+     "comp_cards",
+     "member_cards",
+     "payslip",
+-    "pos_invoice",
+-    "pos_slip_6",
+-    "pos_slip_8",
+     "purchase_order",
+     "remittance_advice",
+     "sales_document",
+@@ -1254,7 +1250,7 @@ tabdic = {
+     "bwlcmp": {
+         "fld": [
+             [0, "bcm_cono", "UI", 3.0, "Club Number", "Clb"],
+-            [1, "bcm_code", "UI", 3.0, "Competition Code", "CC"],
++            [1, "bcm_code", "UI", 3.0, "Competition Code", "Cod"],
+             [2, "bcm_name", "NA", 30.0, "Competition Name", "Name"],
+             [3, "bcm_date", "D1", 10.0, "Competition Date", "Date"],
+             [4, "bcm_type", "UI", 2.0, "Competition Type", "CT"],
+@@ -1274,21 +1270,24 @@ tabdic = {
+             [7, "ctb_dbase", "UA", 1.0, "Draw Base (C/P/R)", "B"],
+             [8, "ctb_order", "UA", 1.0, "Rating Order (A/D)", "O"],
+             [9, "ctb_mixed", "UA", 1.0, "Mixed Ratings", "M"],
+-            [10, "ctb_rep42", "UA", 1.0, "Replace Fours", "R"],
+-            [11, "ctb_weeks", "UI", 1.0, "Weeks Between Games", "MW"],
+-            [12, "ctb_ratem", "UD", 5.2, "Rate - Member", "RateM"],
+-            [13, "ctb_ratev", "UD", 5.2, "Rate - Visitor", "RateV"],
+-            [14, "ctb_greens", "UA", 6.0, "Greens", "Greens"],
+-            [15, "ctb_drfmat", "UA", 1.0, "Draw Format", "F"],
+-            [16, "ctb_emadd", "TX", 50.0, "Email Address", "Email Address"],
+-            [17, "ctb_xflag", "UA", 1.0, "Export Flag", "X"]],
++            [10, "ctb_tsize", "UI", 1.0, "Default Team Size", "S"],
++            [11, "ctb_rep42", "UA", 1.0, "Replace Fours", "R"],
++            [12, "ctb_weeks", "UI", 1.0, "Weeks Between Games", "MW"],
++            [13, "ctb_ratem", "UD", 5.2, "Rate - Member", "RateM"],
++            [14, "ctb_ratev", "UD", 5.2, "Rate - Visitor", "RateV"],
++            [15, "ctb_greens", "UA", 6.0, "Greens", "Greens"],
++            [16, "ctb_drfmat", "UA", 1.0, "Draw Format", "F"],
++            [17, "ctb_tplnam", "NA", 20.0, "Cards Template",
++                "Cards-Template-Name"],
++            [18, "ctb_emadd", "TX", 50.0, "Email Address", "Email Address"],
++            [19, "ctb_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+             ["Bowls Control", 1, "U", "ctb_cono"]]},
+     "bwldrm": {
+         "fld": [
+             [0, "bdm_cono", "UI", 3.0, "Club Number", "Clb"],
+             [1, "bdm_date", "D1", 10.0, "Tabs In Date", "Tab-Date"],
+-            [2, "bdm_time", "UA", 1.0, "Tabs In Time", "T"],
++            [2, "bdm_time", "NA", 1.0, "Tabs In Time", "T"],
+             [3, "bdm_mixed", "UA", 1.0, "Mixed Gender", "M"],
+             [4, "bdm_rating", "UA", 1.0, "Mixed Rating", "R"],
+             [5, "bdm_dbase", "UA", 1.0, "Draw Base", "B"],
+@@ -1306,7 +1305,7 @@ tabdic = {
+             [0, "bdt_cono", "UI", 3.0, "Club Number", "Clb"],
+             [1, "bdt_tab", "UI", 6.0, "Tab Number", "TAB"],
+             [2, "bdt_date", "D1", 10.0, "Tabs In date", "Tab-Date"],
+-            [3, "bdt_time", "UA", 1.0, "Tabs In Time", "T"],
++            [3, "bdt_time", "NA", 1.0, "Tabs In Time", "T"],
+             [4, "bdt_rink", "UA", 2.0, "Rink", "RK"],
+             [5, "bdt_side", "UA", 1.0, "Side", "S"],
+             [6, "bdt_name", "UA", 20.0, "Name", "Name"],
+@@ -1326,7 +1325,7 @@ tabdic = {
+     "bwlent": {
+         "fld": [
+             [0, "bce_cono", "UI", 3.0, "Club Number", "Clb"],
+-            [1, "bce_ccod", "UI", 3.0, "Competition Code", "CC"],
++            [1, "bce_ccod", "UI", 3.0, "Competition Code", "Cod"],
+             [2, "bce_scod", "UI", 6.0, "Skip Code", "S-Code"],
+             [3, "bce_tcod", "UA", 1.0, "Team Code", "T"],
+             [4, "bce_paid", "UA", 1.0, "Paid Flag", "P"],
+@@ -1370,7 +1369,7 @@ tabdic = {
+             [0, "bfo_cono", "UI", 3.0, "Club Number", "Clb"],
+             [1, "bfo_fmat", "UI", 1.0, "Format Code", "F"],
+             [2, "bfo_code", "UI", 3.0, "Side Code", "C"],
+-            [3, "bfo_club", "UI", 3.0, "Club Code", "CCd"],
++            [3, "bfo_club", "UI", 3.0, "Club Code", "Cod"],
+             [4, "bfo_desc", "NA", 20.0, "Side Name", "Name"],
+             [5, "bfo_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+@@ -1413,7 +1412,7 @@ tabdic = {
+     "bwlgme": {
+         "fld": [
+             [0, "bcg_cono", "UI", 3.0, "Club Number", "Clb"],
+-            [1, "bcg_ccod", "UI", 3.0, "Competition Code", "CC"],
++            [1, "bcg_ccod", "UI", 3.0, "Competition Code", "Cod"],
+             [2, "bcg_scod", "UI", 6.0, "Skip Code", "S-Code"],
+             [3, "bcg_game", "UI", 2.0, "Game Number", "GN"],
+             [4, "bcg_type", "UA", 1.0, "Game Type", "T"],
+@@ -1463,7 +1462,7 @@ tabdic = {
+     "bwlrnd": {
+         "fld": [
+             [0, "bcr_cono", "UI", 3.0, "Club Number", "Clb"],
+-            [1, "bcr_ccod", "UI", 3.0, "Competiton Code", "CCD"],
++            [1, "bcr_ccod", "UI", 3.0, "Competiton Code", "Cod"],
+             [2, "bcr_rcod", "UI", 2.0, "Round Number", "RN"],
+             [3, "bcr_date", "D1", 10.0, "Round Date", "Round-Date"],
+             [4, "bcr_time", "TM", 5.0, "Round Time", "Round-Time"],
+@@ -1498,7 +1497,7 @@ tabdic = {
+     "bwltms": {
+         "fld": [
+             [0, "btd_cono", "UI", 3.0, "Club Number", "Clb"],
+-            [1, "btd_ccod", "UI", 3.0, "Competition Code", "CC"],
++            [1, "btd_ccod", "UI", 3.0, "Competition Code", "Cod"],
+             [2, "btd_scod", "UI", 6.0, "Skip Code", "S-Code"],
+             [3, "btd_mem1", "UI", 6.0, "Mem1 Code", "M1-Cod"],
+             [4, "btd_mem2", "UI", 6.0, "Mem2 Code", "M2-Cod"],
+@@ -1608,7 +1607,7 @@ tabdic = {
+             [25, "crm_bibt", "UI", 8.0, "Bank Branch", "Bank-IBT"],
+             [26, "crm_bacc", "NA", 16.0, "Bank Account", "Bank-Account-Num"],
+             [27, "crm_glac", "UI", 7.0, "G/L Account Number", "GL-Acno"],
+-            [28, "crm_stat", "UA", 1.0, "Account Status", "S"],
++            [28, "crm_stat", "UA", 1.0, "Account Status (N/X)", "S"],
+             [29, "crm_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+             ["Creditors Masterfile", 1, "U", "crm_cono", "crm_acno"]]},
+@@ -2037,7 +2036,7 @@ tabdic = {
+             [30, "drm_invmes", "UI", 3.0, "Invoice Message", "IMs"],
+             [31, "drm_stames", "UI", 3.0, "Statement Message", "SMs"],
+             [32, "drm_rating", "UA", 1.0, "Credit Rating", "R"],
+-            [33, "drm_stat", "UA", 1.0, "Account Status", "S"],
++            [33, "drm_stat", "UA", 1.0, "Account Status (N/X)", "S"],
+             [34, "drm_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+             ["Debtors Masterfile", 1, "U", "drm_cono", "drm_chain",
+@@ -3093,7 +3092,7 @@ tabdic = {
+     "scpcmp": {
+         "fld": [
+             [0, "scp_cono", "UI", 3.0, "Company Number", "Coy"],
+-            [1, "scp_ccod", "UI", 3.0, "Competition Code", "CCD"],
++            [1, "scp_ccod", "UI", 3.0, "Competition Code", "Cod"],
+             [2, "scp_name", "TX", 50.0, "Competition Name", "Name"],
+             [3, "scp_tsex", "UA", 1.0, "Team Gender", "G"],
+             [4, "scp_tsiz", "UI", 1.0, "Team Size", "S"],
+@@ -3113,7 +3112,7 @@ tabdic = {
+     "scpent": {
+         "fld": [
+             [0, "sce_cono", "UI", 3.0, "Company Number", "Coy"],
+-            [1, "sce_ccod", "UI", 3.0, "Competition Code", "CCD"],
++            [1, "sce_ccod", "UI", 3.0, "Competition Code", "Cod"],
+             [2, "sce_scod", "UI", 6.0, "Skip's Code", "S-Code"],
+             [3, "sce_pcod", "UI", 6.0, "Lead's Code", "L-Code"],
+             [4, "sce_xflag", "UA", 1.0, "Export Flag", "X"]],
+@@ -3122,7 +3121,7 @@ tabdic = {
+     "scpgme": {
+         "fld": [
+             [0, "scg_cono", "UI", 3.0, "Company Number", "Coy"],
+-            [1, "scg_ccod", "UI", 3.0, "Competition Code", "CCD"],
++            [1, "scg_ccod", "UI", 3.0, "Competition Code", "Cod"],
+             [2, "scg_ctyp", "UA", 1.0, "Competition Type", "T"],
+             [3, "scg_snum", "UI", 2.0, "Section Number", "SN"],
+             [4, "scg_subs", "UA", 1.0, "Sub-Section", "S"],
+@@ -3148,7 +3147,7 @@ tabdic = {
+             [2, "scm_surname", "UA", 30.0, "Surname", "Surname"],
+             [3, "scm_names", "UA", 30.0, "Names", "Names"],
+             [4, "scm_gender", "UA", 1.0, "Gender Code", "G"],
+-            [5, "scm_club", "UI", 3.0, "Club Code", "CCd"],
++            [5, "scm_club", "UI", 3.0, "Club Code", "Cod"],
+             [6, "scm_email", "TX", 20.0, "Email Address", "Email-Address"],
+             [7, "scm_phone", "TX", 20.0, "Phone Number", "Phone-Number"],
+             [8, "scm_xflag", "UA", 1.0, "Export Flag", "X"]],
+@@ -3157,7 +3156,7 @@ tabdic = {
+     "scprnd": {
+         "fld": [
+             [0, "scr_cono", "UI", 3.0, "Company Number", "Coy"],
+-            [1, "scr_ccod", "UI", 3.0, "Competiton Code", "CCD"],
++            [1, "scr_ccod", "UI", 3.0, "Competiton Code", "Cod"],
+             [2, "scr_rnum", "UI", 2.0, "Round Number", "RN"],
+             [3, "scr_date", "D1", 10.0, "Round Date", "Round-Date"],
+             [4, "scr_time", "UI", 4.0, "Starting Time", "STime"],
+@@ -3168,7 +3167,7 @@ tabdic = {
+     "scpsec": {
+         "fld": [
+             [0, "scs_cono", "UI", 3.0, "Company Number", "Coy"],
+-            [1, "scs_ccod", "UI", 3.0, "Competiton Code", "CCD"],
++            [1, "scs_ccod", "UI", 3.0, "Competiton Code", "Cod"],
+             [2, "scs_snum", "UI", 2.0, "Section Number", "SN"],
+             [3, "scs_rnum", "UI", 2.0, "Round Number", "RN"],
+             [4, "scs_club", "UI", 3.0, "Club Code", "Cod"],
+@@ -3326,7 +3325,7 @@ tabdic = {
+             [0, "st1_cono", "UI", 3.0, "Company Number", "Coy"],
+             [1, "st1_group", "UA", 3.0, "Product Group", "Grp"],
+             [2, "st1_code", "NA", 20.0, "Product Code", "Product-Code"],
+-            [3, "st1_type", "UA", 1.0, "Type of Item (N/R)", "T"],
++            [3, "st1_type", "UA", 1.0, "Type of Item (N/R/X)", "T"],
+             [4, "st1_desc", "NA", 30.0, "Description", "Description"],
+             [5, "st1_uoi", "NA", 10.0, "Units Of Issue", "U.O.I"],
+             [6, "st1_value_ind", "UA", 1.0, "Value Indicator", "V"],
+@@ -4269,15 +4268,16 @@ tarmen = {
+         ["PNNN","rc_fm","rcc210",1,"Statement Messages"],
+         ["PYNY","rc_fm","rcc310",1,"Interest Rates"],
+         ["PYNN","rc_rp","rc3010",1,"Owners Audit Trail"],
+-        ["PYNN","rc_rp","rc3030",1,"Owners Master Listing"],
+         ["PYNY","rc_rp","rc3050",1,"Owners Statements"],
++        ["PYNN","rc_rp","rc3030",1,"Owners Master Listing"],
++        ["PYNN","rc_rp","rc3100",1,"Owners Account Listing"],
+         ["PYNN","rc_rp","rc3070",1,"Owners Notes Listing"],
+         ["PYNN","rc_rp","rc3020",1,"Tenants Audit Trail"],
+-        ["PYNN","rc_rp","rc3040",1,"Tenants Master Listing"],
+         ["PYNY","rc_rp","rc3060",1,"Tenants Statements"],
++        ["PYNN","rc_rp","rc3040",1,"Tenants Master Listing"],
+         ["PYNN","rc_rp","rc3080",1,"Tenants Notes Listing"],
+         ["PYNN","rc_rp","rc3090",1,"Tenants Deposit Listing"],
+-        ["PYNN","rc_rp","rcc220",1,"Statement Messages"],
++        ["PYNN","rc_rp","rcc220",1,"Statement Messages Listing"],
+         ["PYNY","rc_qy","rc4010",0,"Owners Interrogation"],
+         ["PYNY","rc_qy","rc4020",0,"Tenants Interrogation"],
+         ["PYNY","mm_rc","rc2010",2,"Data Capture"],
+@@ -4362,7 +4362,8 @@ tarmen = {
+         ["PYNN","bc_cc","bc3110",1,"Contact Request Forms"],
+         ["PYNN","bc_tb","bc6010",3,"Change Tab Numbers"],
+         ["PYNN","bc_tb","bc6020",3,"Delete Visitors' Tabs"],
+-        ["PYNN","bc_tb","bc6030",3,"Clear History"],
++        ["PYNN","bc_tb","bc6030",3,"Competition Envelopes"],
++        ["PYNN","bc_tb","bc6040",3,"Clear History"],
+         ["F","mm_bc","doManual BWL",0,"Help"]],
+ 
+     # Book Clubs
+@@ -5283,7 +5284,7 @@ datdic = {
+         ["comp_cards", 8.0, "C", "B", "H", "Shots", "courier", 10, "#000000",
+             "Y", "N", "N", "C", "TLRB", "Y", 57.5, 5, 70.5, 23.0, 5.0, 28.0,
+             0.0, "shots_for", "courier", 10, "#000000", "N", "N", "N", "C",
+-            "RB", "N", 57.5, 5, 70.5, 28.0, 5.0, 33.0, 1, 22],
++            "LRB", "N", 57.5, 5, 70.5, 28.0, 5.0, 33.0, 1, 22],
+         ["comp_cards", 9.0, "C", "B", "H", "Total", "courier", 10, "#000000",
+             "Y", "N", "N", "C", "TLRB", "Y", 70.5, 5, 83.5, 23.0, 5.0, 28.0,
+             0.0, "total_shots_for", "courier", 10, "#000000", "N", "N", "N",
+diff --git a/uty/mkwins.py b/uty/mkwins.py
+index 2103ef6..b5610a3 100644
+--- a/uty/mkwins.py
++++ b/uty/mkwins.py
+@@ -34,7 +34,6 @@ def doUpgrade():
+             "pyexcel-ods",
+             "pyexcel-xls",
+             "pygal",
+-            "pyinstaller",
+             "pymupdf",
+             "pysmb",
+             "pywin32",
+@@ -43,7 +42,8 @@ def doUpgrade():
+             "send2trash",
+             "svglib",
+             "tkcolorpicker",
+-            "tkinterhtml"]:
++            "tkinterhtml",
++            "pyinstaller==4.5.1"]:
+         try:
+             os.system("pip -q install %s --upgrade" % mod)
+         except:
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index d399c26..2473990 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -131,6 +131,10 @@ if windows:
+         name = l.strip().decode("utf-8")
+         if name and name != "NewMail":
+             names.append(name)
++    if names:
++        vcheck = input("Use Virtual Machines (y/n): ")
++        if vcheck.lower() == "n":
++            names = []
+ if not os.path.exists(bd):
+     print("Invalid Base Directory (%s)" % bd)
+     sys.exit()
+@@ -415,9 +419,7 @@ if publish:
+         if "7" in bits:
+             exeCmd("cp -p %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
+                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+-    print("")
+     print("Version Number is %s.%s" % tuple(cver))
+-    print("")
+     # Dropbox
+     exeCmd("rm %s/Dropbox/Apps/%s/%s_%s*" % (home, cs, cs, vv))
+     exeCmd("rsync -az %s/%s/%s_%s* "\
+diff --git a/uty/tp1010.py b/uty/tp1010.py
+index 8d7d6d2..39d98ae 100644
+--- a/uty/tp1010.py
++++ b/uty/tp1010.py
+@@ -228,7 +228,7 @@ class tp1010(object):
+                 "","N",self.doX2,None,None,("notzero",)),
+             (("T",2,1,0),"I@tpd_y1",0,"","",
+                 "","N",self.doY1,None,None,("efld",)),
+-            (("T",2,1,0),"I@tpd_lh",0,"LHgt","",
++            (("T",2,1,0),"I@tpd_lh",0,"RHgt","",
+                 "","N",self.doLh,None,None,("efld",)),
+             (("T",2,1,0),"I@tpd_y2",0,"","",
+                 "","N",self.doY2,None,None,("efld",)),
+@@ -240,7 +240,7 @@ class tp1010(object):
+                 0,"N",self.doX2,None,None,("efld",)),
+             (("T",3,1,0),"I@tpd_y1",0,"","",
+                 0,"N",self.doY1,None,None,("efld",)),
+-            (("T",3,1,0),"I@tpd_lh",0,"LHgt","",
++            (("T",3,1,0),"I@tpd_lh",0,"IHgt","",
+                 "","N",self.doLh,None,None,("efld",)),
+             (("T",3,1,0),"I@tpd_y2",0,"","",
+                 0,"N",self.doY2,None,None,("efld",)),
+@@ -403,6 +403,7 @@ class tp1010(object):
+ 
+     def doTemplate(self, frt, pag, r, c, p, i, w):
+         self.template = w
++        self.cpytpm = False
+         tpm = self.sql.getRec("tplmst", where=[("tpm_tname", "=",
+             self.template)], limit=1)
+         if tpm:
+@@ -745,7 +746,11 @@ class tp1010(object):
+             "order": "tpm_tname"}
+         fld = (
+             (("T",0,1,0),"INA",20,"Template Name","",
+-                "","N",self.doCpyNam,tpm,None,None),)
++                "","N",self.doCpyNam,tpm,None,None),
++            (("T",0,2,0),"ISI",3,"Adjust X Margin By","",
++                "","N",self.doCpyXmg,None,None,None),
++            (("T",0,3,0),"ISI",3,"Adjust Y Margin By","",
++                "","N",self.doCpyYmg,None,None,None))
+         state = self.df.disableButtonsTags()
+         self.df.setWidget(self.df.mstFrame, state="hide")
+         self.cp = TartanDialog(self.opts["mf"], title=tit, tops=True,
+@@ -757,14 +762,20 @@ class tp1010(object):
+         self.df.focusField("T", 0, 2)
+ 
+     def doCpyNam(self, frt, pag, r, c, p, i, w):
+-        self.cpymst = self.sql.getRec("tplmst", where=[("tpm_tname",
+-            "=", w)], limit=1)
++        self.cpymst = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w)],
++            limit=1)
+         if not self.cpymst:
+             return "Invalid Template Name"
+         self.cpynam = w
+         for s, t in enumerate(self.cpymst[1:]):
+             self.df.loadEntry(frt, pag, p+s+1, data=t)
+ 
++    def doCpyXmg(self, frt, pag, r, c, p, i, w):
++        self.chgx = w
++
++    def doCpyYmg(self, frt, pag, r, c, p, i, w):
++        self.chgy = w
++
+     def doCpyEnd(self):
+         self.cpymst[0] = self.template
+         self.sql.insRec("tplmst", data=self.cpymst)
+@@ -772,11 +783,27 @@ class tp1010(object):
+             self.cpynam)])
+         for line in det:
+             line[0] = self.template
++            if self.chgx:
++                if line[self.sql.tpldet_col.index("tpd_x1")]:
++                    line[self.sql.tpldet_col.index("tpd_x1")] += self.chgx
++                    line[self.sql.tpldet_col.index("tpd_x2")] += self.chgx
++                if line[self.sql.tpldet_col.index("tpd_mrg_x1")]:
++                    line[self.sql.tpldet_col.index("tpd_mrg_x1")] += self.chgx
++                    line[self.sql.tpldet_col.index("tpd_mrg_x2")] += self.chgx
++            if self.chgy:
++                if line[self.sql.tpldet_col.index("tpd_y1")]:
++                    line[self.sql.tpldet_col.index("tpd_y1")] += self.chgy
++                    line[self.sql.tpldet_col.index("tpd_y2")] += self.chgy
++                if line[self.sql.tpldet_col.index("tpd_mrg_y1")]:
++                    line[self.sql.tpldet_col.index("tpd_mrg_y1")] += self.chgy
++                    line[self.sql.tpldet_col.index("tpd_mrg_y2")] += self.chgy
+             self.sql.insRec("tpldet", data=line)
++        self.cpytpm = True
+         self.newtpm = False
+         self.doCpyCloseProcess()
+ 
+     def doCpyExit(self):
++        self.cpytpm = False
+         self.doCpyCloseProcess()
+ 
+     def doCpyCloseProcess(self):
+diff --git a/wag/wg3030.py b/wag/wg3030.py
+index 73bf2b5..268ec8a 100644
+--- a/wag/wg3030.py
++++ b/wag/wg3030.py
+@@ -165,8 +165,8 @@ class wg3030(object):
+             "SD", 13.2)
+         self.fpdf.drawText("%-71s %13s" % ("Control Total", totl.disp))
+         self.fpdf.drawText()
+-        self.fpdf.drawText("Summary of SDL Payment")
+-        self.fpdf.underLine(txt=self.head)
++        self.fpdf.drawText("Summary of SDL Payment", font="B")
++        self.fpdf.underLine(txt="X" * 84)
+         keys = list(emp.keys())
+         keys.sort()
+         for k in keys:
+@@ -176,7 +176,7 @@ class wg3030(object):
+             n = "%s, %s" % (name[0].strip(), name[1].strip())
+             t = CCD(emp[k][0], "SD", 13.2)
+             s = CCD((int(emp[k][1]) / 100.0), "SD", 13.2)
+-            self.fpdf.drawText("%2s %-30s %13s %13s" % (k, n, t.disp, s.disp))
++            self.fpdf.drawText("%2s %-54s %13s %13s" % (k, n, t.disp, s.disp))
+         self.fpdf.output(pdfnam, "F")
+         doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+             header=self.tit, repprt=self.df.repprt,

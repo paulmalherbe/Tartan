@@ -149,6 +149,7 @@ class bc2010(object):
             return
         self.mlint = bwlctl["ctb_mlint"]
         self.samen = bwlctl["ctb_samen"]
+        self.dsize = bwlctl["ctb_tsize"]
         self.rep42 = bwlctl["ctb_rep42"]
         self.weeks = bwlctl["ctb_weeks"]
         self.nstart = bwlctl["ctb_nstart"]
@@ -179,7 +180,7 @@ class bc2010(object):
                 self.stime,"N",self.doTime,None,None,None),
             (("T",0,2,0),("IRB",r2s),0,"Mixed Gender","",
                 "Y","N",self.doMixed,None,None,None,None,"Select whether "\
-                "the draw is Gender based or Mixed."),
+                "the Draw is Gender based or Mixed."),
             (("T",0,3,0),("IRB",r2s),0,"Mixed Rating","",
                 "Y","N",self.doMixedRating,None,None,None,None,"If "\
                 "available, Select whether or not to use the Alternative "\
@@ -190,7 +191,7 @@ class bc2010(object):
                 "Tab to Equalize the Numbers."),
             (("T",0,5,0),("IRB",r3s),0,"Draw By","",
                 self.dbase,"N",self.doBase,None,None,None,None,"Select "\
-                "whether to base the draw on Positions, Ratings or a "\
+                "whether to base the Draw on Positions, Ratings or a "\
                 "Combination of Both."),
             (("T",0,6,0),"IUD",5.2,"Fees - Member R","",
                 self.ratem.work,"N",self.doRate,None,None,("efld",)),
@@ -223,6 +224,7 @@ class bc2010(object):
     def doTime(self, frt, pag, r, c, p, i, w):
         self.time = w
         self.alter = False
+        self.repeat = False
         if self.time == "A":
             self.timed = "Afternoon"
         else:
@@ -239,8 +241,9 @@ class bc2010(object):
                 self.opts["conum"]), ("bdm_date", ">", self.date)],
                 limit=1)
             if dtyp == "N" or not dnxt:
-                butt.extend([("Alter", "A"), ("Clear", "X")])
-                text = "Would you like to View, Reprint, Alter or Clear It?"
+                butt.extend([("Alter", "A"), ("Clear", "X"), ("Another", "Z")])
+                text = "Would you like to View, Reprint, Alter or Clear the"\
+                    " Draw or Do Another Draw with the Same Tabs?"
             else:
                 text = "Would you like to View or Reprint It?"
             ok = askChoice(self.opts["mf"].body, "Already Exists",
@@ -265,13 +268,36 @@ class bc2010(object):
             elif ok == "A":
                 self.alter = True
                 self.doLoadMst(self.drm)
-            else:
-                self.sql.delRec("bwldrm", where=[("bdm_cono", "=",
+            elif ok == "Z":
+                self.time = self.time.lower()
+                chk = self.sql.getRec("bwldrm", where=[("bdm_cono", "=",
                     self.opts["conum"]), ("bdm_date", "=", self.date),
                     ("bdm_time", "=", self.time)])
+                if chk:
+                    return "Another Already Exists"
+                self.repeat = True
+                self.dofix = False
+                self.drm[self.sql.bwldrm_col.index("bdm_time")] = self.time
+                self.sql.insRec("bwldrm", data=self.drm)
+                self.doLoadMst(self.drm)
+                recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
+                    cols=["bdt_tab", "bdt_pos", "bdt_rate", "btb_surname",
+                    "btb_names", "btb_gender"], where=[("bdt_cono", "=",
+                    self.opts["conum"]), ("bdt_date", "=", self.date),
+                    ("bdt_time", "=", self.time.upper()),
+                    ("btb_cono=bdt_cono",), ("btb_tab=bdt_tab",)])
+                self.alltabs = {}
+                for rec in recs:
+                    self.alltabs[rec[0]] = [rec[3], rec[4], rec[5], rec[1],
+                        rec[2], "Y"]
+                return "nc"
+            elif ok == "X":
+                self.sql.delRec("bwldrm", where=[("bdm_cono", "=",
+                    self.opts["conum"]), ("bdm_date", "=", self.date),
+                    ("bdm_time", "in", (self.time, self.time.lower()))])
                 self.sql.delRec("bwldrt", where=[("bdt_cono", "=",
                     self.opts["conum"]), ("bdt_date", "=", self.date),
-                    ("bdt_time", "=", self.time)])
+                    ("bdt_time", "in", (self.time, self.time.lower()))])
                 self.opts["mf"].dbm.commitDbase()
                 return "ff1"
 
@@ -417,11 +443,15 @@ class bc2010(object):
         if self.viewer:
             self.doShowDraw("Current Draw", self.adraw1)
             self.mf.focusField("T", 0, 1)
-            return
         elif self.reprint:
             self.doPrint(self.mf)
             self.mf.focusField("T", 0, 1)
-            return
+        elif self.repeat:
+            self.mf.closeProcess()
+            self.doDraw()
+            if self.drawn:
+                self.doPrint(self.mf)
+            self.doExit()
         else:
             self.mf.closeProcess()
             self.doTabs()
@@ -521,7 +551,7 @@ class bc2010(object):
             for b in range(4, 7):
                 wid = getattr(self.df, "B%i" % b)
                 self.df.setWidget(wid, "normal")
-        else:
+        elif not self.repeat:
             self.alltabs = {}
         self.doShowQuantity()
         self.df.focusField("T", 1, 1)
@@ -1197,7 +1227,7 @@ Do you still want to continue?""" % np, default="no")
             fld = [
                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
                     "S","N",self.doType,None,None,None,None,
-                    """Strength: The draw will try and Pair the teams by Strength.
+                    """Strength: The Draw will Try and Pair the teams by Strength.
 Random: The teams will be Randomly Paired.""")]
             x = 1
             self.dhist = "N"
@@ -1206,7 +1236,7 @@ Random: The teams will be Randomly Paired.""")]
             fld = [
                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
                     "R","N",self.doType,None,None,None,None,
-                    """Strength: The draw will try and Draw the teams by Strength.
+                    """Strength: The Draw will Try and Draw the teams by Strength.
 Random: The teams will be Randomly Drawn.""")]
             x = 1
         else:
@@ -1215,6 +1245,10 @@ Random: The teams will be Randomly Drawn.""")]
             self.dtype = "R"
             self.dhist = "Y"
         if not self.teams:
+            if self.repeat:
+                tsiz = self.tsize
+            else:
+                tsiz = self.dsize
             if self.dbase == "C":
                 fld.append((("T",0,x,0),("IRB",r2s),0,"Apply Percentages","",
                     "Y","N",self.doPer,None,None,None,None,
@@ -1232,7 +1266,7 @@ Try Not to Pair the Same Skips
 Try to Avoid Broken Rink Repeats
 Try to Allocate Different Rinks""" % self.weeks),
                 (("T",0,x + 1,0),("IRB",r3s),0,"Team Size","",
-                    "4","N",self.doSize,None,None,None),
+                    str(tsiz),"N",self.doSize,None,None,None),
                 (("T",0,x + 2,0),("IRB",r2s),0,"Prefer Pairs","",
                     self.rep42,"N",self.doRep42,None,None,None,None,
                     "In the case of Trips select whether to Replace "\
@@ -1246,15 +1280,17 @@ Try to Allocate Different Rinks""" % self.weeks),
                 "will Default to 6. To enter 7 rinks enter A7, B7 etc."))
         self.gpos = x
         but = (("Cancel",None,self.doCancel,1,None,None,None,1),)
-        state = self.df.disableButtonsTags()
-        self.df.setWidget(self.df.mstFrame, state="hide")
+        if not self.repeat:
+            state = self.df.disableButtonsTags()
+            self.df.setWidget(self.df.mstFrame, state="hide")
         self.dw = TartanDialog(self.opts["mf"], title=tit, tops=True,
             eflds=fld, tend=((self.doDrawEnd,"y"),), txit=(self.doCancel,),
             butt=but)
         self.dw.mstFrame.wait_window()
-        self.df.setWidget(self.df.mstFrame, state="show")
-        self.df.enableButtonsTags(state)
-        self.df.focusField("T", 1, 1)
+        if not self.repeat:
+            self.df.setWidget(self.df.mstFrame, state="show")
+            self.df.enableButtonsTags(state)
+            self.df.focusField("T", 1, 1)
 
     def doGenTeams(self):
         self.dogen = True
@@ -2302,7 +2338,8 @@ Combination Number %10s"""
                     self.sql.insRec("bwldrt", data=rec)
                 side = "R"
         self.opts["mf"].dbm.commitDbase()
-        self.df.setWidget(self.df.topEntry[1][0], state="disabled")
+        if not self.repeat:
+            self.df.setWidget(self.df.topEntry[1][0], state="disabled")
 
     def doPrint(self, dg=None):
         if not dg:
@@ -2310,10 +2347,13 @@ Combination Number %10s"""
         if not self.drawn:
             showError(self.opts["mf"].body, "Error",
                 "The Draw Has Not Yet Been Done")
-            dg.focusField("T", 1, 1)
+            if not self.repeat:
+                dg.focusField("T", 1, 1)
             return
         dg.setWidget(dg.mstFrame, state="hide")
         if not self.ratem.work and not self.ratev.work:
+            rated = "N"
+        elif self.repeat:
             rated = "N"
         else:
             rated = "Y"
@@ -2339,7 +2379,7 @@ Combination Number %10s"""
             txit=(self.doPExit,), view=("N","V"))
         self.pd.mstFrame.wait_window()
         dg.setWidget(dg.mstFrame, state="show")
-        if not self.reprint:
+        if not self.reprint and not self.repeat:
             dg.focusField("T", 1, 1)
 
     def doCards(self, frt, pag, r, c, p, i, w):
@@ -2601,13 +2641,16 @@ Combination Number %10s"""
 
     def doExit(self):
         if self.alltabs and not self.drawn:
-            but = [
-                ("Exit Without Saving", "E"),
-                ("Save and Exit", "S"),
-                ("Neither", "N")]
-            txt = "This Draw Has Not Been Done"
-            ok = askChoice(self.opts["mf"].body, "Exit",
-                mess=txt, butt=but, default="None")
+            if self.repeat:
+                ok = "E"
+            else:
+                but = [
+                    ("Exit Without Saving", "E"),
+                    ("Save and Exit", "S"),
+                    ("Neither", "N")]
+                txt = "This Draw Has Not Been Done"
+                ok = askChoice(self.opts["mf"].body, "Exit",
+                    mess=txt, butt=but, default="None")
             if ok == "N":
                 self.df.focusField(self.df.frt, self.df.pag, self.df.col)
                 return
@@ -2621,7 +2664,8 @@ Combination Number %10s"""
                         "", "", "", 0, 0, 0, 0, 0, 0, 0, 0, "", ""]
                     self.sql.insRec("bwldrt", data=data)
                 self.opts["mf"].dbm.commitDbase()
-        self.df.closeProcess()
+        if not self.repeat:
+            self.df.closeProcess()
         self.doSetFont(self.dfs)
         self.opts["mf"].closeLoop()
 

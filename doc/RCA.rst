@@ -126,39 +126,104 @@ Reporting (RC)
 ..............
 Owners Audit Trail (RC)
 +++++++++++++++++++++++
-This routine is used to produce an owner's transaction audit trail.
+Use this routine to print lists of transactions either by financial period or date of capture.
+
++ **Period Type** - Financial or Capture.
++ **Starting Period** - The first financial period to include in the report.
++ **Ending Period** - The last financial period to include in the report.
++ **Starting Date** - The from date to include in the report.
++ **Ending Date** - The to date to include in the report.
++ **Type** - The transaction type or 0 for all.
++ **Batch-Number** - The batch number or blank for all.
++ **Totals Only** - Yes or No.
+
+Owners Statements (RC)
+++++++++++++++++++++++
+Use this routine to produce owner's statements.
+
++ **Template Name** - The name of the template to use.
++ **Whole File** - Select whole file or individual accounts.
++ **Zero Balances** - Select whether to include accounts with zero balances.
++ **Debit Balances** - Select whether to include accounts with debit balances.
++ **Message Number** - The message number to print, if applicable.
++ **Statement Date** - The date to be used for the cut-off.
 
 Owners Master Listing (RC)
 ++++++++++++++++++++++++++
 This routine is used to produce an owner's master listing.
 
-Owners Statements (RC)
-++++++++++++++++++++++
-This routine is used to produce owner's statements.
++ **Cut-Off Period** - Enter the ending period to include in the listing.
++ **Totals Only** - Only print the totals.
++ **Zero Balances** - Select whether to include accounts with zero balances.
+
+Owners Account Listing (RC)
++++++++++++++++++++++++++++
+Use this routine to produce statements for owners's accounts.
+
++ **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
++ **From Account** - If range was selected enter the starting account number.
++ **To Account** - If range was selected enter the ending account number.
++ **Starting Period** - The starting financial period in the financial year.
++ **Ending Period** - The ending financial period in the financial year.
++ **Separate Pages** - Select whether or not to print each account on a new page
 
 Owners Notes Listing (RC)
 +++++++++++++++++++++++++
-This routine is used to produce an owner's note listing.
+Use this routine to print any notes on the owner's ledger accounts.
+
++ **Action Flag** - Normal or Urgent.
++ **From Capture Date** - The starting creation date.
++ **To Capture Date** - The ending creation date.
++ **From Action Date** - The starting action date.
++ **To Action Date** - The ending action date.
 
 Tenants Audit Trail (RC)
 ++++++++++++++++++++++++
-This routine is used to produce a tenant's transaction audit trail.
+Use this routine to print lists of transactions either by financial period or date of capture.
+
++ **Period Type** - Financial or Capture.
++ **Starting Period** - The first financial period to include in the report.
++ **Ending Period** - The last financial period to include in the report.
++ **Starting Date** - The from date to include in the report.
++ **Ending Date** - The to date to include in the report.
++ **Type** - The transaction type or 0 for all.
++ **Batch-Number** - The batch number or blank for all.
++ **Totals Only** - Yes or No.
+
+Tenants Statements (RC)
++++++++++++++++++++++++
+Use this routine to produce tenant's statements.
+
++ **Template Name** - The name of the template to use.
++ **Whole File** - Select whole file or individual accounts.
++ **Zero Balances** - Select whether to include accounts with zero balances.
++ **Debit Balances** - Select whether to include accounts with minus balances.
++ **Message Number** - The message number to print, if applicable.
++ **Statement Date** - The date to be used for the cut-off.
 
 Tenants Master Listing (RC)
 +++++++++++++++++++++++++++
 This routine is used to produce a tenant's master listing.
 
-Tenants Statements (RC)
-+++++++++++++++++++++++
-This routine is used to produce tenant's statements.
++ **Report Date** - Enter the cut-off date for the report.
++ **Contracts** - Select which contracts to report on.
++ **Months to Expiry** - If *Expiring* was selected, enter the number of months.
 
 Tenants Notes Listing (RC)
 ++++++++++++++++++++++++++
-This routine is used to produce a tenant's note listing.
+Use this routine to print any notes on the tenant's ledger accounts.
+
++ **Action Flag** - Normal or Urgent.
++ **From Capture Date** - The starting creation date.
++ **To Capture Date** - The ending creation date.
++ **From Action Date** - The starting action date.
++ **To Action Date** - The ending action date.
 
 Tenants Deposit Listing (RC)
 ++++++++++++++++++++++++++++
-This routine is used to produce a listing of deposits.
+This routine is used to produce a listing of tenant's deposits.
+
++ **Report Date** - Enter the cut-off date for the report.
 
 Statement Messages (RC)
 +++++++++++++++++++++++
@@ -191,3 +256,6 @@ This routine is used to check for missing records.
 Month End Routine (RC)
 ......................
 This routine is used to close off a month and raise rentals for the following month.
+
++ **Last Month End Date** - The last month-end date is displayed.
++ **This Month End Date** - Enter the required month-end date.

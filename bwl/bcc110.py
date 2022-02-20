@@ -37,7 +37,7 @@ class bcc110(object):
 
     def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["memctl", "memctc", "memmst",
-            "memadd", "memkon", "bwlctl", "bwltab", "chglog"],
+            "memadd", "memkon", "bwlctl", "bwltab", "chglog", "tplmst"],
             prog=self.__class__.__name__)
         if self.sql.error:
             if self.sql.error == ["memctl"]:
@@ -54,7 +54,7 @@ class bcc110(object):
         if not self.acc:
             self.new = True
             self.acc = [self.opts["conum"], "N", "N", 0, 0, 0, 0, "C",
-                "A", "N", "Y", 4, 0, 0, "A", "B", "", ""]
+                "A", "N", 4, "Y", 4, 0, 0, "A", "B", "comp_cards", "", ""]
         else:
             self.new = False
             self.oldm = self.acc[self.sql.bwlctl_col.index("ctb_mstart")]
@@ -75,6 +75,17 @@ class bcc110(object):
             "where": (
                 ("mcc_cono", "=", self.opts["conum"]),
                 ("mcc_type", "=", "C"))}
+        tpm = {
+            "stype": "R",
+            "tables": ("tplmst",),
+            "cols": (
+                ("tpm_tname", "", 0, "Template"),
+                ("tpm_title", "", 0, "Title"),
+                ("tpm_type", "", 0, "T")),
+            "where": [
+                ("tpm_type", "=", "C"),
+                ("tpm_system", "=", "BWL")],
+            "order": "tpm_tname"}
         r1s = (("Yes","Y"),("No","N"))
         r2s = (("Position","P"),("Rating","R"),("Combined","C"))
         r3s = (("Ascending","A"),("Descending","D"))
@@ -119,24 +130,31 @@ class bcc110(object):
                 self.acc[9],"N",None,None,None,None,None,
                 "Select if Different Ratings are Used for Mixed "\
                 "Gender Draws."),
-            (("T",0,seq + 6,0),("IRB",r1s),0,"Replace Fours","",
+            (("T",0,seq + 6,0),"IUI",1,"Default Team Size","",
                 self.acc[10],"N",None,None,None,None,None,
+                "When the Draw is Done, Default to this Size."),
+            (("T",0,seq + 7,0),("IRB",r1s),0,"Replace Fours","",
+                self.acc[11],"N",None,None,None,None,None,
                 "When the Draw is Trips Use Pairs Instead of Fours "\
                 "when Applicable."),
-            (("T",0,seq + 7,0),"IUI",2,"Weeks Between Draws","",
-                self.acc[11],"N",None,None,None,("between", 0, 4),None,
+            (("T",0,seq + 8,0),"IUI",2,"Weeks Between Draws","",
+                self.acc[12],"N",None,None,None,("between", 0, 4),None,
                 "Minimum number of Weeks that Players Should Not be "\
                 "Drawn in the Same Team."),
-            (("T",0,seq + 8,0),"IUD",5.2,"Rate - Member","",
-                self.acc[12],"N",None,None,None,("efld",)),
-            (("T",0,seq + 9,0),"IUD",5.2,"Rate - Visitor","",
-                self.acc[13],"N",None,None,None,("efld",)),
-            (("T",0,seq + 10,0),"IUA",6,"Greens","",
-                self.acc[14],"N",self.doGreens,None,None,("notblank",)),
-            (("T",0,seq + 11,0),("IRB",r4s),0,"Draw Format","",
-                self.acc[15],"N",None,None,None,None),
-            (("T",0,seq + 12,0),"ITX",50,"Email Address","",
-                self.acc[16],"N",None,None,None,("email",))])
+            (("T",0,seq + 9,0),"IUD",5.2,"Rate - Member","",
+                self.acc[13],"N",None,None,None,("efld",),None,
+                "Member's Tabs-Inn Fee."),
+            (("T",0,seq + 10,0),"IUD",5.2,"Rate - Visitor","",
+                self.acc[14],"N",None,None,None,("efld",),None,
+                "Visitor's Tabs-Inn Fee."),
+            (("T",0,seq + 11,0),"IUA",6,"Greens","",
+                self.acc[15],"N",self.doGreens,None,None,("notblank",)),
+            (("T",0,seq + 12,0),("IRB",r4s),0,"Draw Format","",
+                self.acc[16],"N",None,None,None,None),
+            (("T",0,seq + 13,0),"INA",20,"Cards Template","",
+                self.acc[17],"N",self.doTplNam,tpm,None,("efld",)),
+            (("T",0,seq + 14,0),"ITX",50,"Email Address","",
+                self.acc[18],"N",None,None,None,("email",))])
         but = (
             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
             ("Quit",None,self.doExit,1,None,None))
@@ -228,6 +246,12 @@ class bcc110(object):
     def doGreens(self, frt, pag, r, c, p, i, w):
         w = w.strip().replace(" ", "")
         self.df.loadEntry(frt, pag, p, data=w)
+
+    def doTplNam(self, frt, pag, r, c, p, i, w):
+        acc = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w),
+            ("tpm_type", "=", "C"), ("tpm_system", "=", "BWL")], limit=1)
+        if not acc:
+            return "Invalid Template Name"
 
     def doEnd(self):
         err = None

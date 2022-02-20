@@ -81,15 +81,18 @@ class dr4010(object):
             "stype": "R",
             "tables": ("drsmst",),
             "cols": (
+                ("drm_stat", "", 0, "S"),
                 ("drm_acno", "", 0, "Acc-Num"),
                 ("drm_name", "", 0, "Name", "Y"),
                 ("drm_add1", "", 0, "Address Line 1"),
                 ("drm_rating", ("RR", ratings), 4, "RATE")),
-            "where": [("drm_cono", "=", self.opts["conum"])]}
+            "where": [("drm_cono", "=", self.opts["conum"])],
+            "index": 1}
         if self.chains == "Y":
             drm["whera"] = [["T", "drm_chain", 0]]
         else:
             drm["where"].append(("drm_chain", "=", 0))
+        drm["order"] = "drm_stat, drm_chain, drm_acno"
         tag = (
             ("Basic-_A", self.doTagSelect, ("T",0,0), ("T",0,1)),
             ("Basic-_B", self.doTagSelect, ("T",0,0), ("T",0,1)),

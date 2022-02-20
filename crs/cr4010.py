@@ -63,9 +63,12 @@ class cr4010(object):
             "stype": "R",
             "tables": ("crsmst",),
             "cols": (
+                ("crm_stat", "", 0, "S"),
                 ("crm_acno", "", 0, "Acc-Num"),
                 ("crm_name", "", 0, "Name", "Y")),
-            "where": [("crm_cono", "=", self.opts["conum"])]}
+            "where": [("crm_cono", "=", self.opts["conum"])],
+            "order": "crm_stat, crm_acno",
+            "index": 1}
         tag = (
             ("Basic-_A", self.doTagSelect, ("T",0,2), ("T",0,1)),
             ("Basic-_B", self.doTagSelect, ("T",0,2), ("T",0,1)),

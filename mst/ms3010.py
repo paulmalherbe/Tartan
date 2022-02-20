@@ -630,18 +630,20 @@ class ms3010(object):
         l = CCD(tots[2], "SD", 13.2)
         m = CCD(tots[3], "SD", 13.2)
         tvat = CCD(float(ASD(tots[1]) + ASD(tots[3])), "SD", 13.2)
+        if tvat.work >= 0:
+            tdes = "Total Net Tax Due"
+        else:
+            tdes = "Total Net Tax Owed"
         if ttype == "P":
             self.fpdf.drawText("%-37s %s %s %s %s" % (d.disp, j.disp, k.disp,
                 l.disp, m.disp), font="B")
             self.fpdf.drawText()
-            self.fpdf.drawText("%-79s %13s" % ("Total Net Tax Due/Owed",
-                tvat.disp), font="B")
+            self.fpdf.drawText("%-79s %13s" % (tdes, tvat.disp), font="B")
         else:
             line = ["TOTAL", [d.disp, "", j.work, k.work, l.work, m.work]]
             self.expdatas.append(line)
             self.expdatas.append(["BLANK"])
-            line = ["TOTAL", ["Total Net Tax Due/Owed", "", "", "", "",
-                tvat.work]]
+            line = ["TOTAL", [tdes, "", "", "", "", tvat.work]]
             self.expdatas.append(line)
         if not self.genleg:
             return

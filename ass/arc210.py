@@ -51,7 +51,7 @@ class arc210(object):
             "stype": "R",
             "tables": ("assdep",),
             "cols": (
-                ("asd_code", "", 0, "Grp"),
+                ("asd_code", "", 0, "Cod"),
                 ("asd_desc", "", 0, "Description", "Y")),
             "where": [("asd_cono", "=", self.opts["conum"])],
             "order": "asd_code"}

@@ -190,12 +190,14 @@ Use this routine to create, edit or delete templates. All templates hard coded i
     + **X1 Co-Ordinate** - The left hand position of the rectangle in mm.
     + **X2 Co-Ordinate** - The right hand position of the rectangle in mm.
     + **Y1 Co-Ordinate** - The top position of the rectangle in mm.
+    + **RHgt** - The height of the rectangle in mm.
     + **Y2 Co-Ordinate** - The bottom position of the rectangle in mm.
     + **Line Thickness** - The thickness of the line.
 + **Image**
     + **X1 Co-Ordinate** - The left hand position of the image in mm.
     + **X2 Co-Ordinate** - The right hand position of the image in mm.
     + **Y1 Co-Ordinate** - The top position of the image in mm.
+    + **IHgt** - The height of the image in mm.
     + **Y2 Co-Ordinate** - The bottom position of the image in mm.
     + **File name** - The full path of the file name of the image.
     + **Merge Code** - The merge code containing the path to the image e.g. ctlmst ctm_logo.

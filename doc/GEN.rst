@@ -463,7 +463,7 @@ As with most data capture routines you will first have to enter the `Batch Detai
 
   Select a transaction to process by clicking on it or moving the cursor to it. You can now either hit the `Enter` key and  Continue from the `Details` field in the following section or click *Create Import Record* and follow the same procedure as outlined above in *Bank Import Control* and then click *Process Bank Data* again.
 
-+ **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocated these using the `Process Bank Data` routine, before continuing.
++ **Manual Entries** - Use this procedure to enter the bank statement manually. If there are unallocated records from a previous import then this will be highlighted and you will first have to allocate these, using the `Process Bank Data` routine, before continuing.
 
     + **T** - Enter the transaction type i.e. (P)ayment or (R)eceipt.
     + **Ref-Num** - Enter the reference number. If the transaction already exists on your database it will be flagged as either paid or received i.e. will not appear on the bank reconciliation statement. If the transaction does not already exist you can capture it by entering the following fields:

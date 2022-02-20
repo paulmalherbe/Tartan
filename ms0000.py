@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 4)
+    VERSION = (6, 5)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -165,9 +165,6 @@ class ms0000(object):
                         break
                 except:
                     pass
-        if self.script:
-            exec("import %s" % self.script)
-            self.doExit(dbm=False)
         if self.help:
             print("""
 Tartan Systems Help
@@ -392,9 +389,15 @@ Options:
         if not self.user:
             # Exit if not valid user
             self.doExit()
+        if self.script:
+            if self.user["lvl"] > 6:
+                exec("import %s" % self.script)
+            else:
+                print("Invalid Security Level")
+            self.doExit()
         if self.query:
             # Excecute sql query
-            if self.user["lvl"] == 9:
+            if self.user["lvl"] > 6:
                 err = self.doSqlCmd()
             else:
                 err = "Invalid Security Level"

@@ -34,7 +34,6 @@ def doUpgrade():
             "pyexcel-ods",
             "pyexcel-xls",
             "pygal",
-            "pyinstaller",
             "pymupdf",
             "pysmb",
             "pywin32",
@@ -43,7 +42,8 @@ def doUpgrade():
             "send2trash",
             "svglib",
             "tkcolorpicker",
-            "tkinterhtml"]:
+            "tkinterhtml",
+            "pyinstaller==4.5.1"]:
         try:
             os.system("pip -q install %s --upgrade" % mod)
         except:

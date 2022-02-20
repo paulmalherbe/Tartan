@@ -59,8 +59,8 @@ class rc3030(object):
                 int(self.sysdtw / 100),"Y",self.doCutOff,None,None,None),
             (("T",0,1,0),("IRB",r1s),0,"Totals Only","",
                 "Y","Y",self.doTots,None,None,None),
-            (("T",0,2,0),("IRB",r1s),0,"Ignore Zero Balances",
-                "Ignore Zero Balances","Y","Y",self.doZero,None,None,None))
+            (("T",0,2,0),("IRB",r1s),0,"Zero Balances",
+                "Include Zero Balances","N","Y",self.doZero,None,None,None))
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
@@ -73,7 +73,7 @@ class rc3030(object):
     def doTots(self, frt, pag, r, c, p, i, w):
         self.totsonly = w
         if self.totsonly == "Y":
-            self.zero = "Y"
+            self.zero = "N"
             self.df.loadEntry(frt, pag, p+1, data=self.zero)
             return "sk1"
 
@@ -106,7 +106,7 @@ class rc3030(object):
             bals = self.sql.getRec("rcaowt", cols=["sum(rot_tramt)"],
                 where=[("rot_cono", "=", self.opts["conum"]), ("rot_acno", "=",
                 acc.work), ("rot_curdt", "<=", self.cutoff)], limit=1)
-            if self.zero == "Y" and not bals[0]:
+            if self.zero == "N" and not bals[0]:
                 continue
             bal = CCD(bals[0], "SD", 13.2)
             if self.totsonly != "Y":
@@ -139,7 +139,7 @@ class rc3030(object):
             "Report up to", self.opts["period"]))
         self.fpdf.drawText()
         self.fpdf.drawText("%-27s%-1s%-1s" % ("(Options: "\
-            "Ignore-Zero-Bal: ", self.df.t_disp[0][0][2], ")"))
+            "Include-Zero-Bal: ", self.df.t_disp[0][0][2], ")"))
         self.fpdf.drawText()
         self.fpdf.drawText("%-7s %-53s %13s" % ("Acc-Num", "Name", "Balance "))
         self.fpdf.underLine(txt=self.head)

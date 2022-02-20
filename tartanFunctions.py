@@ -1837,8 +1837,12 @@ def getGreens(text, needed, keep=None):
         keep = []
     greens = {}
     rinks = 0
+    errs = None
     grns = text.split(",")
     for n, g in enumerate(grns):
+        if not g:
+            errs = True
+            break
         if not n:
             # First Green
             first = g[0]
@@ -1860,8 +1864,10 @@ def getGreens(text, needed, keep=None):
                         rinks += 1
                 except:
                     pass
+    if errs:
+        return None, None, None, "Invalid Entry"
     if rinks < needed:
-        return None, None, None, "Not Enough Rinks, %s Needed" % needed
+        return None, None, None, "Rinks Entered %s, %s Needed" % (rinks, needed)
     # End rinks
     endrks = []
     for g in greens:
@@ -2284,7 +2290,7 @@ def getFileName(path, wrkdir=None, check=False):
         svr = path.replace("/", "|").replace("\\", "|")
         svr = svr.split("|")
         con = SMBConnection("", "", "", svr[2])
-        con.connect(svr[2])
+        con.connect(svr[2], timeout=5)
         for p in svr[4:]:
             if not pth:
                 pth = p
@@ -2601,6 +2607,8 @@ def getImage(name, siz=None, fle=None):
     from TartanClasses import Image, ImageTk
     from tartanImages import aliases, images
     stk = name.lower().split()[0]
+    if stk.count("/"):
+        stk = stk.split("/")[0]
     if stk not in images and stk not in aliases:
         return
     if stk in aliases:
@@ -2612,7 +2620,7 @@ def getImage(name, siz=None, fle=None):
     if fle:
         img.save(fle)
     else:
-        return ImageTk.PhotoImage(img)
+        return ImageTk.PhotoImage(img.convert(mode="RGBA"))
 
 def printPDF(prt, fle, cpy=1):
     import sys
@@ -2625,15 +2633,20 @@ def printPDF(prt, fle, cpy=1):
         fd = fitz.open(fle)
         for pge in fd:
             # Fitz
+            buf = io.BytesIO()
             rect = pge.MediaBox
             siz = [int(rect[2]), int(rect[3])]
             mat = fitz.Matrix(4.16667, 4.16667)
             clp = fitz.Rect(0, 0, siz[0], siz[1])
             dst = (0, 0, int(rect[2] * 20), int(rect[3] * -20))
-            lst = pge.getDisplayList()
-            pix = lst.getPixmap(matrix=mat, clip=clp, alpha=False)
-            buf = io.BytesIO()
-            buf.write(pix.getImageData(output="ppm"))
+            try:
+                lst = pge.get_displaylist()
+                pix = lst.get_pixmap(matrix=mat, clip=clp, alpha=False)
+                buf.write(pix.tobytes(output="ppm"))
+            except:
+                lst = pge.getDisplayList()
+                pix = lst.getPixmap(matrix=mat, clip=clp, alpha=False)
+                buf.write(pix.getImageData(output="ppm"))
             # Win32
             img = Image.open(buf)
             dib = ImageWin.Dib(img)

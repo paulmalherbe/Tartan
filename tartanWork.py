@@ -192,8 +192,7 @@ sttrtp = [
     ("Tfo", "Transfer Out"),
     ("Jli", "Journal In"),
     ("Jlo", "Journal Out"),
-    ("Sal", "Inv Sale"),
-    ("Pos", "Pos Sale")]
+    ("Sal", "Invoice Sale")]
 #
 # Templates
 #----------
@@ -204,9 +203,6 @@ stdtpl = [
     "comp_cards",
     "member_cards",
     "payslip",
-    "pos_invoice",
-    "pos_slip_6",
-    "pos_slip_8",
     "purchase_order",
     "remittance_advice",
     "sales_document",
@@ -1254,7 +1250,7 @@ tabdic = {
     "bwlcmp": {
         "fld": [
             [0, "bcm_cono", "UI", 3.0, "Club Number", "Clb"],
-            [1, "bcm_code", "UI", 3.0, "Competition Code", "CC"],
+            [1, "bcm_code", "UI", 3.0, "Competition Code", "Cod"],
             [2, "bcm_name", "NA", 30.0, "Competition Name", "Name"],
             [3, "bcm_date", "D1", 10.0, "Competition Date", "Date"],
             [4, "bcm_type", "UI", 2.0, "Competition Type", "CT"],
@@ -1274,21 +1270,24 @@ tabdic = {
             [7, "ctb_dbase", "UA", 1.0, "Draw Base (C/P/R)", "B"],
             [8, "ctb_order", "UA", 1.0, "Rating Order (A/D)", "O"],
             [9, "ctb_mixed", "UA", 1.0, "Mixed Ratings", "M"],
-            [10, "ctb_rep42", "UA", 1.0, "Replace Fours", "R"],
-            [11, "ctb_weeks", "UI", 1.0, "Weeks Between Games", "MW"],
-            [12, "ctb_ratem", "UD", 5.2, "Rate - Member", "RateM"],
-            [13, "ctb_ratev", "UD", 5.2, "Rate - Visitor", "RateV"],
-            [14, "ctb_greens", "UA", 6.0, "Greens", "Greens"],
-            [15, "ctb_drfmat", "UA", 1.0, "Draw Format", "F"],
-            [16, "ctb_emadd", "TX", 50.0, "Email Address", "Email Address"],
-            [17, "ctb_xflag", "UA", 1.0, "Export Flag", "X"]],
+            [10, "ctb_tsize", "UI", 1.0, "Default Team Size", "S"],
+            [11, "ctb_rep42", "UA", 1.0, "Replace Fours", "R"],
+            [12, "ctb_weeks", "UI", 1.0, "Weeks Between Games", "MW"],
+            [13, "ctb_ratem", "UD", 5.2, "Rate - Member", "RateM"],
+            [14, "ctb_ratev", "UD", 5.2, "Rate - Visitor", "RateV"],
+            [15, "ctb_greens", "UA", 6.0, "Greens", "Greens"],
+            [16, "ctb_drfmat", "UA", 1.0, "Draw Format", "F"],
+            [17, "ctb_tplnam", "NA", 20.0, "Cards Template",
+                "Cards-Template-Name"],
+            [18, "ctb_emadd", "TX", 50.0, "Email Address", "Email Address"],
+            [19, "ctb_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Bowls Control", 1, "U", "ctb_cono"]]},
     "bwldrm": {
         "fld": [
             [0, "bdm_cono", "UI", 3.0, "Club Number", "Clb"],
             [1, "bdm_date", "D1", 10.0, "Tabs In Date", "Tab-Date"],
-            [2, "bdm_time", "UA", 1.0, "Tabs In Time", "T"],
+            [2, "bdm_time", "NA", 1.0, "Tabs In Time", "T"],
             [3, "bdm_mixed", "UA", 1.0, "Mixed Gender", "M"],
             [4, "bdm_rating", "UA", 1.0, "Mixed Rating", "R"],
             [5, "bdm_dbase", "UA", 1.0, "Draw Base", "B"],
@@ -1306,7 +1305,7 @@ tabdic = {
             [0, "bdt_cono", "UI", 3.0, "Club Number", "Clb"],
             [1, "bdt_tab", "UI", 6.0, "Tab Number", "TAB"],
             [2, "bdt_date", "D1", 10.0, "Tabs In date", "Tab-Date"],
-            [3, "bdt_time", "UA", 1.0, "Tabs In Time", "T"],
+            [3, "bdt_time", "NA", 1.0, "Tabs In Time", "T"],
             [4, "bdt_rink", "UA", 2.0, "Rink", "RK"],
             [5, "bdt_side", "UA", 1.0, "Side", "S"],
             [6, "bdt_name", "UA", 20.0, "Name", "Name"],
@@ -1326,7 +1325,7 @@ tabdic = {
     "bwlent": {
         "fld": [
             [0, "bce_cono", "UI", 3.0, "Club Number", "Clb"],
-            [1, "bce_ccod", "UI", 3.0, "Competition Code", "CC"],
+            [1, "bce_ccod", "UI", 3.0, "Competition Code", "Cod"],
             [2, "bce_scod", "UI", 6.0, "Skip Code", "S-Code"],
             [3, "bce_tcod", "UA", 1.0, "Team Code", "T"],
             [4, "bce_paid", "UA", 1.0, "Paid Flag", "P"],
@@ -1370,7 +1369,7 @@ tabdic = {
             [0, "bfo_cono", "UI", 3.0, "Club Number", "Clb"],
             [1, "bfo_fmat", "UI", 1.0, "Format Code", "F"],
             [2, "bfo_code", "UI", 3.0, "Side Code", "C"],
-            [3, "bfo_club", "UI", 3.0, "Club Code", "CCd"],
+            [3, "bfo_club", "UI", 3.0, "Club Code", "Cod"],
             [4, "bfo_desc", "NA", 20.0, "Side Name", "Name"],
             [5, "bfo_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
@@ -1413,7 +1412,7 @@ tabdic = {
     "bwlgme": {
         "fld": [
             [0, "bcg_cono", "UI", 3.0, "Club Number", "Clb"],
-            [1, "bcg_ccod", "UI", 3.0, "Competition Code", "CC"],
+            [1, "bcg_ccod", "UI", 3.0, "Competition Code", "Cod"],
             [2, "bcg_scod", "UI", 6.0, "Skip Code", "S-Code"],
             [3, "bcg_game", "UI", 2.0, "Game Number", "GN"],
             [4, "bcg_type", "UA", 1.0, "Game Type", "T"],
@@ -1463,7 +1462,7 @@ tabdic = {
     "bwlrnd": {
         "fld": [
             [0, "bcr_cono", "UI", 3.0, "Club Number", "Clb"],
-            [1, "bcr_ccod", "UI", 3.0, "Competiton Code", "CCD"],
+            [1, "bcr_ccod", "UI", 3.0, "Competiton Code", "Cod"],
             [2, "bcr_rcod", "UI", 2.0, "Round Number", "RN"],
             [3, "bcr_date", "D1", 10.0, "Round Date", "Round-Date"],
             [4, "bcr_time", "TM", 5.0, "Round Time", "Round-Time"],
@@ -1498,7 +1497,7 @@ tabdic = {
     "bwltms": {
         "fld": [
             [0, "btd_cono", "UI", 3.0, "Club Number", "Clb"],
-            [1, "btd_ccod", "UI", 3.0, "Competition Code", "CC"],
+            [1, "btd_ccod", "UI", 3.0, "Competition Code", "Cod"],
             [2, "btd_scod", "UI", 6.0, "Skip Code", "S-Code"],
             [3, "btd_mem1", "UI", 6.0, "Mem1 Code", "M1-Cod"],
             [4, "btd_mem2", "UI", 6.0, "Mem2 Code", "M2-Cod"],
@@ -1608,7 +1607,7 @@ tabdic = {
             [25, "crm_bibt", "UI", 8.0, "Bank Branch", "Bank-IBT"],
             [26, "crm_bacc", "NA", 16.0, "Bank Account", "Bank-Account-Num"],
             [27, "crm_glac", "UI", 7.0, "G/L Account Number", "GL-Acno"],
-            [28, "crm_stat", "UA", 1.0, "Account Status", "S"],
+            [28, "crm_stat", "UA", 1.0, "Account Status (N/X)", "S"],
             [29, "crm_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Creditors Masterfile", 1, "U", "crm_cono", "crm_acno"]]},
@@ -2037,7 +2036,7 @@ tabdic = {
             [30, "drm_invmes", "UI", 3.0, "Invoice Message", "IMs"],
             [31, "drm_stames", "UI", 3.0, "Statement Message", "SMs"],
             [32, "drm_rating", "UA", 1.0, "Credit Rating", "R"],
-            [33, "drm_stat", "UA", 1.0, "Account Status", "S"],
+            [33, "drm_stat", "UA", 1.0, "Account Status (N/X)", "S"],
             [34, "drm_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Debtors Masterfile", 1, "U", "drm_cono", "drm_chain",
@@ -3093,7 +3092,7 @@ tabdic = {
     "scpcmp": {
         "fld": [
             [0, "scp_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "scp_ccod", "UI", 3.0, "Competition Code", "CCD"],
+            [1, "scp_ccod", "UI", 3.0, "Competition Code", "Cod"],
             [2, "scp_name", "TX", 50.0, "Competition Name", "Name"],
             [3, "scp_tsex", "UA", 1.0, "Team Gender", "G"],
             [4, "scp_tsiz", "UI", 1.0, "Team Size", "S"],
@@ -3113,7 +3112,7 @@ tabdic = {
     "scpent": {
         "fld": [
             [0, "sce_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "sce_ccod", "UI", 3.0, "Competition Code", "CCD"],
+            [1, "sce_ccod", "UI", 3.0, "Competition Code", "Cod"],
             [2, "sce_scod", "UI", 6.0, "Skip's Code", "S-Code"],
             [3, "sce_pcod", "UI", 6.0, "Lead's Code", "L-Code"],
             [4, "sce_xflag", "UA", 1.0, "Export Flag", "X"]],
@@ -3122,7 +3121,7 @@ tabdic = {
     "scpgme": {
         "fld": [
             [0, "scg_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "scg_ccod", "UI", 3.0, "Competition Code", "CCD"],
+            [1, "scg_ccod", "UI", 3.0, "Competition Code", "Cod"],
             [2, "scg_ctyp", "UA", 1.0, "Competition Type", "T"],
             [3, "scg_snum", "UI", 2.0, "Section Number", "SN"],
             [4, "scg_subs", "UA", 1.0, "Sub-Section", "S"],
@@ -3148,7 +3147,7 @@ tabdic = {
             [2, "scm_surname", "UA", 30.0, "Surname", "Surname"],
             [3, "scm_names", "UA", 30.0, "Names", "Names"],
             [4, "scm_gender", "UA", 1.0, "Gender Code", "G"],
-            [5, "scm_club", "UI", 3.0, "Club Code", "CCd"],
+            [5, "scm_club", "UI", 3.0, "Club Code", "Cod"],
             [6, "scm_email", "TX", 20.0, "Email Address", "Email-Address"],
             [7, "scm_phone", "TX", 20.0, "Phone Number", "Phone-Number"],
             [8, "scm_xflag", "UA", 1.0, "Export Flag", "X"]],
@@ -3157,7 +3156,7 @@ tabdic = {
     "scprnd": {
         "fld": [
             [0, "scr_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "scr_ccod", "UI", 3.0, "Competiton Code", "CCD"],
+            [1, "scr_ccod", "UI", 3.0, "Competiton Code", "Cod"],
             [2, "scr_rnum", "UI", 2.0, "Round Number", "RN"],
             [3, "scr_date", "D1", 10.0, "Round Date", "Round-Date"],
             [4, "scr_time", "UI", 4.0, "Starting Time", "STime"],
@@ -3168,7 +3167,7 @@ tabdic = {
     "scpsec": {
         "fld": [
             [0, "scs_cono", "UI", 3.0, "Company Number", "Coy"],
-            [1, "scs_ccod", "UI", 3.0, "Competiton Code", "CCD"],
+            [1, "scs_ccod", "UI", 3.0, "Competiton Code", "Cod"],
             [2, "scs_snum", "UI", 2.0, "Section Number", "SN"],
             [3, "scs_rnum", "UI", 2.0, "Round Number", "RN"],
             [4, "scs_club", "UI", 3.0, "Club Code", "Cod"],
@@ -3326,7 +3325,7 @@ tabdic = {
             [0, "st1_cono", "UI", 3.0, "Company Number", "Coy"],
             [1, "st1_group", "UA", 3.0, "Product Group", "Grp"],
             [2, "st1_code", "NA", 20.0, "Product Code", "Product-Code"],
-            [3, "st1_type", "UA", 1.0, "Type of Item (N/R)", "T"],
+            [3, "st1_type", "UA", 1.0, "Type of Item (N/R/X)", "T"],
             [4, "st1_desc", "NA", 30.0, "Description", "Description"],
             [5, "st1_uoi", "NA", 10.0, "Units Of Issue", "U.O.I"],
             [6, "st1_value_ind", "UA", 1.0, "Value Indicator", "V"],
@@ -4269,15 +4268,16 @@ tarmen = {
         ["PNNN","rc_fm","rcc210",1,"Statement Messages"],
         ["PYNY","rc_fm","rcc310",1,"Interest Rates"],
         ["PYNN","rc_rp","rc3010",1,"Owners Audit Trail"],
-        ["PYNN","rc_rp","rc3030",1,"Owners Master Listing"],
         ["PYNY","rc_rp","rc3050",1,"Owners Statements"],
+        ["PYNN","rc_rp","rc3030",1,"Owners Master Listing"],
+        ["PYNN","rc_rp","rc3100",1,"Owners Account Listing"],
         ["PYNN","rc_rp","rc3070",1,"Owners Notes Listing"],
         ["PYNN","rc_rp","rc3020",1,"Tenants Audit Trail"],
-        ["PYNN","rc_rp","rc3040",1,"Tenants Master Listing"],
         ["PYNY","rc_rp","rc3060",1,"Tenants Statements"],
+        ["PYNN","rc_rp","rc3040",1,"Tenants Master Listing"],
         ["PYNN","rc_rp","rc3080",1,"Tenants Notes Listing"],
         ["PYNN","rc_rp","rc3090",1,"Tenants Deposit Listing"],
-        ["PYNN","rc_rp","rcc220",1,"Statement Messages"],
+        ["PYNN","rc_rp","rcc220",1,"Statement Messages Listing"],
         ["PYNY","rc_qy","rc4010",0,"Owners Interrogation"],
         ["PYNY","rc_qy","rc4020",0,"Tenants Interrogation"],
         ["PYNY","mm_rc","rc2010",2,"Data Capture"],
@@ -4362,7 +4362,8 @@ tarmen = {
         ["PYNN","bc_cc","bc3110",1,"Contact Request Forms"],
         ["PYNN","bc_tb","bc6010",3,"Change Tab Numbers"],
         ["PYNN","bc_tb","bc6020",3,"Delete Visitors' Tabs"],
-        ["PYNN","bc_tb","bc6030",3,"Clear History"],
+        ["PYNN","bc_tb","bc6030",3,"Competition Envelopes"],
+        ["PYNN","bc_tb","bc6040",3,"Clear History"],
         ["F","mm_bc","doManual BWL",0,"Help"]],
 
     # Book Clubs
@@ -5283,7 +5284,7 @@ datdic = {
         ["comp_cards", 8.0, "C", "B", "H", "Shots", "courier", 10, "#000000",
             "Y", "N", "N", "C", "TLRB", "Y", 57.5, 5, 70.5, 23.0, 5.0, 28.0,
             0.0, "shots_for", "courier", 10, "#000000", "N", "N", "N", "C",
-            "RB", "N", 57.5, 5, 70.5, 28.0, 5.0, 33.0, 1, 22],
+            "LRB", "N", 57.5, 5, 70.5, 28.0, 5.0, 33.0, 1, 22],
         ["comp_cards", 9.0, "C", "B", "H", "Total", "courier", 10, "#000000",
             "Y", "N", "N", "C", "TLRB", "Y", 70.5, 5, 83.5, 23.0, 5.0, 28.0,
             0.0, "total_shots_for", "courier", 10, "#000000", "N", "N", "N",

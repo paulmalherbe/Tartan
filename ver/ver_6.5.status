@@ -1,0 +1,55 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	modified:   bwl/bc6030.py
+	new file:   bwl/bc6040.py
+	new file:   rca/rc3100.py
+	deleted:    uty/dopip.bat
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   TartanClasses.py
+	modified:   ass/arc210.py
+	modified:   bwl/bc2010.py
+	modified:   bwl/bc2050.py
+	modified:   bwl/bc3010.py
+	modified:   bwl/bc3020.py
+	modified:   bwl/bc3080.py
+	modified:   bwl/bc6030.py
+	modified:   bwl/bc6040.py
+	modified:   bwl/bcc110.py
+	modified:   crs/cr4010.py
+	modified:   doc/BWL.rst
+	modified:   doc/GEN.rst
+	modified:   doc/QST.rst
+	modified:   doc/RCA.rst
+	modified:   doc/RTL.rst
+	modified:   doc/SYS.rst
+	modified:   doc/UTY.rst
+	modified:   drs/dr2030.py
+	modified:   drs/dr4010.py
+	modified:   ms0000.py
+	modified:   mst/ms3010.py
+	modified:   mst/msc110.py
+	modified:   rca/rc3030.py
+	modified:   rca/rc3100.py
+	modified:   tab/tb1020.py
+	modified:   tab/tb1030.py
+	modified:   tartanFunctions.py
+	modified:   tartanImages.py
+	modified:   tartanWork.py
+	modified:   uty/mkwins.py
+	modified:   uty/pkgprg.py
+	modified:   uty/tp1010.py
+	modified:   wag/wg3030.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	a
+	aaaa
+	bwl/bent.py
+	ver/ver_6.5.status
+

@@ -14,6 +14,7 @@ Use this routine to create the bowls control record.
 + **Draw Base** - By pre-allocated Position, Rating or a Combination of both.
 + **Rating Order** - Whether the rating system is ascending or descending, like golf handicaps.
 + **Mixed Ratings** - Whether to use different ratings for mixed gender draws.
++ **Default Team Size** - When doing a tabs-in draw use this as the default team size.
 + **Replace Fours** - When doing a trips tabs-in draw use pairs instead of fours for eight players.
 + **Weeks Between Draws** - The minimum number of weeks that team members should not be in the same team again. They could however be drawn to play against them.
 + **Rate - Member** - The member's rate.
@@ -61,7 +62,13 @@ Tabs-In Draw (BC)
 Use this routine to make a new draw or to amend a current draw.
 
 + **Date** - The date of the draw.
-+ **Time** - The time of the draw.
++ **Time** - The time of the draw. If a draw with the same date and time already exists the following options will be avaliable:
+    + **None** - Do nothing, retun to the time entry.
+    + **View** - View the existing draw.
+    + **Reprint** - Reprint the existing draw.
+    + **Alter** - Alter the existing draw.
+    + **Clear** - Clear, delete, the existing draw.
+    + **Another** - Do another draw with the same tab entries.
 + **Mixed Gender** - Whether or not the draw is mixed.
 + **Mixed Rating** - Whether or not to use the alternative ratings.
 + **Draw By** - If available select whether to base the draw on Positions, Ratings or a Combination of both.
@@ -412,6 +419,15 @@ Delete Visitors' Tabs (BC)
 Use this routine to delete visitor's tabs without competition history and re-number the remaining visitor's tabs.
 
 + **Minimum Tabs-In** - Enter the minimum number of times a visitor must have played tabs-in to stay in the system.
+
+Competition Envelopes (BC)
+++++++++++++++++++++++++++
+Use this routine to print envelopes for competition prizes.
+
++ **Competition Code** - The relevant competition code.
++ **Groups** - The number of groups, if applicable.
++ **Prizes** - The number of prizes per group.
++ **Members** - The number of players per team.
 
 Clear History (BC)
 ++++++++++++++++++

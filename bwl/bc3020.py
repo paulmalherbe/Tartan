@@ -146,14 +146,8 @@ class bc3020(object):
         l = ""
         self.dic = {}
         for r in rec:
-            dte = CCD(r[c.index("bdt_date")], "D1", 10)
-            tim = r[c.index("bdt_time")]
-            bdm = self.sql.getRec("bwldrm", where=[("bdm_cono", "=",
-                self.opts["conum"]), ("bdm_date", "=", dte.work),
-                ("bdm_time", "=", tim)], limit=1)
-            if bdm[self.sql.bwldrm_col.index("bdm_dhist")] == "N":
-                continue
             self.clash = ""
+            dte = CCD(r[c.index("bdt_date")], "D1", 10)
             side = [["", ""], ["", ""], ["", ""], ["", ""]]
             self.tab = r[c.index("bdt_tab")]
             if self.tab not in self.dic:

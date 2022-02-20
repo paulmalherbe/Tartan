@@ -25,7 +25,7 @@ COPYING
 """
 
 import time
-from TartanClasses import CCD, PrintDraw, Sql, TartanDialog
+from TartanClasses import CCD, PrintCards, PrintDraw, Sql, TartanDialog
 
 class bc3010(object):
     def __init__(self, **opts):
@@ -60,6 +60,7 @@ class bc3010(object):
         r1s = (("Morning", "M"), ("Afternoon", "A"))
         r2s = (("Yes", "Y"), ("No", "N"))
         r3s = (("Position", "P"), ("Rating", "R"), ("Combination", "C"))
+        r4s = (("No", "N"), ("Yes", "Y"), ("Only", "O"))
         fld = (
             (("T",0,0,0),"ID1",10,"Date","",
                 self.sysdt,"Y",self.doDate,dte,None,("efld",)),
@@ -68,13 +69,19 @@ class bc3010(object):
             (("T",0,2,0),("ORB",r2s),0,"Mixed Gender"),
             (("T",0,3,0),("ORB",r2s),0,"Mixed Rating"),
             (("T",0,4,0),("ORB",r3s),0,"Draw By"),
-            (("T",0,5,0),("IRB",r2s),0,"Cash Takings Sheet","",
+            (("T",0,5,0),("IRB",r4s),0,"Print Cards","",
+                "N","Y",self.doCards,None,None,None),
+            (("T",0,6,0),"INA",30,"Heading","",
+                "","Y",self.doHead,None,None,("notblank",)),
+            (("T",0,7,0),"IUI",2,"Number of Ends","",
+                0,"Y",self.doEnds,None,None,("notzero",)),
+            (("T",0,8,0),("IRB",r2s),0,"Cash Takings Sheet","",
                 "N","Y",self.doTakings,None,None,None),
-            (("T",0,6,0),("IRB",r2s),0,"Tabs Draw Listing","",
+            (("T",0,9,0),("IRB",r2s),0,"Tabs Draw Listing","",
                 "N","Y",self.doListing,None,None,None),
-            (("T",0,7,0),("IRB",r2s),0,"Tabs Draw Board","",
+            (("T",0,10,0),("IRB",r2s),0,"Tabs Draw Board","",
                 "Y","Y",self.doBoard,None,None,None),
-            (("T",0,8,0),("IRB",r2s),0,"Include Empty Rinks","",
+            (("T",0,11,0),("IRB",r2s),0,"Include Empty Rinks","",
                 "N","Y",self.doEmpty,None,None,None))
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)
@@ -101,6 +108,22 @@ class bc3010(object):
         self.df.loadEntry(frt, pag, p+2, data=chk[1])
         self.df.loadEntry(frt, pag, p+3, data=chk[2])
 
+    def doCards(self, frt, pag, r, c, p, i, w):
+        self.cards = w
+        if self.cards == "N":
+            self.cdes = None
+            return "sk2"
+
+    def doHead(self, frt, pag, r, c, p, i, w):
+        self.cdes = w
+        if self.cards == "N":
+            return "sk1"
+
+    def doEnds(self, frt, pag, r, c, p, i, w):
+        self.ends = w
+        if self.cards == "O":
+            return "nd"
+
     def doTakings(self, frt, pag, r, c, p, i, w):
         self.takings = w
 
@@ -120,10 +143,31 @@ class bc3010(object):
 
     def doEnd(self):
         self.df.closeProcess()
-        PrintDraw(self.opts["mf"], self.opts["conum"], self.date, self.time,
-            takings=self.takings, listing=self.listing, board=self.board,
-            empty=self.empty, repprt=self.df.repprt,
-            name=self.__class__.__name__)
+        if self.cards != "O":
+            PrintDraw(self.opts["mf"], self.opts["conum"], self.date,
+                self.time, cdes=self.cdes, takings=self.takings,
+                listing=self.listing, board=self.board, empty=self.empty,
+                repprt=self.df.repprt, name=self.__class__.__name__)
+        if self.cards != "N":
+            recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
+                cols=["bdt_rink", "bdt_tab"], where=[("bdt_cono", "=",
+                self.opts["conum"]), ("bdt_date", "=", self.date),
+                ("bdt_time", "=", self.time), ("bdt_pos", "=", 4)],
+                group="bdt_rink, bdt_tab", order="bdt_rink")
+            skips = []
+            for x in range(0, len(recs), 2):
+                grn = recs[x][0]
+                skp = self.sql.getRec("bwltab", cols=["btb_tab",
+                    "btb_surname", "btb_names"], where=[("btb_cono", "=",
+                    self.opts["conum"]), ("btb_tab", "=", recs[x][1])],
+                    limit=1)
+                opp = self.sql.getRec("bwltab", cols=["btb_tab",
+                    "btb_surname", "btb_names"], where=[("btb_cono", "=",
+                    self.opts["conum"]), ("btb_tab", "=", recs[x+1][1])],
+                    limit=1)
+                skips.append((grn, skp, opp))
+            PrintCards(self.opts["mf"], self.opts["conum"], self.cdes, 1,
+                self.dated, skips, self.ends, "N", 0)
         self.printed = True
         self.opts["mf"].closeLoop()
 

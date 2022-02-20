@@ -131,6 +131,10 @@ if windows:
         name = l.strip().decode("utf-8")
         if name and name != "NewMail":
             names.append(name)
+    if names:
+        vcheck = input("Use Virtual Machines (y/n): ")
+        if vcheck.lower() == "n":
+            names = []
 if not os.path.exists(bd):
     print("Invalid Base Directory (%s)" % bd)
     sys.exit()
@@ -415,9 +419,7 @@ if publish:
         if "7" in bits:
             exeCmd("cp -p %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
-    print("")
     print("Version Number is %s.%s" % tuple(cver))
-    print("")
     # Dropbox
     exeCmd("rm %s/Dropbox/Apps/%s/%s_%s*" % (home, cs, cs, vv))
     exeCmd("rsync -az %s/%s/%s_%s* "\
