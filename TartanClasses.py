@@ -7079,7 +7079,7 @@ class SelectChoice(object):
                     "TkMenuFont",
                     "TkHeadingFont"):
                 font = "TkHeadingFont"
-            self.font = tkfont.nametofont(font)
+            self.font = tkfont.Font(name=font, exists=1)
         else:
             self.font = tkfont.Font(font=tuple(font))
         if self.font.cget("size") > 12:
@@ -8735,11 +8735,16 @@ class TartanConfig(object):
         for font in fonts:
             if font.lower().count("emoji"):
                 continue
-            if font not in self.aft:
-                self.aft.append(font)
-            ft = tkfont.Font(font=(font, 10, "normal"))
-            if ft.metrics()["fixed"] and font not in self.fft:
-                self.fft.append(font)
+            if font.lower().count("unifont upper"):
+                continue
+            try:
+                ft = tkfont.Font(font=(font, 10, "normal"))
+                if ft.metrics()["fixed"] and font not in self.fft:
+                    self.fft.append(font)
+                if font not in self.aft:
+                    self.aft.append(font)
+            except:
+                continue
         sp.closeSplash()
 
     def loadThemes(self):
@@ -10043,7 +10048,6 @@ class FinReport(object):
         self.pers[0]["i_per"] = int(self.period[1][0] / 100)
         self.pers[0]["e_per"] = int(self.period[2][0] / 100)
         df = dateDiff(self.period[1][0], self.period[2][0], "months") + 1
-        print(self.period, df)
         if df > 12:
             self.pers[0]["d_per"] = df - 12
             yr = int(self.pers[0]["i_per"] / 100)
@@ -10495,9 +10499,8 @@ class FinReport(object):
         self.gen_lst = acc
         self.gen_dic = {}
         num = 0
-        for fld in self.sql.genmst_col:
+        for num, fld in enumerate(self.sql.genmst_col):
             self.gen_dic[fld] = acc[num]
-            num += 1
         if self.rpt_dic["glr_ignore"] == "N":
             self.checkAccountType(self.gen_dic["glm_type"])
 
@@ -10960,21 +10963,15 @@ class FinReport(object):
 
     def checkAccountType(self, glm_type):
         if glm_type == self.atype or self.atype == "O":
-            pass
+            return
+        self.count = 66
+        self.atype = glm_type
+        if self.atype == "P":
+            self.stanam = "Profit and Loss"
         else:
-            if glm_type == "P" and self.atype == "P":
-                pass
-            elif glm_type == "B" and self.atype == "B":
-                pass
-            else:
-                self.count = 66
-            self.atype = glm_type
-            if self.atype == "P":
-                self.stanam = "Profit and Loss"
-            else:
-                self.stanam = "Balance Sheet"
-            if self.dname:
-                self.stanam = "%s - %s" % (self.dname, self.stanam)
+            self.stanam = "Balance Sheet"
+        if self.dname:
+            self.stanam = "%s - %s" % (self.dname, self.stanam)
 
 class GetCtl(object):
     """
@@ -13087,7 +13084,6 @@ class PrintDraw(object):
         else:
             self.timed = "Morning"
         self.position = ["Skip", "Third", "Second", "Lead"]
-        self.pgnum = 0
         return True
 
     def doProcess(self):
@@ -13310,13 +13306,11 @@ class PrintDraw(object):
                             font=["Arial", "BI", 24], border="TLRB", ln=ln)
             return
         self.fpdf.add_page()
-        self.pgnum += 1
         if htyp == "A":
             pad = " " * (55 - len(txt))
         elif htyp == "B":
             pad = " " * (57 - len(txt))
-        self.fpdf.drawText("%s %s Page %s" % (txt, pad, self.pgnum),
-            font=["courier", "B", 14])
+        self.fpdf.drawText("%s %s" % (txt, pad), font=["courier", "B", 14])
         self.fpdf.drawText()
         if htyp == "A":
             self.fpdf.setFont(style="B", size=8)
@@ -14261,7 +14255,6 @@ class RepPrt(object):
             for sub in self.stots:
                 setattr(self, "%s_%s_stot" % (tot, idx), 0)
                 idx += 1
-        self.pgnum = 0
         self.pglin = 999
         self.expdatas = []
         if self.repprt[2] != "export":
@@ -16184,6 +16177,8 @@ class FileImport(object):
                 return
             count = 0
             for a in acc:
+                if a[2].count("_xflag"):
+                    continue
                 if self.impskp and a[2] in self.impskp:
                     continue
                 self.impcol.append([a[5], count, a[3], a[4]])
@@ -18688,14 +18683,20 @@ class ViewPDF(object):
                 annot = page.firstAnnot
                 while annot:
                     annot = page.deleteAnnot(annot)
-                found = page.searchFor(self.search)
+                try:
+                    found = page.search_for(self.search)
+                except:
+                    found = page.searchFor(self.search)
                 for inst in found:
                     self.okfound = True
                     numb = (page.number + 1)
                     if numb not in self.pags:
                         self.pags.append(numb)
                         self.prec[numb] = inst
-                    page.addHighlightAnnot(inst)
+                    try:
+                        page.add_highlight_annot(inst)
+                    except:
+                        page.addHighlightAnnot(inst)
             if self.pags:
                 self.pgno = self.pags[0]
             frm.destroy()
@@ -18863,7 +18864,10 @@ class ViewPDF(object):
             "Please Wait...")
         def getData(page):
             txts = []
-            blocks = page.getText("dict")["blocks"]
+            try:
+                blocks = page.get_text("dict")["blocks"]
+            except:
+                blocks = page.getText("dict")["blocks"]
             for b in blocks:
                 if b["type"] == 0:
                     for l in b["lines"]:
@@ -18928,8 +18932,12 @@ class ViewPDF(object):
                 while annot:
                     annot = page.deleteAnnot(annot)
             page = self.doc[int(sc.selection[2]) - 1]
-            found = page.searchFor(sc.selection[1])
-            page.addHighlightAnnot(found[0])
+            try:
+                found = page.search_for(sc.selection[1])
+                page.add_highlight_annot(found[0])
+            except:
+                found = page.searchFor(sc.selection[1])
+                page.addHighlightAnnot(found[0])
             self.pgno = int(sc.selection[2])
             self.prec[self.pgno] = found[0]
             self.cont = True

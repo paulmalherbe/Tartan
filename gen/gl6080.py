@@ -1,6 +1,7 @@
 """
 SYNOPSIS
-    Standard Dialog.
+    General Ledger - List Missing Account Numbers i.e.
+    Accounts that have Transactions but no Masterfile.
 
     This file is part of Tartan Systems (TARTAN).
 

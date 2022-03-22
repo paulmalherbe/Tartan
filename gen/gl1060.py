@@ -24,8 +24,8 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from TartanClasses import GetCtl, Sql, TartanDialog
-from tartanFunctions import chkGenAcc
+from TartanClasses import FileImport, GetCtl, ProgressBar, Sql, TartanDialog
+from tartanFunctions import chkGenAcc, getNextCode, showError
 
 class gl1060(object):
     def __init__(self, **opts):
@@ -189,6 +189,7 @@ Current - Do not age the transaction.
             (("T",0,11,0),"INA",1,"Vat Code","",
                 "","N",self.doVatCod,vat,None,None)]
         but = [
+            ("Import",None,self.doImport,0,("T",0,3),(("T",0,1),("T",0,4))),
             ("Cancel",None,self.doCancel,0,("T",0,4),("T",0,1)),
             ("Quit",None,self.doExit,1,None,None)]
         if "args" in self.opts:
@@ -225,6 +226,64 @@ Current - Do not age the transaction.
             return "Invalid Bank Account"
         self.acno = w
         self.df.loadEntry(frt, pag, p+1, data=acc[0])
+
+    def doImport(self):
+        self.df.setWidget(self.df.mstFrame, state="hide")
+        fi = FileImport(self.opts["mf"], imptab="genrcc", impskp=["grc_cono",
+            "grc_acno", "grc_memo", "grc_acrs", "grc_achn", "grc_adrs",
+            "grc_aage"])
+        sp = ProgressBar(self.opts["mf"].body,
+            typ="Importing Records", mxs=len(fi.impdat))
+        err = None
+        for num, line in enumerate(fi.impdat):
+            sp.displayProgress(num)
+            if not line[0]:
+                err = "Blank Description"
+                break
+            chk = self.sql.getRec("genrcc", where=[("grc_cono",
+                "=", self.opts["conum"]), ("grc_acno", "=", self.acno),
+                ("grc_desc1", "=", line[0])], limit=1)
+            if chk:
+                err = "%s %s Already Exists" % (fi.impcol[0][0], line[0])
+                break
+            if line[3] not in ("P", "R"):
+                err = "Invalid %s %s, Only P or R" % (fi.impcol[3][0], line[3])
+                break
+            chk = self.sql.getRec("ctlmst", where=[("ctm_cono", "=", line[4])],
+                limit=1)
+            if not chk:
+                err = "Invalid %s %s" % (fi.impcol[4][0], line[4])
+                break
+            chk = self.sql.getRec("genmst", where=[("glm_cono", "=", line[4]),
+                ("glm_acno", "=", line[5])],
+                limit=1)
+            if not chk:
+                err = "Invalid %s %s" % (fi.impcol[5][0], line[5])
+                break
+            chk = self.sql.getRec("ctlvmf", where=[("vtm_cono", "=",
+                self.opts["conum"]), ("vtm_code", "=", line[6])], limit=1)
+            if not chk:
+                err = "%s %s Does Not Exist" % (fi.impcol[6][0], line[6])
+                break
+            memo = getNextCode(self.sql, "genrcc", "grc_memo",
+                where=[("grc_cono", "=", self.opts["conum"])], last=9999999)
+            line.insert(0, memo)
+            line.insert(0, self.acno)
+            line.insert(0, self.opts["conum"])
+            vat = line.pop()
+            line.extend(["", 0, "", "", vat])
+            self.sql.insRec("genrcc", data=line)
+        sp.closeProgress()
+        if err:
+            err = "Line %s: %s" % ((num + 1), err)
+            showError(self.opts["mf"].body, "Import Error", """%s
+
+Please Correct your Import File and then Try Again.""" % err)
+            self.opts["mf"].dbm.rollbackDbase()
+        else:
+            self.opts["mf"].dbm.commitDbase()
+        self.df.setWidget(self.df.mstFrame, state="show")
+        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
 
     def doSameField(self, frt, pag, r, c, p, i, w):
         self.df.loadEntry("T", 0, self.df.pos, data=w[0])

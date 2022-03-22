@@ -144,7 +144,8 @@ class gl6010(object):
         if not acc:
             return "Invalid Account Number, Does Not exist"
         self.oldacc = w
-        self.df.loadEntry(frt, pag, p+1, data=acc[3])
+        desc = acc[self.sql.genmst_col.index("glm_desc")]
+        self.df.loadEntry(frt, pag, p+1, data=desc)
 
     def doNewAcc(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("genmst", where=[("glm_cono", "=",

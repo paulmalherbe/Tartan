@@ -1796,32 +1796,12 @@ Custom  - Customised Report"""),
                     if self.val == "D":
                         head = "%s (%s of %s)" % (head,
                             self.fin.ddet[0].strip(), self.fin.ddet[1].strip())
-                    if self.typ == "S":
-                        self.fpdf.drawText("%-97s %4s %5s" % (head,
-                            "Page", self.pgnum))
-                    elif self.typ == "H":
-                        self.fpdf.drawText("%-135s %4s %5s" % (head,
-                            "Page", self.pgnum))
-                    elif self.typ == "L":
-                        hfs = 138
-                        if self.var == "B":
-                            hfs += 20
-                        if self.num == "Y":
-                            hfs += 9
-                        hft = "%s-%s%s %s %s" % ("%", hfs, "s", "%4s", "%5s")
-                        self.fpdf.drawText(hft % (head, "Page", self.pgnum))
-                    elif self.typ == "M":
-                        head = "%s (%s)" % (head, self.des1)
-                        if self.num == "Y":
-                            self.fpdf.drawText("%-194s %4s %5s" % (head,
-                                "Page", self.pgnum))
-                        else:
-                            self.fpdf.drawText("%-186s %4s %5s" % (head,
-                                "Page", self.pgnum))
-                    elif self.typ == "C":
+                    if self.typ == "C":
                         self.fpdf.setFont(style="B", size=14)
                         self.fpdf.drawText(head)
                         self.fpdf.setFont(style="B")
+                    else:
+                        self.fpdf.drawText(head)
                     self.pglin += 1
                     self.emlhead = head
                     if self.opt == "Y":

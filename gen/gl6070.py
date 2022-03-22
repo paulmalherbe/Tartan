@@ -121,8 +121,9 @@ class gl6070(object):
         if not acc:
             return "Invalid Account Number, Does Not exist"
         self.ctlacc = w
+        desc = acc[self.sql.genmst_col.index("glm_desc")]
         self.gtype = acc[self.sql.genmst_col.index("glm_type")]
-        self.df.loadEntry(frt, pag, p+1, data=acc[3])
+        self.df.loadEntry(frt, pag, p+1, data=desc)
 
     def doEnd(self):
         self.df.closeProcess()

@@ -132,7 +132,7 @@ class gl3040(object):
             "glm_desc", "glm_type"], where=[("glm_cono", "=",
             self.opts["conum"])], order="glm_type desc, glm_acno")
         if not recs:
-            showError(self.opts["mf"].body, "Selection Error", "No Accounts")
+            showError(self.opts["mf"].body, "Error", "No Accounts Selected")
         elif self.repprt[2] == "export":
             self.exportReport(recs)
         else:

@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 5)
+    VERSION = (6, 6)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -1770,6 +1770,11 @@ System --> Change Password""")
             return "error"
 
     def conoCheck(self, coy, prg=None, ctl=False):
+        gcl = GetCtl(self.mf)
+        chk = gcl.getCtl("ctlmst", coy, error=False)
+        if not chk:
+            self.conum = None
+            return "Invalid Company"
         if self.acoy and not self.acoy.count(coy):
             self.conum = None
             return "Unavailable Company Number"
@@ -1778,11 +1783,6 @@ System --> Change Password""")
             return "Unavailable Company Number"
         if prg in self.fsys and not self.fcoy[coy]:
             return "xt"
-        gcl = GetCtl(self.mf)
-        chk = gcl.getCtl("ctlmst", coy, error=False)
-        if not chk:
-            self.conum = None
-            return "Invalid Company"
         if ctl:
             return
         self.conum = coy

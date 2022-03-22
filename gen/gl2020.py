@@ -25,7 +25,7 @@ COPYING
 """
 
 from TartanClasses import ASD, FileImport, ProgressBar, Sql, TartanDialog
-from tartanFunctions import askQuestion, showError
+from tartanFunctions import askQuestion, projectDate, showError
 
 class gl2020(object):
     def __init__(self, **opts):
@@ -191,21 +191,30 @@ Remember that all existing budgets for this financial period will be replaced!""
             ("R50","2"),
             ("R100","3"),
             ("R1000","4"))
+        r3s = (("Yes","Y"), ("No","N"))
         fld = (
             (("T",0,0,0),("IRB",r1s),0,"Use Previous Year's","",
                 "A","N",self.doUse,None,None,None),
-            (("T",0,1,0),"ISD",7.2,"Standard Rate (+-)","",
+            (("T",0,1,0),("IRB",r3s),0,"Annualize","",
+                "N","N",self.doAnnual,None,None,None),
+            (("T",0,2,0),"ISD",7.2,"Standard Rate (+-)","",
                 "","N",self.doRate,None,None,("efld",),None,
-                """The percentage by which the actual must be increased or decreased."""),
-            (("T",0,2,0),("IRB",r2s),0,"Rounding to Nearest","",
+                "The percentage by which the actual must be increased or "\
+                "decreased."),
+            (("T",0,3,0),("IRB",r2s),0,"Rounding to Nearest","",
                 "0","N",self.doRound,None,None,None),
+            (("T",0,4,0),("IRB",r3s),0,"Any Exception Rates","",
+                "N","N",self.doExcept,None,None,None,None,
+                "Do you want to Enter any Accounts with an Individual "\
+                "Rate Change?"),
             (("C",0,0,0),"IUI",7,"Acc-Num","Account Number",
                 "","N",self.doAccNo,glm,None,None),
             (("C",0,0,1),"ONA",30,"Description"),
             (("C",0,0,2),"ISD",7.2,"Rate","Rate (+-)",
                 "","N",self.doRates,None,None,("efld",),None,
-                """The percentage by which the actual must be increased or decreased."""))
-        tnd = ((self.doEnd,"n"),)
+                "The percentage by which the actual must be increased "\
+                "or decreased."))
+        tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)
         cnd = ((self.doEnd,"n"),)
         cxt = (self.doExit,)
@@ -217,13 +226,28 @@ Remember that all existing budgets for this financial period will be replaced!""
             eflds=fld, tend=tnd, txit=txt, cend=cnd, cxit=cxt, butt=but)
         self.rr.mstFrame.wait_window()
         self.df.enableButtonsTags(state=state)
-        if not self.xits:
-            self.doPopulation()
         self.df.setWidget(self.df.mstFrame, state="show")
         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
 
     def doUse(self, frt, pag, r, c, p, i, w):
         self.use = w
+        if self.use == "B":
+            self.annual = "N"
+            self.rr.loadEntry(frt, pag, p+1, data=self.annual)
+            return "sk1"
+
+    def doAnnual(self, frt, pag, r, c, p, i, w):
+        self.annual = w
+        cdte = 0
+        if self.annual == "Y":
+            self.mths = []
+            while cdte != self.e_old:
+                if not cdte:
+                    cdte = self.s_old
+                else:
+                    cdte = projectDate((cdte * 100) + 1, 1, typ="months")
+                    cdte = int(cdte / 100)
+                self.mths.append(cdte)
 
     def doRate(self, frt, pag, r, c, p, i, w):
         if not w:
@@ -235,10 +259,7 @@ Remember that all existing budgets for this financial period will be replaced!""
         self.rnd = [0, 10, 50, 100, 1000][int(w)]
 
     def doExcept(self, frt, pag, r, c, p, i, w):
-        if w == "N":
-            self.rr.closeProcess()
-        else:
-            self.rr.focusField("C", 0, 1)
+        self.excs = w
 
     def doAccNo(self, frt, pag, r, c, p, i, w):
         desc = self.sql.getRec("genmst", cols=["glm_desc"],
@@ -255,16 +276,19 @@ Remember that all existing budgets for this financial period will be replaced!""
 
     def doEnd(self):
         if self.rr.frt == "T":
-            self.xits = False
-            self.rr.focusField("C", 0, 1)
+            if self.excs == "Y":
+                self.rr.focusField("C", 0, 1)
+            else:
+                self.doPopulation()
         else:
             self.rr.advanceLine(0)
 
     def doExit(self):
         if self.rr.frt == "T":
-            self.xits = True
             self.rate = 0
-        self.rr.closeProcess()
+            self.rr.closeProcess()
+        else:
+            self.doPopulation()
 
     def doShow(self):
         data = []
@@ -287,11 +311,11 @@ Remember that all existing budgets for this financial period will be replaced!""
         self.rr.focusField("C", 0, self.rr.col)
 
     def doQuit(self):
-        self.xits = True
         self.rate = 0
         self.rr.closeProcess()
 
     def doPopulation(self):
+        self.rr.closeProcess()
         recs = self.sql.getRec("genmst", cols=["glm_acno"],
             where=[("glm_cono", "=", self.opts["conum"]),
             ("glm_type", "=", "P")], order="glm_acno")
@@ -305,7 +329,20 @@ Remember that all existing budgets for this financial period will be replaced!""
             self.sql.delRec("genbud", where=[("glb_cono", "=",
                 self.opts["conum"]), ("glb_acno", "=", acc[0]),
                 ("glb_curdt", "between", self.s_cur, self.e_cur)])
-            if self.use == "A":
+            if self.use == "A" and self.annual == "Y":
+                tots = self.sql.getRec("gentrn",
+                    cols=["round(sum(glt_tramt), 2)"],
+                    where=[("glt_cono", "=", self.opts["conum"]),
+                    ("glt_acno", "=", acc[0]), ("glt_curdt",
+                    "between", self.s_old, self.e_old)], limit=1)
+                bals = []
+                if tots[0] is None:
+                    mtha = 0
+                else:
+                    mtha = round(tots[0] / len(self.mths), 2)
+                for mth in  self.mths:
+                    bals.append((mth, mtha))
+            elif self.use == "A":
                 bals = self.sql.getRec("gentrn", cols=["glt_curdt",
                     "round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
                     self.opts["conum"]), ("glt_acno", "=", acc[0]),

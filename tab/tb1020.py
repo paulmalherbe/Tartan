@@ -404,6 +404,10 @@ class tb1020(object):
                         new = "N"
                     elif self.table == "drsmst" and nam == "drm_stat":
                         new = "N"
+                    elif self.table == "genmst" and nam == "glm_fstp":
+                        new = "N"
+                    elif self.table == "genmst" and nam == "glm_fsgp":
+                        new = 0
                     elif self.table == "slsiv2" and nam == "si2_line":
                         new = old[olddic["si2_seq"][0]]
                     elif self.table == "slsiv3" and nam == "si3_line":

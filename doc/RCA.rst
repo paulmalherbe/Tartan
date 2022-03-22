@@ -158,7 +158,7 @@ This routine is used to produce an owner's master listing.
 
 Owners Account Listing (RC)
 +++++++++++++++++++++++++++
-Use this routine to produce statements for owners's accounts.
+Use this routine to produce statements for owner's accounts.
 
 + **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
 + **From Account** - If range was selected enter the starting account number.

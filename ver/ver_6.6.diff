@@ -1,0 +1,1871 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index e647a95..6342a61 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -7079,7 +7079,7 @@ class SelectChoice(object):
+                     "TkMenuFont",
+                     "TkHeadingFont"):
+                 font = "TkHeadingFont"
+-            self.font = tkfont.nametofont(font)
++            self.font = tkfont.Font(name=font, exists=1)
+         else:
+             self.font = tkfont.Font(font=tuple(font))
+         if self.font.cget("size") > 12:
+@@ -8735,11 +8735,16 @@ class TartanConfig(object):
+         for font in fonts:
+             if font.lower().count("emoji"):
+                 continue
+-            if font not in self.aft:
+-                self.aft.append(font)
+-            ft = tkfont.Font(font=(font, 10, "normal"))
+-            if ft.metrics()["fixed"] and font not in self.fft:
+-                self.fft.append(font)
++            if font.lower().count("unifont upper"):
++                continue
++            try:
++                ft = tkfont.Font(font=(font, 10, "normal"))
++                if ft.metrics()["fixed"] and font not in self.fft:
++                    self.fft.append(font)
++                if font not in self.aft:
++                    self.aft.append(font)
++            except:
++                continue
+         sp.closeSplash()
+ 
+     def loadThemes(self):
+@@ -10043,7 +10048,6 @@ class FinReport(object):
+         self.pers[0]["i_per"] = int(self.period[1][0] / 100)
+         self.pers[0]["e_per"] = int(self.period[2][0] / 100)
+         df = dateDiff(self.period[1][0], self.period[2][0], "months") + 1
+-        print(self.period, df)
+         if df > 12:
+             self.pers[0]["d_per"] = df - 12
+             yr = int(self.pers[0]["i_per"] / 100)
+@@ -10495,9 +10499,8 @@ class FinReport(object):
+         self.gen_lst = acc
+         self.gen_dic = {}
+         num = 0
+-        for fld in self.sql.genmst_col:
++        for num, fld in enumerate(self.sql.genmst_col):
+             self.gen_dic[fld] = acc[num]
+-            num += 1
+         if self.rpt_dic["glr_ignore"] == "N":
+             self.checkAccountType(self.gen_dic["glm_type"])
+ 
+@@ -10960,21 +10963,15 @@ class FinReport(object):
+ 
+     def checkAccountType(self, glm_type):
+         if glm_type == self.atype or self.atype == "O":
+-            pass
++            return
++        self.count = 66
++        self.atype = glm_type
++        if self.atype == "P":
++            self.stanam = "Profit and Loss"
+         else:
+-            if glm_type == "P" and self.atype == "P":
+-                pass
+-            elif glm_type == "B" and self.atype == "B":
+-                pass
+-            else:
+-                self.count = 66
+-            self.atype = glm_type
+-            if self.atype == "P":
+-                self.stanam = "Profit and Loss"
+-            else:
+-                self.stanam = "Balance Sheet"
+-            if self.dname:
+-                self.stanam = "%s - %s" % (self.dname, self.stanam)
++            self.stanam = "Balance Sheet"
++        if self.dname:
++            self.stanam = "%s - %s" % (self.dname, self.stanam)
+ 
+ class GetCtl(object):
+     """
+@@ -13087,7 +13084,6 @@ class PrintDraw(object):
+         else:
+             self.timed = "Morning"
+         self.position = ["Skip", "Third", "Second", "Lead"]
+-        self.pgnum = 0
+         return True
+ 
+     def doProcess(self):
+@@ -13310,13 +13306,11 @@ class PrintDraw(object):
+                             font=["Arial", "BI", 24], border="TLRB", ln=ln)
+             return
+         self.fpdf.add_page()
+-        self.pgnum += 1
+         if htyp == "A":
+             pad = " " * (55 - len(txt))
+         elif htyp == "B":
+             pad = " " * (57 - len(txt))
+-        self.fpdf.drawText("%s %s Page %s" % (txt, pad, self.pgnum),
+-            font=["courier", "B", 14])
++        self.fpdf.drawText("%s %s" % (txt, pad), font=["courier", "B", 14])
+         self.fpdf.drawText()
+         if htyp == "A":
+             self.fpdf.setFont(style="B", size=8)
+@@ -14261,7 +14255,6 @@ class RepPrt(object):
+             for sub in self.stots:
+                 setattr(self, "%s_%s_stot" % (tot, idx), 0)
+                 idx += 1
+-        self.pgnum = 0
+         self.pglin = 999
+         self.expdatas = []
+         if self.repprt[2] != "export":
+@@ -16184,6 +16177,8 @@ class FileImport(object):
+                 return
+             count = 0
+             for a in acc:
++                if a[2].count("_xflag"):
++                    continue
+                 if self.impskp and a[2] in self.impskp:
+                     continue
+                 self.impcol.append([a[5], count, a[3], a[4]])
+@@ -18688,14 +18683,20 @@ class ViewPDF(object):
+                 annot = page.firstAnnot
+                 while annot:
+                     annot = page.deleteAnnot(annot)
+-                found = page.searchFor(self.search)
++                try:
++                    found = page.search_for(self.search)
++                except:
++                    found = page.searchFor(self.search)
+                 for inst in found:
+                     self.okfound = True
+                     numb = (page.number + 1)
+                     if numb not in self.pags:
+                         self.pags.append(numb)
+                         self.prec[numb] = inst
+-                    page.addHighlightAnnot(inst)
++                    try:
++                        page.add_highlight_annot(inst)
++                    except:
++                        page.addHighlightAnnot(inst)
+             if self.pags:
+                 self.pgno = self.pags[0]
+             frm.destroy()
+@@ -18863,7 +18864,10 @@ class ViewPDF(object):
+             "Please Wait...")
+         def getData(page):
+             txts = []
+-            blocks = page.getText("dict")["blocks"]
++            try:
++                blocks = page.get_text("dict")["blocks"]
++            except:
++                blocks = page.getText("dict")["blocks"]
+             for b in blocks:
+                 if b["type"] == 0:
+                     for l in b["lines"]:
+@@ -18928,8 +18932,12 @@ class ViewPDF(object):
+                 while annot:
+                     annot = page.deleteAnnot(annot)
+             page = self.doc[int(sc.selection[2]) - 1]
+-            found = page.searchFor(sc.selection[1])
+-            page.addHighlightAnnot(found[0])
++            try:
++                found = page.search_for(sc.selection[1])
++                page.add_highlight_annot(found[0])
++            except:
++                found = page.searchFor(sc.selection[1])
++                page.addHighlightAnnot(found[0])
+             self.pgno = int(sc.selection[2])
+             self.prec[self.pgno] = found[0]
+             self.cont = True
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index b94b83d..636bff8 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -197,8 +197,8 @@ class bc2010(object):
+                 self.ratem.work,"N",self.doRate,None,None,("efld",)),
+             (("T",0,6,0),"IUD",5.2," Visitor R","",
+                 self.ratev.work,"N",self.doRate,None,None,("efld",)))
+-        tnd = ((self.doMEnd,"y"), (self.doMEnd,"n"))
+-        txt = (self.doMExit, self.doMExit)
++        tnd = ((self.doMEnd,"y"),)
++        txt = (self.doMExit,)
+         # Set font as big as possible up to 24pts
+         self.dfs = self.opts["mf"].rcdic["dfs"]
+         if self.dfs < 24:
+@@ -224,7 +224,6 @@ class bc2010(object):
+     def doTime(self, frt, pag, r, c, p, i, w):
+         self.time = w
+         self.alter = False
+-        self.repeat = False
+         if self.time == "A":
+             self.timed = "Afternoon"
+         else:
+@@ -241,9 +240,9 @@ class bc2010(object):
+                 self.opts["conum"]), ("bdm_date", ">", self.date)],
+                 limit=1)
+             if dtyp == "N" or not dnxt:
+-                butt.extend([("Alter", "A"), ("Clear", "X"), ("Another", "Z")])
+-                text = "Would you like to View, Reprint, Alter or Clear the"\
+-                    " Draw or Do Another Draw with the Same Tabs?"
++                butt.extend([("Alter", "A"), ("Delete", "X")])
++                text = "Would you like to View, Reprint, Alter or "\
++                    "Delete the Draw?"
+             else:
+                 text = "Would you like to View or Reprint It?"
+             ok = askChoice(self.opts["mf"].body, "Already Exists",
+@@ -268,36 +267,13 @@ class bc2010(object):
+             elif ok == "A":
+                 self.alter = True
+                 self.doLoadMst(self.drm)
+-            elif ok == "Z":
+-                self.time = self.time.lower()
+-                chk = self.sql.getRec("bwldrm", where=[("bdm_cono", "=",
+-                    self.opts["conum"]), ("bdm_date", "=", self.date),
+-                    ("bdm_time", "=", self.time)])
+-                if chk:
+-                    return "Another Already Exists"
+-                self.repeat = True
+-                self.dofix = False
+-                self.drm[self.sql.bwldrm_col.index("bdm_time")] = self.time
+-                self.sql.insRec("bwldrm", data=self.drm)
+-                self.doLoadMst(self.drm)
+-                recs = self.sql.getRec(tables=["bwldrt", "bwltab"],
+-                    cols=["bdt_tab", "bdt_pos", "bdt_rate", "btb_surname",
+-                    "btb_names", "btb_gender"], where=[("bdt_cono", "=",
+-                    self.opts["conum"]), ("bdt_date", "=", self.date),
+-                    ("bdt_time", "=", self.time.upper()),
+-                    ("btb_cono=bdt_cono",), ("btb_tab=bdt_tab",)])
+-                self.alltabs = {}
+-                for rec in recs:
+-                    self.alltabs[rec[0]] = [rec[3], rec[4], rec[5], rec[1],
+-                        rec[2], "Y"]
+-                return "nc"
+             elif ok == "X":
+                 self.sql.delRec("bwldrm", where=[("bdm_cono", "=",
+                     self.opts["conum"]), ("bdm_date", "=", self.date),
+-                    ("bdm_time", "in", (self.time, self.time.lower()))])
++                    ("bdm_time", "=", self.time)])
+                 self.sql.delRec("bwldrt", where=[("bdt_cono", "=",
+                     self.opts["conum"]), ("bdt_date", "=", self.date),
+-                    ("bdt_time", "in", (self.time, self.time.lower()))])
++                    ("bdt_time", "=", self.time)])
+                 self.opts["mf"].dbm.commitDbase()
+                 return "ff1"
+ 
+@@ -446,12 +422,6 @@ class bc2010(object):
+         elif self.reprint:
+             self.doPrint(self.mf)
+             self.mf.focusField("T", 0, 1)
+-        elif self.repeat:
+-            self.mf.closeProcess()
+-            self.doDraw()
+-            if self.drawn:
+-                self.doPrint(self.mf)
+-            self.doExit()
+         else:
+             self.mf.closeProcess()
+             self.doTabs()
+@@ -551,7 +521,7 @@ class bc2010(object):
+             for b in range(4, 7):
+                 wid = getattr(self.df, "B%i" % b)
+                 self.df.setWidget(wid, "normal")
+-        elif not self.repeat:
++        else:
+             self.alltabs = {}
+         self.doShowQuantity()
+         self.df.focusField("T", 1, 1)
+@@ -1245,10 +1215,6 @@ Random: The teams will be Randomly Drawn.""")]
+             self.dtype = "R"
+             self.dhist = "Y"
+         if not self.teams:
+-            if self.repeat:
+-                tsiz = self.tsize
+-            else:
+-                tsiz = self.dsize
+             if self.dbase == "C":
+                 fld.append((("T",0,x,0),("IRB",r2s),0,"Apply Percentages","",
+                     "Y","N",self.doPer,None,None,None,None,
+@@ -1266,7 +1232,7 @@ Try Not to Pair the Same Skips
+ Try to Avoid Broken Rink Repeats
+ Try to Allocate Different Rinks""" % self.weeks),
+                 (("T",0,x + 1,0),("IRB",r3s),0,"Team Size","",
+-                    str(tsiz),"N",self.doSize,None,None,None),
++                    str(self.dsize),"N",self.doSize,None,None,None),
+                 (("T",0,x + 2,0),("IRB",r2s),0,"Prefer Pairs","",
+                     self.rep42,"N",self.doRep42,None,None,None,None,
+                     "In the case of Trips select whether to Replace "\
+@@ -1280,17 +1246,15 @@ Try to Allocate Different Rinks""" % self.weeks),
+                 "will Default to 6. To enter 7 rinks enter A7, B7 etc."))
+         self.gpos = x
+         but = (("Cancel",None,self.doCancel,1,None,None,None,1),)
+-        if not self.repeat:
+-            state = self.df.disableButtonsTags()
+-            self.df.setWidget(self.df.mstFrame, state="hide")
++        state = self.df.disableButtonsTags()
++        self.df.setWidget(self.df.mstFrame, state="hide")
+         self.dw = TartanDialog(self.opts["mf"], title=tit, tops=True,
+             eflds=fld, tend=((self.doDrawEnd,"y"),), txit=(self.doCancel,),
+             butt=but)
+         self.dw.mstFrame.wait_window()
+-        if not self.repeat:
+-            self.df.setWidget(self.df.mstFrame, state="show")
+-            self.df.enableButtonsTags(state)
+-            self.df.focusField("T", 1, 1)
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.enableButtonsTags(state)
++        self.df.focusField("T", 1, 1)
+ 
+     def doGenTeams(self):
+         self.dogen = True
+@@ -2338,8 +2302,7 @@ Combination Number %10s"""
+                     self.sql.insRec("bwldrt", data=rec)
+                 side = "R"
+         self.opts["mf"].dbm.commitDbase()
+-        if not self.repeat:
+-            self.df.setWidget(self.df.topEntry[1][0], state="disabled")
++        self.df.setWidget(self.df.topEntry[1][0], state="disabled")
+ 
+     def doPrint(self, dg=None):
+         if not dg:
+@@ -2347,14 +2310,11 @@ Combination Number %10s"""
+         if not self.drawn:
+             showError(self.opts["mf"].body, "Error",
+                 "The Draw Has Not Yet Been Done")
+-            if not self.repeat:
+-                dg.focusField("T", 1, 1)
++            dg.focusField("T", 1, 1)
+             return
+         dg.setWidget(dg.mstFrame, state="hide")
+         if not self.ratem.work and not self.ratev.work:
+             rated = "N"
+-        elif self.repeat:
+-            rated = "N"
+         else:
+             rated = "Y"
+         r1s = (("No", "N"), ("Yes", "Y"), ("Only", "O"))
+@@ -2379,7 +2339,7 @@ Combination Number %10s"""
+             txit=(self.doPExit,), view=("N","V"))
+         self.pd.mstFrame.wait_window()
+         dg.setWidget(dg.mstFrame, state="show")
+-        if not self.reprint and not self.repeat:
++        if not self.reprint:
+             dg.focusField("T", 1, 1)
+ 
+     def doCards(self, frt, pag, r, c, p, i, w):
+@@ -2641,16 +2601,13 @@ Combination Number %10s"""
+ 
+     def doExit(self):
+         if self.alltabs and not self.drawn:
+-            if self.repeat:
+-                ok = "E"
+-            else:
+-                but = [
+-                    ("Exit Without Saving", "E"),
+-                    ("Save and Exit", "S"),
+-                    ("Neither", "N")]
+-                txt = "This Draw Has Not Been Done"
+-                ok = askChoice(self.opts["mf"].body, "Exit",
+-                    mess=txt, butt=but, default="None")
++            but = [
++                ("Exit Without Saving", "E"),
++                ("Save and Exit", "S"),
++                ("Neither", "N")]
++            txt = "This Draw Has Not Been Done"
++            ok = askChoice(self.opts["mf"].body, "Exit",
++                mess=txt, butt=but, default="None")
+             if ok == "N":
+                 self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+                 return
+@@ -2664,8 +2621,7 @@ Combination Number %10s"""
+                         "", "", "", 0, 0, 0, 0, 0, 0, 0, 0, "", ""]
+                     self.sql.insRec("bwldrt", data=data)
+                 self.opts["mf"].dbm.commitDbase()
+-        if not self.repeat:
+-            self.df.closeProcess()
++        self.df.closeProcess()
+         self.doSetFont(self.dfs)
+         self.opts["mf"].closeLoop()
+ 
+diff --git a/bwl/bc2050.py b/bwl/bc2050.py
+index 077e7cb..9dc7293 100755
+--- a/bwl/bc2050.py
++++ b/bwl/bc2050.py
+@@ -277,7 +277,7 @@ class bc2050(object):
+             else:
+                 self.grpsel = False
+                 self.grpgrn = "N"
+-                return "sk10"
++                return "sk11"
+         elif self.cfmat in ("D", "K"):
+             if not self.ctyp:
+                 ok = "yes"
+@@ -287,7 +287,7 @@ class bc2050(object):
+                     "\n\nDo You Want to Reprint?")
+             if ok == "yes":
+                 self.reprint = True
+-                return "sk10"
++                return "sk11"
+             else:
+                 return "rf"
+         for game in gme:
+@@ -396,7 +396,7 @@ class bc2050(object):
+             ld = copyList(leads)
+             for _ in range(qty):
+                 skp = sk.pop()
+-                team.append([skp[0]])
++                team.append(skp[0])
+                 if self.tsize == 2:
+                     self.teams[skp[0]] = [skp, ld.pop()]
+                 else:
+diff --git a/doc/BWL.rst b/doc/BWL.rst
+index b8752f9..e4fff55 100644
+--- a/doc/BWL.rst
++++ b/doc/BWL.rst
+@@ -62,13 +62,12 @@ Tabs-In Draw (BC)
+ Use this routine to make a new draw or to amend a current draw.
+ 
+ + **Date** - The date of the draw.
+-+ **Time** - The time of the draw. If a draw with the same date and time already exists the following options will be avaliable:
+-    + **None** - Do nothing, retun to the time entry.
+++ **Time** - The time of the draw. If a draw with the same date and time already exists the following options will be available:
++    + **None** - Do nothing, return to the time entry.
+     + **View** - View the existing draw.
+     + **Reprint** - Reprint the existing draw.
+     + **Alter** - Alter the existing draw.
+     + **Clear** - Clear, delete, the existing draw.
+-    + **Another** - Do another draw with the same tab entries.
+ + **Mixed Gender** - Whether or not the draw is mixed.
+ + **Mixed Rating** - Whether or not to use the alternative ratings.
+ + **Draw By** - If available select whether to base the draw on Positions, Ratings or a Combination of both.
+diff --git a/doc/GEN.rst b/doc/GEN.rst
+index 05eaa98..95f01c1 100644
+--- a/doc/GEN.rst
++++ b/doc/GEN.rst
+@@ -7,8 +7,10 @@ Masterfile Records (GL)
+ This routine is used to create or amend general ledger account records. For a new company you can **automatically populate** the company with standard accounts and reports by selecting the `Populate` button. You can also import a chart of accounts by selecting the `Import` button in which case the file must be in `csv` or `xls` format and must contain all the fields as listed below.
+ 
+ + **Acc-Num** - The account number of the record. This is a numeric field and can have up to 7 digits. There is nothing special about this number it is only used to access the record.
+-+ **Account Type** - Select the applicable account type for the record.
+ + **Description** - The account's description up to 30 characters in length.
+++ **T/B Account Type** - Select the applicable Trial Balance account type for the record.
+++ **F/S Account Type** - Select the applicable Financial Statement account type for the record. These types are used when generating a financial report.
+++ **F/S Account Group** - Enter the Financial Statement group for the record, if applicable, e.g. Grouping Motor Vehicles Capital Account with the Accumulated Depreciation Account. The group description would default to the first account in the group but this can be changed using the Report Generator.
+ + **Allow Postings** - Whether or not direct postings are allowed to this account. Normally direct postings are not allowed to control accounts of subsidiary ledgers, e.g. Debtor's as they should be generated in the subsidiary ledger.
+ + **Tax Default** - The V.A.T. code normally associated with postings to this account.
+ 
+@@ -199,6 +201,15 @@ Use this routine to create, amend and delete `Financial Statements (GL)`_ report
+     + **Storage Number (Base)** - The first stored amount
+     + **Storage Number (Calc)** - The second stored amount
+ 
++The following *Buttons* are avaliable
++
+++ **Generate** - Use this button to generate a report format if the general leger masterfile records have been flagged with the F/S Account Types.
+++ **Copy** - Use this button to copy an existing report format.
+++ **Import** - Use this button to import a report format file previously exported.
+++ **Export** - Use this button to export an existing report format.
+++ **Preview** - Use this button to preview a report as per the format.
+++ **Print** - Use this button to print the report format.
++
+ Detail Records (GL)
+ +++++++++++++++++++
+ Use this routine to create, amend and delete detail records used by `Financial Statements (GL)`_ report formats.
+@@ -272,15 +283,17 @@ Use this routine to capture monthly budgets for a specific financial period. You
+ If the auto populate button is used the following screen will appear:
+ 
+ + **Use Previous Year's** - Actual or Budgets.
+++ **Annualize** - If Actual was chosen you can elect to annualize the budget.
+ + **Standard Rate (+-)** - The rate to be used to increase or decrease the previous year's amounts.
+ + **Rounding to Nearest** - Select the rounding requirement.
+++ **Any Exception Rates** - Select whether there are accounts with a rate different to the *Standard Rate*.
+ 
+-You are now able to enter exclusions to the above parameters as follows:
++If there are no Exceptions the budgets will be popupated else enter the Exceptions.
+ 
+ + **Acc-Num** - The generals ledger account number.
+ + **Rate** - The rate to apply to this account.
+ 
+-On exiting the the screen with the <Esc> key the budgets will be populated.
++On exiting the Exceptions Screen with the <Esc> key the budgets will be populated.
+ 
+ Sales, Payments, Petty Cash, Purchases and Receipts (GL)
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+@@ -425,10 +438,12 @@ As with most data capture routines you will first have to enter the `Batch Detai
+     + **Intr-%** - The new interest rate to apply to the loan.
+     + **Ded-Amt** - The new amount to be deducted from earnings to repay the loan.
+ 
+-*Import File* button is used to import manual journal entries from a csv or excel file.
+-*View Entries* button will show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
+-*End Batch* button will end the batch if debits equal the credits.
+-*Abort Batch* button will abort the current entries for the batch.
++The following *Buttons* are available.
++
+++ **Import File** - Use this button to import manual journal entries from a csv or excel file.
+++ **View Entries** - Use this button to show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
+++ **End Batch** - Use this button to end the batch if debits equal the credits.
+++ **Abort Batch** - Use this button to abort the current entries for the batch.
+ 
+ Please note that you will not be able to exit this routine until the debits equal the credits. Credits are entered as minus amounts.
+ 
+@@ -446,7 +461,7 @@ Bank Statements (GL)
+ ++++++++++++++++++++
+ Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also be used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed using this routine.
+ 
+-As with most data capture routines you will first have to enter the `Batch Details`_.  The following buttons will then be available:
++As with most data capture routines you will first have to enter the `Batch Details`_.  The following *Buttons* will then be available:
+ 
+ + **Exit** - This exits out of the capture routine as per using the <Escape> key.
+ + **Import Bank File** - This routine is used to import a bank statement file as described under `Control Accounts (GL)`_.
+diff --git a/doc/RCA.rst b/doc/RCA.rst
+index db24010..92f4441 100644
+--- a/doc/RCA.rst
++++ b/doc/RCA.rst
+@@ -158,7 +158,7 @@ This routine is used to produce an owner's master listing.
+ 
+ Owners Account Listing (RC)
+ +++++++++++++++++++++++++++
+-Use this routine to produce statements for owners's accounts.
++Use this routine to produce statements for owner's accounts.
+ 
+ + **Whole File** - `Yes` for all accounts, `Range` for a range of accounts or `Singles` to select individual accounts.
+ + **From Account** - If range was selected enter the starting account number.
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 0b94e97..a0d2809 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.5
++:Version:   6.6
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/gen/gl1010.py b/gen/gl1010.py
+index 916f243..19ca5a5 100644
+--- a/gen/gl1010.py
++++ b/gen/gl1010.py
+@@ -27,7 +27,7 @@ COPYING
+ import time
+ from TartanClasses import FileImport, GetCtl, ProgressBar
+ from TartanClasses import SplashScreen, Sql, TartanDialog
+-from tartanFunctions import showError
++from tartanFunctions import callModule, showError
+ from tartanWork import datdic
+ 
+ class gl1010(object):
+@@ -85,7 +85,10 @@ class gl1010(object):
+             "tables": ("genmst",),
+             "cols": (
+                 ("glm_acno", "", 0, "Acc-Num"),
+-                ("glm_desc", "", 0, "Description", "Y")),
++                ("glm_desc", "", 0, "Description", "Y"),
++                ("glm_type", "", 0, "T"),
++                ("glm_fstp", "", 0, "F"),
++                ("glm_fsgp", "", 0, "GP")),
+             "where": [("glm_cono", "=", self.opts["conum"])]}
+         vat = {
+             "stype": "R",
+@@ -95,17 +98,27 @@ class gl1010(object):
+                 ("vtm_desc", "", 0, "Description", "Y")),
+             "where": [("vtm_cono", "=", self.opts["conum"])]}
+         r1s = (("Profit & Loss","P"), ("Balance Sheet","B"))
+-        r2s = (("Yes","Y"), ("No","N"))
++        r2s = (("Skip", "N"), ("Income","D"), ("Expense", "E"),
++            ("Taxation", "F"), ("Capital", "A"), ("Fixed", "B"),
++            ("Current", "C"))
++        r3s = (("Yes","Y"), ("No","N"))
+         fld = [
+             (("T",0,0,0),"IUI",7,"Acc-Num","Account Number",
+                 "","Y",self.doAccNum,glm,None,("notzero",)),
+-            (("T",0,1,0),("IRB",r1s),0,"Account Type","",
+-                "P","N",self.doTypCod,None,self.doDelete,None),
+-            (("T",0,2,0),"INA",30,"Description","Account Description",
+-                "","N",None,None,None,("notblank",)),
+-            (("T",0,3,0),("IRB",r2s),0,"Allow Postings","",
++            (("T",0,1,0),"INA",30,"Description","Account Description",
++                "","N",None,None,self.doDelete,("notblank",)),
++            (("T",0,2,0),("IRB",r1s),0,"T/B Account Type","",
++                "P","N",self.doTypCod,None,None,None),
++            (("T",0,3,0),("IRB",r2s),0,"F/S Account Type","",
++                "N","N",self.doTypCod,None,None,None,None,
++                "Capital = Capital Employed\n"\
++                "Fixed = Fixed Asset or Fixed Liability\n"\
++                "Current = Current Asset or Current Liability"),
++            (("T",0,4,0),"IUI",2,"F/S Account Group","",
++                 0,"N",None,None,None,("efld",)),
++            (("T",0,5,0),("IRB",r3s),0,"Allow Postings","",
+                 "Y","N",None,None,None,None),
+-            [("T",0,4,0),"IUA",1,"Tax Default","",
++            [("T",0,6,0),"IUA",1,"Tax Default","",
+                 "","N",self.doVatCod,vat,None,("notblank",)]]
+         but = [
+             ("Import",None,self.doImport,0,("T",0,1),("T",0,2),
+@@ -151,19 +164,28 @@ class gl1010(object):
+                 self.df.loadEntry(frt, pag, p+x, data=self.old[x+1])
+ 
+     def doTypCod(self, frt, pag, r, c, p, i, w):
++        if p == 2:
++            self.tcod = w
++            return
++        if w != "N" and self.tcod == "P" and w not in ("D", "E", "F"):
++            return "Invalid Code for P&L"
++        if w != "N" and self.tcod == "B" and w not in ("A", "B", "C"):
++            return "Invalid Code for B/S"
+         if self.new:
+-            if w == "P":
+-                self.df.topf[pag][4][5] = self.taxdf
++            if self.tcod == "P":
++                self.df.topf[pag][6][5] = self.taxdf
+             else:
+-                self.df.topf[pag][4][5] = "N"
+-        elif not self.df.topf[pag][4][5]:
+-            self.df.topf[pag][4][5] = "N"
++                self.df.topf[pag][6][5] = "N"
++        elif not self.df.topf[pag][6][5]:
++            self.df.topf[pag][6][5] = "N"
++        if w == "N":
++            self.df.loadEntry(frt, pag, p+1, data=0)
++            return "sk1"
+ 
+     def doVatCod(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec("ctlvmf", cols=["vtm_desc"],
+-            where=[
+-                ("vtm_cono", "=", self.opts["conum"]), ("vtm_code", "=", w)],
+-            limit=1)
++            where=[("vtm_cono", "=", self.opts["conum"]),
++            ("vtm_code", "=", w)], limit=1)
+         if not acc:
+             return "Invalid VAT Code"
+ 
+@@ -193,7 +215,8 @@ class gl1010(object):
+             self.df.butt[1][5] = None
+         data = [self.opts["conum"], self.acno,
+             self.df.t_work[0][0][1], self.df.t_work[0][0][2],
+-            self.df.t_work[0][0][3], self.df.t_work[0][0][4]]
++            self.df.t_work[0][0][3], self.df.t_work[0][0][4],
++            self.df.t_work[0][0][5], self.df.t_work[0][0][6]]
+         if self.new:
+             self.sql.insRec("genmst", data=data)
+         elif data != self.old[:len(data)]:
+@@ -240,19 +263,22 @@ class gl1010(object):
+                 err = self.doCheckDep(line[0])
+                 if err:
+                     break
+-            if line[1] not in ("B", "P"):
+-                err = "Invalid %s %s, Only B or P" % (fi.impcol[1][0], line[1])
+-                break
+-            if not line[2]:
++            if not line[1]:
+                 err = "Blank Description"
+                 break
+-            if line[3] not in ("Y", "N"):
+-                err = "Invalid %s %s" % (fi.impcol[3][0], line[3])
++            if line[2] not in ("B", "P"):
++                err = "Invalid %s %s, Only B or P" % (fi.impcol[1][0], line[2])
+                 break
+-            chk = self.sql.getRec("ctlvmf", where=[("vtm_cono",
+-                "=", self.opts["conum"]), ("vtm_code", "=", line[4])], limit=1)
++            if line[3] not in ("N", "A", "B", "C", "D", "E", "F"):
++                err = "Invalid %s %s" % (fi.impcol[1][0], line[3])
++                break
++            if line[5] not in ("Y", "N"):
++                err = "Invalid %s %s" % (fi.impcol[5][0], line[5])
++                break
++            chk = self.sql.getRec("ctlvmf", where=[("vtm_cono", "=",
++                self.opts["conum"]), ("vtm_code", "=", line[6])], limit=1)
+             if not chk:
+-                err = "%s %s Does Not Exist" % (fi.impcol[4][0], line[4])
++                err = "%s %s Does Not Exist" % (fi.impcol[6][0], line[6])
+                 break
+             line.insert(0, self.opts["conum"])
+             self.sql.insRec("genmst", data=line)
+@@ -332,10 +358,8 @@ Please Correct your Import File and then Try Again.""" % err)
+                 dat.append(self.taxdf)
+             self.sql.insRec("genmst", data=dat)
+         # genrpt
+-        genrpt = datdic["genrpt"]
+-        for dat in genrpt:
+-            dat.insert(0, self.opts["conum"])
+-            self.sql.insRec("genrpt", data=dat)
++        callModule(self.opts["mf"], None, "gl1030",
++            coy=(self.opts["conum"], self.opts["conam"]), args=True)
+         # ctlctl
+         crsctl = 0
+         drsctl = 0
+diff --git a/gen/gl1030.py b/gen/gl1030.py
+index 7186470..ebbd00f 100644
+--- a/gen/gl1030.py
++++ b/gen/gl1030.py
+@@ -30,14 +30,21 @@ COPYING
+ import os
+ from TartanClasses import FileDialog, GetCtl, RepPrt, SelectChoice, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import askQuestion, showError
++from tartanFunctions import askChoice, askQuestion, showError
+ 
+ class gl1030(object):
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+-            self.mainProcess()
+-            self.opts["mf"].startLoop()
++            if "args" in self.opts:
++                self.selcoy = self.opts["conum"]
++                self.newrep = True
++                self.repno = 1
++                self.gtyp = "X"
++                self.doGenRpt()
++            else:
++                self.mainProcess()
++                self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+         gc = GetCtl(self.opts["mf"])
+@@ -309,12 +316,12 @@ class gl1030(object):
+             self.doT2Exit, self.doT2Exit, self.doT2Exit, self.doT2Exit,
+             self.doT2Exit, self.doT2Exit)
+         but = (
+-            ("Import",None,self.doImpRpt,0,("T",0,1),("T",0,2)),
+-            ("Export",None,self.doExpRpt,0,("T",0,3),(("T",0,2),("T",0,4))),
+-            ("Copy",None,self.doCpyRpt,0,("T",0,3),(("T",0,2),("T",0,4))),
+-            ("Re-Sequence",None,self.doReSeq,0,("T",1,1),("T",1,2),None,1),
+-            ("Preview",None,self.doPreview,0,("T",1,1),("T",1,2),None,1),
+-            ("Print",None,self.doPrint,0,("T",1,1),("T",1,2),None,1))
++            ("Generate",None,self.doGenRpt,0,("T",0,3),None),
++            ("Copy",None,self.doCpyRpt,0,("T",0,3),None),
++            ("Import",None,self.doImpRpt,0,("T",0,1),None),
++            ("Export",None,self.doExpRpt,0,("T",1,1),None,None,1),
++            ("Preview",None,self.doPreview,0,("T",1,1),None,None,1),
++            ("Print",None,self.doPrint,0,("T",1,1),None,None,1))
+         self.df = TartanDialog(self.opts["mf"], eflds=fld, tend=tnd,
+             txit=txt, tags=tag, butt=but)
+ 
+@@ -343,16 +350,244 @@ class gl1030(object):
+         rep = self.doReadRep(self.selcoy, self.repno, 0)
+         if not rep:
+             self.newrep = True
+-            self.df.setWidget(self.df.B1, "normal")
+         else:
+             self.newrep = False
+-            self.df.setWidget(self.df.B1, "disabled")
+             self.df.loadEntry(frt, pag, p+1, data=rep[3])
+             self.df.loadEntry(frt, pag, p+2, data=rep[4])
+ 
+     def doRepTyp(self, frt, pag, r, c, p, i, w):
+         self.df.setWidget(self.df.B1, "disabled")
+ 
++    def doGenRpt(self):
++        if not "args" in self.opts:
++            chk = self.sql.getRec("genmst", where=[("glm_cono", "=",
++                self.selcoy), ("glm_fstp", "<>", "N")])
++            if not chk:
++                showError(self.opts["mf"].body, "Error", "There Are No "\
++                    "F/S Account Types in the Masterfile Records.")
++                self.df.focusField("T", 0, 3)
++                return
++            if not self.newrep:
++                ok = askQuestion(self.opts["mf"].body, "Re-Generate?",
++                    "This Report Already Exists, "\
++                    "Do You Want to Re-Generate It?",
++                    default="no")
++                if ok == "no":
++                    self.df.focusField("T", 0, 3)
++                    return
++            # Select Type
++            but = (("Balance Sheet", "B"), ("Profit and Loss", "P"),
++                ("Both", "X"), ("None", "N"))
++            self.gtyp = askChoice(self.opts["mf"].body, head="Report Type",
++                mess="Which Report Must be Generated?", butt=but,
++                default="Both")
++            if self.gtyp == "N":
++                return
++            # Check Type
++            whr = [("glm_cono", "=", self.selcoy)]
++            if self.gtyp == "X":
++                whr.append(("glm_type", "in", ("B", "P")))
++            else:
++                whr.append(("glm_type", "=", self.gtyp))
++            whr.append(("glm_fstp", "=", "N"))
++            chk = self.sql.getRec("genmst", where=whr)
++            if chk:
++                showError(self.opts["mf"].body, "Error", "There Are Some "\
++                    "Masterfile Accounts Without a F/S Account Type.")
++                self.df.focusField("T", 0, 3)
++                return
++        # Delete old records
++        if not self.newrep:
++            self.sql.delRec("genrpt", where=[("glr_cono", "=", self.selcoy),
++                ("glr_repno", "=", self.repno)])
++        # Table genrpt
++        self.hhh = {"glr_desc": "X", "glr_high": "Y", "glr_ffeed": "X",
++            "glr_ignore": "X"}
++        self.lll = {"glr_high": "N", "glr_ignore": "X", "glr_from": "X",
++            "glr_to": "X", "glr_obal": "Y", "glr_accum": "N", "glr_print": "X",
++            "glr_norm": "X", "glr_acbal": "A", "glr_store": "N", "glr_snum1": 0,
++            "glr_acstr": ""}
++        self.ggg = {"glr_desc": "X", "glr_high": "N", "glr_ignore": "Y",
++            "glr_from": "X", "glr_to": "X", "glr_obal": "Y", "glr_accum": "N",
++            "glr_print": "X", "glr_norm": "X", "glr_acbal": "A",
++            "glr_store": "N", "glr_snum1": 0, "glr_acstr": "I",
++            "glr_group": "X", "glr_label": ""}
++        self.ttt = {"glr_desc": "X", "glr_high": "Y", "glr_print": "Y",
++            "glr_norm": "X", "glr_store": "N", "glr_snum1": 0, "glr_acstr": "",
++            "glr_total": "X", "glr_clear": "X", "glr_label": ""}
++        self.uuu = {"glr_high": "Y", "glr_uline": "X"}
++        # Codes
++        self.codes = {
++            "A": ("A", "Capital Employed", "N", "Y", "N"),
++            "B": ("B", "Fixed Assets", "N", "+", "P"),
++            "C": ("C", "Current Assets", "N", "+", "P"),
++            "D": ("B", "Fixed Liabilities", "N", "-", "N"),
++            "E": ("C", "Current Liabilities", "N", "-", "N"),
++            "F": ["D", "Income", "Y", "Y", "N"],
++            "G": ("E", "Expenses", "N", "Y", "P"),
++            "H": ("F", "", "N", "Y", "P")}
++        # Variables
++        self.cnt = 0
++        self.grp = []
++        # Headings
++        if self.gtyp in ("B", "X"):
++            self.getList(["B", "Balance Sheet"])
++            # Capital
++            self.ret = self.sql.getRec("ctlctl", cols=["ctl_conacc"],
++                where=[("ctl_cono", "=", self.selcoy), ("ctl_code",
++                "=", "ret_inc")], limit=1)
++            self.genCode(self.codes["A"])
++            self.getList(["U", "S"])
++            self.getList(["T", "", "N", 4, "Y"])
++            self.getList(["U", "D"])
++            self.getList(["H", "Employment of Capital", "N", "N"])
++            if self.genCode(self.codes["B"]):
++                self.getList(["U", "S"])
++                self.getList(["T", "", "P", 1, "Y"])
++                self.getList(["U", "D"])
++            if self.genCode(self.codes["C"]):
++                self.getList(["U", "S"])
++                self.getList(["T", "", "P", 1, "Y"])
++            if self.genCode(self.codes["D"]):
++                self.getList(["U", "S"])
++                self.getList(["T", "", "N", 1, "Y"])
++            if self.genCode(self.codes["E"]):
++                self.getList(["U", "S"])
++                self.getList(["T", "", "N", 1, "Y"])
++            self.getList(["U", "S"])
++            self.getList(["T", "", "P", 4, "Y"])
++            self.getList(["U", "D"])
++        if self.gtyp in ("P", "X"):
++            if self.gtyp == "P":
++                self.ret = None
++                self.codes["F"][2] = "N"
++                self.getList(["P", "Profit and Loss"])
++            # P&L
++            if self.genCode(self.codes["F"]):
++                self.getList(["U", "S"])
++                self.getList(["T", "Total Net Income", "N", 1, "Y"])
++                self.getList(["U", "B"])
++            if self.genCode(self.codes["G"]):
++                self.getList(["U", "S"])
++                self.getList(["T", "Total Expenses", "P", 1, "Y"])
++            self.getList(["U", "S"])
++            self.getList(["T", "Net Income Before Taxation", "N", 2, "Y"])
++            if self.genCode(self.codes["H"]):
++                self.getList(["U", "S"])
++                self.getList(["T", "Net Income After Taxation", "N", 3, "Y"])
++            if self.ret:
++                for gp in range(1, 999):
++                    if gp not in self.grp:
++                        self.grp.append(gp)
++                        break
++                self.getList(["G", "Retained Income B/F", self.ret[0],
++                    0, "Y", "N", gp])
++                self.getList(["U", "S"])
++                self.getList(["T", "Retained Income C/F", "N", 4, "Y"])
++            self.getList(["U", "D"])
++        self.newrep = False
++        rep = self.doReadRep(self.selcoy, self.repno, 0)
++        if "args" not in self.opts:
++            self.df.setWidget(self.df.B1, "disabled")
++            self.df.loadEntry("T", 0, 2, data=rep[3])
++            self.df.loadEntry("T", 0, 3, data=rep[4])
++            self.df.setWidget(self.df.B1, "disabled")
++            self.df.selPage("Sequence")
++            self.df.focusField("T", 1, 1)
++
++    def genCode(self, args):
++        code, head, page, sign, norm = args
++        recs = self.sql.getRec("genmst", cols=["glm_acno", "glm_fsgp",
++            "glm_desc"], where=[("glm_cono", "=", self.selcoy),
++            ("glm_fstp", "=", code)], order="glm_acno")
++        acc = []
++        lr = lg = 0
++        flg = True
++        for num, rec in enumerate(recs):
++            if flg and head:
++                if self.gtyp in ("B", "X") and page == "Y":
++                    ign = "Y"
++                else:
++                    ign = "N"
++                self.getList(["H", head, page, ign])
++                flg = False
++            if code == "A" and self.ret and rec[0] == self.ret[0]:
++                if acc:
++                    self.getList(["L", "Y", acc[0], acc[1], sign, norm])
++                    acc = []
++                one = self.sql.getRec("genmst", cols=["min(glm_acno)"],
++                    where=[("glm_cono", "=", self.selcoy), ("glm_type",
++                    "=", "P")], limit=1)
++                two = self.sql.getRec("genmst", cols=["max(glm_acno)"],
++                    where=[("glm_cono", "=", self.selcoy), ("glm_type",
++                    "=", "P")], limit=1)
++                for gp in range(1, 999):
++                    if gp not in self.grp:
++                        self.grp.append(gp)
++                        break
++                self.getList(["G", "Retained Earnings", one[0], two[0],
++                    sign, norm, gp])
++                self.getList(["G", "Retained Earnings", self.ret[0], 0,
++                    sign, norm, gp])
++            elif rec[1]:
++                if acc:
++                    self.getList(["L", "N", acc[0], acc[1], sign, norm])
++                    acc = []
++                if rec[1] not in self.grp:
++                    lr = lg = rec[1]
++                if rec[1] != lr:
++                    for lg in range(1, 999):
++                        if lg not in self.grp:
++                            lr = rec[1]
++                            break
++                chk = self.sql.getRec("genrpt", cols=["glr_desc"],
++                    where=[("glr_cono", "=", self.selcoy), ("glr_repno",
++                    "=", self.repno), ("glr_group", "=", lg)], limit=1)
++                if chk:
++                     desc = chk[0]
++                else:
++                    desc = rec[2]
++                self.getList(["G", desc, rec[0], 0, sign, norm, lg])
++                if lg not in self.grp:
++                    self.grp.append(lg)
++            elif not acc:
++                acc = [rec[0], 0]
++            else:
++                acc[1] = rec[0]
++        if acc:
++            self.getList(["L", "N", acc[0], acc[1], sign, norm])
++        if recs:
++            return True
++
++    def getList(self, args):
++        if args[0] in ("B", "P"):
++            ff = {"glr_desc": "X"}
++        elif args[0] == "H":
++            ff = self.hhh
++        elif args[0] == "L":
++            ff = self.lll
++        elif args[0] == "G":
++            ff = self.ggg
++        elif args[0] == "T":
++            ff = self.ttt
++        else:
++            ff = self.uuu
++        data = [self.selcoy, self.repno, self.cnt, args.pop(0)]
++        for nm, cl in enumerate(self.sql.genrpt_col[4:]):
++            if cl in ff:
++                dat = ff[cl]
++                if dat == "X":
++                    data.append(args.pop(0))
++                else:
++                    data.append(ff[cl])
++            elif self.sql.genrpt_dic[cl][2][1] in ("A", "a"):
++                data.append("")
++            else:
++                data.append(0)
++        data.append("")
++        self.sql.insRec("genrpt", data=data)
++        self.cnt += 1
++
+     def doImpRpt(self):
+         self.df.setWidget(self.df.B0, state="disabled")
+         self.df.setWidget(self.df.mstFrame, state="hide")
+@@ -384,9 +619,9 @@ class gl1030(object):
+                     self.sql.insRec("genrpt", data=dat[1:])
+                 else:
+                     self.sql.insRec(dat[0], data=dat[1:])
+-        if not err:
++        if nam and not err:
+             self.opts["mf"].dbm.commitDbase(ask=True)
+-        else:
++        elif err:
+             showError(self.opts["mf"].body, "Invalid Import", err)
+         self.df.setWidget(self.df.mstFrame, "show")
+         self.df.focusField("T", 0, 1)
+@@ -488,16 +723,6 @@ class gl1030(object):
+         self.df.selPage("Sequence")
+         self.df.focusField("T", 1, 1)
+ 
+-    def doReSeq(self):
+-        whr = [("glr_cono", "=", self.selcoy), ("glr_repno", "=", self.repno)]
+-        recs = self.sql.getRec("genrpt", where=whr, order="glr_seq")
+-        self.sql.delRec("genrpt", where=whr)
+-        for seq, rec in enumerate(recs):
+-            rec = list(rec)
+-            rec[2] = float(seq)
+-            self.sql.insRec("genrpt", data=rec)
+-        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+-
+     def doPreview(self):
+         self.cols = [
+             ("a", "Seq-Num", 7.2, "UD"),
+@@ -571,7 +796,7 @@ class gl1030(object):
+                 continue
+             lsq = num
+         self.pprt = False
+-        self.sc = SelectChoice(self.opts["mf"].window, self.titl, self.cols,
++        sc = SelectChoice(self.opts["mf"].window, self.titl, self.cols,
+             self.data, sort=False, butt=(("Print", self.doPrePrt),))
+         if self.pprt:
+             cols = []
+@@ -585,9 +810,9 @@ class gl1030(object):
+             self.df.setWidget(self.df.mstFrame, "show")
+             self.df.enableButtonsTags(state=state)
+             self.df.focusField("T", 1, 1)
+-        elif self.sc.selection:
+-            self.df.doKeyPressed("T", 1,  0, self.sc.selection[1])
+-            self.df.doKeyPressed("T", 1,  1, self.sc.selection[2])
++        elif sc.selection:
++            self.df.doKeyPressed("T", 1,  0, sc.selection[1])
++            self.df.doKeyPressed("T", 1,  1, sc.selection[2])
+         else:
+             self.df.focusField("T", 1, 1)
+ 
+@@ -721,9 +946,7 @@ class gl1030(object):
+     def doT2End(self):
+         ff = self.doLoadTypes()
+         data = [self.selcoy, self.repno, self.seqno, self.stype]
+-        for nm, cl in enumerate(self.genrpt_cl):
+-            if nm < 4:
+-                continue
++        for cl in self.genrpt_cl[4:]:
+             if cl in ff:
+                 data.append(self.df.t_work[self.pags.index(self.stype)]
+                         [0][ff.index(cl)])
+@@ -731,14 +954,13 @@ class gl1030(object):
+                 data.append("")
+             else:
+                 data.append(0)
+-        data.append("")
+         if self.newseq in ("c", "n"):
+             self.doDelSeq()
+         self.sql.insRec("genrpt", data=data)
+         if self.stype == "G" and self.grp:
+             grp = self.sql.getRec("genrpt", where=[("glr_cono", "=",
+-                self.selcoy), ("glr_repno", "=", self.repno), ("glr_group",
+-                "=", self.gno)], order="glr_seq")
++                self.selcoy), ("glr_repno", "=", self.repno),
++                ("glr_group", "=", self.gno)], order="glr_seq")
+             for g in grp:
+                 if g[2] == self.seqno:
+                     continue
+@@ -798,7 +1020,7 @@ Please Delete, or Correct This Line!"""
+                     self.df.loadEntry("T", 1, 0, data=s)
+                     self.df.focusField("T", 1, 1)
+                     return
+-                if lg and lg != g:
++                if lg and g != lg:
+                     if g in gp:
+                         showError(self.opts["mf"].body, "Group Error",
+                             errmess % (g, s))
+@@ -814,6 +1036,19 @@ Please Delete, or Correct This Line!"""
+                     continue
+             else:
+                 lg = 0
++        # Re-Sequence
++        ok = askQuestion(self.opts["mf"].body, "Re-Sequence?",
++            "Would You Like to Re-Sequence All the Lines?", default="yes")
++        if ok == "yes":
++            whr = [
++                ("glr_cono", "=", self.selcoy),
++                ("glr_repno", "=", self.repno)]
++            recs = self.sql.getRec("genrpt", where=whr, order="glr_seq")
++            self.sql.delRec("genrpt", where=whr)
++            for seq, rec in enumerate(recs):
++                rec = list(rec)
++                rec[2] = float(seq)
++                self.sql.insRec("genrpt", data=rec)
+         self.opts["mf"].dbm.commitDbase(ask=True, mess="Save All Changes?")
+         self.df.focusField("T", 0, 1)
+ 
+diff --git a/gen/gl1060.py b/gen/gl1060.py
+index 3084884..2992e39 100644
+--- a/gen/gl1060.py
++++ b/gen/gl1060.py
+@@ -24,8 +24,8 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
+-from TartanClasses import GetCtl, Sql, TartanDialog
+-from tartanFunctions import chkGenAcc
++from TartanClasses import FileImport, GetCtl, ProgressBar, Sql, TartanDialog
++from tartanFunctions import chkGenAcc, getNextCode, showError
+ 
+ class gl1060(object):
+     def __init__(self, **opts):
+@@ -189,6 +189,7 @@ Current - Do not age the transaction.
+             (("T",0,11,0),"INA",1,"Vat Code","",
+                 "","N",self.doVatCod,vat,None,None)]
+         but = [
++            ("Import",None,self.doImport,0,("T",0,3),(("T",0,1),("T",0,4))),
+             ("Cancel",None,self.doCancel,0,("T",0,4),("T",0,1)),
+             ("Quit",None,self.doExit,1,None,None)]
+         if "args" in self.opts:
+@@ -226,6 +227,64 @@ Current - Do not age the transaction.
+         self.acno = w
+         self.df.loadEntry(frt, pag, p+1, data=acc[0])
+ 
++    def doImport(self):
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        fi = FileImport(self.opts["mf"], imptab="genrcc", impskp=["grc_cono",
++            "grc_acno", "grc_memo", "grc_acrs", "grc_achn", "grc_adrs",
++            "grc_aage"])
++        sp = ProgressBar(self.opts["mf"].body,
++            typ="Importing Records", mxs=len(fi.impdat))
++        err = None
++        for num, line in enumerate(fi.impdat):
++            sp.displayProgress(num)
++            if not line[0]:
++                err = "Blank Description"
++                break
++            chk = self.sql.getRec("genrcc", where=[("grc_cono",
++                "=", self.opts["conum"]), ("grc_acno", "=", self.acno),
++                ("grc_desc1", "=", line[0])], limit=1)
++            if chk:
++                err = "%s %s Already Exists" % (fi.impcol[0][0], line[0])
++                break
++            if line[3] not in ("P", "R"):
++                err = "Invalid %s %s, Only P or R" % (fi.impcol[3][0], line[3])
++                break
++            chk = self.sql.getRec("ctlmst", where=[("ctm_cono", "=", line[4])],
++                limit=1)
++            if not chk:
++                err = "Invalid %s %s" % (fi.impcol[4][0], line[4])
++                break
++            chk = self.sql.getRec("genmst", where=[("glm_cono", "=", line[4]),
++                ("glm_acno", "=", line[5])],
++                limit=1)
++            if not chk:
++                err = "Invalid %s %s" % (fi.impcol[5][0], line[5])
++                break
++            chk = self.sql.getRec("ctlvmf", where=[("vtm_cono", "=",
++                self.opts["conum"]), ("vtm_code", "=", line[6])], limit=1)
++            if not chk:
++                err = "%s %s Does Not Exist" % (fi.impcol[6][0], line[6])
++                break
++            memo = getNextCode(self.sql, "genrcc", "grc_memo",
++                where=[("grc_cono", "=", self.opts["conum"])], last=9999999)
++            line.insert(0, memo)
++            line.insert(0, self.acno)
++            line.insert(0, self.opts["conum"])
++            vat = line.pop()
++            line.extend(["", 0, "", "", vat])
++            self.sql.insRec("genrcc", data=line)
++        sp.closeProgress()
++        if err:
++            err = "Line %s: %s" % ((num + 1), err)
++            showError(self.opts["mf"].body, "Import Error", """%s
++
++Please Correct your Import File and then Try Again.""" % err)
++            self.opts["mf"].dbm.rollbackDbase()
++        else:
++            self.opts["mf"].dbm.commitDbase()
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++
+     def doSameField(self, frt, pag, r, c, p, i, w):
+         self.df.loadEntry("T", 0, self.df.pos, data=w[0])
+         self.df.focusField("T", 0, self.df.col)
+diff --git a/gen/gl2020.py b/gen/gl2020.py
+index fbb5bfa..1959620 100644
+--- a/gen/gl2020.py
++++ b/gen/gl2020.py
+@@ -25,7 +25,7 @@ COPYING
+ """
+ 
+ from TartanClasses import ASD, FileImport, ProgressBar, Sql, TartanDialog
+-from tartanFunctions import askQuestion, showError
++from tartanFunctions import askQuestion, projectDate, showError
+ 
+ class gl2020(object):
+     def __init__(self, **opts):
+@@ -191,21 +191,30 @@ Remember that all existing budgets for this financial period will be replaced!""
+             ("R50","2"),
+             ("R100","3"),
+             ("R1000","4"))
++        r3s = (("Yes","Y"), ("No","N"))
+         fld = (
+             (("T",0,0,0),("IRB",r1s),0,"Use Previous Year's","",
+                 "A","N",self.doUse,None,None,None),
+-            (("T",0,1,0),"ISD",7.2,"Standard Rate (+-)","",
++            (("T",0,1,0),("IRB",r3s),0,"Annualize","",
++                "N","N",self.doAnnual,None,None,None),
++            (("T",0,2,0),"ISD",7.2,"Standard Rate (+-)","",
+                 "","N",self.doRate,None,None,("efld",),None,
+-                """The percentage by which the actual must be increased or decreased."""),
+-            (("T",0,2,0),("IRB",r2s),0,"Rounding to Nearest","",
++                "The percentage by which the actual must be increased or "\
++                "decreased."),
++            (("T",0,3,0),("IRB",r2s),0,"Rounding to Nearest","",
+                 "0","N",self.doRound,None,None,None),
++            (("T",0,4,0),("IRB",r3s),0,"Any Exception Rates","",
++                "N","N",self.doExcept,None,None,None,None,
++                "Do you want to Enter any Accounts with an Individual "\
++                "Rate Change?"),
+             (("C",0,0,0),"IUI",7,"Acc-Num","Account Number",
+                 "","N",self.doAccNo,glm,None,None),
+             (("C",0,0,1),"ONA",30,"Description"),
+             (("C",0,0,2),"ISD",7.2,"Rate","Rate (+-)",
+                 "","N",self.doRates,None,None,("efld",),None,
+-                """The percentage by which the actual must be increased or decreased."""))
+-        tnd = ((self.doEnd,"n"),)
++                "The percentage by which the actual must be increased "\
++                "or decreased."))
++        tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+         cnd = ((self.doEnd,"n"),)
+         cxt = (self.doExit,)
+@@ -217,13 +226,28 @@ Remember that all existing budgets for this financial period will be replaced!""
+             eflds=fld, tend=tnd, txit=txt, cend=cnd, cxit=cxt, butt=but)
+         self.rr.mstFrame.wait_window()
+         self.df.enableButtonsTags(state=state)
+-        if not self.xits:
+-            self.doPopulation()
+         self.df.setWidget(self.df.mstFrame, state="show")
+         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+ 
+     def doUse(self, frt, pag, r, c, p, i, w):
+         self.use = w
++        if self.use == "B":
++            self.annual = "N"
++            self.rr.loadEntry(frt, pag, p+1, data=self.annual)
++            return "sk1"
++
++    def doAnnual(self, frt, pag, r, c, p, i, w):
++        self.annual = w
++        cdte = 0
++        if self.annual == "Y":
++            self.mths = []
++            while cdte != self.e_old:
++                if not cdte:
++                    cdte = self.s_old
++                else:
++                    cdte = projectDate((cdte * 100) + 1, 1, typ="months")
++                    cdte = int(cdte / 100)
++                self.mths.append(cdte)
+ 
+     def doRate(self, frt, pag, r, c, p, i, w):
+         if not w:
+@@ -235,10 +259,7 @@ Remember that all existing budgets for this financial period will be replaced!""
+         self.rnd = [0, 10, 50, 100, 1000][int(w)]
+ 
+     def doExcept(self, frt, pag, r, c, p, i, w):
+-        if w == "N":
+-            self.rr.closeProcess()
+-        else:
+-            self.rr.focusField("C", 0, 1)
++        self.excs = w
+ 
+     def doAccNo(self, frt, pag, r, c, p, i, w):
+         desc = self.sql.getRec("genmst", cols=["glm_desc"],
+@@ -255,16 +276,19 @@ Remember that all existing budgets for this financial period will be replaced!""
+ 
+     def doEnd(self):
+         if self.rr.frt == "T":
+-            self.xits = False
+-            self.rr.focusField("C", 0, 1)
++            if self.excs == "Y":
++                self.rr.focusField("C", 0, 1)
++            else:
++                self.doPopulation()
+         else:
+             self.rr.advanceLine(0)
+ 
+     def doExit(self):
+         if self.rr.frt == "T":
+-            self.xits = True
+             self.rate = 0
+-        self.rr.closeProcess()
++            self.rr.closeProcess()
++        else:
++            self.doPopulation()
+ 
+     def doShow(self):
+         data = []
+@@ -287,11 +311,11 @@ Remember that all existing budgets for this financial period will be replaced!""
+         self.rr.focusField("C", 0, self.rr.col)
+ 
+     def doQuit(self):
+-        self.xits = True
+         self.rate = 0
+         self.rr.closeProcess()
+ 
+     def doPopulation(self):
++        self.rr.closeProcess()
+         recs = self.sql.getRec("genmst", cols=["glm_acno"],
+             where=[("glm_cono", "=", self.opts["conum"]),
+             ("glm_type", "=", "P")], order="glm_acno")
+@@ -305,7 +329,20 @@ Remember that all existing budgets for this financial period will be replaced!""
+             self.sql.delRec("genbud", where=[("glb_cono", "=",
+                 self.opts["conum"]), ("glb_acno", "=", acc[0]),
+                 ("glb_curdt", "between", self.s_cur, self.e_cur)])
+-            if self.use == "A":
++            if self.use == "A" and self.annual == "Y":
++                tots = self.sql.getRec("gentrn",
++                    cols=["round(sum(glt_tramt), 2)"],
++                    where=[("glt_cono", "=", self.opts["conum"]),
++                    ("glt_acno", "=", acc[0]), ("glt_curdt",
++                    "between", self.s_old, self.e_old)], limit=1)
++                bals = []
++                if tots[0] is None:
++                    mtha = 0
++                else:
++                    mtha = round(tots[0] / len(self.mths), 2)
++                for mth in  self.mths:
++                    bals.append((mth, mtha))
++            elif self.use == "A":
+                 bals = self.sql.getRec("gentrn", cols=["glt_curdt",
+                     "round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
+                     self.opts["conum"]), ("glt_acno", "=", acc[0]),
+diff --git a/gen/gl3040.py b/gen/gl3040.py
+index 72e9494..f7069a1 100644
+--- a/gen/gl3040.py
++++ b/gen/gl3040.py
+@@ -132,7 +132,7 @@ class gl3040(object):
+             "glm_desc", "glm_type"], where=[("glm_cono", "=",
+             self.opts["conum"])], order="glm_type desc, glm_acno")
+         if not recs:
+-            showError(self.opts["mf"].body, "Selection Error", "No Accounts")
++            showError(self.opts["mf"].body, "Error", "No Accounts Selected")
+         elif self.repprt[2] == "export":
+             self.exportReport(recs)
+         else:
+diff --git a/gen/gl3050.py b/gen/gl3050.py
+index dc76942..56aa017 100644
+--- a/gen/gl3050.py
++++ b/gen/gl3050.py
+@@ -1796,32 +1796,12 @@ Custom  - Customised Report"""),
+                     if self.val == "D":
+                         head = "%s (%s of %s)" % (head,
+                             self.fin.ddet[0].strip(), self.fin.ddet[1].strip())
+-                    if self.typ == "S":
+-                        self.fpdf.drawText("%-97s %4s %5s" % (head,
+-                            "Page", self.pgnum))
+-                    elif self.typ == "H":
+-                        self.fpdf.drawText("%-135s %4s %5s" % (head,
+-                            "Page", self.pgnum))
+-                    elif self.typ == "L":
+-                        hfs = 138
+-                        if self.var == "B":
+-                            hfs += 20
+-                        if self.num == "Y":
+-                            hfs += 9
+-                        hft = "%s-%s%s %s %s" % ("%", hfs, "s", "%4s", "%5s")
+-                        self.fpdf.drawText(hft % (head, "Page", self.pgnum))
+-                    elif self.typ == "M":
+-                        head = "%s (%s)" % (head, self.des1)
+-                        if self.num == "Y":
+-                            self.fpdf.drawText("%-194s %4s %5s" % (head,
+-                                "Page", self.pgnum))
+-                        else:
+-                            self.fpdf.drawText("%-186s %4s %5s" % (head,
+-                                "Page", self.pgnum))
+-                    elif self.typ == "C":
++                    if self.typ == "C":
+                         self.fpdf.setFont(style="B", size=14)
+                         self.fpdf.drawText(head)
+                         self.fpdf.setFont(style="B")
++                    else:
++                        self.fpdf.drawText(head)
+                     self.pglin += 1
+                     self.emlhead = head
+                     if self.opt == "Y":
+diff --git a/gen/gl3060.py b/gen/gl3060.py
+index 987b7da..c417ce3 100644
+--- a/gen/gl3060.py
++++ b/gen/gl3060.py
+@@ -53,14 +53,15 @@ class gl3060(object):
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+-        col = ["glm_acno", "glm_type", "glm_desc", "glm_ind", "glm_vat"]
++        col = ["glm_acno", "glm_desc", "glm_type", "glm_fstp", "glm_fsgp",
++            "glm_ind", "glm_vat"]
+         whr = [("glm_cono", "=", self.opts["conum"])]
+         if self.sort == "N":
+             odr = "glm_acno"
+         elif self.sort == "A":
+-            odr = "glm_type, glm_acno"
++            odr = "glm_type, glm_fstp, glm_acno"
+         elif self.sort == "B":
+-            odr = "glm_type, glm_desc"
++            odr = "glm_type, glm_fstp, glm_desc"
+         else:
+             odr = "glm_desc"
+         RepPrt(self.opts["mf"], conum=self.opts["conum"],
+diff --git a/gen/gl6010.py b/gen/gl6010.py
+index 46a3672..ec049ae 100644
+--- a/gen/gl6010.py
++++ b/gen/gl6010.py
+@@ -144,7 +144,8 @@ class gl6010(object):
+         if not acc:
+             return "Invalid Account Number, Does Not exist"
+         self.oldacc = w
+-        self.df.loadEntry(frt, pag, p+1, data=acc[3])
++        desc = acc[self.sql.genmst_col.index("glm_desc")]
++        self.df.loadEntry(frt, pag, p+1, data=desc)
+ 
+     def doNewAcc(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec("genmst", where=[("glm_cono", "=",
+diff --git a/gen/gl6070.py b/gen/gl6070.py
+index 9e35165..cc7f6cc 100644
+--- a/gen/gl6070.py
++++ b/gen/gl6070.py
+@@ -121,8 +121,9 @@ class gl6070(object):
+         if not acc:
+             return "Invalid Account Number, Does Not exist"
+         self.ctlacc = w
++        desc = acc[self.sql.genmst_col.index("glm_desc")]
+         self.gtype = acc[self.sql.genmst_col.index("glm_type")]
+-        self.df.loadEntry(frt, pag, p+1, data=acc[3])
++        self.df.loadEntry(frt, pag, p+1, data=desc)
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+diff --git a/gen/gl6080.py b/gen/gl6080.py
+index dc59252..1014d62 100644
+--- a/gen/gl6080.py
++++ b/gen/gl6080.py
+@@ -1,6 +1,7 @@
+ """
+ SYNOPSIS
+-    Standard Dialog.
++    General Ledger - List Missing Account Numbers i.e.
++    Accounts that have Transactions but no Masterfile.
+ 
+     This file is part of Tartan Systems (TARTAN).
+ 
+diff --git a/ms0000.py b/ms0000.py
+index 204028e..761e0c7 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 5)
++    VERSION = (6, 6)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -1770,6 +1770,11 @@ System --> Change Password""")
+             return "error"
+ 
+     def conoCheck(self, coy, prg=None, ctl=False):
++        gcl = GetCtl(self.mf)
++        chk = gcl.getCtl("ctlmst", coy, error=False)
++        if not chk:
++            self.conum = None
++            return "Invalid Company"
+         if self.acoy and not self.acoy.count(coy):
+             self.conum = None
+             return "Unavailable Company Number"
+@@ -1778,11 +1783,6 @@ System --> Change Password""")
+             return "Unavailable Company Number"
+         if prg in self.fsys and not self.fcoy[coy]:
+             return "xt"
+-        gcl = GetCtl(self.mf)
+-        chk = gcl.getCtl("ctlmst", coy, error=False)
+-        if not chk:
+-            self.conum = None
+-            return "Invalid Company"
+         if ctl:
+             return
+         self.conum = coy
+diff --git a/tab/tb1020.py b/tab/tb1020.py
+index c502dd3..82e551c 100644
+--- a/tab/tb1020.py
++++ b/tab/tb1020.py
+@@ -404,6 +404,10 @@ class tb1020(object):
+                         new = "N"
+                     elif self.table == "drsmst" and nam == "drm_stat":
+                         new = "N"
++                    elif self.table == "genmst" and nam == "glm_fstp":
++                        new = "N"
++                    elif self.table == "genmst" and nam == "glm_fsgp":
++                        new = 0
+                     elif self.table == "slsiv2" and nam == "si2_line":
+                         new = old[olddic["si2_seq"][0]]
+                     elif self.table == "slsiv3" and nam == "si3_line":
+diff --git a/tartanWork.py b/tartanWork.py
+index 3c4d8f4..f1840e9 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -627,7 +627,17 @@ payeRates = {
+             [337800, 70532, 31],
+             [216200, 38916, 26],
+             [0, 0, 18]],
+-        "allow": [15714, 8613, 2871, 0]}}
++        "allow": [15714, 8613, 2871, 0]},
++    "2023": {
++        "rates": [
++            [1731600, 614192, 45],
++            [817600, 239452, 41],
++            [641400, 170734, 39],
++            [488700, 115762, 36],
++            [353100, 73726, 31],
++            [226000, 40680, 26],
++            [0, 0, 18]],
++        "allow": [16425, 9000, 2997, 0]}}
+ siteRates = {
+     "2004": 60000,
+     "2005": 60000,
+@@ -647,7 +657,8 @@ siteRates = {
+     "2019": 0,
+     "2020": 0,
+     "2021": 0,
+-    "2022": 0}
++    "2022": 0,
++    "2023": 0}
+ uifRates = {
+     "2004": [1.00, 1.00],
+     "2005": [1.00, 1.00],
+@@ -667,7 +678,8 @@ uifRates = {
+     "2019": [1.00, 1.00],
+     "2020": [1.00, 1.00],
+     "2021": [1.00, 1.00],
+-    "2022": [1.00, 1.00]}
++    "2022": [1.00, 1.00],
++    "2023": [1.00, 1.00]}
+ sdlRates = {
+     "2004": [0.00, 1.00],
+     "2005": [0.00, 1.00],
+@@ -687,7 +699,8 @@ sdlRates = {
+     "2019": [0.00, 1.00],
+     "2020": [0.00, 1.00],
+     "2021": [0.00, 1.00],
+-    "2022": [0.00, 1.00]}
++    "2022": [0.00, 1.00],
++    "2023": [0.00, 1.00]}
+ # Labels
+ labels = {
+     "L7159": {
+@@ -1305,7 +1318,7 @@ tabdic = {
+             [0, "bdt_cono", "UI", 3.0, "Club Number", "Clb"],
+             [1, "bdt_tab", "UI", 6.0, "Tab Number", "TAB"],
+             [2, "bdt_date", "D1", 10.0, "Tabs In date", "Tab-Date"],
+-            [3, "bdt_time", "NA", 1.0, "Tabs In Time", "T"],
++            [3, "bdt_time", "UA", 1.0, "Tabs In Time", "T"],
+             [4, "bdt_rink", "UA", 2.0, "Rink", "RK"],
+             [5, "bdt_side", "UA", 1.0, "Side", "S"],
+             [6, "bdt_name", "UA", 20.0, "Name", "Name"],
+@@ -2229,11 +2242,13 @@ tabdic = {
+         "fld": [
+             [0, "glm_cono", "UI", 3.0, "Company Number", "Coy"],
+             [1, "glm_acno", "UI", 7.0, "Account Number", "Acc-Num"],
+-            [2, "glm_type", "UA", 1.0, "Account Type", "T"],
+-            [3, "glm_desc", "NA", 30.0, "Description", "Description"],
+-            [4, "glm_ind", "UA", 1.0, "Direct Postings", "P"],
+-            [5, "glm_vat", "UA", 1.0, "VAT Code", "V"],
+-            [6, "glm_xflag", "UA", 1.0, "Export Flag", "X"]],
++            [2, "glm_desc", "NA", 30.0, "Description", "Description"],
++            [3, "glm_type", "UA", 1.0, "T/B Account Type", "T"],
++            [4, "glm_fstp", "UA", 1.0, "F/S Account Type", "F"],
++            [5, "glm_fsgp", "UI", 3.0, "F/S Account Group", "GRP"],
++            [6, "glm_ind", "UA", 1.0, "Direct Postings", "P"],
++            [7, "glm_vat", "UA", 1.0, "VAT Code", "V"],
++            [8, "glm_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+             ["General Ledger Masterfile", 1, "U", "glm_cono", "glm_acno"],
+             ["", 2, "N", "glm_acno"]]},
+@@ -4654,209 +4669,84 @@ datdic = {
+         ["waglmf", "wlm_empno", "wagltf", "wlt_empno"],
+         ["waglmf", "wlm_loan", "wagltf", "wlt_loan"]],
+     "genmst": [
+-        [1000, "P", "Sales: Account 1"],
+-        [1005, "P", "Sales: Account 2"],
+-        [1010, "P", "Sales: Account 3"],
+-        [1015, "P", "Income: Discount Received"],
+-        [1020, "P", "Income: Interest Received"],
+-        [1025, "P", "Income: Collection Fees"],
+-        [2000, "P", "Cost of Sales: Account 1"],
+-        [2005, "P", "Cost of Sales: Account 2"],
+-        [2010, "P", "Cost of Sales: Account 3"],
+-        [2900, "P", "Stock Reconciliation Account"],
+-        [3000, "P", "Accounting & Secretarial"],
+-        [3005, "P", "Advertising"],
+-        [3010, "P", "Assets Expensed"],
+-        [3015, "P", "Assets Sold"],
+-        [3020, "P", "Bad Debts & Loans Written Off"],
+-        [3025, "P", "Bank Charges"],
+-        [3030, "P", "Car Hire"],
+-        [3035, "P", "Computer Expenses"],
+-        [3040, "P", "Depreciation"],
+-        [3045, "P", "Discount Allowed"],
+-        [3050, "P", "Distribution Paid"],
+-        [3055, "P", "Donations and Gifts"],
+-        [3060, "P", "Electricity & Water"],
+-        [3065, "P", "Entertainment"],
+-        [3070, "P", "Insurances"],
+-        [3075, "P", "Interest Paid"],
+-        [3080, "P", "Lease of Motor Vehicles"],
+-        [3085, "P", "Licences"],
+-        [3090, "P", "Maintenance: Buildings"],
+-        [3095, "P", "Maintenance: Garden"],
+-        [3100, "P", "Maintenance: Office"],
+-        [3105, "P", "Medical Aid Contributions"],
+-        [3110, "P", "Members/Directors Salaries"],
+-        [3115, "P", "Motor Vehicle Expenses"],
+-        [3120, "P", "PAYE & Skills Levy"],
+-        [3125, "P", "Periodicals & Magazines"],
+-        [3130, "P", "Printing & Stationery"],
+-        [3135, "P", "Provident Fund Contributions"],
+-        [3140, "P", "Regional Service Levies"],
+-        [3145, "P", "Rent Paid"],
+-        [3150, "P", "Royalties"],
+-        [3155, "P", "Salaries & Wages"],
+-        [3160, "P", "Security"],
+-        [3165, "P", "Staff Refreshments"],
+-        [3170, "P", "Staff Welfare & Recruitment"],
+-        [3175, "P", "Subscriptions"],
+-        [3180, "P", "Telephone & Data Lines"],
+-        [3185, "P", "Transport & Delivery Expenses"],
+-        [3190, "P", "Travelling & Accommodation"],
+-        [3195, "P", "Unemployment Insurance"],
+-        [3200, "P", "Workmens Compensation"],
+-        [3900, "P", "Taxation"],
+-        [4000, "B", "Share Capital"],
+-        [4100, "B", "Retained Earnings"],
+-        [4200, "B", "Loan: Member/Director 1"],
+-        [4205, "B", "Loan: Member/Director 2"],
+-        [4210, "B", "Loan: Member/Director 3"],
+-        [5000, "B", "Computer Equipment"],
+-        [5001, "B", "Computer Equipment: Acc Dep"],
+-        [5004, "B", "Furniture & Fittings"],
+-        [5005, "B", "Furniture & Fittings: Acc Dep"],
+-        [5008, "B", "Motor Vehicles"],
+-        [5009, "B", "Motor Vehicles: Acc Dep"],
+-        [6000, "B", "Stock on Hand"],
+-        [6005, "B", "Bank: Account 1"],
+-        [6010, "B", "Bank: Account 2"],
+-        [6015, "B", "Creditors Control Account"],
+-        [6020, "B", "Debtors Control Account"],
+-        [6025, "B", "Loan: Account 1"],
+-        [6030, "B", "Loan: Account 2"],
+-        [6035, "B", "Loan: Account 3"],
+-        [6040, "B", "Payments in Advance"],
+-        [6045, "B", "Petty Cash Control"],
+-        [6050, "B", "Provisions"],
+-        [6055, "B", "Receiver of Revenue (Taxes)"],
+-        [6060, "B", "Refundable Deposits"],
+-        [6065, "B", "Staff Loans"],
+-        [6900, "B", "VAT Control Account"]],
+-    "genrpt": [
+-        [1, 0, "B", "Balance Sheet", "", "", "", 0, 0, "", "", "",
+-            "", "", "", 0, 0, 0, "", 0, 0, "", 0, "", "", "", 0,
+-            ""],
+-        [1, 1, "H", "Capital Employed", "Y", "N", "N", 0, 0, "", "",
+-            "", "", "", "", 0, 0, 0, "", 0, 0, "", 0, "", "", "",
+-            0, ""],
+-        [1, 2, "L", "", "N", "", "N", 4000, 4099, "Y", "N", "Y",
+-            "P", "A", "N", 0, 0, 0, "I", 0, 0, "", 0, "", "", "",
+-            0, ""],
+-        [1, 3, "G", "Retained Earnings", "N", "", "Y", 1000, 3999, "Y",
+-            "N", "Y", "N", "A", "N", 0, 0, 0, "I", 1, 0, "", 0, "",
+-            "", "", 0, ""],
+-        [1, 4, "G", "Retained Earnings", "N", "", "Y", 4100, 0, "Y",
+-            "N", "Y", "N", "A", "N", 0, 0, 0, "I", 1, 0, "", 0, "",
+-            "", "", 0, ""],
+-        [1, 5, "L", "", "N", "", "Y", 4200, 4999, "Y", "N", "Y",
+-            "N", "A", "N", 0, 0, 0, "I", 0, 0, "", 0, "", "", "",
+-            0, ""],
+-        [1, 6, "U", "", "Y", "", "", 0, 0, "", "", "", "", "", "",
+-            0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 7, "T", "", "Y", "", "", 0, 0, "", "", "Y", "N", "",
+-            "N", 0, 0, 0, "", 0, 4, "Y", 0, "", "", "", 0, ""],
+-        [1, 8, "U", "", "Y", "", "", 0, 0, "", "", "", "", "", "",
+-            0, 0, 0, "", 0, 0, "", 0, "D", "", "", 0, ""],
+-        [1, 9, "H", "Employment of Capital", "Y", "N", "N", 0, 0, "",
+-            "", "", "", "", "", 0, 0, 0, "", 0, 0, "", 0, "", "",
+-            "", 0, ""],
+-        [1, 10, "H", "Fixed Assets", "Y", "N", "N", 0, 0, "", "", "",
+-            "", "", "", 0, 0, 0, "", 0, 0, "", 0, "", "", "", 0,
+-            ""],
+-        [1, 11, "G", "Computer Equipment", "N", "", "N", 5000, 5001,
+-            "Y", "N", "Y", "P", "A", "N", 0, 0, 0, "I", 2, 0, "",
+-            0, "", "", "", 0, ""],
+-        [1, 12, "G", "Furniture and Fittings", "N", "", "N", 5004, 5005,
+-            "Y", "N", "Y", "P", "A", "N", 0, 0, 0, "I", 3, 0, "",
+-            0, "", "", "", 0, ""],
+-        [1, 13, "G", "Motor Vehicles", "N", "", "N", 5008, 5009, "Y",
+-            "N", "Y", "P", "A", "N", 0, 0, 0, "I", 4, 0, "", 0, "",
+-            "", "", 0, ""],
+-        [1, 14, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 15, "T", "", "Y", "", "", 0, 0, "", "", "Y", "P", "",
+-            "N", 0, 0, 0, "I", 0, 1, "Y", 0, "", "", "", 0, ""],
+-        [1, 16, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "B", "", "", 0, ""],
+-        [1, 17, "T", "", "Y", "", "", 0, 0, "", "", "N", "P", "",
+-            "N", 0, 0, 0, "", 0, 2, "Y", 0, "", "", "", 0, ""],
+-        [1, 18, "H", "Current Assets", "Y", "N", "N", 0, 0, "", "",
+-            "", "", "", "", 0, 0, 0, "", 0, 0, "", 0, "", "", "",
+-            0, ""],
+-        [1, 19, "L", "", "N", "", "Y", 6000, 6999, "Y", "N", "+",
+-            "P", "A", "N", 0, 0, 0, "I", 0, 0, "", 0, "", "", "",
+-            0, ""],
+-        [1, 20, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 21, "T", "", "Y", "", "", 0, 0, "", "", "Y", "P", "",
+-            "N", 0, 0, 0, "", 0, 1, "Y", 0, "", "", "", 0, ""],
+-        [1, 22, "H", "Current Liabilities", "Y", "N", "N", 0, 0, "",
+-            "", "", "", "", "", 0, 0, 0, "", 0, 0, "", 0, "", "",
+-            "", 0, ""],
+-        [1, 23, "L", "", "N", "", "Y", 6000, 6999, "Y", "N", "-",
+-            "N", "A", "N", 0, 0, 0, "I", 0, 0, "", 0, "", "", "",
+-            0, ""],
+-        [1, 24, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 25, "T", "", "Y", "", "", 0, 0, "", "", "Y", "N", "",
+-            "N", 0, 0, 0, "", 0, 1, "Y", 0, "", "", "", 0, ""],
+-        [1, 26, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 27, "T", "Net Current Assets", "Y", "", "", 0, 0, "", "",
+-            "Y", "P", "", "N", 0, 0, 0, "", 0, 2, "Y", 0, "", "",
+-            "", 0, ""],
+-        [1, 28, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 29, "T", "", "Y", "", "", 0, 0, "", "", "Y", "P", "",
+-            "N", 0, 0, 0, "", 0, 4, "Y", 0, "", "", "", 0, ""],
+-        [1, 30, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "D", "", "", 0, ""],
+-        [1, 31, "H", "Income", "Y", "Y", "Y", 0, 0, "", "", "", "",
+-            "", "", 0, 0, 0, "", 0, 0, "", 0, "", "", "", 0, ""],
+-        [1, 32, "L", "", "N", "", "N", 1000, 2999, "Y", "N", "Y",
+-            "N", "A", "N", 0, 0, 0, "", 0, 0, "", 0, "", "", "",
+-            0, ""],
+-        [1, 33, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 34, "T", "Total Income", "Y", "", "", 0, 0, "", "", "Y",
+-            "N", "", "N", 0, 0, 0, "I", 0, 1, "Y", 0, "", "", "",
+-            0, ""],
+-        [1, 35, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "B", "", "", 0, ""],
+-        [1, 36, "H", "Expenses", "Y", "N", "N", 0, 0, "", "", "",
+-            "", "", "", 0, 0, 0, "", 0, 0, "", 0, "", "", "", 0,
+-            ""],
+-        [1, 37, "L", "", "N", "", "N", 3000, 3899, "Y", "N", "Y",
+-            "P", "A", "N", 0, 0, 0, "", 0, 0, "", 0, "", "", "",
+-            0, ""],
+-        [1, 38, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 39, "T", "Total Expenses", "Y", "", "", 0, 0, "", "",
+-            "Y", "P", "", "N", 0, 0, 0, "I", 0, 1, "Y", 0, "", "",
+-            "", 0, ""],
+-        [1, 40, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 41, "T", "Net Income Before Taxation", "Y", "", "", 0, 0,
+-            "", "", "Y", "N", "", "N", 0, 0, 0, "", 0, 2, "Y", 0,
+-            "", "", "", 0, ""],
+-        [1, 42, "L", "", "N", "", "N", 3900, 0, "Y", "N", "Y", "P",
+-            "A", "N", 0, 0, 0, "", 0, 0, "", 0, "", "", "", 0,
+-            ""],
+-        [1, 43, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "S", "", "", 0, ""],
+-        [1, 44, "T", "Net Income After Taxation", "Y", "", "", 0, 0,
+-            "", "", "Y", "N", "", "N", 0, 0, 0, "I", 0, 3, "Y", 0,
+-            "", "", "", 0, ""],
+-        [1, 45, "G", "Retained Income B/F", "N", "", "Y", 4100, 0, "Y",
+-            "N", "Y", "N", "A", "N", 0, 0, 0, "I", 5, 0, "", 0, "",
+-            "", "", 0, ""],
+-        [1, 46, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "D", "", "", 0, ""],
+-        [1, 47, "T", "Retained Income C/F", "Y", "", "", 0, 0, "", "",
+-            "Y", "N", "", "N", 0, 0, 0, "I", 0, 4, "Y", 0, "", "",
+-            "", 0, ""],
+-        [1, 48, "U", "", "Y", "", "", 0, 0, "", "", "", "", "",
+-            "", 0, 0, 0, "", 0, 0, "", 0, "D", "", "", 0, ""]],
++        [1000, "Sales: Account 1", "P", "D", 0],
++        [1005, "Sales: Account 2", "P", "D", 0],
++        [1010, "Sales: Account 3", "P", "D", 0],
++        [1015, "Income: Discount Received", "P", "D", 0],
++        [1020, "Income: Interest Received", "P", "D", 0],
++        [1025, "Income: Collection Fees", "P", "D", 0],
++        [2000, "Cost of Sales: Account 1", "P", "D", 0],
++        [2005, "Cost of Sales: Account 2", "P", "D", 0],
++        [2010, "Cost of Sales: Account 3", "P", "D", 0],
++        [2900, "Stock Reconciliation Account", "P", "D", 0],
++        [3000, "Accounting & Secretarial", "P", "E", 0],
++        [3005, "Advertising", "P", "E", 0],
++        [3010, "Assets Expensed", "P", "E", 0],
++        [3015, "Assets Sold", "P", "E", 0],
++        [3020, "Bad Debts & Loans Written Off", "P", "E", 0],
++        [3025, "Bank Charges", "P", "E", 0],
++        [3030, "Car Hire", "P", "E", 0],
++        [3035, "Computer Expenses", "P", "E", 0],
++        [3040, "Depreciation", "P", "E", 0],
++        [3045, "Discount Allowed", "P", "E", 0],
++        [3050, "Distribution Paid", "P", "E", 0],
++        [3055, "Donations and Gifts", "P", "E", 0],
++        [3060, "Electricity & Water", "P", "E", 0],
++        [3065, "Entertainment", "P", "E", 0],
++        [3070, "Insurances", "P", "E", 0],
++        [3075, "Interest Paid", "P", "E", 0],
++        [3080, "Lease of Motor Vehicles", "P", "E", 0],
++        [3085, "Licences", "P", "E", 0],
++        [3090, "Maintenance: Buildings", "P", "E", 0],
++        [3095, "Maintenance: Garden", "P", "E", 0],
++        [3100, "Maintenance: Office", "P", "E", 0],
++        [3105, "Medical Aid Contributions", "P", "E", 0],
++        [3110, "Members/Directors Salaries", "P", "E", 0],
++        [3115, "Motor Vehicle Expenses", "P", "E", 0],
++        [3120, "PAYE & Skills Levy", "P", "E", 0],
++        [3125, "Periodicals & Magazines", "P", "E", 0],
++        [3130, "Printing & Stationery", "P", "E", 0],
++        [3135, "Provident Fund Contributions", "P", "E", 0],
++        [3140, "Regional Service Levies", "P", "E", 0],
++        [3145, "Rent Paid", "P", "E", 0],
++        [3150, "Royalties", "P", "E", 0],
++        [3155, "Salaries & Wages", "P", "E", 0],
++        [3160, "Security", "P", "E", 0],
++        [3165, "Staff Refreshments", "P", "E", 0],
++        [3170, "Staff Welfare & Recruitment", "P", "E", 0],
++        [3175, "Subscriptions", "P", "E", 0],
++        [3180, "Telephone & Data Lines", "P", "E", 0],
++        [3185, "Transport & Delivery Expenses", "P", "E", 0],
++        [3190, "Travelling & Accommodation", "P", "E", 0],
++        [3195, "Unemployment Insurance", "P", "E", 0],
++        [3200, "Workmens Compensation", "P", "E", 0],
++        [3900, "Taxation", "P", "F", 0],
++        [4000, "Share Capital", "B", "A", 0],
++        [4100, "Retained Earnings", "B", "A", 0],
++        [4200, "Loan: Member/Director 1", "B", "A", 0],
++        [4205, "Loan: Member/Director 2", "B", "A", 0],
++        [4210, "Loan: Member/Director 3", "B", "A", 0],
++        [5000, "Computer Equipment", "B", "B", 1],
++        [5001, "Computer Equipment: Acc Dep", "B", "B", 1],
++        [5004, "Furniture & Fittings", "B", "B", 2],
++        [5005, "Furniture & Fittings: Acc Dep", "B", "B", 2],
++        [5008, "Motor Vehicles", "B", "B", 3],
++        [5009, "Motor Vehicles: Acc Dep", "B", "B", 3],
++        [6000, "Stock on Hand", "B", "C", 0],
++        [6005, "Bank: Account 1", "B", "C", 0],
++        [6010, "Bank: Account 2", "B", "C", 0],
++        [6015, "Creditors Control Account", "B", "C", 0],
++        [6020, "Debtors Control Account", "B", "C", 0],
++        [6025, "Loan: Account 1", "B", "C", 0],
++        [6030, "Loan: Account 2", "B", "C", 0],
++        [6035, "Loan: Account 3", "B", "C", 0],
++        [6040, "Payments in Advance", "B", "C", 0],
++        [6045, "Petty Cash Control", "B", "C", 0],
++        [6050, "Provisions", "B", "C", 0],
++        [6055, "Receiver of Revenue (Taxes)", "B", "C", 0],
++        [6060, "Refundable Deposits", "B", "C", 0],
++        [6065, "Staff Loans", "B", "C", 0],
++        [6900, "VAT Control Account", "B", "C", 0]],
+     "tplmst": [
+         ["booking_form", "Booking Form", "B", "BKM", "", "A4", "P"],
+         ["booking_invoice", "Booking Invoice", "I", "BKM", "", "A4", "L"],

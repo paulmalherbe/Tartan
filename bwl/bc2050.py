@@ -277,7 +277,7 @@ class bc2050(object):
             else:
                 self.grpsel = False
                 self.grpgrn = "N"
-                return "sk10"
+                return "sk11"
         elif self.cfmat in ("D", "K"):
             if not self.ctyp:
                 ok = "yes"
@@ -287,7 +287,7 @@ class bc2050(object):
                     "\n\nDo You Want to Reprint?")
             if ok == "yes":
                 self.reprint = True
-                return "sk10"
+                return "sk11"
             else:
                 return "rf"
         for game in gme:
@@ -396,7 +396,7 @@ class bc2050(object):
             ld = copyList(leads)
             for _ in range(qty):
                 skp = sk.pop()
-                team.append([skp[0]])
+                team.append(skp[0])
                 if self.tsize == 2:
                     self.teams[skp[0]] = [skp, ld.pop()]
                 else:

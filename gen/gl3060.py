@@ -53,14 +53,15 @@ class gl3060(object):
 
     def doEnd(self):
         self.df.closeProcess()
-        col = ["glm_acno", "glm_type", "glm_desc", "glm_ind", "glm_vat"]
+        col = ["glm_acno", "glm_desc", "glm_type", "glm_fstp", "glm_fsgp",
+            "glm_ind", "glm_vat"]
         whr = [("glm_cono", "=", self.opts["conum"])]
         if self.sort == "N":
             odr = "glm_acno"
         elif self.sort == "A":
-            odr = "glm_type, glm_acno"
+            odr = "glm_type, glm_fstp, glm_acno"
         elif self.sort == "B":
-            odr = "glm_type, glm_desc"
+            odr = "glm_type, glm_fstp, glm_desc"
         else:
             odr = "glm_desc"
         RepPrt(self.opts["mf"], conum=self.opts["conum"],

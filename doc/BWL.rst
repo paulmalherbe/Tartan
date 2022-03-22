@@ -62,13 +62,12 @@ Tabs-In Draw (BC)
 Use this routine to make a new draw or to amend a current draw.
 
 + **Date** - The date of the draw.
-+ **Time** - The time of the draw. If a draw with the same date and time already exists the following options will be avaliable:
-    + **None** - Do nothing, retun to the time entry.
++ **Time** - The time of the draw. If a draw with the same date and time already exists the following options will be available:
+    + **None** - Do nothing, return to the time entry.
     + **View** - View the existing draw.
     + **Reprint** - Reprint the existing draw.
     + **Alter** - Alter the existing draw.
     + **Clear** - Clear, delete, the existing draw.
-    + **Another** - Do another draw with the same tab entries.
 + **Mixed Gender** - Whether or not the draw is mixed.
 + **Mixed Rating** - Whether or not to use the alternative ratings.
 + **Draw By** - If available select whether to base the draw on Positions, Ratings or a Combination of both.

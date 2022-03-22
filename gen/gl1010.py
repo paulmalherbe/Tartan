@@ -27,7 +27,7 @@ COPYING
 import time
 from TartanClasses import FileImport, GetCtl, ProgressBar
 from TartanClasses import SplashScreen, Sql, TartanDialog
-from tartanFunctions import showError
+from tartanFunctions import callModule, showError
 from tartanWork import datdic
 
 class gl1010(object):
@@ -85,7 +85,10 @@ class gl1010(object):
             "tables": ("genmst",),
             "cols": (
                 ("glm_acno", "", 0, "Acc-Num"),
-                ("glm_desc", "", 0, "Description", "Y")),
+                ("glm_desc", "", 0, "Description", "Y"),
+                ("glm_type", "", 0, "T"),
+                ("glm_fstp", "", 0, "F"),
+                ("glm_fsgp", "", 0, "GP")),
             "where": [("glm_cono", "=", self.opts["conum"])]}
         vat = {
             "stype": "R",
@@ -95,17 +98,27 @@ class gl1010(object):
                 ("vtm_desc", "", 0, "Description", "Y")),
             "where": [("vtm_cono", "=", self.opts["conum"])]}
         r1s = (("Profit & Loss","P"), ("Balance Sheet","B"))
-        r2s = (("Yes","Y"), ("No","N"))
+        r2s = (("Skip", "N"), ("Income","D"), ("Expense", "E"),
+            ("Taxation", "F"), ("Capital", "A"), ("Fixed", "B"),
+            ("Current", "C"))
+        r3s = (("Yes","Y"), ("No","N"))
         fld = [
             (("T",0,0,0),"IUI",7,"Acc-Num","Account Number",
                 "","Y",self.doAccNum,glm,None,("notzero",)),
-            (("T",0,1,0),("IRB",r1s),0,"Account Type","",
-                "P","N",self.doTypCod,None,self.doDelete,None),
-            (("T",0,2,0),"INA",30,"Description","Account Description",
-                "","N",None,None,None,("notblank",)),
-            (("T",0,3,0),("IRB",r2s),0,"Allow Postings","",
+            (("T",0,1,0),"INA",30,"Description","Account Description",
+                "","N",None,None,self.doDelete,("notblank",)),
+            (("T",0,2,0),("IRB",r1s),0,"T/B Account Type","",
+                "P","N",self.doTypCod,None,None,None),
+            (("T",0,3,0),("IRB",r2s),0,"F/S Account Type","",
+                "N","N",self.doTypCod,None,None,None,None,
+                "Capital = Capital Employed\n"\
+                "Fixed = Fixed Asset or Fixed Liability\n"\
+                "Current = Current Asset or Current Liability"),
+            (("T",0,4,0),"IUI",2,"F/S Account Group","",
+                 0,"N",None,None,None,("efld",)),
+            (("T",0,5,0),("IRB",r3s),0,"Allow Postings","",
                 "Y","N",None,None,None,None),
-            [("T",0,4,0),"IUA",1,"Tax Default","",
+            [("T",0,6,0),"IUA",1,"Tax Default","",
                 "","N",self.doVatCod,vat,None,("notblank",)]]
         but = [
             ("Import",None,self.doImport,0,("T",0,1),("T",0,2),
@@ -151,19 +164,28 @@ class gl1010(object):
                 self.df.loadEntry(frt, pag, p+x, data=self.old[x+1])
 
     def doTypCod(self, frt, pag, r, c, p, i, w):
+        if p == 2:
+            self.tcod = w
+            return
+        if w != "N" and self.tcod == "P" and w not in ("D", "E", "F"):
+            return "Invalid Code for P&L"
+        if w != "N" and self.tcod == "B" and w not in ("A", "B", "C"):
+            return "Invalid Code for B/S"
         if self.new:
-            if w == "P":
-                self.df.topf[pag][4][5] = self.taxdf
+            if self.tcod == "P":
+                self.df.topf[pag][6][5] = self.taxdf
             else:
-                self.df.topf[pag][4][5] = "N"
-        elif not self.df.topf[pag][4][5]:
-            self.df.topf[pag][4][5] = "N"
+                self.df.topf[pag][6][5] = "N"
+        elif not self.df.topf[pag][6][5]:
+            self.df.topf[pag][6][5] = "N"
+        if w == "N":
+            self.df.loadEntry(frt, pag, p+1, data=0)
+            return "sk1"
 
     def doVatCod(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("ctlvmf", cols=["vtm_desc"],
-            where=[
-                ("vtm_cono", "=", self.opts["conum"]), ("vtm_code", "=", w)],
-            limit=1)
+            where=[("vtm_cono", "=", self.opts["conum"]),
+            ("vtm_code", "=", w)], limit=1)
         if not acc:
             return "Invalid VAT Code"
 
@@ -193,7 +215,8 @@ class gl1010(object):
             self.df.butt[1][5] = None
         data = [self.opts["conum"], self.acno,
             self.df.t_work[0][0][1], self.df.t_work[0][0][2],
-            self.df.t_work[0][0][3], self.df.t_work[0][0][4]]
+            self.df.t_work[0][0][3], self.df.t_work[0][0][4],
+            self.df.t_work[0][0][5], self.df.t_work[0][0][6]]
         if self.new:
             self.sql.insRec("genmst", data=data)
         elif data != self.old[:len(data)]:
@@ -240,19 +263,22 @@ class gl1010(object):
                 err = self.doCheckDep(line[0])
                 if err:
                     break
-            if line[1] not in ("B", "P"):
-                err = "Invalid %s %s, Only B or P" % (fi.impcol[1][0], line[1])
-                break
-            if not line[2]:
+            if not line[1]:
                 err = "Blank Description"
                 break
-            if line[3] not in ("Y", "N"):
-                err = "Invalid %s %s" % (fi.impcol[3][0], line[3])
+            if line[2] not in ("B", "P"):
+                err = "Invalid %s %s, Only B or P" % (fi.impcol[1][0], line[2])
                 break
-            chk = self.sql.getRec("ctlvmf", where=[("vtm_cono",
-                "=", self.opts["conum"]), ("vtm_code", "=", line[4])], limit=1)
+            if line[3] not in ("N", "A", "B", "C", "D", "E", "F"):
+                err = "Invalid %s %s" % (fi.impcol[1][0], line[3])
+                break
+            if line[5] not in ("Y", "N"):
+                err = "Invalid %s %s" % (fi.impcol[5][0], line[5])
+                break
+            chk = self.sql.getRec("ctlvmf", where=[("vtm_cono", "=",
+                self.opts["conum"]), ("vtm_code", "=", line[6])], limit=1)
             if not chk:
-                err = "%s %s Does Not Exist" % (fi.impcol[4][0], line[4])
+                err = "%s %s Does Not Exist" % (fi.impcol[6][0], line[6])
                 break
             line.insert(0, self.opts["conum"])
             self.sql.insRec("genmst", data=line)
@@ -332,10 +358,8 @@ Please Correct your Import File and then Try Again.""" % err)
                 dat.append(self.taxdf)
             self.sql.insRec("genmst", data=dat)
         # genrpt
-        genrpt = datdic["genrpt"]
-        for dat in genrpt:
-            dat.insert(0, self.opts["conum"])
-            self.sql.insRec("genrpt", data=dat)
+        callModule(self.opts["mf"], None, "gl1030",
+            coy=(self.opts["conum"], self.opts["conam"]), args=True)
         # ctlctl
         crsctl = 0
         drsctl = 0

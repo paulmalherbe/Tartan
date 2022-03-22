@@ -7,8 +7,10 @@ Masterfile Records (GL)
 This routine is used to create or amend general ledger account records. For a new company you can **automatically populate** the company with standard accounts and reports by selecting the `Populate` button. You can also import a chart of accounts by selecting the `Import` button in which case the file must be in `csv` or `xls` format and must contain all the fields as listed below.
 
 + **Acc-Num** - The account number of the record. This is a numeric field and can have up to 7 digits. There is nothing special about this number it is only used to access the record.
-+ **Account Type** - Select the applicable account type for the record.
 + **Description** - The account's description up to 30 characters in length.
++ **T/B Account Type** - Select the applicable Trial Balance account type for the record.
++ **F/S Account Type** - Select the applicable Financial Statement account type for the record. These types are used when generating a financial report.
++ **F/S Account Group** - Enter the Financial Statement group for the record, if applicable, e.g. Grouping Motor Vehicles Capital Account with the Accumulated Depreciation Account. The group description would default to the first account in the group but this can be changed using the Report Generator.
 + **Allow Postings** - Whether or not direct postings are allowed to this account. Normally direct postings are not allowed to control accounts of subsidiary ledgers, e.g. Debtor's as they should be generated in the subsidiary ledger.
 + **Tax Default** - The V.A.T. code normally associated with postings to this account.
 
@@ -199,6 +201,15 @@ Use this routine to create, amend and delete `Financial Statements (GL)`_ report
     + **Storage Number (Base)** - The first stored amount
     + **Storage Number (Calc)** - The second stored amount
 
+The following *Buttons* are avaliable
+
++ **Generate** - Use this button to generate a report format if the general leger masterfile records have been flagged with the F/S Account Types.
++ **Copy** - Use this button to copy an existing report format.
++ **Import** - Use this button to import a report format file previously exported.
++ **Export** - Use this button to export an existing report format.
++ **Preview** - Use this button to preview a report as per the format.
++ **Print** - Use this button to print the report format.
+
 Detail Records (GL)
 +++++++++++++++++++
 Use this routine to create, amend and delete detail records used by `Financial Statements (GL)`_ report formats.
@@ -272,15 +283,17 @@ Use this routine to capture monthly budgets for a specific financial period. You
 If the auto populate button is used the following screen will appear:
 
 + **Use Previous Year's** - Actual or Budgets.
++ **Annualize** - If Actual was chosen you can elect to annualize the budget.
 + **Standard Rate (+-)** - The rate to be used to increase or decrease the previous year's amounts.
 + **Rounding to Nearest** - Select the rounding requirement.
++ **Any Exception Rates** - Select whether there are accounts with a rate different to the *Standard Rate*.
 
-You are now able to enter exclusions to the above parameters as follows:
+If there are no Exceptions the budgets will be popupated else enter the Exceptions.
 
 + **Acc-Num** - The generals ledger account number.
 + **Rate** - The rate to apply to this account.
 
-On exiting the the screen with the <Esc> key the budgets will be populated.
+On exiting the Exceptions Screen with the <Esc> key the budgets will be populated.
 
 Sales, Payments, Petty Cash, Purchases and Receipts (GL)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -425,10 +438,12 @@ As with most data capture routines you will first have to enter the `Batch Detai
     + **Intr-%** - The new interest rate to apply to the loan.
     + **Ded-Amt** - The new amount to be deducted from earnings to repay the loan.
 
-*Import File* button is used to import manual journal entries from a csv or excel file.
-*View Entries* button will show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
-*End Batch* button will end the batch if debits equal the credits.
-*Abort Batch* button will abort the current entries for the batch.
+The following *Buttons* are available.
+
++ **Import File** - Use this button to import manual journal entries from a csv or excel file.
++ **View Entries** - Use this button to show you all the postings captured, including those which have scrolled off the screen, for checking purposes.
++ **End Batch** - Use this button to end the batch if debits equal the credits.
++ **Abort Batch** - Use this button to abort the current entries for the batch.
 
 Please note that you will not be able to exit this routine until the debits equal the credits. Credits are entered as minus amounts.
 
@@ -446,7 +461,7 @@ Bank Statements (GL)
 ++++++++++++++++++++
 Use this routine to capture bank statements. This is to facilitate reconciling the bank accounts with the bank statements. This routine can also be used to capture receipts, payments and journal entries affecting the bank account e.g. all entries on the bank statement not yet entered into the bank account can be processed using this routine.
 
-As with most data capture routines you will first have to enter the `Batch Details`_.  The following buttons will then be available:
+As with most data capture routines you will first have to enter the `Batch Details`_.  The following *Buttons* will then be available:
 
 + **Exit** - This exits out of the capture routine as per using the <Escape> key.
 + **Import Bank File** - This routine is used to import a bank statement file as described under `Control Accounts (GL)`_.

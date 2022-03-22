@@ -1,0 +1,17 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Added two new fields to the general ledger masterfile record to enable the
+    automatic generation of financial statements.
+ 2) Added the facility to automatically generate a report in the general ledger
+    report generator using the fields as per 1) above.
+ 3) Improved the general ledger opening balances capture module.
+ 4) Added an import option to the general ledger bank import control
+    maintenance module.
+ 5) Updated the income tax tables to include 2022-2023.
+ 6) Updated more items in the reference manual.
+ 7) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
