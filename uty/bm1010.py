@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -614,7 +614,7 @@ bmp   BMP files
 gif   GIF 87a and 89a Files
 jpeg  JPEG data in JFIF or Exif formats
 pbm   Portable Bitmap Files
-pdf   Portable Document Format (If ghostscript is installed)
+pdf   Portable Document Format (If pymupdf is installed)
 pgm   Portable Graymap Files
 png   Portable Network Graphics
 ppm   Portable Pixmap Files
@@ -685,8 +685,12 @@ xbm   X Bitmap Files""")
         f = o + "_%03i.jpg"
         doc = fitz.open(fnam)
         for num, pag in enumerate(doc):
-            pix = pag.getPixmap()
-            pix.writeImage(f % num)
+            try:
+                pix = pag.get_pixmap()
+                pix.save(f % num)
+            except:
+                pix = pag.getPixmap()
+                pix.writeImage(f % num)
         fls = glob.glob(o + "*.jpg")
         fls = sorted(fls, reverse=True)
         idx = self.embed.index(fnam)
@@ -714,7 +718,10 @@ xbm   X Bitmap Files""")
         if not self.embed and not self.attach and not mess:
             return
         if self.personal == "Y":
-            mess = mess.replace("{{name}}", "Tom Jones")
+            if "{{name}}" in mess:
+                mess = mess.replace("{{name}}", "Tom Jones")
+            else:
+                mess = mess.replace("{{surname}}", "Tom Jones")
         state = self.df.disableButtonsTags()
         ShowEmail(self.df.window, mess, self.embed, self.attach)
         self.df.enableButtonsTags(state=state)

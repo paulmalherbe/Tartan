@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1326,7 +1326,7 @@ tabdic = {
             [8, "bdt_rate", "UI", 2.0, "Rating", "RT"],
             [9, "bdt_team1", "UI", 6.0, "Team Member 1", "TM1"],
             [10, "bdt_pos1", "UI", 3.0, "Member 1 Pos", "P"],
-            [11, "bdt_team2", "UI", 6.0, "Team member 2", "TM2"],
+            [11, "bdt_team2", "UI", 6.0, "Team Member 2", "TM2"],
             [12, "bdt_pos2", "UI", 3.0, "Member 2 Pos", "P"],
             [13, "bdt_team3", "UI", 6.0, "Team Member 3", "TM3"],
             [14, "bdt_pos3", "UI", 3.0, "Member 3 Pos", "P"],
@@ -1483,6 +1483,34 @@ tabdic = {
         "idx": [
             ["Bowls Knockout Round Dates", 1, "U", "bcr_cono", "bcr_ccod",
                 "bcr_rcod"]]},
+    "bwlsdm": {
+        "fld": [
+            [0, "bsm_cono", "UI", 3.0, "Club Number", "Clb"],
+            [1, "bsm_date", "D1", 10.0, "Tabs In Date", "Tab-Date"],
+            [2, "bsm_time", "NA", 1.0, "Tabs In Time", "T"],
+            [3, "bsm_dhist", "UA", 1.0, "History", "H"],
+            [4, "bsm_quant", "UI", 1.0, "Number of Players", "Q"],
+            [5, "bsm_mrate", "UD", 5.2, "Member Rate", "M-Rte"],
+            [6, "bsm_vrate", "UD", 5.2, "Visitor Rate", "V-Rte"],
+            [7, "bsm_xflag", "UA", 1.0, "Export Flag", "X"]],
+        "idx": [
+            ["Tabs Draw - Master", 1, "U", "bsm_cono", "bsm_date",
+                "bsm_time"]]},
+    "bwlsdt": {
+        "fld": [
+            [0, "bst_cono", "UI", 3.0, "Club Number", "Clb"],
+            [1, "bst_tab", "UI", 6.0, "Tab Number", "TAB"],
+            [2, "bst_date", "D1", 10.0, "Tabs In date", "Tab-Date"],
+            [3, "bst_time", "UA", 1.0, "Tabs In Time", "T"],
+            [4, "bst_rink", "UA", 2.0, "Rink", "RK"],
+            [5, "bst_name", "UA", 20.0, "Name", "Name"],
+            [6, "bst_opp1", "UI", 6.0, "Opposition 1", "OP1"],
+            [7, "bst_opp2", "UI", 6.0, "Opposition 2", "OP2"],
+            [8, "bst_opp3", "UI", 6.0, "Opposition 3", "OP3"],
+            [9, "bst_xflag", "UA", 1.0, "Export Flag", "X"]],
+        "idx": [
+            ["Tabs Draw - Player", 1, "U", "bst_cono", "bst_tab", "bst_date",
+                "bst_time", "bst_rink"]]},
     "bwltab": {
         "fld": [
             [0, "btb_cono", "UI", 3.0, "Club Number", "Clb"],
@@ -3490,8 +3518,7 @@ tabdic = {
             [3, "stv_loc", "UA", 1.0, "Location", "L"],
             [4, "stv_bin", "UA", 8.0, "Bin Number", "Bin-Num"],
             [5, "stv_qty", "SD", 9.2, "Quantity", "Quantity"],
-            [6, "stv_ucost", "UD", 8.2, "Unit Cost Price", "Unit-Cost"],
-            [7, "stv_usell", "UD", 8.2, "Unit Selling Price", "Unit-Sell"]],
+            [6, "stv_ucost", "UD", 8.2, "Unit Cost Price", "Unit-Cost"]],
         "idx": [
             ["Stock Take Variance", 1, "U", "stv_cono", "stv_group",
                 "stv_code", "stv_loc"]]},
@@ -4354,8 +4381,9 @@ tarmen = {
         ["PYNY","bc_ti","bcc110",5,"Control Record"],
         ["PYNY","bc_ti","bc1010",3,"Tabs Maintenance"],
         ["PYNN","bc_ti","bc2010",2,"Tabs-In Draw"],
-        ["PYNN","bc_ti","bc3010",1,"Reprint Draw"],
-        ["PYNN","bc_ti","bc3020",1,"Draws Summary"],
+        ["PYNN","bc_ti","bc3010",1,"Tabs-In Reprint"],
+        ["PYNN","bc_ti","bc3020",1,"Tabs-In Summary"],
+        ["PYNN","bc_ti","bc2080",1,"Tabs 321 Draw"],
         ["PYNN","bc_ls","bcc210",3,"Club Records"],
         ["PYNN","bc_ls","bc1020",3,"League Formats"],
         ["PYNN","bc_ls","bc1030",3,"Side's Maintenance"],

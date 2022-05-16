@@ -1,5 +1,22 @@
-changes = """ver_6.6
+changes = """ver_6.7
 =======
+ 1) Fixed a bug in the general ledger financial reporting charts.
+ 2) Fixed a bug in the stores stock take returns module.
+ 3) Fixed a bug in the stores purchase order module.
+ 4) Added the facility to import a stock take return csv or xls file.
+ 5) Added the facility to alter bowls tabs-inn draws by removing tabs and
+    replacing them with tabs which have not yet been entered.
+ 6) Added a new bowls tab draw module for 321 format games.
+ 7) Updated more items in the reference manual.
+ 8) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.6 2022-03-22
+==================
  1) Added two new fields to the general ledger masterfile record to enable the
     automatic generation of financial statements.
  2) Added the facility to automatically generate a report in the general ledger

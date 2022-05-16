@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ class st5040(object):
     def endPage(self):
         self.df.closeProcess()
         col = ["stv_group", "stv_code", "stv_loc", "stv_bin", "stv_qty",
-            "stv_ucost", "stv_usell"]
+            "stv_ucost"]
         recs = self.sql.getRec(tables=["strmf1", "strvar"], cols=col,
             where=[("stv_cono", "=", self.opts["conum"]),
             ("stv_cono=st1_cono",), ("stv_group=st1_group",),
@@ -110,18 +110,6 @@ class st5040(object):
         loc = rec[col.index("stv_loc")]
         vqty = CCD(rec[col.index("stv_qty")], "SD", 12.2)
         vprc = CCD(rec[col.index("stv_ucost")], "UD", 12.2)
-        sell = CCD(rec[col.index("stv_usell")], "UD", 12.2)
-        # Selling Price Records
-        if sell.work:
-            whr = [
-                ("stp_cono", "=", self.opts["conum"]),
-                ("stp_group", "=", grp),
-                ("stp_code", "=", code),
-                ("stp_loc", "=", loc),
-                ("stp_level", "=", 1)]
-            self.sql.delRec("strprc", where=whr)
-            self.sql.insRec("strprc", data=[self.opts["conum"], grp, code,
-                loc, 1, sell.work])
         # Test for Variances
         bals = Balances(self.opts["mf"], "STR", self.opts["conum"], self.curdt,
             keys=(grp, code, loc, ("P", self.opts["period"][0])))

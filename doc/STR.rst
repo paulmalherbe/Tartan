@@ -200,7 +200,6 @@ Stock Take Returns (ST)
 Use this routine to enter physical stock count quantities.
 
 + **Header**
-    + **Sort Order** - Select the order the items will be entered.
     + **Location** - The location code, if applicable.
     + **Auto Sequence** - Whether to automatically display the next item in order.
     + **First Bin Number** - The starting bin number, if applicable.
@@ -215,6 +214,10 @@ Use this routine to enter physical stock count quantities.
     + **Product Code** - The product code if not auto sequence.
     + **Unit Cost** - The unit cost price, if applicable.
     + **Quantity** - The quantity in stock.
+
+The following Button is available
+
++ **Import** - Use this button to Import stock take quantities and, if cost prices were selected above, cost prices from a CSV, ODS or Excel file.
 
 Stock Take Variance Report (ST)
 +++++++++++++++++++++++++++++++

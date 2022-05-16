@@ -39,7 +39,7 @@ If you are going to use the `General Ledger` you must perform the following proc
 + Create the chart of accounts using `File Maintenance -> Masterfile Records`.
     + Select the `Populate` button to automatically populate a company's set of accounts after which you can change the account descriptions to suit your needs.
 + Create control accounts using `File Maintenance -> Control Accounts`.
-+ Capture account's opening balances using `Data Caspture -> Opening Balances`.
++ Capture account's opening balances using `Data Capture -> Opening Balances`.
 + Print a trial balance using `Reporting -> Trial Balance` and ensure that your accounts balance. If not, recapture the incorrect ones.
 + Capture budgets using `Data Capture -> Budgets`, if required.
 
@@ -140,7 +140,7 @@ If you are going to use the `Loan's Ledger` you must at least perform the follow
 
 + Create a control record using `File Maintenance -> Control Record`.
 + If you elected to integrate with the General Ledger you must create the `lon_ctl` controls as per above.
-+ Create existing or new loans using `Data Capture` and just entering on the `Acc-Num` iand `LN` fields.
++ Create existing or new loans using `Data Capture` and just entering on the `Acc-Num` and `LN` fields.
 
 The Loan's Ledger system is at this stage fully functional and you can capture postings, produce basic reports and do interrogations etc.
 

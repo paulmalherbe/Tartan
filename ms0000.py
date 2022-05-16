@@ -7,7 +7,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@ COPYING
 import getpass, gc, glob, io, os, platform, shutil, sys, time
 from TartanClasses import Dbase, ViewPDF, FileDialog, FITZ, GUI, GetCtl
 from TartanClasses import MainFrame, MakeManual, MkWindow, PwdConfirm
-from TartanClasses import ScrollText, SelectChoice, Sql, TartanConfig
-from TartanClasses import TartanDialog, TartanMenu, TartanUser
+from TartanClasses import ScrollText, SelectChoice, SplashScreen, Sql
+from TartanClasses import TartanConfig, TartanDialog, TartanMenu, TartanUser
 from tartanFunctions import askQuestion, askChoice, b64Convert, chkMod
 from tartanFunctions import copyList, dateDiff, httpDownload, getPeriods
 from tartanFunctions import getPrgPath, loadRcFile, projectDate
@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 6)
+    VERSION = (6, 7)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -61,7 +61,6 @@ class ms0000(object):
             ("help", False),
             ("itoggle", False),
             ("loader", False),
-            ("nocheck", False),
             ("output", False),
             ("program", None),
             ("query", None),
@@ -94,8 +93,6 @@ class ms0000(object):
                 self.itoggle = True
             elif o in ("-l", "--loader"):
                 self.loader = True
-            elif o in ("-n", "--nocheck"):
-                self.nocheck = True
             elif o in ("-o", "--output"):
                 self.output = True
             elif o in ("-p", "--program"):
@@ -181,7 +178,6 @@ Options:
             -h, --help              This Help Message
             -i, --image             Toggle the Tartan image option.
             -l, --loader            Try and remove module before importing
-            -n, --nocheck           Do not check for system records
             -o, --output            Toggle stdout redirection to stdout.txt
             -P, --pdf=              View a pdf file using built in viewer
             -p, --program=          Execute program directly bypassing the menu
@@ -190,7 +186,7 @@ Options:
             -r, --rcfile=           Path of Tartan RC File to use
             -s, --script=           Python script in the program directory
             -t, --tcode=            Transaction code
-            -u, --user=             User name and password e.g. name:password
+            -u, --user=             User name and password i.e. name:password
             -v, --version           Display Version Details
             -x, --xdisplay          Do not have a mainframe with -ptarBck
             -z, --zerobar           Do not have a progressbar with -ptarBck
@@ -301,7 +297,7 @@ Options:
         self.mf = None
         self.loop = False
         self.rcdic = None
-        main = "Tartan Systems - Copyright %s 2004-2021 Paul Malherbe" % \
+        main = "Tartan Systems - Copyright %s 2004-2022 Paul Malherbe" % \
             chr(0xa9)
         while not self.rcdic:
             self.rcdic = loadRcFile(self.rcfile, default=True)
@@ -360,21 +356,20 @@ Options:
                     ("-x", True)]
                 DBCreate(dbm=self.dbm, opts=opts)
                 self.tarUpd(True)
-        if not self.nocheck:
-            # Open the database
-            self.dbm.openDbase()
-            # Check for ctlsys and if missing call msc110
-            err = self.doCheckSys()
-            if not err:
-                # Check for ctlmst and if missing call ms1010
-                err = self.doCheckMst()
-            if err:
-                # If error, exit
-                self.doExit()
-            # Close dbase
-            self.dbm.closeDbase()
+        # Open the database
+        self.dbm.openDbase()
+        # Check for ctlsys and if missing call msc110
+        err = self.doCheckSys()
+        if not err:
+            # Check for ctlmst and if missing call ms1010
+            err = self.doCheckMst()
+        if err:
+            # If error, exit
+            self.doExit()
+        # Close dbase
+        self.dbm.closeDbase()
         if not self.program or self.program != "tarUpd":
-            # Check Tartan version and File Formats
+            # Check Tartan Version and File Formats
             self.doVersionCheck()
         if self.user:
             # Check if user details supplied are valid
@@ -509,6 +504,10 @@ Do You Want to Upgrade TARTAN Now?""" % self.cv[1], default="yes")
         chg = False
         if not err and self.altered:
             # Check for Altered Tables
+            if self.xdisplay:
+                self.mf.window.deiconify()
+                sp = SplashScreen(self.mf.body,
+                    "Checking for Updates ... Please Wait")
             for tb in tabdic:
                 for ext in ("fld", "idx"):
                     lines = tabdic[tb][ext]
@@ -536,6 +535,8 @@ Do You Want to Upgrade TARTAN Now?""" % self.cv[1], default="yes")
                     if f1 != f2:
                         chg = True
                         break
+            if self.xdisplay:
+                sp.closeSplash()
         self.dbm.closeDbase()
         if chg or err:
             ok = askQuestion(scrn, "Version Error",
@@ -1548,6 +1549,8 @@ System --> Change Password""")
             passwd=self.bpwd)
         if cf.flag == "ok":
             try:
+                if not self.xdisplay:
+                    raise Exception
                 sql = Sql(self.dbm, ["ctlmst", "ctlsys"], prog="ms0000")
                 if sql.error:
                     raise Exception
@@ -1715,14 +1718,16 @@ System --> Change Password""")
                         mess = "%s%s" % (mess, lines[x - maxi])
                     if self.help or self.script or self.version:
                         scrn = None
+                        font = ("Courier", 12)
                     else:
                         scrn = self.mf.body
+                        font = (self.mf.dft, self.mf.dfs)
                     if self.debug:
                         titl = "Trace Output"
                     else:
                         titl = "Standard Output"
                     if self.xdisplay:
-                        ScrollText(title=titl, scrn=scrn, mess=mess)
+                        ScrollText(title=titl, scrn=scrn, mess=mess, font=font)
                     else:
                         print(titl, mess)
                 # Housekeeping
@@ -1906,8 +1911,8 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(sys.argv[1:],
             "ab:c:de:f:hiklnoP:p:q:R:r:s:t:u:vxz", [
             "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
-            "help", "image", "loader", "nocheck", "output", "pdf=",
-            "program=", "query=", "rcfdir=", "rcfile=", "script=", "tcode=",
+            "help", "image", "loader", "output", "pdf=", "program=",
+            "query=", "rcfdir=", "rcfile=", "script=", "tcode=",
             "user=", "version", "xdisplay", "zerobar"])
     except:
         opts, args = [("-h", "")], []

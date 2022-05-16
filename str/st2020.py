@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -205,9 +205,9 @@ class st2020(object):
             self.loc = loc.work
             self.group = line[idx]
             self.code = line[idx+1]
-            st1 = self.sql.getRec("strmf1", where=[("st1_group", "=",
-                self.group), ("st1_code", "=", self.code), ("st1_type", "<>",
-                "X")], limit=1)
+            st1 = self.sql.getRec("strmf1", where=[("st1_group",
+                "=", self.group), ("st1_code", "=", self.code),
+                ("st1_type", "<>", "X")], limit=1)
             err = False
             if not st1:
                 err = "Line %s: Invalid Group %s or Code %s" % ((num + 1),
@@ -240,7 +240,6 @@ class st2020(object):
                 break
             self.qty = line[idx + 2]
             self.tcost = round((self.qty * line[idx + 3]), 2)
-            self.usell = 0.00
             self.updateTables()
         if err:
             showError(self.opts["mf"].body, "Import Error", err)

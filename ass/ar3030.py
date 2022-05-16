@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -73,11 +73,11 @@ class ar3030(object):
             (("T",0,0,0),"ID2",7,"Start Period","",
                 self.sper,"Y",self.doSdate,None,None,("efld",)),
             (("T",0,1,0),"ID2",7,"End Period","",
-                eper,"Y",self.doEdate,None,None,("efld",)),
+                eper,"N",self.doEdate,None,None,("efld",)),
             (("T",0,2,0),"IUA",3,"Product Group","",
-                "","Y",self.doGroup,asg,None,None),
+                "","N",self.doGroup,asg,None,None),
             (("T",0,3,0),("IRB",r1s),0,"Asset per Page","",
-                "N","Y",self.doPage,None,None,None))
+                "N","N",self.doPage,None,None,None))
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,

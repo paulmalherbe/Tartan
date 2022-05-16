@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -813,8 +813,8 @@ class si2010(object):
             except:
                 pass
             recipe = self.sql.getRec("strrcp", where=[("srr_cono", "=",
-                self.opts["conum"]), ("srr_group", "=", self.grp), ("srr_code",
-                "=", self.code), ("srr_loc", "=", self.loc)])
+                self.opts["conum"]), ("srr_group", "=", self.grp),
+                ("srr_code", "=", self.code), ("srr_loc", "=", self.loc)])
             if not recipe:
                 return "NoItems"
             self.recipe = []

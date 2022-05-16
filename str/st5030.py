@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -120,14 +120,17 @@ class st5030(object):
                 fp = ac
             else:
                 fp = lc
-            diff = float(ASD(fq) - ASD(qty1))
+            qdif = float(ASD(fq) - ASD(qty1))
+            if not qdif:
+                continue
+            vdif = round(qdif * fp, 2)
             rslt = self.sql.getRec("strmf1", cols=["st1_desc",
                 "st1_uoi"], where=[("st1_cono", "=", self.opts["conum"]),
                 ("st1_group", "=", grp), ("st1_code", "=", code)],
                 limit=1)
             desc = rslt[0]
             uoi = rslt[1]
-            data.append([grp, code, desc, uoi, sbin, fp, prc, fq, qty1, diff])
+            data.append([grp,code,desc,uoi,sbin,fp,prc,fq,qty1,qdif,vdif])
         p.closeProgress()
         if not p.quit:
             name = self.__class__.__name__
@@ -143,11 +146,13 @@ class st5030(object):
                 ["g", "UD", 12.2, "Stkt-Cost",    "y"],
                 ["h", "SD", 12.2, "File-Qty",     "y"],
                 ["i", "SD", 12.2, "Stkt-Qty",     "y"],
-                ["j", "SD", 12.2, "Difference",   "y"]]
+                ["j", "SD", 12.2, "Qty-Diff",     "y"],
+                ["k", "SD", 12.2, "Val-Diff",     "y"]]
             RepPrt(self.opts["mf"], conum=self.opts["conum"],
                 conam=self.opts["conam"], name=name, tables=data,
-                heads=head, cols=cols, ttype="D", repprt=self.df.repprt,
-                repeml=self.df.repeml, fromad=self.fromad)
+                heads=head, cols=cols, ttype="D", gtots=["j", "k"],
+                repprt=self.df.repprt, repeml=self.df.repeml,
+                fromad=self.fromad)
 
     def extractBals(self, grp, code, loc):
         qbal = 0

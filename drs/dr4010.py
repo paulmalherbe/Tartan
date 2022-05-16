@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -566,11 +566,12 @@ class dr4010(object):
                 prtdia = False
             else:
                 prtdia = (("Y","V"),("Y","N"))
+            gtots = ["drt_tramt", "paid", "balance"]
             rp = RepPrt(self.opts["mf"], conum=self.opts["conum"],
                 conam=self.opts["conam"], name=self.__class__.__name__,
                 ttype="D", tables=data, heads=heads, cols=cols,
                 trtp=["drt_type", drtrtp], prtdia=prtdia, repprt=repprt,
-                repeml=repeml, fromad=self.fromad)
+                repeml=repeml, fromad=self.fromad, gtots=gtots)
         self.df.setWidget(self.df.mstFrame, state="show")
         self.df.enableButtonsTags(state=state)
 

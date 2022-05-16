@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -61,11 +61,10 @@ except:
 # ========================================================
 try:
     import fpdf
-    if not fpdf.fpdf.Image:
-        raise Exception("python-imaging-module")
-except Exception as e:
-    print("Missing %s" % e)
+except:
     os._exit(1)
+if not fpdf.fpdf.Image:
+    print("Missing python-imaging-module")
 # ========================================================
 # MuPDF
 # ========================================================
@@ -1334,7 +1333,7 @@ class MainFrame(object):
                     print("Missing Tkinter and/or ttk modules")
                     sys.exit()
                 if not title:
-                    title = "Tartan Systems - Copyright %s 2004-2021 "\
+                    title = "Tartan Systems - Copyright %s 2004-2022 "\
                         "Paul Malherbe" % chr(0xa9)
                 self.window = MkWindow(title=title, icon="tartan",
                     size=self.geo, resiz=False).newwin
@@ -1499,7 +1498,15 @@ class MainFrame(object):
 
     def updateStatus(self, text, bg="white", fg="black"):
         if self.childs:
-            self.status.configure(background=bg, foreground=fg, text=text)
+            fsz = self.rcdic["dfs"]
+            while True:
+                font = tkfont.Font(font=(self.rcdic["dft"], fsz, "normal"))
+                if font.measure(text) > self.status.winfo_width():
+                    fsz -= 1
+                else:
+                    break
+            self.status.configure(background=bg, foreground=fg,
+                font=font, text=text)
             self.window.update_idletasks()
 
     def startLoop(self, deicon=True):
@@ -2574,10 +2581,15 @@ class Sql(object):
                     dat = tdat[:len(col)]
                 if dofmt:
                     for n, c in enumerate(fld):
-                        dat[n] = CCD(dat[n], dic[c][2], dic[c][3]).work
+                        chk = CCD(dat[n], dic[c][2], dic[c][3])
+                        if chk.err:
+                            raise Exception(chk.err)
+                        dat[n] = chk.work
             except Exception as err:
                 showError(None, "insRec Error",
-                    """Data and CSV Formats Differ (%s)
+                    """Data and CSV Formats Differ
+
+(%s)
 
 Table %s in Program %s""" % (err, table, self.prog))
                 self.dbm.rollbackDbase()
@@ -2814,8 +2826,12 @@ Table %s in Program %s""" % (err, table, self.prog))
                 cmd = "%s, %s = %s" % (cmd, col, self.dbm.dbf)
             if dofmt:
                 dat = CCD(data[num], dic[col][2], dic[col][3])
-                if not dat.err:
-                    data[num] = dat.work
+                if dat.err:
+                    showError(None, "updRec Error",
+                        "Invalid Data for %s in table %s\n\n%s" %
+                        (dic[col][4], table, dat.err))
+                    sys.exit()
+                data[num] = dat.work
         dat = copyList(data)
         if where:
             whr, ext = self.getSqlWhere(where)
@@ -4089,7 +4105,8 @@ class TartanDialog(object):
                         ctlsys["sys_msec"], ctlsys["sys_maut"],
                         ctlsys["sys_mnam"], ctlsys["sys_mpwd"]]
                     if sendMail(server, "", "", "", check=True,
-                            err=self.mf.body, wrkdir=self.mf.rcdic["wrkdir"]):
+                            errwid=self.mf.body,
+                            wrkdir=self.mf.rcdic["wrkdir"]):
                         self.repeml = ["Y", "", "", "", "Y"]
                     else:
                         showError(self.mf.body, "Error",
@@ -13383,8 +13400,12 @@ class PwdConfirm(object):
                 self.flag = "ok"
             else:
                 self.flag = "no"
+        elif not mf.window:
+            self.flag = "no"
         else:
             self.mainProcess()
+            if self.pc.mstFrame.winfo_toplevel().state() == "withdrawn":
+                self.pc.mstFrame.winfo_toplevel().deiconify()
             self.pc.mstFrame.wait_window()
 
     def setVariables(self):
@@ -15108,7 +15129,7 @@ class TarBckRes(object):
     """
     Backup and Restore routines for Tartan Systems
 
-        mode - B(ackup), (R)store.
+        mode - B(ackup), R(estore).
         csys - The ctlsys detail.
         ver  - The tartan version.
         pbar - Whether to display a progressbar,
@@ -15550,6 +15571,8 @@ class TarBckRes(object):
                     zipfle.write(str(data).encode("utf-8"))
                     data = sql.sqlRec(fetch=True, limit=100000)
                 zipfle.close()
+            if not self.mf.window and self.pbar and TBAR:
+                p2.finish()
         cwd = os.getcwd()
         os.chdir(self.tmpdir)
         tme = "%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3]
@@ -15563,8 +15586,6 @@ class TarBckRes(object):
         if self.mf.window:
             p1.closeProgress()
             p2.closeProgress()
-        elif self.pbar and TBAR:
-            p2.finish()
 
     def doFullRestore(self):
         # Restore the Files
@@ -16145,14 +16166,11 @@ class FileImport(object):
         self.impdlg = True
         self.impign = "N"
         self.chgcol = {}
-        self.colchg = {}
         for x in range(52):
             if x > 25:
                 self.chgcol["A" + chr(x + 39)] = x
-                self.colchg[x] = "A" + chr(x + 39)
             else:
                 self.chgcol[chr(x + 65)] = x
-                self.colchg[x] = chr(x + 65)
         if "impcol" in args:
             self.impcol = args["impcol"]
             sql = Sql(self.mf.dbm, "ffield")
@@ -16360,6 +16378,8 @@ class FileImport(object):
     def doImpCol(self, frt, pag, r, c, p, i, w):
         if w:
             self.impcol[p-3-self.index][1] = self.chgcol[w.strip()]
+        else:
+            self.impcol[p-3-self.index][1] = None
 
     def doImpEnd(self):
         if self.impdlg:
@@ -16376,6 +16396,9 @@ class FileImport(object):
                 try:
                     lin = []
                     for col, cdd in enumerate(self.impcol):
+                        if cdd[1] is None:
+                            dat = ""
+
                         dat = rdd[cdd[1]]
                         if self.ftype in ("xls", "xlsx"):
                             if cdd[2] in ("D1", "d1"):
@@ -16391,15 +16414,16 @@ class FileImport(object):
                                         cdd[2] = "d1"
                         d = CCD(dat, cdd[2], cdd[3])
                         if d.err:
-                            raise Exception
+                            raise Exception(d.err)
                         lin.append(d.work)
                     self.impdat.append(lin)
                 except Exception as err:
                     if self.impign == "N":
                         showError(self.mf.body, "Column Error",
-                            "Row %s, Column %s %s\n\n%s is Invalid" %
-                            (row + 1, self.colchg[col], cdd[0], dat))
-                        raise Exception(err)
+                            "Row %s, Column %s (%s)\n\nDoes Not Exist "\
+                            "or is Invalid\n\n%s" % (row + 1,
+                            self.ip.t_work[0][0][col+3], cdd[0], err))
+                        raise Exception
         except:
             self.impdat = []
         try:
@@ -16544,7 +16568,7 @@ class MyFpdf(fpdf.FPDF):
             if not auto:
                 self.set_auto_page_break(False, margin=0)
             if foot:
-                self.lpp -= 4
+                self.lpp -= round(15 / self.chgt, 0)
                 self.alias_nb_pages()
         except Exception as err:
             print(err)
@@ -17237,7 +17261,10 @@ class DrawForm(MyFpdf):
         mbox[1] = float(mbox[3] - (self.get_y() * 3))
         doc[0].setMediaBox(mbox)
         doc2 = fitz.open()
-        doc2.insertPDF(doc, from_page=0, to_page=0)
+        try:
+            doc2.insert_pdf(doc, from_page=0, to_page=0)
+        except:
+            doc2.insertPDF(doc, from_page=0, to_page=0)
         doc2.save(pdfnam)
         doc.close()
         doc2.close()
@@ -18485,7 +18512,8 @@ class ViewPDF(object):
                         ctlsys["sys_msec"], ctlsys["sys_maut"],
                         ctlsys["sys_mnam"], ctlsys["sys_mpwd"]]
                     if sendMail(self.server, "", "", "", check=True,
-                            err=self.mf.window, wrkdir=self.mf.rcdic["wrkdir"]):
+                            errwid=self.mf.window,
+                            wrkdir=self.mf.rcdic["wrkdir"]):
                         mods.insert(0, ("Email", self.doEmail))
             except:
                 pass
@@ -18580,7 +18608,7 @@ class ViewPDF(object):
         ent.bind("<Escape>", exitFrm)
         ent.bind("<Return>", enterPwd)
         ent.bind("<KP_Enter>", enterPwd)
-        self.win.deiconify()
+        placeWindow(self.win, place="M", expose=True)
         ent.focus_set()
         frm.wait_window()
         if not self.pwd or not self.doc.authenticate(self.pwd):
@@ -18676,33 +18704,36 @@ class ViewPDF(object):
     def doSearch(self, event=None):
         def getSearch(event=None):
             self.search = ent.get()
-            self.okfound = False
+            self.found = False
             self.pags = []
             self.prec = {}
             for page in self.doc:
                 annot = page.firstAnnot
                 while annot:
-                    annot = page.deleteAnnot(annot)
+                    try:
+                        annot = page.delete_annot(annot)
+                    except:
+                        annot = page.deleteAnnot(annot)
                 try:
                     found = page.search_for(self.search)
                 except:
                     found = page.searchFor(self.search)
-                for inst in found:
-                    self.okfound = True
-                    numb = (page.number + 1)
-                    if numb not in self.pags:
-                        self.pags.append(numb)
-                        self.prec[numb] = inst
-                    try:
-                        page.add_highlight_annot(inst)
-                    except:
-                        page.addHighlightAnnot(inst)
+                if found:
+                    self.found = True
+                    for inst in found:
+                        numb = (page.number + 1)
+                        if numb not in self.pags:
+                            self.pags.append(numb)
+                            self.prec[numb] = inst
+                        try:
+                            page.add_highlight_annot(inst)
+                        except:
+                            page.addHighlightAnnot(inst)
             if self.pags:
                 self.pgno = self.pags[0]
             frm.destroy()
-        def doQuit(event=None):
-            frm.destroy()
-        self.doUnbind()
+
+        self.doUnbind(key=True)
         frm = MyFrame(self.cv, bg="black", borderwidth=5)
         tit = MyLabel(frm, text="Search For", anchor="c", relief="raised")
         tit.pack(fill="x")
@@ -18715,17 +18746,16 @@ class ViewPDF(object):
             "<Ctrl-n> Scroll to Next Occurrence of Search String\n"\
             "<Ctrl-e> Clear All Highlights and Exit Search Mode.")
         tt.pause = None
-        ent.bind("<Escape>", doQuit)
         ent.bind("<Return>", getSearch)
         ent.bind("<KP_Enter>", getSearch)
         frm.place(anchor="center", relx=0.5, rely=0.5)
         ent.focus_set()
         frm.wait_window()
-        if not self.okfound:
+        if self.search is not None and not self.found:
             sp = SplashScreen(self.win, "Sorry, Not Found")
             time.sleep(2)
             sp.closeSplash()
-        self.doUnbind(False)
+        self.doUnbind(False, key=True)
         self.showPage()
 
     def nextSearch(self, event=None):
@@ -18746,7 +18776,10 @@ class ViewPDF(object):
         for page in self.doc:
             annot = page.firstAnnot
             while annot:
-                annot = page.deleteAnnot(annot)
+                try:
+                    annot = page.delete_annot(annot)
+                except:
+                    annot = page.deleteAnnot(annot)
         self.showPage()
 
     def doUnbind(self, unbind=True, key=True, exc=None):
@@ -18754,9 +18787,9 @@ class ViewPDF(object):
             if key:
                 self.cvbinds = []
                 for bind in self.win.bind():
-                    if bind != exc:
+                    if exc is None or bind != exc:
                         self.cvbinds.append((bind, self.win.bind(bind)))
-                        self.cv.unbind(bind)
+                        self.win.unbind(bind)
             for x in range(1, 6):
                 bt = getattr(self, "bt%s" % x)
                 bt.configure(state="disabled")
@@ -18836,10 +18869,10 @@ class ViewPDF(object):
     def doHelp(self, event=None):
         cols = (
             (0, "Keys", 6, "NA", None),
-            (1, "Action", 35, "NA", None))
+            (1, "Action", 41, "NA", None))
         data = (
             ("F1", "This help"),
-            ("F2", "A Table of Contents, if available"),
+            ("F2", "Generate a Table of Contents, if possible"),
             ("F11", "Toggle Full Screen"),
             ("Alt m", "Show the Menu"),
             ("Alt g", "Go To Page"),
@@ -18860,9 +18893,9 @@ class ViewPDF(object):
         self.cv.focus_force()
 
     def doContents(self, event=None):
-        sp = SplashScreen(self.win, "Generating Table of Contents\n\n"\
-            "Please Wait...")
-        def getData(page):
+        def getData(page, siz=None):
+            def addText(txt, tsz, bbx):
+                txts.append((tsz, txt, page.number + 1, bbx))
             txts = []
             try:
                 blocks = page.get_text("dict")["blocks"]
@@ -18870,55 +18903,108 @@ class ViewPDF(object):
                 blocks = page.getText("dict")["blocks"]
             for b in blocks:
                 if b["type"] == 0:
+                    ts = 0
+                    txt = ""
+                    bbx = [0, 0, 0, 0]
                     for l in b["lines"]:
-                        txt = ""
-                        siz = 0
+                        if bbx[1] != l["bbox"][1]:
+                            if txt:
+                                addText(txt, ts, bbx)
+                                txt = ""
+                            bbx = list(l["bbox"])
                         for s in l["spans"]:
-                            t = s["text"]
-                            if t and not txt.count("Table of Contents"):
-                                if not siz:
-                                    siz = s["size"]
+                            if s["size"] <= siz:
+                                continue
+                            ts = s["size"]
+                            tt = s["text"]
+                            if tt and not txt.count("Table of Contents"):
+                                bbx[2] = l["bbox"][2]
                                 if not txt:
-                                    txt = t
+                                    txt = tt
                                 else:
-                                    txt += t
-                        if txt:
-                            txts.append((siz, txt, page.number + 1))
+                                    txt = "%s %s" % (txt, tt)
+                    if siz and txt:
+                        addText(txt, ts, bbx)
             return txts
-        sizs = {}
-        for page in self.doc:
-            for data in getData(page):
-                if data[0] not in sizs:
-                    sizs[data[0]] = 1
-                else:
-                    sizs[data[0]] += 1
-        if sizs:
-            cnts = [0, 0]
-            for siz in sizs:
-                if sizs[siz] > cnts[1]:
-                    cnts = [siz, sizs[siz]]
-            mxss = 0
+        sp = SplashScreen(self.win, "Generating Table of Contents\n\n"\
+            "Please Wait...")
+        # Try to use embedded toc
+        toc = self.doc.get_toc()
+        if toc:
             tabs = []
-            spcs = list(sizs.keys())
-            spcs.remove(cnts[0])
-            spcs.sort(reverse=True)
+            cdata = {}
+            mxss = 0
+            indx = 0
+            for item in toc:
+                if not item[1].strip():
+                    continue
+                pgno = int(item[2]) - 1
+                page = self.doc[pgno]
+                text = item[1].replace("\u2003", " ")
+                rect = page.search_for(text)
+                xxx = []
+                for rec in rect:
+                    if not xxx:
+                        xxx = rec
+                        continue
+                    if rec.y0 == xxx.y0:
+                        xxx.x1 = rec.x1
+                text = "%s%s" % ("    " * (item[0] - 1), text)
+                if len(text) > mxss:
+                    mxss = len(text)
+                tabs.append((text, item[2]))
+                cdata[indx] = xxx
+                indx += 1
+        else:
+            # Try to Generate own toc
+            sizs = {}
             for page in self.doc:
-                for data in getData(page):
-                    if data[0] <= cnts[0]:
-                        continue
-                    text = "%s%s" % ("  " * (spcs.index(data[0]) - 1), data[1])
-                    if text.count("F2"):
-                        continue
-                    tabs.append((text, data[2]))
-                    if len(text) > mxss:
-                        mxss = len(text)
-        if not sizs or not tabs:
-            sp.refreshSplash(text="Sorry, No Table Found")
-            time.sleep(2)
-            sp.closeSplash()
-            self.cv.focus_force()
-            return
+                try:
+                    blocks = page.get_text("dict")["blocks"]
+                except:
+                    blocks = page.getText("dict")["blocks"]
+                for b in blocks:
+                    if b["type"] == 0:
+                        for l in b["lines"]:
+                            for s in l["spans"]:
+                                tst = s["size"]
+                                if tst not in sizs:
+                                    sizs[tst] = 1
+                                else:
+                                    sizs[tst] += 1
+            if sizs:
+                cnts = [0, 0]
+                cdata = {}
+                for siz in sizs:
+                    if sizs[siz] > cnts[1]:
+                        cnts = [siz, sizs[siz]]
+                indx = 0
+                mxss = 0
+                tabs = []
+                spcs = list(sizs.keys())
+                spcs.remove(cnts[0])
+                spcs.sort(reverse=True)
+                for page in self.doc:
+                    for data in getData(page, cnts[0]):
+                        if not data[1].strip():
+                            continue
+                        text = "%s%s" % ("  " * (spcs.index(data[0]) - 1),
+                            data[1])
+                        if text.count("F2"):
+                            continue
+                        tabs.append((text, data[2]))
+                        cdata[indx] = data[3]
+                        if len(text) > mxss:
+                            mxss = len(text)
+                        indx += 1
+            if not sizs or not tabs:
+                sp.refreshSplash(text="Sorry, No Table Found")
+                time.sleep(2)
+                sp.closeSplash()
+                self.cv.focus_force()
+                return
         sp.closeSplash()
+        # Display toc
         cols = (
             (0, "Description", mxss, "NA", "Y"),
             (1, "Page", 4, "UI", None))
@@ -18930,16 +19016,19 @@ class ViewPDF(object):
             for page in self.doc:
                 annot = page.firstAnnot
                 while annot:
-                    annot = page.deleteAnnot(annot)
-            page = self.doc[int(sc.selection[2]) - 1]
-            try:
-                found = page.search_for(sc.selection[1])
-                page.add_highlight_annot(found[0])
-            except:
-                found = page.searchFor(sc.selection[1])
-                page.addHighlightAnnot(found[0])
+                    try:
+                        annot = page.delete_annot(annot)
+                    except:
+                        annot = page.deleteAnnot(annot)
+            bbox = cdata[sc.selection[0]]
+            rect = fitz.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
             self.pgno = int(sc.selection[2])
-            self.prec[self.pgno] = found[0]
+            page = self.doc[self.pgno - 1]
+            self.prec[self.pgno] = rect
+            try:
+                page.add_highlight_annot(rect)
+            except:
+                page.addHighlightAnnot(rect)
             self.cont = True
             self.showPage()
         self.cv.focus_force()
@@ -19111,12 +19200,14 @@ class ViewPDF(object):
                         if wrk.count(","):
                             wrk = wrk.split(",")
                             wrk = list(dict.fromkeys(wrk))
-                        else:     
+                        elif wrk.count("-"):
                             rng = wrk.split("-")
                             rng = list(dict.fromkeys(rng))
                             wrk = []
                             for x in range(int(rng[0]), int(rng[1]) + 1):
                                 wrk.append(x)
+                        else:
+                            wrk = [wrk]
                         pag = []
                         for w in wrk:
                             p = int(w) - 1
@@ -19131,7 +19222,10 @@ class ViewPDF(object):
                     fle = os.path.join(tempfile.gettempdir(), "%s.pdf" % tme)
                     doc2 = fitz.open()
                     for pg in pag:
-                        doc2.insertPDF(self.doc, from_page=pg, to_page=pg)
+                        try:
+                            doc2.insert_pdf(self.doc, from_page=pg, to_page=pg)
+                        except:
+                            doc2.insertPDF(self.doc, from_page=pg, to_page=pg)
                     doc2.save(fle)
                     doc2.close()
                 cpy = int(spn.get())

@@ -96,14 +96,14 @@ The following *Buttons* are available:
     + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
 + **Entered** - Use this button to display all entered players.
 + **Modify** - Use this button to change the player's position/ratings for this draw only.
-+ **Draw** - Use this button to make the draw once all tabs/teams and bounce games have been entered. In the case of *Teams* if there are any tabs that have been entered and have not been allocated to teams you will be prompted to either *Generate*, *Delete* or *Exit*. If *Generate* is selected the programme will try to allocate the unallocated tabs into teams.
++ **Draw** - Use this button to make the draw once all tabs/teams and bounce games have been entered. In the case of *Teams* if there are any tabs that have been entered and have not been allocated to teams you will be prompted to either *Generate*, *Delete* or *Exit*. If *Generate* is selected the program will try to allocate the unallocated tabs into teams.
     + **Draw Type** - The type of draw i.e. Random or Strength v Strength.
     + **Apply Percentages** - This is only available if the basis of the draw is Combined. Select whether to apply percentages to position changes e.g. A player moving up in position would lose 10% of their rating and a player moving down in position would gain 10% of their rating.
     + **Apply History** - Whether or not to take previous draws into consideration when making the current draw.
     + **Team Size** - The preferred number of players per team.
     + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
     + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If 7 rinks are available this must be entered as A1234567,B etc. If there are more rinks available than needed, end rinks will be removed.
-+ **View/Edit Draw** - Use this button to view the draw and/or manually change it i.e. move players between teams.
++ **View/Edit Draw** - Use this button to view the draw and/or manually change it i.e. move players between teams or replace players with new players.
 + **Print** - Use this button to print a draw.
     + **Print Cards** - Select whether to print score cards.
         + **Heading** - Enter the heading to be printed on the score cards.
@@ -113,6 +113,12 @@ The following *Buttons* are available:
     + **Tabs Draw Board** - Print an emulation of a tabs draw board.
     + **Include Empty Rinks** - Whether to include or exclude empty rinks when printing a tabs draw board.
 + **Exit** - Use this button to exit the program. If the draw has not yet been done you will be prompted to confirm exiting.
+
+View/Edit Draw (BC)
++++++++++++++++++++
+Use this routine to view and/or alter a draw manually.
+
+Use the *Replace Tab with New Tab* button to replace a player with another player not yet in the draw. This will remove the old player in insert the new player.
 
 Reprint Draw (BC)
 +++++++++++++++++

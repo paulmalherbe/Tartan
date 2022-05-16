@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -177,9 +177,11 @@ class msc110(object):
             nam = self.df.t_work[0][0][9]
             pwd = self.df.t_work[0][0][10]
             chk = sendMail([svr, prt, sec, aut, nam, pwd], "", "", "",
-                check=True, err=self.opts["mf"].body,
+                check=True, errwid=self.opts["mf"].body,
                 wrkdir=self.opts["mf"].rcdic["wrkdir"])
             if not chk:
+                showError(self.opts["mf"].body, "Error",
+                    "Invalid SMTP Server or Authentication.")
                 self.df.focusField("T", 0, 6)
                 return
         tme = time.localtime()

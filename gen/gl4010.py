@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -498,7 +498,7 @@ class gl4010(object):
         return mthno, acbal
 
     def getTrans(self):
-        odr = "glt_acno, glt_curdt, glt_trdt, glt_type, glt_refno, glt_batch"
+        odr = "glt_acno, glt_curdt, glt_seq"
         if not self.trnper:
             whr = [("glt_cono", "=", self.opts["conum"]), ("glt_acno", "=",
                 self.acno), ("glt_curdt", "between", self.i_per, self.e_per)]

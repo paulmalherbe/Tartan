@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -77,13 +77,13 @@ class ar3020(object):
             (("T",0,0,0),"Id2",7,"Starting Period","",
                 "","Y",self.doStartPer,None,None,("efld",)),
             (("T",0,1,0),"Id2",7,"Ending Period","",
-                "","Y",self.doEndPer,None,None,("efld",)),
+                "","N",self.doEndPer,None,None,("efld",)),
             (("T",0,2,0),"IUI",1,"Type","Transaction Type",
-                "","Y",self.doBatTyp,btt,None,None),
+                "","N",self.doBatTyp,btt,None,None),
             (("T",0,3,0),"INa",7,"Batch Number","",
-                "","Y",self.doBatNum,btm,None,None),
+                "","N",self.doBatNum,btm,None,None),
             (("T",0,4,0),("IRB",r1s),0,"Totals Only","",
-                "Y","Y",self.doTots,None,None,None))
+                "Y","N",self.doTots,None,None,None))
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,

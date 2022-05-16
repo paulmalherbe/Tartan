@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -902,8 +902,12 @@ Custom  - Customised Report"""),
             # For type M and a Manual or Auto Chart is selected
             if "args" not in self.opts and not self.strm and \
                     self.gldep == "N" and (self.achart or self.mchart):
+                if self.val == "C":
+                    end = self.e_per
+                else:
+                    end = self.end
                 CreateChart(self.opts["mf"], self.opts["conum"],
-                    self.opts["conam"], [self.s_per, self.end],
+                    self.opts["conam"], [self.s_per, end],
                     [[self.opts["conam"], "Financial Statement"],
                     self.des1], self.achart, self.mchart)
 
@@ -1783,7 +1787,7 @@ Custom  - Customised Report"""),
                 self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.width)))
             else:
                 self.fpdf.drawText()
-            self.pglin += 5
+            self.pglin += 6
             self.emlhead = "Financials for %s as at %s" % (self.opts["conam"],
                 self.yed)
         else:
@@ -1891,10 +1895,10 @@ Custom  - Customised Report"""),
         if self.typ == "C":
             self.fpdf.drawText(txt)
             self.fpdf.drawText()
-            self.pglin += 1
+            self.pglin += 2
         else:
             self.fpdf.drawText(txt)
-        self.pglin += 1
+            self.pglin += 1
 
     def doMainExit(self):
         self.df.closeProcess()

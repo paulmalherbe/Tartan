@@ -201,9 +201,9 @@ Use this routine to create, amend and delete `Financial Statements (GL)`_ report
     + **Storage Number (Base)** - The first stored amount
     + **Storage Number (Calc)** - The second stored amount
 
-The following *Buttons* are avaliable
+The following *Buttons* are available
 
-+ **Generate** - Use this button to generate a report format if the general leger masterfile records have been flagged with the F/S Account Types.
++ **Generate** - Use this button to generate a report format if the general ledger masterfile records have been flagged with the F/S Account Types.
 + **Copy** - Use this button to copy an existing report format.
 + **Import** - Use this button to import a report format file previously exported.
 + **Export** - Use this button to export an existing report format.
@@ -288,7 +288,7 @@ If the auto populate button is used the following screen will appear:
 + **Rounding to Nearest** - Select the rounding requirement.
 + **Any Exception Rates** - Select whether there are accounts with a rate different to the *Standard Rate*.
 
-If there are no Exceptions the budgets will be popupated else enter the Exceptions.
+If there are no Exceptions the budgets will be populated else enter the Exceptions.
 
 + **Acc-Num** - The generals ledger account number.
 + **Rate** - The rate to apply to this account.

@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -124,8 +124,9 @@ class gl1010(object):
             ("Import",None,self.doImport,0,("T",0,1),("T",0,2),
                 "Import a Chart of Accounts from a CSV or XLS file "\
                 "having the following fields: Account Number, "\
-                "Account Type (P/B), Description, Direct Postings (Y/N), "\
-                "VAT Code"),
+                "T/B Account Type (P/B), F/S Account Type (N/D/E/F/A/B/C), "\
+                "F/S Account Group, Description, Allow Postings (Y/N) "\
+                "and VAT Code"),
             ["Populate",None,self.doPopulate,0,("T",0,1),("T",0,2),
                 "Generate a Chart of Accounts with Accompanying Control "\
                 "Records and Financial Statement Report. This Only Applies "\

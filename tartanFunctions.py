@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -129,20 +129,20 @@ def getPrgPath():
 def showDialog(screen, dtype, title, mess, butt=None, dflt=None):
     try:
         if screen == "text":
-            raise Exception
-        from TartanClasses import MyMessageBox
-        mb = MyMessageBox(screen, dtype, title=title, mess=mess, butt=butt,
-            dflt=dflt)
-        return mb.answer
-    except Exception as e:
-        if dtype == "question":
-            answer = None
-            while answer not in ("yes", "no"):
-                answer = input("\n%s (yes/no): " % mess)
-            return answer
+            if dtype == "question":
+                answer = None
+                while answer not in ("yes", "no"):
+                    answer = input("\n%s (yes/no): " % mess)
+                return answer
+            else:
+                print(mess)
         else:
-            print("\n%s\n%s\n" % (mess, e))
-            return
+            from TartanClasses import MyMessageBox
+            mb = MyMessageBox(screen, dtype, title=title, mess=mess,
+                butt=butt, dflt=dflt)
+            return mb.answer
+    except Exception as err:
+        print("\n%s\n%s\n" % (mess, err))
 
 def askChoice(screen=None, head="", mess="", butt=None, default=""):
     return showDialog(screen, "choice", head, mess, butt, default)
@@ -804,7 +804,7 @@ def findFile(start=".", name=None, ftyp="f", case="n"):
                     elif flenam.lower() == name.lower():
                         return os.path.join(root, flenam)
 
-def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False, timeout=30, local=None, lnkurl=None, err=False, wrkdir="."):
+def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False, timeout=30, local=None, lnkurl=None, errwid=False, wrkdir="."):
     """
     A routine to email a message, embed files and/or attach files.
 
@@ -820,7 +820,7 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
         timeout = The number of seconds before timing out defaulting to 30.
         local   = The local hostname as fqdn.
         lnkurl  = An http link to add to the embedded attachments
-        err     = The widget to display the exception, defaults to False
+        errwid  = The widget to display the exception, defaults to None
         wrkdir  = The work directory, defaults to "."
     """
     import mimetypes, os, smtplib
@@ -862,10 +862,10 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
         if check:
             smtp.quit()
             return True
-    except Exception as chk:
+    except Exception as err:
         if not check:
-            showException(err, wrkdir, "Mail Server (%s %s) "\
-                "Invalid or Unavailable\n\n%s" % (host, port, chk))
+            showException(errwid, wrkdir, "Mail Server (%s %s) "\
+                "Invalid or Unavailable\n\n%s" % (host, port, err))
         return
     if type(to) == str:
         to = [to]
@@ -2114,8 +2114,8 @@ def getCost(sql, cono, group, code, loc=None, qty=1, ind="I", recp=False, tot=Fa
             # Last Cost
             whr = where[:]
             whr.append(("stt_type", "in", (1, 3)))
-            chk = sql.getRec("strtrn", cols=["stt_qty", "stt_cost"], where=whr,
-                order="stt_capdt desc, stt_seq desc")
+            chk = sql.getRec("strtrn", cols=["stt_qty", "stt_cost"],
+                where=whr, order="stt_capdt desc, stt_seq desc")
             for rec in chk:
                 q = CCD(rec[0], "SD", 11.2)
                 c = CCD(rec[1], "SD", 11.2)

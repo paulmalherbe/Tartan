@@ -108,7 +108,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -155,7 +155,7 @@ class bc2010(object):
         self.nstart = bwlctl["ctb_nstart"]
         self.dbase = bwlctl["ctb_dbase"]
         self.order = bwlctl["ctb_order"]
-        self.mixer = bwlctl["ctb_mixed"]
+        self.mixed = bwlctl["ctb_mixed"]
         self.ratem = CCD(bwlctl["ctb_ratem"], "UD", 6.2)
         self.ratev = CCD(bwlctl["ctb_ratev"], "UD", 6.2)
         self.greens = bwlctl["ctb_greens"]
@@ -182,7 +182,7 @@ class bc2010(object):
                 "Y","N",self.doMixed,None,None,None,None,"Select whether "\
                 "the Draw is Gender based or Mixed."),
             (("T",0,3,0),("IRB",r2s),0,"Mixed Rating","",
-                "Y","N",self.doMixedRating,None,None,None,None,"If "\
+                self.mixed,"N",self.doMixedRating,None,None,None,None,"If "\
                 "available, Select whether or not to use the Alternative "\
                 "Gender Ratings."),
             (("T",0,4,0),("IRB",r2s),0,"Fix Odd Numbers","",
@@ -267,6 +267,7 @@ class bc2010(object):
             elif ok == "A":
                 self.alter = True
                 self.doLoadMst(self.drm)
+                self.doLoadTabs()
             elif ok == "X":
                 self.sql.delRec("bwldrm", where=[("bdm_cono", "=",
                     self.opts["conum"]), ("bdm_date", "=", self.date),
@@ -278,10 +279,10 @@ class bc2010(object):
                 return "ff1"
 
     def doLoadMst(self, drm):
-        self.mixed = drm[self.sql.bwldrm_col.index("bdm_mixed")]
-        self.mf.loadEntry("T", 0, 2, data=self.mixed)
-        self.rating = drm[self.sql.bwldrm_col.index("bdm_rating")]
-        self.mf.loadEntry("T", 0, 3, data=self.rating)
+        self.mixgd = drm[self.sql.bwldrm_col.index("bdm_mixed")]
+        self.mf.loadEntry("T", 0, 2, data=self.mixgd)
+        self.mixrt = drm[self.sql.bwldrm_col.index("bdm_rating")]
+        self.mf.loadEntry("T", 0, 3, data=self.mixrt)
         self.nbase = drm[self.sql.bwldrm_col.index("bdm_dbase")]
         self.mf.loadEntry("T", 0, 5, data=self.nbase)
         self.dtype = drm[self.sql.bwldrm_col.index("bdm_dtype")]
@@ -302,6 +303,8 @@ class bc2010(object):
         self.teams = {}
         self.bounce = {}
         self.adraw1 = []
+        if draws[0][8] == "D":
+            self.drawn = True
         pos = [0, 3, 2, 1, 0]
         for draw in draws:
             tab = self.sql.getRec("bwltab", cols=["btb_surname",
@@ -311,7 +314,7 @@ class bc2010(object):
                 limit=1)
             if tab:
                 if self.alter:
-                    if self.rating == "N":
+                    if self.mixrt == "N":
                         p, r = tab[3:5]
                     else:
                         p, r = tab[5:]
@@ -367,15 +370,18 @@ class bc2010(object):
             self.doAverage(self.adraw1[x], self.adraw1[x + 1])
 
     def doMixed(self, frt, pag, r, c, p, i, w):
-        self.mixed = w
-        if self.mixed == "N" or self.mixer == "N":
-            self.rating = "N"
-            self.mf.loadEntry(frt, pag, p + 1, data=self.rating)
-            self.mf.loadEntry(frt, pag, p + 2, data="Y")
+        self.mixgd = w
+        if self.mixgd == "N" or self.mixed == "N":
+            self.mixrt = "N"
+            self.mf.loadEntry(frt, pag, p + 1, data=self.mixrt)
+            if self.mixgd == "Y":
+                self.dofix = "N"
+                self.mf.loadEntry(frt, pag, p + 2, data=self.dofix)
+                return "sk2"
             return "sk1"
 
     def doMixedRating(self, frt, pag, r, c, p, i, w):
-        self.rating = w
+        self.mixrt = w
         self.dofix = False
         self.mf.loadEntry(frt, pag, p + 1, data="N")
         if self.dbase == "C":
@@ -431,7 +437,7 @@ class bc2010(object):
         self.opts["mf"].closeLoop()
 
     def doTabs(self):
-        if self.mixed == "Y":
+        if self.mixgd == "Y":
             tit = "Mixed Draw for the %s of %s" % (self.timed, self.dated)
         else:
             tit = "Gender Draw for the %s of %s" % (self.timed, self.dated)
@@ -472,7 +478,7 @@ class bc2010(object):
         r4s = (("Male", "M"), ("Female", "F"))
         r5s = (("Skip", "4"), ("Third", "3"), ("Second", "2"), ("Lead", "1"))
         tag = (("", None, None, None, False),)
-        if self.dbase in ("C", "R"):
+        if self.nbase in ("C", "R"):
             vfy = ("notzero",)
         else:
             vfy = ("efld",)
@@ -517,7 +523,6 @@ class bc2010(object):
         self.df = TartanDialog(self.opts["mf"], tops=True, title=tit,
             tags=tag, eflds=fld, butt=but, tend=tnd, txit=txt, eframe=True)
         if self.alter:
-            self.doLoadTabs()
             for b in range(4, 7):
                 wid = getattr(self.df, "B%i" % b)
                 self.df.setWidget(wid, "normal")
@@ -639,12 +644,12 @@ class bc2010(object):
             if not acc:
                 return
             self.df.loadEntry("T", 1, 0, data=tab)
-        if not err and self.dbase != "P" and not acc[c.index("btb_rate1")]:
+        if not err and self.nbase != "P" and not acc[c.index("btb_rate1")]:
             return
         snam = acc[c.index("btb_surname")]
         fnam = acc[c.index("btb_names")]
         gend = acc[c.index("btb_gender")]
-        if self.mixed == "Y" and self.rating == "Y" and gend == "F":
+        if self.mixgd == "Y" and self.mixrt == "Y" and gend == "F":
             pos = str(acc[c.index("btb_pos2")])
             rte = str(acc[c.index("btb_rate2")])
         else:
@@ -700,7 +705,7 @@ First Change the Bounce Game and then Delete It.""")
             self.df.focusField("T", 1, 7)
         else:
             self.modify = True
-            if self.dbase in ("C", "P"):
+            if self.nbase in ("C", "P"):
                 self.df.focusField("T", 1, 5)
             else:
                 self.df.focusField("T", 1, 6)
@@ -1191,7 +1196,7 @@ Do you still want to continue?""" % np, default="no")
                 return
         tit = ("Draw Parameters",)
         r2s = (("Yes", "Y"), ("No", "N"))
-        r3s = (("Fours","4"), ("Trips","3"), ("Pairs","2"), ("Singles","1")) 
+        r3s = (("Fours","4"), ("Trips","3"), ("Pairs","2"), ("Singles","1"))
         if self.teams:
             r1s = (("Strength", "S"), ("Random", "R"))
             fld = [
@@ -1209,13 +1214,13 @@ Random: The teams will be Randomly Paired.""")]
                     """Strength: The Draw will Try and Draw the teams by Strength.
 Random: The teams will be Randomly Drawn.""")]
             x = 1
-        else:
-            x = 0
+        elif self.nbase == "P":
             fld = []
             self.dtype = "R"
             self.dhist = "Y"
+            x = 0
         if not self.teams:
-            if self.dbase == "C":
+            if self.nbase == "C":
                 fld.append((("T",0,x,0),("IRB",r2s),0,"Apply Percentages","",
                     "Y","N",self.doPer,None,None,None,None,
                     "Decrease rating by 10% if position is raised and "\
@@ -1341,16 +1346,8 @@ Try to Allocate Different Rinks""" % self.weeks),
     def doSize(self, frt, pag, r, c, p, i, w):
         self.tsize = int(w)
         self.dw.topf[0][-1][4] = ""
-        if self.mixed == "N":
-            self.men = 0
-            self.wom = 0
-            for tab in self.alltabs:
-                if self.alltabs[tab][2] == "F":
-                    self.wom += 1
-                else:
-                    self.men += 1
         if self.tsize in (1, 2, 4):
-            if self.mixed == "Y":
+            if self.mixgd == "Y":
                 self.needed = self.getNeeded(len(self.alltabs))
             else:
                 self.needed = self.getNeeded(self.men, self.wom)
@@ -1365,7 +1362,7 @@ Try to Allocate Different Rinks""" % self.weeks),
 
     def doRep42(self, frt, pag, r, c, p, i, w):
         self.rep42 = w
-        if self.mixed == "Y":
+        if self.mixgd == "Y":
             self.needed = self.getNeeded(len(self.alltabs))
         else:
             self.needed = self.getNeeded(self.men, self.wom)
@@ -1570,7 +1567,7 @@ Try to Allocate Different Rinks""" % self.weeks),
             for tab in self.ndict:
                 # Create rest of players
                 ntabs.append([tab] + self.ndict[tab])
-            if self.mixed.upper() == "N":
+            if self.mixgd.upper() == "N":
                 mess = None
                 grps.append([])
                 for tab in ntabs:
@@ -1586,7 +1583,7 @@ Try to Allocate Different Rinks""" % self.weeks),
                     ok = askQuestion(self.opts["mf"].body,
                         "Insufficient Numbers", mess, default="yes")
                     if ok == "yes":
-                        self.mixed = "Y"
+                        self.mixgd = "Y"
                         self.dofix = False
                         grps = [[]]
                         for tab in ntabs:
@@ -1623,7 +1620,7 @@ Try to Allocate Different Rinks""" % self.weeks),
                 else:
                     self.hist = {}
                     self.broken = []
-                if self.mixed == "Y":
+                if self.mixgd == "Y":
                     self.count = 0
                     text = "Selecting the Best Mixed Combination"
                 elif not num:
@@ -1829,7 +1826,7 @@ Combination Number %10s"""
         # Calculate the number of players, by position, required
         # Treating 2nds as 3rds in trips
         teams = int(len(tabs) / (self.tsize * 2))  # full teams
-        odds = []                                 # others
+        odds = []                                  # others
         rem = len(tabs) % (self.tsize * 2)         # players short
         if rem:
             if self.tsize == 2 and rem == 2:
@@ -1958,7 +1955,7 @@ Combination Number %10s"""
         self.second1 = []
         self.lead1 = []
         for tab in tabs:
-            if self.nbase == "R":
+            if self.nbase in ("R", "N"):
                 tab[4] = 0
                 self.skip1.append(tab)
             elif tab[4] == 4:
@@ -1976,7 +1973,7 @@ Combination Number %10s"""
             random.shuffle(self.third1)
             random.shuffle(self.second1)
             random.shuffle(self.lead1)
-        else:
+        elif self.nbase in ("R", "C"):
             # Rating by rating only or combination
             # Sort players by rating
             if self.order == "A":
@@ -1990,49 +1987,49 @@ Combination Number %10s"""
         # Skips
         while self.third1 and len(self.skip1) < self.skips:
             tab = self.third1.pop()
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * .9, 0))
             self.skip1.append(tab)
         while self.second1 and len(self.skip1) < self.skips:
             tab = self.second1.pop()
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * .8, 0))
             self.skip1.append(tab)
         while self.lead1 and len(self.skip1) < self.skips:
             tab = self.lead1.pop()
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * .7, 0))
             self.skip1.append(tab)
         while len(self.skip1) > self.skips:
             tab = self.skip1.pop(0)
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * 1.1, 0))
             self.third1.append(tab)
         # Thirds
         while self.second1 and len(self.third1) < self.thirds:
             tab = self.second1.pop()
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * .9, 0))
             self.third1.append(tab)
         while self.lead1 and len(self.third1) < self.thirds:
             tab = self.lead1.pop()
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * .8, 0))
             self.third1.append(tab)
         while len(self.third1) > self.thirds:
             tab = self.third1.pop(0)
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * 1.1, 0))
             self.second1.append(tab)
         # Seconds
         while len(self.second1) < self.seconds:
             tab = self.lead1.pop()
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * .9, 0))
             self.second1.append(tab)
         while len(self.second1) > self.seconds:
             tab = self.second1.pop(0)
-            if self.dbase == "C" and self.dper == "Y":
+            if self.nbase == "C" and self.dper == "Y":
                 tab[5] = int(round(tab[5] * 1.1, 0))
             self.lead1.append(tab)
 
@@ -2248,7 +2245,7 @@ Combination Number %10s"""
             ("bdt_date", "=", self.date), ("bdt_time", "=", self.time)])
         # Insert bwldrm
         self.sql.insRec("bwldrm", data=[self.opts["conum"], self.date,
-            self.time, self.mixed, self.rating, self.nbase, self.dtype,
+            self.time, self.mixgd, self.mixrt, self.nbase, self.dtype,
             self.dhist, self.tsize, self.ratem.work, self.ratev.work])
         if not self.drawn:
             return
@@ -2416,6 +2413,7 @@ Combination Number %10s"""
         state = self.df.disableButtonsTags()
         self.df.setWidget(self.df.mstFrame, state="hide")
         self.adraw3 = copyList(self.adraw1)
+        self.reptabs = []
         while True:
             draw = self.doShowDraw("View/Edit the Draw", self.adraw3, True)
             if draw:
@@ -2456,6 +2454,13 @@ Combination Number %10s"""
                     if draw[2][0] or draw[3][0] or draw[4][0] or draw[5][0]:
                         self.adraw1.append(draw)
                 self.doSave()
+            elif self.reptabs:
+                # Restore replaced tabs
+                for old, dat, new in reversed(self.reptabs):
+                    if new in self.alltabs:
+                        del self.alltabs[new]
+                    if old not in self.alltabs:
+                        self.alltabs[old] = dat
         self.df.enableButtonsTags(state)
         self.df.setWidget(self.df.mstFrame, state="show")
         self.doShowQuantity()
@@ -2545,9 +2550,12 @@ Combination Number %10s"""
             (("T",0,8,0),"IUI",6,"Lead","",
                 0,"N",self.doChgTab,mem,None,("efld",)),
             (("T",0,8,0),"OUA",20,""))
+        but = (("Replace Tab with New Tab",None,self.doRepTab,1,None,None,
+            "This will Remove the Existing Tab and Replace it with a New "\
+            "Uncaptured Tab."),)
         self.cg = TartanDialog(self.opts["mf"], title=tit, tops=True,
             eflds=fld, tend=((self.doChgEnd,"n"),), txit=(self.doChgExit,),
-            focus=False)
+            butt=but, focus=False)
         self.cg.loadEntry("T", 0, 0, data=self.cdraw[0])
         for n, d in enumerate(self.cdraw[2:]):
             self.cg.loadEntry("T", 0, 1 + (2 * n), data=d[0])
@@ -2555,9 +2563,93 @@ Combination Number %10s"""
         self.cg.focusField("T", 0, 1, clr=False)
         self.cg.mstFrame.wait_window()
 
+    def doRepTab(self):
+        self.oldtab = self.cg.getEntry("T", 0, self.cg.pos, False)
+        oldnam = self.cg.getEntry("T", 0, self.cg.pos + 1, False)
+        if not self.oldtab:
+            return
+        self.oldtab = int(self.oldtab)
+        state = self.cg.disableButtonsTags()
+        self.cg.setWidget(self.cg.mstFrame, state="hide")
+        tit = ("Replace Tab",)
+        mem = {
+            "stype": "R",
+            "tables": ("bwltab",),
+            "cols": (
+                ("btb_tab", "", 0, "Tab"),
+                ("btb_surname", "", 0, "Surname","Y"),
+                ("btb_names", "", 0, "Names"),
+                ("btb_pos1", "", 0, "P"),
+                ("btb_rate1", "", 0, "RP")),
+            "where": [("btb_cono", "=", self.opts["conum"])],
+            "order": "btb_surname, btb_names"}
+        fld = (
+            (("T",0,0,0),"OUI",6,"Old Tab"),
+            (("T",0,0,0),"OUA",20,""),
+            (("T",0,1,0),"IUI",6,"New Tab","",
+                0,"N",self.doNewTab,mem,None,("notzero",)),
+            (("T",0,1,0),"OUA",20,""))
+        self.nt = TartanDialog(self.opts["mf"], title=tit, tops=True,
+            eflds=fld, tend=((self.doRepEnd,"y"),), txit=(self.doRepExit,))
+        self.nt.loadEntry("T", 0, 0, data=self.oldtab)
+        self.nt.loadEntry("T", 0, 1, data=oldnam)
+        self.nt.mstFrame.wait_window()
+        self.cg.setWidget(self.cg.mstFrame, state="show")
+        self.cg.enableButtonsTags(state=state)
+        self.cg.focusField("T", 0, self.cg.col, clr=False)
+
+    def doNewTab(self, frt, pag, r, c, p, i, w):
+        if w in self.alltabs:
+            return "Invalid Tab, Already Entered"
+        self.newtab = self.sql.getRec("bwltab", where=[("btb_cono", "=",
+            self.opts["conum"]), ("btb_tab", "=", w)], limit=1)
+        if not self.newtab:
+            return "Invalid Tab Number"
+        a = self.newtab[self.sql.bwltab_col.index("btb_surname")]
+        b = self.newtab[self.sql.bwltab_col.index("btb_names")]
+        self.nam = a.upper()
+        if b:
+            self.nam = "%s, %s" % (self.nam, b[0].upper())
+        self.nt.loadEntry(frt, pag, p+1, data=self.nam)
+
+    def doRepEnd(self):
+        old = self.alltabs[self.oldtab]
+        del self.alltabs[self.oldtab]
+        tab = self.newtab[self.sql.bwltab_col.index("btb_tab")]
+        a = self.newtab[self.sql.bwltab_col.index("btb_surname")]
+        b = self.newtab[self.sql.bwltab_col.index("btb_names")]
+        c = self.newtab[self.sql.bwltab_col.index("btb_gender")]
+        d = self.newtab[self.sql.bwltab_col.index("btb_pos1")]
+        e = self.newtab[self.sql.bwltab_col.index("btb_rate1")]
+        self.alltabs[tab] = [a, b, c, d, e, "Y"]
+        self.reptabs.append((self.oldtab, old, tab))
+        self.cg.loadEntry("T", 0, self.cg.pos, data=tab)
+        self.cg.loadEntry("T", 0, self.cg.pos + 1, data=self.nam)
+        fini = False
+        for x, d in enumerate(self.adraw3):
+            for y, t in enumerate(d[2:]):
+                if t[0] == self.oldtab:
+                    self.adraw3[x][2+y][0] = tab
+                    self.adraw3[x][2+y][1] = self.nam
+                    self.adraw3[x][2+y][2] = e
+                    fini = True
+                    break
+            if fini:
+                break
+        self.nt.closeProcess()
+
+    def doRepExit(self):
+        self.cg.loadEntry("T", 0, self.cg.pos, data=self.oldtab)
+        self.nt.closeProcess()
+
     def doChgTab(self, frt, pag, r, c, p, i, w):
         if w and w not in self.alltabs:
-            return "Invalid Tab, Not Entered"
+            if p < 9:
+                tab = self.adraw3[self.seq][2+(p//2)][0]
+            else:
+                tab = self.adraw3[self.seq+1][2+((p-8)//2)][0]
+            self.cg.loadEntry(frt, pag, p, data=tab)
+            return "Invalid Tab (%s), Not Entered" % w
         if not w:
             nam = ""
         else:
@@ -2688,15 +2780,15 @@ Combination Number %10s"""
         self.df.clearFrame("T", 1)
 
     def doShowQuantity(self):
-        men = 0
-        wom = 0
+        self.men = 0
+        self.wom = 0
         for tab in self.alltabs:
             if self.alltabs[tab][2] == "M":
-                men += 1
+                self.men += 1
             else:
-                wom += 1
-        self.df.loadEntry("T", 0, 0, data=men + wom)
-        self.df.loadEntry("T", 0, 1, data=men)
-        self.df.loadEntry("T", 0, 2, data=wom)
+                self.wom += 1
+        self.df.loadEntry("T", 0, 0, data=self.men + self.wom)
+        self.df.loadEntry("T", 0, 1, data=self.men)
+        self.df.loadEntry("T", 0, 2, data=self.wom)
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

@@ -9,7 +9,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -104,8 +104,11 @@ class st6020(object):
             "No Stock Records")
         else:
             self.cnt = 0
-            p = ProgressBar(self.opts["mf"].body, mxs=len(recs),
-                typ="Valuation of Stock at Last Cost")
+            if self.method == "L":
+                txt = "Valuation of Stock at Last Cost"
+            else:
+                txt = "Valuation of Stock at Average Cost"
+            p = ProgressBar(self.opts["mf"].body, mxs=len(recs), typ=txt)
             for num, rec in enumerate(recs):
                 p.displayProgress(num)
                 self.updateTables(rec)

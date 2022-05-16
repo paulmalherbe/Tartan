@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ class ms3050(object):
             prog=self.__class__.__name__)
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        # {"sss": {"mod": {"typ": "desc"}}.....} 
+        # {"sss": {"mod": {"typ": "desc"}}.....}
         self.allmod = {"tb": {
             "tb1010":
                 {0: "Create File Formats"},

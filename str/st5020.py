@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,8 +25,8 @@ COPYING
 """
 
 import time
-from TartanClasses import GetCtl, Sql, TartanDialog
-from tartanFunctions import getCost, showError
+from TartanClasses import FileImport, GetCtl, ProgressBar, Sql, TartanDialog
+from tartanFunctions import askChoice, getCost, showError
 
 class st5020(object):
     def __init__(self, **opts):
@@ -81,35 +81,34 @@ class st5020(object):
             "whera": [["T", "st1_group", 4, 0]],
             "order": "st1_group, st1_code",
             "index": 1}
-        r1s = (("Number","N"),("Bin Number","B"))
+        r1s = (("Grp/Code","N"),("Bin Number","B"))
         r2s = (("Yes","Y"),("No","N"))
         r3s = (("No","N"),("Last","L"),("Average","A"))
-        fld = (
-            (("T",0,0,0),("IRB",r1s),0,"Sort Order","",
-                "N","Y",self.doSort,None,None,None),
-            (("T",0,1,0),"IUA",1,"Location","",
-                "","N",self.doLoc,loc,None,("efld",)),
-            (("T",0,2,0),("IRB",r2s),0,"Auto Sequence","",
+        if self.locs == "N":
+            self.loc = "1"
+            fld = []
+            idx = 0
+        else:
+            fld = [(("T",0,0,0),"IUA",1,"Location","",
+                "","N",self.doLoc,loc,None,("efld",))]
+            idx = 1
+        fld.extend([
+            (("T",0,idx,0),("IRB",r2s),0,"Auto Sequence","",
                 "N","N",self.doAuto,None,None,None),
-            (("T",0,3,0),"IUA",8,"First Bin Number","",
+            (("T",0,idx+1,0),("IRB",r1s),0,"Sort Order","",
+                "N","Y",self.doSort,None,None,None),
+            (("T",0,idx+2,0),"IUA",8,"First Bin Number","",
                 "","N",self.doFbin,None,None,("efld",)),
-            (("T",0,4,0),"IUA",3,"First Group","",
+            (("T",0,idx+3,0),"IUA",3,"First Group","",
                 "","N",self.doFgrp,gpm,None,None),
-            (("T",0,5,0),"INA",20,"First Code","",
+            (("T",0,idx+4,0),"INA",20,"First Code","",
                 "","N",self.doFcode,stm1,None,None),
-            (("T",0,6,0),("IRB",r3s),0,"Cost Prices","",
-                "N","N",self.doCosts,None,None,None))
+            (("T",0,idx+5,0),("IRB",r3s),0,"Cost Prices","",
+                "N","N",self.doCosts,None,None,None)])
         tnd = ((self.endPage1,"y"),)
         txt = (self.exitPage1,)
         self.df1 = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
             tend=tnd, txit=txt)
-
-    def doSort(self, frt, pag, r, c, p, i, w):
-        self.sort = w
-        if self.locs == "N":
-            self.loc = "1"
-            self.df1.loadEntry(frt, pag, p+1, data=self.loc)
-            return "sk1"
 
     def doLoc(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("strloc", cols=["srl_desc"],
@@ -118,19 +117,41 @@ class st5020(object):
         if not acc:
             return "Invalid Location Code"
         self.loc = w
+        chk = self.sql.getRec("strvar", where=[("stv_cono", "=",
+            self.opts["conum"]), ("stv_loc", "=", self.loc)])
+        if chk:
+            self.df1.setWidget(self.df1.mstFrame, "hide")
+            but = (("Continue", "C"), ("Delete", "D"), ("Exit", "E"))
+            ok = askChoice(self.opts["mf"].body, "Existing",
+                "There Are Still Un-Merged Transactions.", butt=but,
+                default="Continue")
+            if ok == "E":
+                return "xt"
+            if ok == "D":
+                self.sql.delRec("strvar", where=[("stv_cono", "=",
+                    self.opts["conum"]), ("stv_loc", "=", self.loc)])
+                self.opts["mf"].dbm.commitDbase(ask=True,
+                    mess="Would you like to COMMIT Deletions?")
+                if self.opts["mf"].dbm.commit == "no":
+                    self.df1.setWidget(self.df1.mstFrame, "show")
+                    return "rf"
+            self.df1.setWidget(self.df1.mstFrame, "show")
 
     def doAuto(self, frt, pag, r, c, p, i, w):
         self.auto = w
-        if self.auto != "Y":
-            return "sk3"
-        self.bin = ""
-        self.fgrp = ""
-        self.fcode = ""
-        if self.sort == "N":
+        if self.auto == "N":
+            return "sk4"
+
+    def doSort(self, frt, pag, r, c, p, i, w):
+        self.sort = w
+        if w == "N":
             return "sk1"
 
     def doFbin(self, frt, pag, r, c, p, i, w):
         self.fbin = w
+        self.fgrp = ""
+        self.fcode = ""
+        return "sk2"
 
     def doFgrp(self, frt, pag, r, c, p, i, w):
         if w:
@@ -166,16 +187,21 @@ class st5020(object):
         self.dataBody()
         if self.auto == "Y":
             whr = [("st1_cono", "=", self.opts["conum"])]
-            if self.fgrp:
-                whr.append(("st1_group", ">=", self.fgrp))
-            if self.fcode:
-                whr.append(("st1_code", ">=", self.fcode))
+            if self.sort == "N":
+                if self.fgrp:
+                    whr.append(("st1_group", ">=", self.fgrp))
+                if self.fcode:
+                    whr.append(("st1_code", ">=", self.fcode))
+                odr = "st1_group, st1_code"
+            else:
+                whr.append(("st2_bin", "=", self.fbin))
+                odr = "st2_bin, st2_group, st2_code"
             whr.extend([("st1_type", "not", "in", ("R","X")),
                 ("st2_cono=st1_cono",), ("st2_group=st1_group",),
                 ("st2_code=st1_code",), ("st2_loc", "=", self.loc)])
             self.codes = self.sql.getRec(tables=["strmf1", "strmf2"],
                 cols=["st1_group", "st1_code", "st1_desc", "st1_uoi",
-                "st2_bin"], where=whr, order="st1_group, st1_code")
+                "st2_bin"], where=whr, order=odr)
             if not self.codes:
                 showError(self.opts["mf"].body, "No Records",
                     "No Stock Records on File")
@@ -228,23 +254,83 @@ class st5020(object):
                 "","N",self.doUcost,None,None,("efld",)))
         fld.append((("C",0,0,6),"ISD",9.2,"Quantity","",
                 "","N",self.doQty,None,None,("efld",)))
+        if self.auto == "Y":
+            but = None
+        else:
+            txt = "Import a Stock Take Return from a CSV or XLS file "\
+                "having the following fields: Grp, Code, "
+            if self.costs == "N":
+                txt += "Quantity"
+            else:
+                txt += "Cost Price, Quantity"
+            but = [("Import",None,self.doImport,0,("C",0,1),("C",0,2),txt)]
         cnd = ((self.endPage2,"y"),)
         cxt = (self.exitPage2,)
         self.df2 = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
-            cend=cnd, cxit=cxt)
+            butt=but, cend=cnd, cxit=cxt)
+
+    def doImport(self):
+        self.df2.setWidget(self.df2.B0, state="disabled")
+        self.df2.setWidget(self.df2.mstFrame, state="hide")
+        skp = ["stv_cono", "stv_loc", "stv_bin"]
+        if self.costs == "N":
+            skp.append("stv_ucost")
+        fi = FileImport(self.opts["mf"], imptab="strvar", impskp=skp)
+        sp = ProgressBar(self.opts["mf"].body,
+            typ="Importing Stock Take", mxs=len(fi.impdat))
+        err = None
+        for num, line in enumerate(fi.impdat):
+            sp.displayProgress(num)
+            chk = self.sql.getRec("strmf2", where=[("st2_cono",
+                "=", self.opts["conum"]), ("st2_group", "=", line[0]),
+                ("st2_code", "=", line[1]), ("st2_loc", "=", self.loc)],
+                limit=1)
+            if not chk:
+                err = "%s %s Does Not Exist" % (line[0], line[1])
+                break
+            data = [self.opts["conum"], line[0], line[1], self.loc]
+            data.append(chk[self.sql.strmf2_col.index("st2_bin")])
+            if self.costs == "N":
+                data.append(line[2])
+                data.append(getCost(self.sql, self.opts["conum"], line[0],
+                    line[1], loc=self.loc, ind="I"))
+            else:
+                if line[3]:
+                    data.append(line[3])
+                else:
+                    data.append(getCost(self.sql, self.opts["conum"], line[0],
+                        line[1], loc=self.loc, ind=self.costs))
+                data.append(line[2])
+            whr = [("stv_cono", "=", data[0]), ("stv_group", "=", data[1]),
+                ("stv_code", "=", data[2]), ("stv_loc", "=", self.loc)]
+            var = self.sql.getRec("strvar", where=whr, limit=1)
+            if var:
+                self.sql.delRec("strvar", where=whr)
+            self.sql.insRec("strvar", data=data)
+        sp.closeProgress()
+        if err:
+            err = "Line %s: %s" % ((num + 1), err)
+            showError(self.opts["mf"].body, "Import Error", """%s
+
+Please Correct your Import File and then Try Again.""" % err)
+            self.opts["mf"].dbm.rollbackDbase()
+        elif fi.impdat:
+            self.opts["mf"].dbm.commitDbase(True)
+        self.df2.setWidget(self.df2.mstFrame, state="show")
+        self.df2.focusField(self.df2.frt, self.df2.pag, self.df2.col)
 
     def doGroup2(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("strgrp", cols=["gpm_desc"],
-            where=[("gpm_cono", "=", self.opts["conum"]), ("gpm_group", "=",
-            w)], limit=1)
+            where=[("gpm_cono", "=", self.opts["conum"]),
+            ("gpm_group", "=", w)], limit=1)
         if not acc:
             return "Invalid Group"
         self.group2 = w
 
     def doCode2(self, frt, pag, r, c, p, i, w):
-        ac1 = self.sql.getRec("strmf1", cols=["st1_type", "st1_desc"],
-            where=[("st1_cono", "=", self.opts["conum"]), ("st1_group", "=",
-            self.group2), ("st1_code", "=", w)], limit=1)
+        ac1 = self.sql.getRec("strmf1", cols=["st1_type", "st1_desc",
+            "st1_uoi"], where=[("st1_cono", "=", self.opts["conum"]),
+            ("st1_group", "=", self.group2), ("st1_code", "=", w)], limit=1)
         if not ac1:
             return "Invalid Code"
         if ac1[0] == "R":
@@ -252,13 +338,13 @@ class st5020(object):
         if ac1[0] == "X":
             return "Invalid Code (Redundant Item)"
         ac2 = self.sql.getRec("strmf2", where=[("st2_cono", "=",
-            self.opts["conum"]), ("st2_group", "=", self.group2), ("st2_code",
-            "=", w), ("st2_loc", "=", self.loc)], limit=1)
+            self.opts["conum"]), ("st2_group", "=", self.group2),
+            ("st2_code", "=", w), ("st2_loc", "=", self.loc)], limit=1)
         if not ac2:
             return "Invalid Location For This Product"
         self.code2 = w
-        self.df2.loadEntry("C", 0, p+1, data=ac1[0])
-        self.df2.loadEntry("C", 0, p+2, data=ac1[1])
+        self.df2.loadEntry("C", 0, p+1, data=ac1[1])
+        self.df2.loadEntry("C", 0, p+2, data=ac1[2])
         self.bin = ac2[self.sql.strmf2_col.index("st2_bin")]
         self.df2.loadEntry("C", 0, p+3, data=self.bin)
         self.ucost, qty = self.doGetValues()
@@ -270,7 +356,6 @@ class st5020(object):
 
     def doQty(self, frt, pag, r, c, p, i, w):
         self.qty = w
-        self.amt1 = round((self.qty * self.ucost), 2)
 
     def endPage2(self):
         self.updateTables()
@@ -289,7 +374,7 @@ class st5020(object):
         if self.sql.getRec("strvar", where=whr, limit=1):
             self.sql.delRec("strvar", where=whr)
         self.sql.insRec("strvar", data=[self.opts["conum"], self.group2,
-            self.code2, self.loc, self.bin, self.qty, self.ucost, 0])
+            self.code2, self.loc, self.bin, self.qty, self.ucost])
         self.opts["mf"].dbm.commitDbase()
 
     def doNextOne(self):
@@ -313,8 +398,9 @@ class st5020(object):
 
     def doGetValues(self):
         var = self.sql.getRec("strvar", where=[("stv_cono", "=",
-            self.opts["conum"]), ("stv_group", "=", self.group2), ("stv_code",
-            "=", self.code2), ("stv_loc", "=", self.loc)], limit=1)
+            self.opts["conum"]), ("stv_group", "=", self.group2),
+            ("stv_code", "=", self.code2), ("stv_loc", "=", self.loc)],
+            limit=1)
         if var:
             qty = var[self.sql.strvar_col.index("stv_qty")]
             cst = var[self.sql.strvar_col.index("stv_ucost")]

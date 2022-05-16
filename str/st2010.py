@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2021 Paul Malherbe.
+    Copyright (C) 2004-2022 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -410,25 +410,25 @@ class st2010(object):
             self.doExtData(line)
             if seq >= self.row[0]:
                 self.df.scrollScreen(0)
-                pos = (self.row[0] - 1) * 9
+                pos = (self.row[0] - 1) * 8
             else:
-                pos = seq * 9
+                pos = seq * 8
             # Load Values
             self.df.loadEntry("C", 0, pos, data=self.grp)
             self.df.loadEntry("C", 0, pos + 1, data=self.code)
             self.df.loadEntry("C", 0, pos + 2, data=self.desc)
             self.df.loadEntry("C", 0, pos + 3, data=self.qty)
-            self.df.loadEntry("C", 0, pos + 5, data=self.vatcod)
-            self.df.loadEntry("C", 0, pos + 6, data=self.price)
-            self.df.loadEntry("C", 0, pos + 7, data=self.disrat)
-            self.df.loadEntry("C", 0, pos + 8, data=self.excamt)
+            self.df.loadEntry("C", 0, pos + 4, data=self.vatcod)
+            self.df.loadEntry("C", 0, pos + 5, data=self.price)
+            self.df.loadEntry("C", 0, pos + 6, data=self.disrat)
+            self.df.loadEntry("C", 0, pos + 7, data=self.excamt)
             self.vattot = float(ASD(self.vattot) + ASD(self.vatamt))
             self.ordtot = float(ASD(self.ordtot) + ASD(self.excamt))
             self.inctot = float(ASD(self.inctot) + ASD(self.incamt))
         if seq >= (self.row[0] - 1):
             self.df.scrollScreen(0)
         else:
-            self.df.focusField("C", 0, pos + 10)
+            self.df.focusField("C", 0, pos + 9)
         self.df.setViewPort("O", self.inctot)
 
     def doTopExit(self):
@@ -828,9 +828,9 @@ class st2010(object):
         tit = ("Ribbon Line",)
         fld = (
             (("T",0,0,0),"INA",30,"Customer Order","",
-                self.cnam,"N",None,None,None,None),
+                self.onum,"N",None,None,None,None),
             (("T",0,1,0),"INA",30,"Job Number","",
-                self.cnam,"N",None,None,None,None),
+                self.jnum,"N",None,None,None,None),
             (("T",0,2,0),"INA",30,"Contact Person","",
                 self.cnam,"N",None,None,None,None),
             (("T",0,3,0),"INA",10,"VAT Number","",
@@ -874,7 +874,7 @@ class st2010(object):
                 self.ribbon[1], self.ribbon[2], self.ribbon[3]], where=whr)
             if not self.vatn:
                 self.sql.updRec("crsmst", cols=["crm_vatno"],
-                    data=[self.ribbon[1]], where=[("crm_cono", "=",
+                    data=[self.ribbon[3]], where=[("crm_cono", "=",
                     self.opts["conum"]), ("crm_acno", "=", self.acno)])
         if self.deladd:
             self.sql.updRec("strpom", cols=["pom_add1", "pom_add2", "pom_add3",
