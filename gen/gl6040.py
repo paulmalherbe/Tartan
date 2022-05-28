@@ -76,9 +76,8 @@ class gl6040(object):
     def printReport(self):
         self.head = "%03u %-80s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
-        self.pglin = 999
         for acc in self.accs:
-            if self.pglin > self.fpdf.lpp:
+            if self.fpdf.newPage():
                 self.pageHeading()
             n = self.sql.getRec("ctlmst", cols=["ctm_name"],
                 where=[("ctm_cono", "=", acc[0])], limit=1)
@@ -127,7 +126,6 @@ class gl6040(object):
             a3 = CCD(a, "SD", 13.2)
             self.fpdf.drawText("%-3s %-32s %15s %15s %15s" % (a0.disp,
                 n.disp, a1.disp, a2.disp, a3.disp))
-            self.pglin += 1
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         self.fpdf.output(pdfnam, "F")
@@ -141,14 +139,13 @@ class gl6040(object):
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
         self.fpdf.drawText("%-40s %-10s" %
-            ("General Ledger Integrated Controls as at",
+            ("General Ledger Intercompany Balances as at",
             self.df.t_disp[0][0][0]))
         self.fpdf.drawText()
         self.fpdf.drawText("%-3s %-32s%15s %15s %15s" %
             ("Coy", "Company-Name", "Balance-1", "Balance-2", "Difference"))
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()
-        self.pglin = 6
 
     def doExit(self):
         self.df.closeProcess()

@@ -786,8 +786,8 @@ class st2010(object):
     def doCrsMaint(self):
         state = self.df.disableButtonsTags()
         cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
-            system="STR", code="NewCrs")
-        if cf.flag == "yes":
+            system="STR", code="NewAcc")
+        if cf.flag == "ok":
             callModule(self.opts["mf"], self.df, "cr1010",
                 coy=(self.opts["conum"], self.opts["conam"]), period=None,
                 user=self.opts["capnm"])
@@ -797,8 +797,8 @@ class st2010(object):
     def doStrMaint(self):
         state = self.df.disableButtonsTags()
         cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
-            system="STR", code="NewStr")
-        if cf.flag == "yes":
+            system="STR", code="NewAcc")
+        if cf.flag == "ok":
             callModule(self.opts["mf"], self.df, "st1010",
                 coy=(self.opts["conum"], self.opts["conam"]), period=None,
                 user=self.opts["capnm"])

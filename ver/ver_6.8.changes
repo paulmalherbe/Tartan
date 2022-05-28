@@ -1,0 +1,18 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Added the facility to view outstanding orders in stores interrogation.
+ 2) Added the facility to print single or multiple month trial balances.
+ 3) Added the facility to view mail in creditor's interrogation.
+ 4) Added the facility to view mail in debtor's interrogation.
+ 5) Improved the bowls tab draw module for 321 format games.
+ 6) Fixed a bug in bowls competition draw when grouping tabs.
+ 7) Fixed a bug in the assets depreciation raising module.
+ 8) Fixed a bug in the stores purchase order module.
+ 9) Improved the email facility of the pdf viewer.
+10) Updated more items in the reference manual.
+11) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.

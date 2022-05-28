@@ -483,7 +483,7 @@ if email:
     from emladd import addrs
     chgfle = "%s/ver/ver_%s.%s.changes" % (pypath, cver[0], cver[1])
     if os.path.isfile(chgfle):
-        serv = ["mail", 465, 2, 1, "paul", "Pakati!@"]
+        serv = ["mail", 465, 2, 1, "paul", "jHlzgrWZDdw4DrS9sFo="]
         mfrm = "paul@tartan.co.za"
         subj = "Tartan Update %s.%s is Available" % tuple(cver)
         info = open(chgfle, "r")

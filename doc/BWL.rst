@@ -155,6 +155,44 @@ When a draw is made the following takes place:
         + **Teams** - Teams are created by placing the highest rated skip with the highest rated third with the highest rated second with the highest rated lead. This is repeated until all players have been placed.
         + **Balance** - Teams are then paired and balanced i.e. players might be moved from one team to another to try and equalise the team strengths.
 
+Tabs 321 Draw (BC)
+++++++++++++++++++
+Use this routine to make a new 321 draw.
+
++ **Date** - The date of the draw.
++ **Time** - The time of the draw. If a draw with the same date and time already exists some of the following options will be available:
+    + **None** - Do nothing, return to the time entry.
+    + **View** - View the existing draw.
+    + **Reprint** - Reprint the existing draw.
+    + **Alter** - Alter the existing draw.
+    + **Delete** - Delete, the existing draw.
++ **Fees - Member** - The fee charged per member.
++ **Fees - Visitor** - The fee charged per visitor.
+
+|
+
+Once the above fields have been entered capture all tabs as follows:
+
++ **Tab Number** - The player's tab number. Enter zero for a visitor. A number will be allocated to the visitor which can then be written on his tab e.g. 901.
++ **Surname** - The player's surname. Only for visitors.
++ **Names** - The player's names. Only for visitors.
++ **Paid** - Whether or not the player has paid.
+
+|
+
+The following *Buttons* are available:
+
++ **Entered** - Use this button to display all entered players.
++ **Do Draw** - Use this button to make the draw once all tabs/teams and bounce games have been entered. In the case of *Teams* if there are any tabs that have been entered and have not been allocated to teams you will be prompted to either *Generate*, *Delete* or *Exit*. If *Generate* is selected the program will try to allocate the unallocated tabs into teams.
+    + **Draw Type** - The type of draw i.e. Random or Strength v Strength.
+    + **Apply History** - Whether or not to take previous draws into consideration when making the current draw.
+    + **Competitors** - The preferred number of players per game.
+    + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If 7 rinks are available this must be entered as A1234567,B etc. If there are more rinks available than needed, end rinks will be removed.
++ **View** - Use this button to view the draw and/or manually change it i.e. move players between teams or replace players with new players.
++ **Print** - Use this button to print a draw.
+    + **Cash Takings Sheet** - Print a cash takings sheet.
++ **Exit** - Use this button to exit the program. If the draw has not yet been done you will be prompted to confirm exiting.
+
 League (BC)
 ...........
 Club Records (BC)

@@ -155,8 +155,8 @@ class gl3050(object):
             "where": [("gdm_cono", "=", self.opts["conum"])]}
         r1s = (
             ("Short","S"),
-            ("History","H"),
             ("Long","L"),
+            ("History","H"),
             ("Month","M"),
             ("Custom","C"))
         r2s = (("Yes","Y"),("No","N"))
@@ -329,12 +329,16 @@ Custom  - Customised Report"""),
             return
         self.df.loadEntry(frt, pag, p+1, data="")
         self.df.loadEntry(frt, pag, p+2, data="")
+        if self.typ == "M" and self.val != "C":
+            self.var = "N"
+            self.df.loadEntry(frt, pag, p+3, data=self.var)
+            return "sk3"
         return "sk2"
 
     def doRepDet(self, frt, pag, r, c, p, i, w):
         det = self.sql.getRec("gendtm", cols=["gdm_desc"],
-            where=[("gdm_cono", "=", self.opts["conum"]), ("gdm_code",
-            "=", w)], limit=1)
+            where=[("gdm_cono", "=", self.opts["conum"]),
+            ("gdm_code", "=", w)], limit=1)
         if not det:
             return "Invalid Code"
         self.det = w
@@ -1254,7 +1258,6 @@ Custom  - Customised Report"""),
                 "stream" in self.opts["args"]:
             self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.width)
         self.pgnum = 0
-        self.pglin = 999
         self.achart = []
         self.mchart = []
         self.counter = 0
@@ -1262,7 +1265,7 @@ Custom  - Customised Report"""),
             p.displayProgress(num)
             if dat[6] < self.counter:
                 dat[3] = "Y"
-            if self.pglin > self.fpdf.lpp:
+            if self.fpdf.newPage():
                 dat[3] = "N"
                 self.pageHeading(dat)
             if dat[0] == "H":
@@ -1351,7 +1354,6 @@ Custom  - Customised Report"""),
                 self.fpdf.drawText(self.linh % line[5])
             self.fpdf.setFont()
             self.fpdf.drawText()
-            self.pglin += 2
 
     def doValues(self, line):
         ldic = {}
@@ -1455,7 +1457,6 @@ Custom  - Customised Report"""),
                 else:
                     self.fpdf.drawText("%s  %s  %s  %s  %s  %s" % (lyr.disp,
                         des.disp, ytd.disp, btd.disp, vtd.disp, vtdper.disp))
-                self.pglin += 1
                 self.last = True
         elif self.typ == "H":
             if self.zer == "Y" and not lyr[0].work and not lyr[1].work \
@@ -1480,7 +1481,6 @@ Custom  - Customised Report"""),
                     self.fpdf.drawText("%s  %s  %s  %s  %s  %s  %s  %s" %
                         (des.disp, lyr[0].disp, lyr[1].disp, lyr[2].disp,
                             ytd.disp, btd.disp, vtd.disp, vtdper.disp))
-                self.pglin += 1
                 self.last = True
         elif self.typ == "L":
             if self.zer == "Y" and not mth.work and not bud.work and not \
@@ -1534,7 +1534,6 @@ Custom  - Customised Report"""),
                                 "%s  %s  %s  %s  %s" % (des.disp, "", "", "",
                                 "", ytd.disp, btd.disp, vtd.disp, vtdper.disp,
                                 lyr.disp))
-                    self.pglin += 1
                     self.last = True
             else:
                 if self.repprt[2] == "export":
@@ -1576,7 +1575,6 @@ Custom  - Customised Report"""),
                                 "%s  %s  %s  %s" % (des.disp, mth.disp,
                                 bud.disp, vmt.disp, vmtper.disp, ytd.disp,
                                 btd.disp, vtd.disp, vtdper.disp, lyr.disp))
-                    self.pglin += 1
                     self.last = True
         elif self.typ == "M":
             if self.zer == "Y":
@@ -1626,7 +1624,6 @@ Custom  - Customised Report"""),
                         self.fpdf.drawText(txt, x=p, w=w, fill=1, ln=ln)
                     else:
                         self.fpdf.drawText(txt, x=p, w=w, ln=ln)
-                self.pglin += 1
                 self.last = True
                 if line[10]:
                     self.achart.append([ltp, line[10], ldic["mp1"].work,
@@ -1693,7 +1690,6 @@ Custom  - Customised Report"""),
                 self.expdatas.append([txt, work])
             else:
                 self.fpdf.drawText(self.lind % tuple(disp))
-                self.pglin += 1
                 self.last = True
 
     def doUnderline(self, line):
@@ -1707,7 +1703,6 @@ Custom  - Customised Report"""),
             return
         if line[5] == "Blank":
             self.fpdf.drawText()
-            self.pglin += 1
         elif self.last:
             if line[5] == "Double":
                 st = "D"
@@ -1720,7 +1715,6 @@ Custom  - Customised Report"""),
             else:
                 txt = self.linu.replace(self.ulc, self.fpdf.suc)
             self.fpdf.underLine(t=st, txt=txt)
-            self.pglin += 1
         self.last = False
 
     def pageHeading(self, line):
@@ -1763,7 +1757,6 @@ Custom  - Customised Report"""),
             return
         self.fpdf.add_page()
         self.pgnum += 1
-        self.pglin = 0
         if self.typ == "C":
             self.fpdf.setFont(style="B", size=18)
             self.fpdf.drawText(self.heds[0])
@@ -1787,7 +1780,6 @@ Custom  - Customised Report"""),
                 self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.width)))
             else:
                 self.fpdf.drawText()
-            self.pglin += 6
             self.emlhead = "Financials for %s as at %s" % (self.opts["conam"],
                 self.yed)
         else:
@@ -1806,12 +1798,10 @@ Custom  - Customised Report"""),
                         self.fpdf.setFont(style="B")
                     else:
                         self.fpdf.drawText(head)
-                    self.pglin += 1
                     self.emlhead = head
                     if self.opt == "Y":
                         self.printOptions()
                     self.fpdf.drawText()
-                    self.pglin += 1
                 elif line[1] == "B" and num == 3:
                     if self.var == "N":
                         self.fpdf.drawText(data.replace("Current-Month",
@@ -1824,7 +1814,6 @@ Custom  - Customised Report"""),
                             "                     "\
                             "               "\
                             "                     "))
-                    self.pglin += 1
                 elif line[1] == "B" and num == 4:
                     if self.var == "B":
                         self.fpdf.drawText(data.replace(
@@ -1838,12 +1827,9 @@ Custom  - Customised Report"""),
                             "Year       Last-Year        Variance    Var-%",
                             "Description                               "\
                             "                                               "))
-                    self.pglin += 1
                 else:
                     self.fpdf.drawText(data)
-                    self.pglin += 1
             self.fpdf.drawText("%s" % (self.fpdf.suc * self.width))
-            self.pglin += 1
         self.fpdf.setFont()
 
     def printOptions(self):
@@ -1891,14 +1877,11 @@ Custom  - Customised Report"""),
         if self.repprt[2] == "export":
             return txt
         self.fpdf.drawText()
-        self.pglin += 1
         if self.typ == "C":
             self.fpdf.drawText(txt)
             self.fpdf.drawText()
-            self.pglin += 2
         else:
             self.fpdf.drawText(txt)
-            self.pglin += 1
 
     def doMainExit(self):
         self.df.closeProcess()

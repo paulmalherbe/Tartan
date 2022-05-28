@@ -559,7 +559,6 @@ class gl6030(object):
             self.sln_bal = 0.00
         head = "%03u %-78s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=head)
-        self.pglin = 999
         self.pageHeading(head)
         if self.arint == "Y":
             des = "Assets Register"
@@ -675,7 +674,6 @@ class gl6030(object):
             "Control Account", "Ledger", "Difference"))
         self.fpdf.underLine(txt=desc)
         self.fpdf.setFont()
-        self.pglin = 6
 
     def doExit(self):
         self.df.closeProcess()

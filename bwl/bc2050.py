@@ -556,28 +556,31 @@ class bc2050(object):
             ("bcg_ccod", "=", self.ccod)]
         grp = "bcg_scod"
         odr = "pts desc, diff desc, agt asc"
-        chk = self.sql.getRec("bwlgme", cols=col, where=whr,
+        self.gchk = self.sql.getRec("bwlgme", cols=col, where=whr,
             group=grp, order=odr)
-        totskp = len(chk)
+        totskp = len(self.gchk)
         grpcnt = self.grpnum
         gqty = int(totskp / grpcnt)
         if gqty % 2:
             gqty -= 1
         self.grps = [gqty] * grpcnt
         ovrs = int((totskp - (gqty * grpcnt)) / 2)
-        for x in range(ovrs):
-            if self.grpsml == "F":
-                self.grps[grpcnt - 1 - x] += 2
-            else:
-                self.grps[x] += 2
-        mess = ""
-        grps = ["A", "B", "C", "D", "E"]
-        for num, grp in enumerate(self.grps):
-            mess += "%s with %s Skips %s Rinks\n" % (grps[num], grp, int(grp/2))
-        mess += "\nIs this Correct?"
-        ok = askQuestion(self.df.window, head="Group Allocations", mess=mess)
-        if ok == "no":
-            return "Invalid Selection"
+        if ovrs:
+            for x in range(ovrs):
+                if self.grpsml == "F":
+                    self.grps[grpcnt - 1 - x] += 2
+                else:
+                    self.grps[x] += 2
+            mess = ""
+            grps = ["A", "B", "C", "D", "E"]
+            for num, grp in enumerate(self.grps):
+                mess += " Group %s with %s Skips %s Rinks\n" % (grps[num],
+                    grp, int(grp/2))
+            mess += "\nIs this Correct?"
+            ok = askQuestion(self.df.window, head="Group Allocations",
+                mess=mess, default="yes")
+            if ok == "no":
+                return "Invalid Selection"
 
     def doGreens(self, frt, pag, r, c, p, i, w):
         self.greens, self.first, self.endrks, err = getGreens(
@@ -846,7 +849,7 @@ class bc2050(object):
                     self.sql.updRec("bwlgme", cols=["bcg_group"],
                         data=[num + 1], where=[("bcg_cono", "=",
                         self.opts["conum"]), ("bcg_ccod", "=",
-                        self.ccod), ("bcg_scod", "=", chk[skp][0])])
+                        self.ccod), ("bcg_scod", "=", self.gchk[skp][0])])
                 start += qty
         groups = self.sql.getRec("bwlgme", cols=["bcg_group"],
             where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",

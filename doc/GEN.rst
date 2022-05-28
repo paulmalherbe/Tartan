@@ -527,8 +527,9 @@ Trial Balance (GL)
 ++++++++++++++++++
 Use this routine to produce a trial balance.
 
++ **Report Type** - Select whether to print single or multiple month balances.
 + **Opening Balances Only** - Select whether or not to only print opening balances.
-+ **Include Opening Balances** - Select whether or not to include opening balances.
++ **Include Opening Balances** - Select whether or not to include opening balances. If *No* is select only the period movements will be printed.
 + **Starting Period** - The starting financial period in the financial year.
 + **Ending Period** - The ending financial period in the financial year.
 + **Ignore Zero Balances** - Select whether or not to ignore zero balances.

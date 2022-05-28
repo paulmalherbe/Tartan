@@ -1,6 +1,6 @@
 """
 SYNOPSIS
-    Bowls 4321 Draw.
+    Bowls 321 Draw.
 
     This file is part of Tartan Systems (TARTAN).
 
@@ -63,8 +63,8 @@ class bc2080(object):
         self.samen = bwlctl["ctb_samen"]
         self.weeks = bwlctl["ctb_weeks"]
         self.nstart = bwlctl["ctb_nstart"]
-        self.ratem = CCD(bwlctl["ctb_ratem"], "UD", 6.2)
-        self.ratev = CCD(bwlctl["ctb_ratev"], "UD", 6.2)
+        self.ratem = bwlctl["ctb_ratem"]
+        self.ratev = bwlctl["ctb_ratev"]
         self.greens = bwlctl["ctb_greens"]
         t = time.localtime()
         self.sysdt = ((t[0] * 10000) + (t[1] * 100) + t[2])
@@ -84,9 +84,9 @@ class bc2080(object):
             (("T",0,1,0),("IRB",r1s),0,"Time","",
                 self.stime,"N",self.doTime,None,None,None),
             (("T",0,2,0),"IUD",5.2,"Fees - Member R","",
-                self.ratem.work,"N",self.doRate,None,None,("efld",)),
+                self.ratem,"N",self.doRate,None,None,("efld",)),
             (("T",0,2,0),"IUD",5.2," Visitor R","",
-                self.ratev.work,"N",self.doRate,None,None,("efld",)))
+                self.ratev,"N",self.doRate,None,None,("efld",)))
         tnd = ((self.doMEnd,"y"),)
         txt = (self.doMExit,)
         # Set font as big as possible up to 24pts
@@ -168,10 +168,10 @@ class bc2080(object):
     def doLoadMst(self, drm):
         self.dhist = drm[self.sql.bwlsdm_col.index("bsm_dhist")]
         self.quant = drm[self.sql.bwlsdm_col.index("bsm_quant")]
-        self.mrate = drm[self.sql.bwlsdm_col.index("bsm_mrate")]
-        self.mf.loadEntry("T", 0, 2, data=self.mrate)
-        self.vrate = drm[self.sql.bwlsdm_col.index("bsm_vrate")]
-        self.mf.loadEntry("T", 0, 3, data=self.vrate)
+        self.mrate = CCD(drm[self.sql.bwlsdm_col.index("bsm_mrate")], "UD", 6.2)
+        self.mf.loadEntry("T", 0, 2, data=self.mrate.work)
+        self.vrate = CCD(drm[self.sql.bwlsdm_col.index("bsm_vrate")], "UD", 6.2)
+        self.mf.loadEntry("T", 0, 3, data=self.vrate.work)
 
     def doLoadTabs(self):
         draws = self.sql.getRec("bwlsdt", cols=["bst_tab", "bst_name",
@@ -206,9 +206,9 @@ class bc2080(object):
 
     def doRate(self, frt, pag, r, c, p, i, w):
         if p == 2:
-            self.ratem = CCD(w, "UD", 6.2)
+            self.mrate = CCD(w, "UD", 6.2)
         else:
-            self.ratev = CCD(w, "UD", 6.2)
+            self.vrate = CCD(w, "UD", 6.2)
 
     def doMEnd(self):
         if self.viewer:
@@ -226,7 +226,7 @@ class bc2080(object):
         self.opts["mf"].closeLoop()
 
     def doTabs(self):
-        tit = "4321 Draw for the %s of %s" % (self.timed, self.dated)
+        tit = "321 Draw for the %s of %s" % (self.timed, self.dated)
         mem = {
             "stype": "R",
             "tables": ("bwltab",),
@@ -261,9 +261,7 @@ class bc2080(object):
         r2s = (("Yes", "Y"), ("No", "N"))
         tag = (("", None, None, None, False),)
         fld = (
-            (("T",0,0,0),"OUI",3,"Entered: Total"),
-            (("T",0,0,0),"OUI",3," Males"),
-            (("T",0,0,0),"OUI",3," Females"),
+            (("T",0,0,0),"OUI",3,"Tabs Entered:"),
             (("T",1,0,0),"I@btb_tab",0,"","Tab Number(noesc)",
                 "","Y",self.doTab,mem,None,("efld",)),
             (("T",1,1,0),"I@btb_surname",0,"","",
@@ -421,10 +419,6 @@ class bc2080(object):
         if self.df.pag == 0:
             return
         else:
-            if not self.df.t_work[1][0][4]:
-                self.df.t_work[1][0][4] = 0
-            else:
-                self.df.t_work[1][0][4] = int(self.df.t_work[1][0][4])
             if self.tab in self.alltabs:
                 del self.alltabs[self.tab]
             self.alltabs[self.tab] = self.df.t_work[1][0][1:]
@@ -620,8 +614,8 @@ Try to Allocate Different Rinks""" % self.weeks),
             ("bst_date", "=", self.date), ("bst_time", "=", self.time)])
         # Insert bwlsdm
         self.sql.insRec("bwlsdm", data=[self.opts["conum"], self.date,
-            self.time, self.dhist, self.quant, self.ratem.work,
-            self.ratev.work])
+            self.time, self.dhist, self.quant, self.mrate.work,
+            self.vrate.work])
         if not self.drawn:
             return
         # Insert bwlsdt
@@ -649,10 +643,14 @@ Try to Allocate Different Rinks""" % self.weeks),
             dg.focusField("T", 1, 1)
             return
         dg.setWidget(dg.mstFrame, state="hide")
-        r1s = (("Yes", "Y"), ("No", "N"))
-        fld = (
-            (("T",0,0,0),("IRB",r1s),0,"Cash Takings Sheet","",
-                "N","Y",self.doTakings,None,None,None),)
+        fld = []
+        if self.mrate.work or self.vrate.work:
+            r1s = (("Yes", "Y"), ("No", "N"))
+            fld.append(
+                (("T",0,0,0),("IRB",r1s),0,"Cash Takings Sheet","",
+                    "N","Y",self.doTakings,None,None,None))
+        else:
+            self.takings = "N"
         self.pd = TartanDialog(self.opts["mf"], tops=True,
             title="Print Dialog", eflds=fld, tend=((self.doPEnd, "n"),),
             txit=(self.doPExit,), view=("N","V"))
@@ -666,11 +664,15 @@ Try to Allocate Different Rinks""" % self.weeks),
 
     def doPEnd(self):
         self.pd.closeProcess()
+        siz = (0, 0, 22, 15, 11.5)
+        self.fsiz = siz[self.quant]
         self.fpdf = MyFpdf(name=self.__class__.__name__, orientation="L",
-            head=90, foot=True)
+            head=90, auto=True, foot=True)
+        self.fpdf.header = self.doPHead
         if self.takings == "Y":
-            self.doPHead("A")
-            self.fpdf.setFont(size=14)
+            self.ptyp = "A"
+            self.fpdf.add_page()
+            self.fpdf.setFont(size=self.fsiz)
             for gme in self.games:
                 txt = "%2s"
                 dat = [gme[0]]
@@ -698,17 +700,16 @@ Try to Allocate Different Rinks""" % self.weeks),
             ul = "                               ---------"
             txt = ul.replace("-", self.fpdf.suc)
             self.fpdf.drawText("%3s Members  @ R%2s         R %7.2f" % \
-                (mem, self.ratem.disp, mem*self.ratem.work), h=5)
+                (mem, self.mrate.disp, mem*self.mrate.work), h=5)
             self.fpdf.drawText("%3s Visitors @ R%2s         R %7.2f" % \
-                (vis, self.ratev.disp, vis*self.ratev.work), h=5)
+                (vis, self.vrate.disp, vis*self.vrate.work), h=5)
             self.fpdf.underLine(t="S", txt=txt)
             self.fpdf.drawText("    Total Takings              R %7.2f" % \
-                ((mem*self.ratem.work)+(vis*self.ratev.work)), h=5)
+                ((mem*self.mrate.work)+(vis*self.vrate.work)), h=5)
             self.fpdf.underLine(t="D", txt=txt)
-        siz = (0, 0, 22, 15, 11.5)
-        self.fsiz = siz[self.quant]
-        ww = (3, 4, 21, 4, 21, 4, 21, 4, 21)
-        self.doPHead("B", ww)
+        self.ww = (3, 4, 21, 4, 21, 4, 21, 4, 21)
+        self.ptyp = "B"
+        self.fpdf.add_page()
         self.fpdf.setFont("Arial", "B", self.fsiz)
         for gme in self.games:
             txt = ["%2s"]
@@ -722,7 +723,7 @@ Try to Allocate Different Rinks""" % self.weeks),
                 txt.extend(["%3s", "%-20s"])
                 n += 1
             for n, d in enumerate(dat):
-                w = self.fpdf.cwth * ww[n]
+                w = self.fpdf.cwth * self.ww[n]
                 if n == len(dat) - 1:
                     ln = 1
                 else:
@@ -736,7 +737,7 @@ Try to Allocate Different Rinks""" % self.weeks),
             repprt=self.pd.repprt)
 
     def doPHead(self, htyp="A", ww=None):
-        hd1 = "321 Draw for the %s of %s (Hist %s)" % (self.timed,
+        hd1 = "321 Draw for the %s of %s (History %s)" % (self.timed,
             self.dated, self.dhist)
         tx2 = "%2s %3s %-20s %3s %-20s"
         dt2 = ["RK", "Tab", "Name", "Tab", "Name"]
@@ -746,16 +747,14 @@ Try to Allocate Different Rinks""" % self.weeks),
         if self.quant > 3:
             tx2 += " %3s %-20s"
             dt2.extend(["Tab", "Name"])
-        if htyp == "A":
-            self.fpdf.add_page()
+        if self.ptyp == "A":
             pad = " " * (55 - len(hd1))
             self.fpdf.drawText("%s %s" % (hd1, pad),
                 font=["courier", "B", 14])
             self.fpdf.drawText()
-            self.fpdf.setFont(style="B", size=14)
+            self.fpdf.setFont(style="B", size=self.fsiz)
             self.fpdf.drawText(tx2 % tuple(dt2), border="TBLR", fill=1)
         else:
-            self.fpdf.add_page()
             self.fpdf.setFont("Arial", "B", 24)
             self.fpdf.drawText(hd1, align="C")
             self.fpdf.drawText(" ")
@@ -763,7 +762,7 @@ Try to Allocate Different Rinks""" % self.weeks),
             self.fpdf.setFont("Arial", "B", self.fsiz)
             t = tx2.split()
             for n, d in enumerate(dt2):
-                w = self.fpdf.cwth * ww[n]
+                w = self.fpdf.cwth * self.ww[n]
                 if n == len(dt2) - 1:
                     ln = 1
                 else:
@@ -808,7 +807,7 @@ Try to Allocate Different Rinks""" % self.weeks),
                 n += 1
             data.append(dat)
         sel = SelectChoice(self.opts["mf"].window, title, cols, data,
-            live=select, rowc=2)
+            live=select, rowc=1)
         if select:
             return sel.selection
 
@@ -1035,11 +1034,7 @@ Try to Allocate Different Rinks""" % self.weeks),
             "=", sel.selection[1]), ("bst_time", "=", sel.selection[2])])
         for tab in tabs:
             self.doLoadTab(tab[0], "T", err=False)
-            self.df.loadEntry("T", 1, 6, data="Y")
-            if not self.df.t_work[1][0][4]:
-                self.df.t_work[1][0][4] = 0
-            else:
-                self.df.t_work[1][0][4] = int(self.df.t_work[1][0][4])
+            self.df.loadEntry("T", 1, 3, data="Y")
             self.alltabs[tab[0]] = self.df.t_work[1][0][1:]
         self.drawn = False
         self.doShowQuantity()

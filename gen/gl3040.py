@@ -27,6 +27,7 @@ COPYING
 import time
 from TartanClasses import ASD, CCD, MyFpdf, ProgressBar, Sql, TartanDialog
 from tartanFunctions import doPrinter, doWriteExport, getModName, showError
+from tartanWork import mthnam
 
 class gl3040(object):
     def __init__(self, **opts):
@@ -35,7 +36,6 @@ class gl3040(object):
             if "args" in self.opts and "noprint" not in self.opts["args"]:
                 self.opebal = "N"
                 self.incope = "Y"
-                self.start = self.s_per
                 self.end, self.zerbal, self.repprt, self.repeml, self.fpdf = \
                         self.opts["args"]
                 self.doEnd()
@@ -68,43 +68,54 @@ class gl3040(object):
         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
             "General Ledger Trial Balance (%s)" % self.__class__.__name__)
         r1s = (("Yes","Y"), ("No","N"))
+        r2s = (("Single", "S"), ("Multiple", "M"))
         if "args" in self.opts and "noprint" in self.opts["args"]:
             var = self.opts["args"]["work"][0]
             view = None
             mail = None
         else:
-            var = ["N", "Y", "", "", "Y"]
+            var = ["S", "N", "Y", "", "", "Y"]
             view = ("Y","V")
             mail = ("Y","N")
         fld = (
-            (("T",0,0,0),("IRB",r1s),0,"Opening Balances Only","",
-                var[0],"Y",self.doOpeBal1,None,None,None),
-            (("T",0,1,0),("IRB",r1s),0,"Include Opening Balances","",
-                var[1],"N",self.doOpeBal2,None,None,None),
-            (("T",0,2,0),"Id2",7,"Starting Period","",
+            (("T",0,0,0),("IRB",r2s),0,"Report Type","",
+                var[0],"N",self.doRType,None,None,None),
+            (("T",0,1,0),("IRB",r1s),0,"Opening Balances Only","",
+                var[1],"Y",self.doOpeBal1,None,None,None),
+            (("T",0,2,0),("IRB",r1s),0,"Include Opening Balances","",
+                var[2],"N",self.doOpeBal2,None,None,None,None,
+                """Y - Closing Balances will be Printed
+N - Period Movements will be Printed"""),
+            (("T",0,3,0),"Id2",7,"Starting Period","",
                 self.s_per,"N",self.doStartPer,None,None,("efld",)),
-            (("T",0,3,0),"Id2",7,"Ending Period","",
+            (("T",0,4,0),"Id2",7,"Ending Period","",
                 self.e_per,"N",self.doEndPer,None,None,("efld",)),
-            (("T",0,4,0),("IRB",r1s),0,"Ignore Zero Balances","",
-                var[4],"N",self.doZerBal,None,None,None))
+            (("T",0,5,0),("IRB",r1s),0,"Ignore Zero Balances","",
+                var[5],"N",self.doZerBal,None,None,None))
         tnd = ((self.doEnd,"y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
             tend=tnd, txit=txt, view=view, mail=mail)
 
+    def doRType(self, frt, pag, r, c, p, i, w):
+        self.rtype = w
+        if self.rtype == "M":
+            self.opebal = "N"
+            self.df.loadEntry(frt, pag, i+1, data=self.opebal)
+            return "sk1"
+
     def doOpeBal1(self, frt, pag, r, c, p, i, w):
         self.opebal = w
         if self.opebal == "Y":
-            self.start = None
-            self.end = None
             self.incope = None
+            self.end = None
             return "sk3"
 
     def doOpeBal2(self, frt, pag, r, c, p, i, w):
         self.incope = w
-        if self.incope == "Y":
+        if self.rtype == "S" and self.incope == "Y":
             self.start = self.s_per
-            self.df.loadEntry("T", 0, 2, data=self.start)
+            self.df.loadEntry(frt, pag, p+1, data=self.start)
             return "sk1"
 
     def doStartPer(self, frt, pag, r, c, p, i, w):
@@ -118,6 +129,25 @@ class gl3040(object):
         if w > self.e_per:
             return "Invalid Period, Outside Financial Period"
         self.end = w
+        if self.rtype == "M":
+            yrs = int(self.start / 100)
+            mth = self.start % 100
+            self.pers = [self.start]
+            self.mths = [mthnam[mth][1]]
+            per = self.start
+            while per != self.end:
+                mth += 1
+                if mth > 12:
+                    mth = 1
+                    yrs += 1
+                per = (yrs * 100) + mth
+                self.pers.append(per)
+                self.mths.append(mthnam[mth][1])
+            self.gprs = [0.00] * len(self.mths)
+            self.dtot = [0.00] * len(self.mths)
+            if self.incope == "N":
+                self.gprs.append(0.00)
+                self.dtot.append(0.00)
 
     def doZerBal(self, frt, pag, r, c, p, i, w):
         self.zerbal = w
@@ -128,9 +158,9 @@ class gl3040(object):
             self.repeml = self.df.repeml
             self.t_work = [self.df.t_work[0][0]]
             self.df.closeProcess()
-        recs = self.sql.getRec("genmst", cols=["glm_acno",
-            "glm_desc", "glm_type"], where=[("glm_cono", "=",
-            self.opts["conum"])], order="glm_type desc, glm_acno")
+        recs = self.sql.getRec("genmst", cols=["glm_acno", "glm_desc",
+            "glm_type"], where=[("glm_cono", "=", self.opts["conum"])],
+            order="glm_type desc, glm_acno")
         if not recs:
             showError(self.opts["mf"].body, "Error", "No Accounts Selected")
         elif self.repprt[2] == "export":
@@ -154,11 +184,24 @@ class gl3040(object):
             edate = CCD(self.end, "D2", 7)
             expheads.append("General Ledger Trial Balance for Period %s "\
                 "to %s" % (sdate.disp, edate.disp))
-            expheads.append("(Options: Opening Balances Included %s)" % \
-                self.incope)
-        expcolsh = [self.colsh]
-        expforms = self.forms
+            if self.incope == "N":
+                txt = " Not"
+            else:
+                txt = ""
+            expheads.append("(Options: Opening Balances%s Included)" % txt)
         self.expdatas = []
+        if self.rtype == "S":
+            expcolsh = [self.colsh]
+            expforms = self.forms
+        else:
+            expcolsh = [self.colsh[:3]]
+            expforms = self.forms[:3]
+            for mth in self.mths:
+                expcolsh[0].append(mth)
+                expforms.append(("SD", 14.2))
+            if self.incope == "N":
+                expcolsh[0].append("Totals")
+                expforms.append(("SD", 14.2))
         for num, dat in enumerate(recs):
             p.displayProgress(num)
             if p.quit:
@@ -167,8 +210,10 @@ class gl3040(object):
             vals = self.getValues(dat)
             if not vals:
                 continue
-            self.expdatas.append(["BODY", [vals[0].work, vals[1].work,
-                vals[2].work, vals[3].work, vals[4].work]])
+            val = []
+            for v in vals:
+                val.append(v.work)
+            self.expdatas.append(["BODY", val])
         p.closeProgress()
         self.grandTotal()
         doWriteExport(xtype=self.repprt[1], name=expnam,
@@ -185,17 +230,21 @@ class gl3040(object):
             chrs -= 1
         if self.opebal == "Y":
             date = CCD(self.opts["period"][1][0], "D1", 10.0)
-            self.head2 = "General Ledger Opening Balances as at %s%s" % \
-                (date.disp, "%s%s")
+            self.head2 = "General Ledger Opening Balances as at %s" % date.disp
         else:
             sdate = CCD(self.start, "D2", 7)
             edate = CCD(self.end, "D2", 7)
             self.head2 = "General Ledger Trial Balance for Period %s to %s" % \
                 (sdate.disp, edate.disp)
+        if self.rtype == "S":
+            head = 80
+        else:
+            head = 50 + (len(self.mths) * 15)
+            if self.incope == "N":
+                head += 15
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         if "args" not in self.opts or "noprint" in self.opts["args"]:
-            self.fpdf = MyFpdf(name=self.__class__.__name__, head=80)
-        self.pglin = 999
+            self.fpdf = MyFpdf(name=self.__class__.__name__, head=head)
         for num, rec in enumerate(recs):
             p.displayProgress(num)
             if p.quit:
@@ -203,11 +252,19 @@ class gl3040(object):
             vals = self.getValues(rec)
             if not vals:
                 continue
-            if self.pglin > self.fpdf.lpp:
+            if self.fpdf.newPage():
                 self.pageHeading()
-            self.fpdf.drawText("%s %1s %-40s %s %s" % (vals[0].disp,
-                vals[1].disp, vals[2].disp, vals[3].disp, vals[4].disp))
-            self.pglin += 1
+            if self.rtype == "S":
+                self.fpdf.drawText("%s %1s %-40s %s %s" % (vals[0].disp,
+                    vals[1].disp, vals[2].disp, vals[3].disp, vals[4].disp))
+            else:
+                txt = "%s %1s %-40s" % (vals[0].disp, vals[1].disp,
+                    vals[2].disp)
+                for v in range(len(self.mths)):
+                    txt += " %s" % vals[3 + v].disp
+                if self.incope == "N":
+                    txt += " %s" % vals[4 + v].disp
+                self.fpdf.drawText(txt)
         p.closeProgress()
         if self.fpdf.page and not p.quit:
             self.grandTotal()
@@ -234,29 +291,65 @@ class gl3040(object):
             else:
                 b = CCD(0, "SD", 14.2)
             bal = float(ASD(bal) + ASD(b.work))
-        if self.opebal == "N" and self.incope == "Y":
-            o = self.sql.getRec("gentrn",
-                cols=["round(sum(glt_tramt),2)"], where=[("glt_cono", "=",
-                self.opts["conum"]), ("glt_acno", "=", acno.work),
-                ("glt_curdt", ">", self.s_per), ("glt_curdt", "<",
-                self.start)], limit=1)
-            if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
-            else:
-                b = CCD(0, "SD", 14.2)
-            bal = float(ASD(bal) + ASD(b.work))
+        if self.rtype == "S":
+            vals = self.getTotals(acno, atyp, bal, self.end)
+            if vals:
+                return (acno, atyp, desc, vals[0], vals[1])
+        else:
+            val = []
+            prt = False
+            if self.incope == "N":
+                tot = 0.00
+            for per in self.pers:
+                vals = self.getTotals(acno, atyp, bal, per)
+                if vals:
+                    prt = True
+                    val.append(vals)
+                    if self.incope == "N":
+                        tot = float(ASD(tot) + ASD(vals.work))
+                else:
+                    val.append(CCD(0, "SD", 14.2))
+            if prt:
+                if self.incope == "N":
+                    val.append(CCD(tot, "SD", 14.2))
+                return [acno, atyp, desc] + val
+
+    def getTotals(self, acno, atyp, bal, per):
+        where = [("glt_cono", "=", self.opts["conum"]),
+            ("glt_acno", "=", acno.work)]
         if self.opebal == "N":
-            o = self.sql.getRec("gentrn",
-                cols=["round(sum(glt_tramt),2)"], where=[("glt_cono", "=",
-                self.opts["conum"]), ("glt_acno", "=", acno.work),
-                ("glt_curdt", "between", self.start, self.end)], limit=1)
+            whr = where[:]
+            if self.incope == "Y":
+                whr.append(("glt_curdt", ">=", self.s_per))
+                if self.rtype == "S":
+                    whr.append(("glt_curdt", "<=", self.end))
+                else:
+                    whr.append(("glt_curdt", "<=", per))
+            elif self.rtype == "S":
+                whr.append(("glt_curdt", ">=", self.start))
+                whr.append(("glt_curdt", "<=", self.end))
+            else:
+                whr.append(("glt_curdt", "=", per))
+            o = self.sql.getRec("gentrn", cols=["sum(glt_tramt)"],
+                where=whr, limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(o[0], "SD", 14.2)
             else:
                 b = CCD(0, "SD", 14.2)
             bal = float(ASD(bal) + ASD(b.work))
         if bal == 0 and self.zerbal == "Y":
             return
+        if self.rtype == "M":
+            mdx = self.pers.index(per)
+            self.dtot[mdx] = float(ASD(self.dtot[mdx]) + ASD(bal))
+            if self.incope == "N":
+                tdx = len(self.gprs) - 1
+                self.dtot[tdx] = float(ASD(self.dtot[tdx]) + ASD(bal))
+            if atyp.work == "P":
+                self.gprs[mdx] = float(ASD(self.gprs[mdx]) + ASD(bal))
+                if self.incope == "N":
+                    self.gprs[tdx] = float(ASD(self.gprs[tdx]) + ASD(bal))
+            return CCD(bal, "SD", 14.2)
         if bal < 0:
             cr = CCD(bal, "SD", 14.2)
             dr = CCD(0.00, "SD", 14.2)
@@ -265,9 +358,9 @@ class gl3040(object):
             cr = CCD(0.00, "SD", 14.2)
         self.dtot = float(ASD(self.dtot) + ASD(dr.work))
         self.ctot = float(ASD(self.ctot) + ASD(cr.work))
-        if atyp.work == "P":
+        if self.opebal == "N" and atyp.work == "P":
             self.gp = float(ASD(self.gp) + ASD(dr.work) + ASD(cr.work))
-        return (acno, atyp, desc, dr, cr)
+        return (dr, cr)
 
     def pageHeading(self):
         self.fpdf.add_page()
@@ -277,54 +370,100 @@ class gl3040(object):
         self.fpdf.drawText(self.head2)
         if self.opebal == "N":
             self.fpdf.drawText()
-            self.fpdf.drawText("(Options: Opening Balances Included %s)" % \
-                (self.incope))
+            if self.incope == "N":
+                txt = " Not"
+            else:
+                txt = ""
+            self.fpdf.drawText("(Options: Opening Balances%s Included)" % txt)
         self.fpdf.drawText()
-        self.fpdf.drawText("%-7s %-1s %-40s %14s %14s" % \
-            ("Acc-Num", "T", "Description", "Debit ", "Credit "))
+        if self.rtype == "S":
+            self.fpdf.drawText("%-7s %-1s %-40s %14s %14s" % \
+                ("Acc-Num", "T", "Description", "Debit ", "Credit "))
+        else:
+            txt = "%-7s %-1s %-40s" % ("Acc-Num", "T", "Description")
+            for mth in self.mths:
+                txt += " %13s " % mth
+            if self.incope == "N":
+                txt += " %13s " % "Totals"
+            self.fpdf.drawText(txt)
         self.fpdf.underLine()
         self.fpdf.setFont()
-        if self.opebal == "Y":
-            self.pglin = 6
-        else:
-            self.pglin = 8
 
     def grandTotal(self):
         if self.repprt[2] == "export":
-            self.expdatas.append(["ULINES"])
-            self.expdatas.append(["TOTAL", ["", "", "Grand Totals", self.dtot,
-                self.ctot]])
-            self.expdatas.append(["ULINED"])
+            if self.rtype == "S":
+                self.expdatas.append(["ULINES"])
+                self.expdatas.append(["TOTAL", ["", "", "Grand Totals",
+                    self.dtot, self.ctot]])
+                if self.gp > 0:
+                    self.expdatas.append(["TOTAL", ["", "", "Gross-Loss",
+                        self.gp, ""]])
+                else:
+                    self.expdatas.append(["TOTAL", ["", "", "Gross-Profit",
+                        "", self.gp]])
+                diff = float(ASD(self.dtot) + ASD(self.ctot))
+                if diff:
+                    self.expdatas.append(["TOTAL", ["", "", "Difference",
+                        "", diff]])
+            else:
+                self.expdatas.append(["ULINES"])
+                tmp = ["TOTAL", ["", "", "Gross Profit/Loss"] + self.gprs]
+                self.expdatas.append(tmp)
+                for d in self.dtot:
+                    if d:
+                        tmp = ["TOTAL", ["", "", "Difference"] + self.dtot]
+                        self.expdatas.append(tmp)
+                        break
             return
-        d = CCD(self.dtot, "SD", 14.2)
-        c = CCD(self.ctot, "SD", 14.2)
         self.fpdf.setFont(style="B")
-        if self.fpdf.lpp - self.pglin < 5:
+        if self.rtype == "S":
+            if self.opebal == "Y":
+                extra = 1
+            else:
+                extra = 3
+            diff = CCD(float(ASD(self.dtot) + ASD(self.ctot)), "SD", 14.2)
+            if diff:
+                extra += 2
+        else:
+            extra = 2
+            diff = False
+            for d in self.dtot:
+                if d:
+                    diff = True
+                    extra += 2
+                    break
+        if self.fpdf.newPage(extra):
             self.pageHeading()
         else:
             self.fpdf.underLine()
-        self.fpdf.drawText("%9s %-40s %14s %14s" % \
-            ("", "Grand-Totals", d.disp, c.disp))
-        self.pglin += 2
-        if self.pglin > self.fpdf.lpp:
-            self.pageHeading()
-        gp = CCD(self.gp, "SD", 14.2)
-        if gp.work > 0:
-            self.fpdf.drawText()
+        if self.rtype == "S":
+            d = CCD(self.dtot, "SD", 14.2)
+            c = CCD(self.ctot, "SD", 14.2)
             self.fpdf.drawText("%9s %-40s %14s %14s" % \
-                ("", "Gross-Loss", gp.disp, ""))
+                ("", "Grand-Totals", d.disp, c.disp))
+            if self.opebal == "N":
+                self.fpdf.drawText()
+                gp = CCD(self.gp, "SD", 14.2)
+                if gp.work > 0:
+                    self.fpdf.drawText("%9s %-40s %14s %14s" % \
+                        ("", "Gross-Loss", gp.disp, ""))
+                else:
+                    self.fpdf.drawText("%9s %-40s %14s %14s" % \
+                        ("", "Gross-Profit", "", gp.disp))
+            if diff.work:
+                self.fpdf.drawText()
+                self.fpdf.drawText("%9s %-40s %14s %14s" % \
+                    ("", "Difference", "", diff.disp))
         else:
-            self.fpdf.drawText()
-            self.fpdf.drawText("%9s %-40s %14s %14s" % \
-                ("", "Gross-Profit", "", gp.disp))
-        self.pglin += 2
-        diff = CCD(float(ASD(d.work) + ASD(c.work)), "SD", 14.2)
-        if diff.work:
-            if self.pglin > self.fpdf.lpp:
-                self.pageHeading()
-            self.fpdf.drawText()
-            self.fpdf.drawText("%9s %-40s %14s %14s" % \
-                ("", "Difference", "", diff.disp))
+            txt = "%9s %-40s" % ("", "Gross Profit/Loss")
+            for val in self.gprs:
+                txt += " %14s" % CCD(val, "SD", 14.2).disp
+            self.fpdf.drawText(txt)
+            if diff:
+                txt = "%9s %-40s" % ("", "Difference")
+                for val in self.dtot:
+                    txt += " %14s" % CCD(val, "SD", 14.2).disp
+                self.fpdf.drawText(txt)
         self.fpdf.setFont()
 
     def doExit(self):

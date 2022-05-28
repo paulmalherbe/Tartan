@@ -371,7 +371,6 @@ class gl4010(object):
         self.head = "%03u %-99s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.pgnum = 0
-        self.pglin = 999
         self.num = self.df.t_disp[0][0][0]
         self.dsc = self.df.t_disp[0][0][1]
         atype = self.df.t_disp[0][0][2]
@@ -482,7 +481,6 @@ class gl4010(object):
             "Page", self.pgnum))
         self.fpdf.underLine(txt=self.head)
         self.fpdf.setFont()
-        self.pglin = 4
 
     def getObal(self):
         acbal = self.obal

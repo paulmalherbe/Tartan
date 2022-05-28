@@ -25,8 +25,8 @@ COPYING
 """
 
 import time
-from TartanClasses import ASD, Balances, CCD, GetCtl, NotesCreate, Sql, SRec
-from TartanClasses import RepPrt, TabPrt, TartanDialog
+from TartanClasses import ASD, Balances, CCD, GetCtl, NotesCreate, PrintInvoice 
+from TartanClasses import PrintOrder, RepPrt, Sql, SRec, TabPrt, TartanDialog
 from tartanFunctions import askChoice, getMarkup
 from tartanWork import mthnam, sttrtp
 
@@ -108,7 +108,8 @@ class st4010(object):
             ("Basic", self.doTagSelect, ("T",0,0), ("T",0,1)),
             ("Balances", self.doTagSelect, ("T",0,0), ("T",0,1)),
             ("History", self.doTagSelect, ("T",0,0), ("T",0,1)),
-            ("Trans", self.doTrans1, ("T",0,0), ("T",0,1)))
+            ("Trans", self.doTrans1, ("T",0,0), ("T",0,1)),
+            ("Orders", self.doOrders, ("T",0,0), ("T",0,1)))
         fld = [
             (("T",0,0,0),"IUA",3,"Grp","Product Group",
                 "","N",self.doGroup,gpm,None,("notblank",)),
@@ -540,6 +541,83 @@ class st4010(object):
                 break
         self.df.enableButtonsTags(state=state)
         self.df.focusField("T", 4, 1)
+
+    def doOrders(self):
+        tit = "Outstanding Orders for Item: %s %s - %s" % \
+            (self.group, self.code, self.desc)
+        data = []
+        tb1 = ["drsmst", "slsiv1", "slsiv2"]
+        wh1 = [
+            ("si2_cono", "=", self.opts["conum"]),
+            ("si2_group", "=", self.group),
+            ("si2_code", "=", self.code),
+            ("si2_loc", "=", self.loc),
+            ("si2_rtn", "in", ("O", "W")),
+            ("si1_invno", "=", ""),
+            ("drm_cono=si2_cono",),
+            ("drm_acno=si1_acno",),
+            ("si1_cono=si2_cono",),
+            ("si1_rtn=si2_rtn",),
+            ("si1_docno=si2_docno",)]
+        recs = self.sql.getRec(tb1, cols=["si2_rtn", "si2_docno",
+            "si1_acno", "drm_name", "si2_qty"],
+            where=wh1, order="si2_docno")
+        for rec in recs:
+            if rec[0] == "O":
+                data.append(["SO"] + rec[1:])
+            else:
+                data.append(["WO"] + rec[1:])
+        tb2 = ["crsmst", "strpom", "strpot"]
+        wh2 = [
+            ("pot_cono", "=", self.opts["conum"]),
+            ("pot_group", "=", self.group),
+            ("pot_code", "=", self.code),
+            ("pom_loc", "=", self.loc),
+            ("pom_delno", "=", ""),
+            ("crm_cono=pot_cono",),
+            ("crm_acno=pom_acno",),
+            ("pom_cono=pot_cono",),
+            ("pom_ordno=pot_ordno",)]
+        recs = self.sql.getRec(tb2, cols=["pot_ordno",
+            "pom_acno", "crm_name", "pot_qty"],
+            where=wh2, order="pot_ordno")
+        for rec in recs:
+            data.append(["PO"] + rec)
+        if data:
+            state = self.df.disableButtonsTags()
+            col = (
+                ("rtn", "UA", 2, "DT"),
+                ("docno", "Na", 9, "Reference"),
+                ("acno", "NA", 7, "Acc-Num"),
+                ("name", "NA", 30, "Name"),
+                ("qty", "SD", 13.2, "  Quantity"))
+            while True:
+                rec = SRec(self.opts["mf"], screen=self.df.nb.Page5, title=tit,
+                    cols=col, where=data, wtype="D")
+                if rec.selection:
+                    self.df.setWidget(self.df.mstFrame, state="hide")
+                    typ = rec.selection[0]
+                    if rec.selection[0] == "SO":
+                        typ = "O"
+                    elif rec.selection[0] == "WO":
+                        typ = "W"
+                    else:
+                        typ = "P"
+                    doc = int(rec.selection[1])
+                    if typ in ("O", "W"):
+                        doc = int(rec.selection[1])
+                        PrintInvoice(self.opts["mf"], self.opts["conum"],
+                            self.opts["conam"], typ, doc, repprt=["N", "V",
+                            "view"], copy="y")
+                    else:
+                        PrintOrder(self.opts["mf"], self.opts["conum"],
+                            self.opts["conam"], doc, repprt=["N", "V",
+                            "view"], copy="y")
+                    self.df.setWidget(self.df.mstFrame, state="show")
+                else:
+                    break
+            self.df.enableButtonsTags(state=state)
+        self.df.selPage(index=self.df.lastnbpage)
 
     def doNotes(self, wiget=None):
         state = self.df.disableButtonsTags()

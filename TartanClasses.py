@@ -26,8 +26,9 @@ COPYING
 # ========================================================
 # Standard Python modules
 # ========================================================
-import calendar, copy, csv, datetime, functools, glob, gzip, os, re, shutil
-import subprocess, sys, tarfile, tempfile, textwrap, threading, time, webbrowser
+import calendar, copy, csv, datetime, functools, glob, gzip, math, os, re
+import shutil, subprocess, sys, tarfile, tempfile, textwrap, threading, time
+import webbrowser
 # ========================================================
 # TARTAN Standard Functions and Variables e.g. showError
 # ========================================================
@@ -4175,9 +4176,10 @@ Export - The report in the selected format will be opened
                     dflt = self.mail[2]
                 else:
                     dflt = "N"
-                row += 1
-                self.eflds.append((("T",0,row,col),("IRB",yns),0,
-                    desc,"",dflt,"N",self.setMail,None,None,None))
+                if dflt != "S":
+                    row += 1
+                    self.eflds.append((("T",0,row,col),("IRB",yns),0,
+                        desc,"",dflt,"N",self.setMail,None,None,None))
                 if self.mail[0].lower() in ("b", "y"):
                     # Email addresses
                     data = []
@@ -4509,11 +4511,11 @@ Export - The report in the selected format will be opened
                 "stype": "F",
                 "types": "fle",
                 "ftype": [("All Files", "*.*")]}
-            fld = (
+            fld = [
                 (("T",0,0,0),"ITV",(60,10),"Message","",
                     "","Y",None,None,None,("efld",)),
                 (("T",0,1,0),"IFF",60,"Attach","",
-                    "","Y",None,fle,None,("file",)))
+                    "","Y",None,fle,None,("file",))]
             but = (
                 ("Continue", None, self.emlCont,1,None,None),
                 ("Cancel", None, self.emlExit,1,None,None))
@@ -4637,9 +4639,9 @@ Export - The report in the selected format will be opened
         if self.nb.select() == self.nb.tabs()[idx]:
             # Page already selected
             return
+        self.lastnbpage = self.nb.index(self.nb.select())
         self.nb.select(idx)
         self.pag = idx + 1
-        self.lastnbpage = idx
         cmd = self.tags[idx][1]
         if cmd:
             self.window.focus_set()
@@ -16582,16 +16584,17 @@ class MyFpdf(fpdf.FPDF):
         except:
             pass
         # Defaults
-        portrait = (190, 275)
+        self.portrait = (210 - (int(self.l_margin) + int(self.r_margin)),
+            297 - (2 * int(self.t_margin)))
         if not name or not head or type(head) in (list, tuple):
             if type(font) == str:
                 font = [font, "", 10]
             self.setFont(font[0], font[1], font[2], default=True)
             self.chgt = round(font[2] * .4, 1)
             if self.def_orientation == "P":
-                self.lpp = int(portrait[1] / self.chgt)
+                self.lpp = int(self.portrait[1] / self.chgt)
             else:
-                self.lpp = int(portrait[0] / self.chgt)
+                self.lpp = int(self.portrait[0] / self.chgt)
             return
         # Adjust font to heading width
         if type(head) == int:
@@ -16605,9 +16608,9 @@ class MyFpdf(fpdf.FPDF):
         self.font = None
         while not self.font:
             if self.def_orientation == "P":
-                mm = portrait[0]
+                mm = self.portrait[0]
             else:
-                mm = portrait[1]
+                mm = self.portrait[1]
             for size in range(mm, 30, -1):
                 siz = round(size / 10.0, 1)
                 self.chgt = round(siz * .4, 2)
@@ -16616,16 +16619,16 @@ class MyFpdf(fpdf.FPDF):
                 self.setFont(family, "", siz, default=True)
                 self.width = self.get_string_width(head)
                 if self.def_orientation == "P":
-                    if self.width > portrait[0]:
+                    if self.width > self.portrait[0]:
                         continue
                     self.font = [family, siz, self.chgt]
-                    self.lpp = int(portrait[1] / self.chgt)
+                    self.lpp = int(self.portrait[1] / self.chgt)
                     break
                 if self.def_orientation == "L":
-                    if self.width > portrait[1]:
+                    if self.width > self.portrait[1]:
                         continue
                     self.font = [font, siz, self.chgt]
-                    self.lpp = int(portrait[0] / self.chgt)
+                    self.lpp = int(self.portrait[0] / self.chgt)
                     break
             if not self.font:
                 if self.def_orientation == "P":
@@ -16728,6 +16731,20 @@ class MyFpdf(fpdf.FPDF):
         self.cell(w=0, h=10, txt=txt, border=0, ln=0, align="L")
         self.cell(w=0, h=10, txt="Page " + str(self.page_no()) + "/{nb}",
             border=0, ln=0, align="R")
+
+    def newPage(self, lines=1, lhgt=None):
+        if self.page:
+            if lhgt is None:
+                lhgt = self.font[2]
+            y = self.get_y()
+            if self.def_orientation == "P":
+                pd = self.portrait[1]
+            else:
+                pd = self.portrait[0]
+            h = lines * lhgt
+            m = math.ceil(float(ASD(y) + ASD(h)))
+        if not self.page or m >= pd:
+            return True
 
 class TartanLabel(MyFpdf):
     def __init__(self, label, unit="mm", posY=1, posX=1):
@@ -17369,7 +17386,10 @@ Mobile:            27-82-9005260
     def linkMail(self, *args):
         try:
             web = "mailto:paul@tartan.co.za"
-            webbrowser.open_new(web)
+            if sys.platform == "win32":
+                os.startfile(web)
+            else:
+                subprocess.call(["xdg-open", web])
             self.exitAbout()
         except:
             showError(self.mf.window, "Browser Error",
@@ -18442,6 +18462,7 @@ class ViewPDF(object):
             self.siz = [rect[2], rect[3]]
         else:
             self.siz = [rect[3], rect[2]]
+        self.rotate = 0
         # Theme and fonts
         self.style = ttk.Style()
         if not self.mf:
@@ -18563,6 +18584,7 @@ class ViewPDF(object):
         self.win.bind("<Control-f>", self.doSearch)
         self.win.bind("<Control-n>", self.nextSearch)
         self.win.bind("<Control-e>", self.endSearch)
+        self.win.bind("<Control-r>", self.doRotate)
         self.win.bind("<Control-KP_Add>", self.doZoom)
         self.win.bind("<Control-KP_Subtract>", self.doZoom)
         self.win.update_idletasks()
@@ -18688,6 +18710,15 @@ class ViewPDF(object):
             self.matrix = self.maxi
             self.maxi = False
         self.wsiz = []
+        self.showPage()
+
+    def doRotate(self, event=None):
+        if self.rotate == 270:
+            self.rotate = 0
+        else:
+            self.rotate += 90
+        for page in self.doc:
+            page.set_rotation(self.rotate)
         self.showPage()
 
     def doZoom(self, event=None):
@@ -18883,6 +18914,7 @@ class ViewPDF(object):
             ("Ctrl f", "Search for Text"),
             ("Ctrl n", "Next occurrence of Text"),
             ("Ctrl e", "Clear highlighted Text"),
+            ("Ctrl r", "Rotate Document"),
             ("Arrows", "Scroll up, down, left and right"),
             ("Esc", "Close the Current View"))
         self.doUnbind(exc="<Key-F1>")
@@ -19076,39 +19108,13 @@ class ViewPDF(object):
             infle.close()
         else:
            self.efrom = ""
-        # To addresses
-        data = []
-        sql = Sql(self.mf.dbm, ["telmst", "telcon"],
-            prog=__name__)
-        tdm = sql.getRec("telmst", cols=["tdm_name",
-            "tdm_email"], where=[("tdm_email", "<>", "")],
-            order="tdm_name")
-        for t in tdm:
-            data.append([t[0], "", "", t[1]])
-        tdc = sql.getRec("telcon", cols=["tdc_name",
-            "tdc_contact", "tdc_desig", "tdc_email"],
-            where=[("tdc_email", "<>", "")],
-            order="tdc_name, tdc_contact")
-        if tdc:
-            data.extend(tdc)
-        adr = {
-            "stype": "C",
-            "titl": "Available Addresses",
-            "head": (
-                "Name", "Contact", "Designation", "Address"),
-            "typs": (("NA",0,"Y"),("NA",0),("NA",0),("NA",0)),
-            "data": data,
-            "mode": "M",
-            "index": 3}
         tit = "Email Document"
         fld = (
             (("T",0,0,0),"ITX",30,"From Address","",
-                self.efrom,"N",None,None,None,("email", False)),
-            (("T",0,1,0),"ITX",50,"To Addresses","",
-                "","N",self.doETo,adr,None,("email", False),None,
-                "Comma Separated List of Addresses."))
-        self.ed = TartanDialog(self.mf, tops=True, tile=tit, eflds=fld,
-            tend=((self.doEEnd, "y"),), txit=(self.doEExit,))
+                self.efrom,"N",None,None,None,("email", False)),)
+        self.ed = TartanDialog(self.mf, tops=True, tile=tit,
+            eflds=fld, mail=("Y","N", "S"), tend=((self.doEEnd, "y"),),
+            txit=(self.doEExit,))
         if self.mf and self.mf.window:
             self.mf.window.deiconify()
         self.ed.mstFrame.wait_window()
@@ -19116,33 +19122,27 @@ class ViewPDF(object):
             self.mf.window.withdraw()
         self.win.deiconify()
 
-    def doETo(self, frt, pag, r, c, p, i, w):
-        try:
-            data = list(eval(w))
-            addr = ""
-            for a in data:
-                if not addr:
-                    addr = a
-                else:
-                    addr = "%s,%s" % (addr, a)
-            self.ed.loadEntry(frt, pag, p, data=addr)
-        except:
-            pass
-
     def doEEnd(self):
         self.ed.closeProcess()
-        fromad, toad = self.ed.t_work[0][0]
-        toad = toad.replace(" ", "").split(",")
+        fromad = self.ed.t_work[0][0][0]
+        toad = self.ed.repeml[2].split(",")
         subj = "PDF Report"
-        att = [self.pdfnam]
+        att = []
+        if self.ed.repeml[3]:
+            body = self.ed.repeml[3][1]
+            if len(self.ed.repeml[3]) > 2:
+                att = [self.ed.repeml[3][2]]
+        else:
+            body = ""
+        att.append(self.pdfnam)
         sql = Sql(self.mf.dbm, "emllog", prog=__name__)
         for add in toad:
             ok = False
             while not ok:
                 sp = SplashScreen(self.mf.window.focus_displayof(),
                     "E-Mailing the Report to:\n\n%s\n\nPlease Wait....." % add)
-                ok = sendMail(self.server, fromad, add, subj, "", attach=att,
-                    wrkdir=self.mf.rcdic["wrkdir"])
+                ok = sendMail(self.server, fromad, toad, subj, mess=body,
+                    attach=att, wrkdir=self.mf.rcdic["wrkdir"])
                 sp.closeSplash()
                 if not ok:
                     ok = askQuestion(self.mf.window.focus_displayof(),
@@ -19160,9 +19160,10 @@ class ViewPDF(object):
                         tim = time.localtime()[0:  5]
                         tim = "%04i-%02i-%02i %02i:%02i" % tim
                         sql.insRec("emllog", data=[fromad.strip(),
-                            add.strip(), subj, tim, "OK"])
+                            add.strip(), subj, tim, ok])
                     except:
                         pass
+                    break
         self.mf.dbm.commitDbase()
         infle = open(self.lasteml, "w")
         infle.write("%s\n" % self.ed.t_work[0][0][0])

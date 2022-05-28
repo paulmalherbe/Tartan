@@ -140,7 +140,6 @@ class gl3080(object):
             mxs=(len(self.pays) + len(self.recs) + len(self.imps)))
         self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=90)
-        self.pglin = 999
         self.tot_chq = 0
         self.tot_dep = 0
         self.tot_imp = 0
@@ -152,17 +151,14 @@ class gl3080(object):
             self.fpdf.drawText()
             self.fpdf.drawText("%-70s" % ("Add: Cheques Not Presented",))
             self.fpdf.drawText()
-            self.pglin += 4
             mxs = len(self.pays) - 1
             for num, pay in enumerate(self.pays):
                 p.displayProgress(num)
                 self.printLine(num, mxs, pay, "C")
-            self.pglin += 1
         if self.recs:
             self.fpdf.drawText()
             self.fpdf.drawText("%-70s" % ("Less: Deposits Not Presented",))
             self.fpdf.drawText()
-            self.pglin += 3
             mxs = len(self.recs) - 1
             for num, rec in enumerate(self.recs):
                 p.displayProgress(len(self.pays) + num)
@@ -172,7 +168,6 @@ class gl3080(object):
             self.fpdf.drawText()
             self.fpdf.drawText("%-70s" % ("+-: Imports Not Captured",))
             self.fpdf.drawText()
-            self.pglin += 3
             mxs = len(self.imps) - 1
             for num, rec in enumerate(self.imps):
                 p.displayProgress(len(self.pays) + len(self.imps) + num)
@@ -200,7 +195,7 @@ class gl3080(object):
         else:
             amt = float(ASD(0) - ASD(dat[3]))
         tramt = CCD(amt, "SD", 13.2)
-        if self.pglin > self.fpdf.lpp:
+        if self.fpdf.newPage():
             self.pageHeading()
         if typ == "C":
             self.tot_chq = float(ASD(self.tot_chq) + ASD(tramt.work))
@@ -220,7 +215,6 @@ class gl3080(object):
         else:
             self.fpdf.drawText("%-5s %-9s %-10s %-30s %-13s" % \
                 ("", refno.disp, trdt.disp, desc.disp, tramt.disp))
-        self.pglin += 1
 
     def extractBalance(self):
         o = self.sql.getRec("genbal", cols=["glo_cyr"],
@@ -251,7 +245,6 @@ class gl3080(object):
             (self.name, self.acno, self.perd))
         self.fpdf.underLine()
         self.fpdf.setFont()
-        self.pglin = 4
 
     def doExit(self):
         self.df.closeProcess()

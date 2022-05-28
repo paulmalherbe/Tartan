@@ -1,0 +1,2157 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index 5e32a7b..d038c8a 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -26,8 +26,9 @@ COPYING
+ # ========================================================
+ # Standard Python modules
+ # ========================================================
+-import calendar, copy, csv, datetime, functools, glob, gzip, os, re, shutil
+-import subprocess, sys, tarfile, tempfile, textwrap, threading, time, webbrowser
++import calendar, copy, csv, datetime, functools, glob, gzip, math, os, re
++import shutil, subprocess, sys, tarfile, tempfile, textwrap, threading, time
++import webbrowser
+ # ========================================================
+ # TARTAN Standard Functions and Variables e.g. showError
+ # ========================================================
+@@ -4175,9 +4176,10 @@ Export - The report in the selected format will be opened
+                     dflt = self.mail[2]
+                 else:
+                     dflt = "N"
+-                row += 1
+-                self.eflds.append((("T",0,row,col),("IRB",yns),0,
+-                    desc,"",dflt,"N",self.setMail,None,None,None))
++                if dflt != "S":
++                    row += 1
++                    self.eflds.append((("T",0,row,col),("IRB",yns),0,
++                        desc,"",dflt,"N",self.setMail,None,None,None))
+                 if self.mail[0].lower() in ("b", "y"):
+                     # Email addresses
+                     data = []
+@@ -4509,11 +4511,11 @@ Export - The report in the selected format will be opened
+                 "stype": "F",
+                 "types": "fle",
+                 "ftype": [("All Files", "*.*")]}
+-            fld = (
++            fld = [
+                 (("T",0,0,0),"ITV",(60,10),"Message","",
+                     "","Y",None,None,None,("efld",)),
+                 (("T",0,1,0),"IFF",60,"Attach","",
+-                    "","Y",None,fle,None,("file",)))
++                    "","Y",None,fle,None,("file",))]
+             but = (
+                 ("Continue", None, self.emlCont,1,None,None),
+                 ("Cancel", None, self.emlExit,1,None,None))
+@@ -4637,9 +4639,9 @@ Export - The report in the selected format will be opened
+         if self.nb.select() == self.nb.tabs()[idx]:
+             # Page already selected
+             return
++        self.lastnbpage = self.nb.index(self.nb.select())
+         self.nb.select(idx)
+         self.pag = idx + 1
+-        self.lastnbpage = idx
+         cmd = self.tags[idx][1]
+         if cmd:
+             self.window.focus_set()
+@@ -16582,16 +16584,17 @@ class MyFpdf(fpdf.FPDF):
+         except:
+             pass
+         # Defaults
+-        portrait = (190, 275)
++        self.portrait = (210 - (int(self.l_margin) + int(self.r_margin)),
++            297 - (2 * int(self.t_margin)))
+         if not name or not head or type(head) in (list, tuple):
+             if type(font) == str:
+                 font = [font, "", 10]
+             self.setFont(font[0], font[1], font[2], default=True)
+             self.chgt = round(font[2] * .4, 1)
+             if self.def_orientation == "P":
+-                self.lpp = int(portrait[1] / self.chgt)
++                self.lpp = int(self.portrait[1] / self.chgt)
+             else:
+-                self.lpp = int(portrait[0] / self.chgt)
++                self.lpp = int(self.portrait[0] / self.chgt)
+             return
+         # Adjust font to heading width
+         if type(head) == int:
+@@ -16605,9 +16608,9 @@ class MyFpdf(fpdf.FPDF):
+         self.font = None
+         while not self.font:
+             if self.def_orientation == "P":
+-                mm = portrait[0]
++                mm = self.portrait[0]
+             else:
+-                mm = portrait[1]
++                mm = self.portrait[1]
+             for size in range(mm, 30, -1):
+                 siz = round(size / 10.0, 1)
+                 self.chgt = round(siz * .4, 2)
+@@ -16616,16 +16619,16 @@ class MyFpdf(fpdf.FPDF):
+                 self.setFont(family, "", siz, default=True)
+                 self.width = self.get_string_width(head)
+                 if self.def_orientation == "P":
+-                    if self.width > portrait[0]:
++                    if self.width > self.portrait[0]:
+                         continue
+                     self.font = [family, siz, self.chgt]
+-                    self.lpp = int(portrait[1] / self.chgt)
++                    self.lpp = int(self.portrait[1] / self.chgt)
+                     break
+                 if self.def_orientation == "L":
+-                    if self.width > portrait[1]:
++                    if self.width > self.portrait[1]:
+                         continue
+                     self.font = [font, siz, self.chgt]
+-                    self.lpp = int(portrait[0] / self.chgt)
++                    self.lpp = int(self.portrait[0] / self.chgt)
+                     break
+             if not self.font:
+                 if self.def_orientation == "P":
+@@ -16729,6 +16732,20 @@ class MyFpdf(fpdf.FPDF):
+         self.cell(w=0, h=10, txt="Page " + str(self.page_no()) + "/{nb}",
+             border=0, ln=0, align="R")
+ 
++    def newPage(self, lines=1, lhgt=None):
++        if self.page:
++            if lhgt is None:
++                lhgt = self.font[2]
++            y = self.get_y()
++            if self.def_orientation == "P":
++                pd = self.portrait[1]
++            else:
++                pd = self.portrait[0]
++            h = lines * lhgt
++            m = math.ceil(float(ASD(y) + ASD(h)))
++        if not self.page or m >= pd:
++            return True
++
+ class TartanLabel(MyFpdf):
+     def __init__(self, label, unit="mm", posY=1, posX=1):
+         super().__init__(name=__name__, head=90, font="arial", foot=False)
+@@ -17369,7 +17386,10 @@ Mobile:            27-82-9005260
+     def linkMail(self, *args):
+         try:
+             web = "mailto:paul@tartan.co.za"
+-            webbrowser.open_new(web)
++            if sys.platform == "win32":
++                os.startfile(web)
++            else:
++                subprocess.call(["xdg-open", web])
+             self.exitAbout()
+         except:
+             showError(self.mf.window, "Browser Error",
+@@ -18442,6 +18462,7 @@ class ViewPDF(object):
+             self.siz = [rect[2], rect[3]]
+         else:
+             self.siz = [rect[3], rect[2]]
++        self.rotate = 0
+         # Theme and fonts
+         self.style = ttk.Style()
+         if not self.mf:
+@@ -18563,6 +18584,7 @@ class ViewPDF(object):
+         self.win.bind("<Control-f>", self.doSearch)
+         self.win.bind("<Control-n>", self.nextSearch)
+         self.win.bind("<Control-e>", self.endSearch)
++        self.win.bind("<Control-r>", self.doRotate)
+         self.win.bind("<Control-KP_Add>", self.doZoom)
+         self.win.bind("<Control-KP_Subtract>", self.doZoom)
+         self.win.update_idletasks()
+@@ -18690,6 +18712,15 @@ class ViewPDF(object):
+         self.wsiz = []
+         self.showPage()
+ 
++    def doRotate(self, event=None):
++        if self.rotate == 270:
++            self.rotate = 0
++        else:
++            self.rotate += 90
++        for page in self.doc:
++            page.set_rotation(self.rotate)
++        self.showPage()
++
+     def doZoom(self, event=None):
+         if event.num == 3 or event.keysym == "KP_Subtract":
+             if self.zoom > self.scale:
+@@ -18883,6 +18914,7 @@ class ViewPDF(object):
+             ("Ctrl f", "Search for Text"),
+             ("Ctrl n", "Next occurrence of Text"),
+             ("Ctrl e", "Clear highlighted Text"),
++            ("Ctrl r", "Rotate Document"),
+             ("Arrows", "Scroll up, down, left and right"),
+             ("Esc", "Close the Current View"))
+         self.doUnbind(exc="<Key-F1>")
+@@ -19076,39 +19108,13 @@ class ViewPDF(object):
+             infle.close()
+         else:
+            self.efrom = ""
+-        # To addresses
+-        data = []
+-        sql = Sql(self.mf.dbm, ["telmst", "telcon"],
+-            prog=__name__)
+-        tdm = sql.getRec("telmst", cols=["tdm_name",
+-            "tdm_email"], where=[("tdm_email", "<>", "")],
+-            order="tdm_name")
+-        for t in tdm:
+-            data.append([t[0], "", "", t[1]])
+-        tdc = sql.getRec("telcon", cols=["tdc_name",
+-            "tdc_contact", "tdc_desig", "tdc_email"],
+-            where=[("tdc_email", "<>", "")],
+-            order="tdc_name, tdc_contact")
+-        if tdc:
+-            data.extend(tdc)
+-        adr = {
+-            "stype": "C",
+-            "titl": "Available Addresses",
+-            "head": (
+-                "Name", "Contact", "Designation", "Address"),
+-            "typs": (("NA",0,"Y"),("NA",0),("NA",0),("NA",0)),
+-            "data": data,
+-            "mode": "M",
+-            "index": 3}
+         tit = "Email Document"
+         fld = (
+             (("T",0,0,0),"ITX",30,"From Address","",
+-                self.efrom,"N",None,None,None,("email", False)),
+-            (("T",0,1,0),"ITX",50,"To Addresses","",
+-                "","N",self.doETo,adr,None,("email", False),None,
+-                "Comma Separated List of Addresses."))
+-        self.ed = TartanDialog(self.mf, tops=True, tile=tit, eflds=fld,
+-            tend=((self.doEEnd, "y"),), txit=(self.doEExit,))
++                self.efrom,"N",None,None,None,("email", False)),)
++        self.ed = TartanDialog(self.mf, tops=True, tile=tit,
++            eflds=fld, mail=("Y","N", "S"), tend=((self.doEEnd, "y"),),
++            txit=(self.doEExit,))
+         if self.mf and self.mf.window:
+             self.mf.window.deiconify()
+         self.ed.mstFrame.wait_window()
+@@ -19116,33 +19122,27 @@ class ViewPDF(object):
+             self.mf.window.withdraw()
+         self.win.deiconify()
+ 
+-    def doETo(self, frt, pag, r, c, p, i, w):
+-        try:
+-            data = list(eval(w))
+-            addr = ""
+-            for a in data:
+-                if not addr:
+-                    addr = a
+-                else:
+-                    addr = "%s,%s" % (addr, a)
+-            self.ed.loadEntry(frt, pag, p, data=addr)
+-        except:
+-            pass
+-
+     def doEEnd(self):
+         self.ed.closeProcess()
+-        fromad, toad = self.ed.t_work[0][0]
+-        toad = toad.replace(" ", "").split(",")
++        fromad = self.ed.t_work[0][0][0]
++        toad = self.ed.repeml[2].split(",")
+         subj = "PDF Report"
+-        att = [self.pdfnam]
++        att = []
++        if self.ed.repeml[3]:
++            body = self.ed.repeml[3][1]
++            if len(self.ed.repeml[3]) > 2:
++                att = [self.ed.repeml[3][2]]
++        else:
++            body = ""
++        att.append(self.pdfnam)
+         sql = Sql(self.mf.dbm, "emllog", prog=__name__)
+         for add in toad:
+             ok = False
+             while not ok:
+                 sp = SplashScreen(self.mf.window.focus_displayof(),
+                     "E-Mailing the Report to:\n\n%s\n\nPlease Wait....." % add)
+-                ok = sendMail(self.server, fromad, add, subj, "", attach=att,
+-                    wrkdir=self.mf.rcdic["wrkdir"])
++                ok = sendMail(self.server, fromad, toad, subj, mess=body,
++                    attach=att, wrkdir=self.mf.rcdic["wrkdir"])
+                 sp.closeSplash()
+                 if not ok:
+                     ok = askQuestion(self.mf.window.focus_displayof(),
+@@ -19160,9 +19160,10 @@ class ViewPDF(object):
+                         tim = time.localtime()[0:  5]
+                         tim = "%04i-%02i-%02i %02i:%02i" % tim
+                         sql.insRec("emllog", data=[fromad.strip(),
+-                            add.strip(), subj, tim, "OK"])
++                            add.strip(), subj, tim, ok])
+                     except:
+                         pass
++                    break
+         self.mf.dbm.commitDbase()
+         infle = open(self.lasteml, "w")
+         infle.write("%s\n" % self.ed.t_work[0][0][0])
+diff --git a/ass/ar2030.py b/ass/ar2030.py
+index 8134fa7..4317616 100644
+--- a/ass/ar2030.py
++++ b/ass/ar2030.py
+@@ -124,6 +124,7 @@ class ar2030(object):
+         if not self.args:
+             p = ProgressBar(self.opts["mf"].body, mxs=len(recs),
+                 typ="Raising Depreciation ... Please Wait")
++        abort = False
+         for num, dat in enumerate(recs):
+             if not self.args:
+                 p.displayProgress(num)
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index 54dc21b..d7843ae 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -156,8 +156,8 @@ class bc2010(object):
+         self.dbase = bwlctl["ctb_dbase"]
+         self.order = bwlctl["ctb_order"]
+         self.mixed = bwlctl["ctb_mixed"]
+-        self.ratem = CCD(bwlctl["ctb_ratem"], "UD", 6.2)
+-        self.ratev = CCD(bwlctl["ctb_ratev"], "UD", 6.2)
++        self.ratem = bwlctl["ctb_ratem"]
++        self.ratev = bwlctl["ctb_ratev"]
+         self.greens = bwlctl["ctb_greens"]
+         t = time.localtime()
+         self.sysdt = ((t[0] * 10000) + (t[1] * 100) + t[2])
+@@ -194,9 +194,9 @@ class bc2010(object):
+                 "whether to base the Draw on Positions, Ratings or a "\
+                 "Combination of Both."),
+             (("T",0,6,0),"IUD",5.2,"Fees - Member R","",
+-                self.ratem.work,"N",self.doRate,None,None,("efld",)),
++                self.ratem,"N",self.doRate,None,None,("efld",)),
+             (("T",0,6,0),"IUD",5.2," Visitor R","",
+-                self.ratev.work,"N",self.doRate,None,None,("efld",)))
++                self.ratev,"N",self.doRate,None,None,("efld",)))
+         tnd = ((self.doMEnd,"y"),)
+         txt = (self.doMExit,)
+         # Set font as big as possible up to 24pts
+@@ -288,9 +288,9 @@ class bc2010(object):
+         self.dtype = drm[self.sql.bwldrm_col.index("bdm_dtype")]
+         self.dhist = drm[self.sql.bwldrm_col.index("bdm_dhist")]
+         self.tsize = drm[self.sql.bwldrm_col.index("bdm_tsize")]
+-        self.mrate = drm[self.sql.bwldrm_col.index("bdm_mrate")]
++        self.mrate = CCD(drm[self.sql.bwldrm_col.index("bdm_mrate")], "UD", 6.2)
+         self.mf.loadEntry("T", 0, 6, data=self.mrate)
+-        self.vrate = drm[self.sql.bwldrm_col.index("bdm_vrate")]
++        self.vrate = CCD(drm[self.sql.bwldrm_col.index("bdm_vrate")], "UD", 6.2)
+         self.mf.loadEntry("T", 0, 7, data=self.vrate)
+ 
+     def doLoadTabs(self):
+@@ -417,9 +417,9 @@ class bc2010(object):
+ 
+     def doRate(self, frt, pag, r, c, p, i, w):
+         if p == 6:
+-            self.ratem = CCD(w, "UD", 6.2)
++            self.mrate = CCD(w, "UD", 6.2)
+         else:
+-            self.ratev = CCD(w, "UD", 6.2)
++            self.vrate = CCD(w, "UD", 6.2)
+ 
+     def doMEnd(self):
+         if self.viewer:
+@@ -483,7 +483,7 @@ class bc2010(object):
+         else:
+             vfy = ("efld",)
+         fld = (
+-            (("T",0,0,0),"OUI",3,"Entered: Total"),
++            (("T",0,0,0),"OUI",3,"Tabs Entered: Total"),
+             (("T",0,0,0),"OUI",3," Males"),
+             (("T",0,0,0),"OUI",3," Females"),
+             (("T",1,0,0),"I@btb_tab",0,"","Tab Number(noesc)",
+@@ -1813,9 +1813,9 @@ Combination Number %10s"""
+         av2 = round(rt2 / ct2, 2)
+         if gtot:
+             if av1 > av2:
+-                dif = av1 - av2
++                dif = round(av1 - av2, 2)
+             else:
+-                dif = av2 - av1
++                dif = round(av2 - av1, 2)
+             if dif > self.tot:
+                 self.tot = dif
+         draw1[1] = av1
+@@ -2246,7 +2246,7 @@ Combination Number %10s"""
+         # Insert bwldrm
+         self.sql.insRec("bwldrm", data=[self.opts["conum"], self.date,
+             self.time, self.mixgd, self.mixrt, self.nbase, self.dtype,
+-            self.dhist, self.tsize, self.ratem.work, self.ratev.work])
++            self.dhist, self.tsize, self.mrate.work, self.vrate.work])
+         if not self.drawn:
+             return
+         # Insert bwldrt
+@@ -2310,27 +2310,30 @@ Combination Number %10s"""
+             dg.focusField("T", 1, 1)
+             return
+         dg.setWidget(dg.mstFrame, state="hide")
+-        if not self.ratem.work and not self.ratev.work:
+-            rated = "N"
+-        else:
+-            rated = "Y"
+         r1s = (("No", "N"), ("Yes", "Y"), ("Only", "O"))
+         r2s = (("Yes", "Y"), ("No", "N"))
+-        fld = (
++        fld = [
+             (("T",0,0,0),("IRB",r1s),0,"Print Cards","",
+                 "N","Y",self.doCards,None,None,None),
+             (("T",0,1,0),"INA",30,"Heading","",
+                 "","Y",self.doHead,None,None,("notblank",)),
+             (("T",0,2,0),"IUI",2,"Number of Ends","",
+-                0,"Y",self.doEnds,None,None,("notzero",)),
+-            (("T",0,3,0),("IRB",r2s),0,"Cash Takings Sheet","",
+-                rated,"Y",self.doTakings,None,None,None),
+-            (("T",0,4,0),("IRB",r2s),0,"Tabs Draw Listing","",
++                0,"Y",self.doEnds,None,None,("notzero",))]
++        if self.mrate.work or self.vrate.work:
++            fld.append(
++                (("T",0,3,0),("IRB",r2s),0,"Cash Takings Sheet","",
++                    "Y","Y",self.doTakings,None,None,None))
++            idx = 4
++        else:
++            self.takings = "N"
++            idx = 3
++        fld.extend([
++            (("T",0,idx,0),("IRB",r2s),0,"Tabs Draw Listing","",
+                 "N","Y",self.doListing,None,None,None),
+-            (("T",0,5,0),("IRB",r2s),0,"Tabs Draw Board","",
++            (("T",0,idx+1,0),("IRB",r2s),0,"Tabs Draw Board","",
+                 "Y","Y",self.doBoard,None,None,None),
+-            (("T",0,6,0),("IRB",r2s),0,"Include Empty Rinks","",
+-                "N","Y",self.doEmpty,None,None,None))
++            (("T",0,idx+2,0),("IRB",r2s),0,"Include Empty Rinks","",
++                "N","Y",self.doEmpty,None,None,None)])
+         self.pd = TartanDialog(self.opts["mf"], tops=True,
+             title="Print Dialog", eflds=fld, tend=((self.doPEnd, "n"),),
+             txit=(self.doPExit,), view=("N","V"))
+diff --git a/bwl/bc2050.py b/bwl/bc2050.py
+index 7fea809..62da5e5 100644
+--- a/bwl/bc2050.py
++++ b/bwl/bc2050.py
+@@ -556,28 +556,31 @@ class bc2050(object):
+             ("bcg_ccod", "=", self.ccod)]
+         grp = "bcg_scod"
+         odr = "pts desc, diff desc, agt asc"
+-        chk = self.sql.getRec("bwlgme", cols=col, where=whr,
++        self.gchk = self.sql.getRec("bwlgme", cols=col, where=whr,
+             group=grp, order=odr)
+-        totskp = len(chk)
++        totskp = len(self.gchk)
+         grpcnt = self.grpnum
+         gqty = int(totskp / grpcnt)
+         if gqty % 2:
+             gqty -= 1
+         self.grps = [gqty] * grpcnt
+         ovrs = int((totskp - (gqty * grpcnt)) / 2)
+-        for x in range(ovrs):
+-            if self.grpsml == "F":
+-                self.grps[grpcnt - 1 - x] += 2
+-            else:
+-                self.grps[x] += 2
+-        mess = ""
+-        grps = ["A", "B", "C", "D", "E"]
+-        for num, grp in enumerate(self.grps):
+-            mess += "%s with %s Skips %s Rinks\n" % (grps[num], grp, int(grp/2))
+-        mess += "\nIs this Correct?"
+-        ok = askQuestion(self.df.window, head="Group Allocations", mess=mess)
+-        if ok == "no":
+-            return "Invalid Selection"
++        if ovrs:
++            for x in range(ovrs):
++                if self.grpsml == "F":
++                    self.grps[grpcnt - 1 - x] += 2
++                else:
++                    self.grps[x] += 2
++            mess = ""
++            grps = ["A", "B", "C", "D", "E"]
++            for num, grp in enumerate(self.grps):
++                mess += " Group %s with %s Skips %s Rinks\n" % (grps[num],
++                    grp, int(grp/2))
++            mess += "\nIs this Correct?"
++            ok = askQuestion(self.df.window, head="Group Allocations",
++                mess=mess, default="yes")
++            if ok == "no":
++                return "Invalid Selection"
+ 
+     def doGreens(self, frt, pag, r, c, p, i, w):
+         self.greens, self.first, self.endrks, err = getGreens(
+@@ -846,7 +849,7 @@ class bc2050(object):
+                     self.sql.updRec("bwlgme", cols=["bcg_group"],
+                         data=[num + 1], where=[("bcg_cono", "=",
+                         self.opts["conum"]), ("bcg_ccod", "=",
+-                        self.ccod), ("bcg_scod", "=", chk[skp][0])])
++                        self.ccod), ("bcg_scod", "=", self.gchk[skp][0])])
+                 start += qty
+         groups = self.sql.getRec("bwlgme", cols=["bcg_group"],
+             where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+diff --git a/bwl/bc2080.py b/bwl/bc2080.py
+index 7b4a8cd..14f3b11 100644
+--- a/bwl/bc2080.py
++++ b/bwl/bc2080.py
+@@ -1,6 +1,6 @@
+ """
+ SYNOPSIS
+-    Bowls 4321 Draw.
++    Bowls 321 Draw.
+ 
+     This file is part of Tartan Systems (TARTAN).
+ 
+@@ -63,8 +63,8 @@ class bc2080(object):
+         self.samen = bwlctl["ctb_samen"]
+         self.weeks = bwlctl["ctb_weeks"]
+         self.nstart = bwlctl["ctb_nstart"]
+-        self.ratem = CCD(bwlctl["ctb_ratem"], "UD", 6.2)
+-        self.ratev = CCD(bwlctl["ctb_ratev"], "UD", 6.2)
++        self.ratem = bwlctl["ctb_ratem"]
++        self.ratev = bwlctl["ctb_ratev"]
+         self.greens = bwlctl["ctb_greens"]
+         t = time.localtime()
+         self.sysdt = ((t[0] * 10000) + (t[1] * 100) + t[2])
+@@ -84,9 +84,9 @@ class bc2080(object):
+             (("T",0,1,0),("IRB",r1s),0,"Time","",
+                 self.stime,"N",self.doTime,None,None,None),
+             (("T",0,2,0),"IUD",5.2,"Fees - Member R","",
+-                self.ratem.work,"N",self.doRate,None,None,("efld",)),
++                self.ratem,"N",self.doRate,None,None,("efld",)),
+             (("T",0,2,0),"IUD",5.2," Visitor R","",
+-                self.ratev.work,"N",self.doRate,None,None,("efld",)))
++                self.ratev,"N",self.doRate,None,None,("efld",)))
+         tnd = ((self.doMEnd,"y"),)
+         txt = (self.doMExit,)
+         # Set font as big as possible up to 24pts
+@@ -168,10 +168,10 @@ class bc2080(object):
+     def doLoadMst(self, drm):
+         self.dhist = drm[self.sql.bwlsdm_col.index("bsm_dhist")]
+         self.quant = drm[self.sql.bwlsdm_col.index("bsm_quant")]
+-        self.mrate = drm[self.sql.bwlsdm_col.index("bsm_mrate")]
+-        self.mf.loadEntry("T", 0, 2, data=self.mrate)
+-        self.vrate = drm[self.sql.bwlsdm_col.index("bsm_vrate")]
+-        self.mf.loadEntry("T", 0, 3, data=self.vrate)
++        self.mrate = CCD(drm[self.sql.bwlsdm_col.index("bsm_mrate")], "UD", 6.2)
++        self.mf.loadEntry("T", 0, 2, data=self.mrate.work)
++        self.vrate = CCD(drm[self.sql.bwlsdm_col.index("bsm_vrate")], "UD", 6.2)
++        self.mf.loadEntry("T", 0, 3, data=self.vrate.work)
+ 
+     def doLoadTabs(self):
+         draws = self.sql.getRec("bwlsdt", cols=["bst_tab", "bst_name",
+@@ -206,9 +206,9 @@ class bc2080(object):
+ 
+     def doRate(self, frt, pag, r, c, p, i, w):
+         if p == 2:
+-            self.ratem = CCD(w, "UD", 6.2)
++            self.mrate = CCD(w, "UD", 6.2)
+         else:
+-            self.ratev = CCD(w, "UD", 6.2)
++            self.vrate = CCD(w, "UD", 6.2)
+ 
+     def doMEnd(self):
+         if self.viewer:
+@@ -226,7 +226,7 @@ class bc2080(object):
+         self.opts["mf"].closeLoop()
+ 
+     def doTabs(self):
+-        tit = "4321 Draw for the %s of %s" % (self.timed, self.dated)
++        tit = "321 Draw for the %s of %s" % (self.timed, self.dated)
+         mem = {
+             "stype": "R",
+             "tables": ("bwltab",),
+@@ -261,9 +261,7 @@ class bc2080(object):
+         r2s = (("Yes", "Y"), ("No", "N"))
+         tag = (("", None, None, None, False),)
+         fld = (
+-            (("T",0,0,0),"OUI",3,"Entered: Total"),
+-            (("T",0,0,0),"OUI",3," Males"),
+-            (("T",0,0,0),"OUI",3," Females"),
++            (("T",0,0,0),"OUI",3,"Tabs Entered:"),
+             (("T",1,0,0),"I@btb_tab",0,"","Tab Number(noesc)",
+                 "","Y",self.doTab,mem,None,("efld",)),
+             (("T",1,1,0),"I@btb_surname",0,"","",
+@@ -421,10 +419,6 @@ class bc2080(object):
+         if self.df.pag == 0:
+             return
+         else:
+-            if not self.df.t_work[1][0][4]:
+-                self.df.t_work[1][0][4] = 0
+-            else:
+-                self.df.t_work[1][0][4] = int(self.df.t_work[1][0][4])
+             if self.tab in self.alltabs:
+                 del self.alltabs[self.tab]
+             self.alltabs[self.tab] = self.df.t_work[1][0][1:]
+@@ -620,8 +614,8 @@ Try to Allocate Different Rinks""" % self.weeks),
+             ("bst_date", "=", self.date), ("bst_time", "=", self.time)])
+         # Insert bwlsdm
+         self.sql.insRec("bwlsdm", data=[self.opts["conum"], self.date,
+-            self.time, self.dhist, self.quant, self.ratem.work,
+-            self.ratev.work])
++            self.time, self.dhist, self.quant, self.mrate.work,
++            self.vrate.work])
+         if not self.drawn:
+             return
+         # Insert bwlsdt
+@@ -649,10 +643,14 @@ Try to Allocate Different Rinks""" % self.weeks),
+             dg.focusField("T", 1, 1)
+             return
+         dg.setWidget(dg.mstFrame, state="hide")
+-        r1s = (("Yes", "Y"), ("No", "N"))
+-        fld = (
+-            (("T",0,0,0),("IRB",r1s),0,"Cash Takings Sheet","",
+-                "N","Y",self.doTakings,None,None,None),)
++        fld = []
++        if self.mrate.work or self.vrate.work:
++            r1s = (("Yes", "Y"), ("No", "N"))
++            fld.append(
++                (("T",0,0,0),("IRB",r1s),0,"Cash Takings Sheet","",
++                    "N","Y",self.doTakings,None,None,None))
++        else:
++            self.takings = "N"
+         self.pd = TartanDialog(self.opts["mf"], tops=True,
+             title="Print Dialog", eflds=fld, tend=((self.doPEnd, "n"),),
+             txit=(self.doPExit,), view=("N","V"))
+@@ -666,11 +664,15 @@ Try to Allocate Different Rinks""" % self.weeks),
+ 
+     def doPEnd(self):
+         self.pd.closeProcess()
++        siz = (0, 0, 22, 15, 11.5)
++        self.fsiz = siz[self.quant]
+         self.fpdf = MyFpdf(name=self.__class__.__name__, orientation="L",
+-            head=90, foot=True)
++            head=90, auto=True, foot=True)
++        self.fpdf.header = self.doPHead
+         if self.takings == "Y":
+-            self.doPHead("A")
+-            self.fpdf.setFont(size=14)
++            self.ptyp = "A"
++            self.fpdf.add_page()
++            self.fpdf.setFont(size=self.fsiz)
+             for gme in self.games:
+                 txt = "%2s"
+                 dat = [gme[0]]
+@@ -698,17 +700,16 @@ Try to Allocate Different Rinks""" % self.weeks),
+             ul = "                               ---------"
+             txt = ul.replace("-", self.fpdf.suc)
+             self.fpdf.drawText("%3s Members  @ R%2s         R %7.2f" % \
+-                (mem, self.ratem.disp, mem*self.ratem.work), h=5)
++                (mem, self.mrate.disp, mem*self.mrate.work), h=5)
+             self.fpdf.drawText("%3s Visitors @ R%2s         R %7.2f" % \
+-                (vis, self.ratev.disp, vis*self.ratev.work), h=5)
++                (vis, self.vrate.disp, vis*self.vrate.work), h=5)
+             self.fpdf.underLine(t="S", txt=txt)
+             self.fpdf.drawText("    Total Takings              R %7.2f" % \
+-                ((mem*self.ratem.work)+(vis*self.ratev.work)), h=5)
++                ((mem*self.mrate.work)+(vis*self.vrate.work)), h=5)
+             self.fpdf.underLine(t="D", txt=txt)
+-        siz = (0, 0, 22, 15, 11.5)
+-        self.fsiz = siz[self.quant]
+-        ww = (3, 4, 21, 4, 21, 4, 21, 4, 21)
+-        self.doPHead("B", ww)
++        self.ww = (3, 4, 21, 4, 21, 4, 21, 4, 21)
++        self.ptyp = "B"
++        self.fpdf.add_page()
+         self.fpdf.setFont("Arial", "B", self.fsiz)
+         for gme in self.games:
+             txt = ["%2s"]
+@@ -722,7 +723,7 @@ Try to Allocate Different Rinks""" % self.weeks),
+                 txt.extend(["%3s", "%-20s"])
+                 n += 1
+             for n, d in enumerate(dat):
+-                w = self.fpdf.cwth * ww[n]
++                w = self.fpdf.cwth * self.ww[n]
+                 if n == len(dat) - 1:
+                     ln = 1
+                 else:
+@@ -736,7 +737,7 @@ Try to Allocate Different Rinks""" % self.weeks),
+             repprt=self.pd.repprt)
+ 
+     def doPHead(self, htyp="A", ww=None):
+-        hd1 = "321 Draw for the %s of %s (Hist %s)" % (self.timed,
++        hd1 = "321 Draw for the %s of %s (History %s)" % (self.timed,
+             self.dated, self.dhist)
+         tx2 = "%2s %3s %-20s %3s %-20s"
+         dt2 = ["RK", "Tab", "Name", "Tab", "Name"]
+@@ -746,16 +747,14 @@ Try to Allocate Different Rinks""" % self.weeks),
+         if self.quant > 3:
+             tx2 += " %3s %-20s"
+             dt2.extend(["Tab", "Name"])
+-        if htyp == "A":
+-            self.fpdf.add_page()
++        if self.ptyp == "A":
+             pad = " " * (55 - len(hd1))
+             self.fpdf.drawText("%s %s" % (hd1, pad),
+                 font=["courier", "B", 14])
+             self.fpdf.drawText()
+-            self.fpdf.setFont(style="B", size=14)
++            self.fpdf.setFont(style="B", size=self.fsiz)
+             self.fpdf.drawText(tx2 % tuple(dt2), border="TBLR", fill=1)
+         else:
+-            self.fpdf.add_page()
+             self.fpdf.setFont("Arial", "B", 24)
+             self.fpdf.drawText(hd1, align="C")
+             self.fpdf.drawText(" ")
+@@ -763,7 +762,7 @@ Try to Allocate Different Rinks""" % self.weeks),
+             self.fpdf.setFont("Arial", "B", self.fsiz)
+             t = tx2.split()
+             for n, d in enumerate(dt2):
+-                w = self.fpdf.cwth * ww[n]
++                w = self.fpdf.cwth * self.ww[n]
+                 if n == len(dt2) - 1:
+                     ln = 1
+                 else:
+@@ -808,7 +807,7 @@ Try to Allocate Different Rinks""" % self.weeks),
+                 n += 1
+             data.append(dat)
+         sel = SelectChoice(self.opts["mf"].window, title, cols, data,
+-            live=select, rowc=2)
++            live=select, rowc=1)
+         if select:
+             return sel.selection
+ 
+@@ -1035,11 +1034,7 @@ Try to Allocate Different Rinks""" % self.weeks),
+             "=", sel.selection[1]), ("bst_time", "=", sel.selection[2])])
+         for tab in tabs:
+             self.doLoadTab(tab[0], "T", err=False)
+-            self.df.loadEntry("T", 1, 6, data="Y")
+-            if not self.df.t_work[1][0][4]:
+-                self.df.t_work[1][0][4] = 0
+-            else:
+-                self.df.t_work[1][0][4] = int(self.df.t_work[1][0][4])
++            self.df.loadEntry("T", 1, 3, data="Y")
+             self.alltabs[tab[0]] = self.df.t_work[1][0][1:]
+         self.drawn = False
+         self.doShowQuantity()
+diff --git a/crs/cr4010.py b/crs/cr4010.py
+index 18474e9..4d73b76 100644
+--- a/crs/cr4010.py
++++ b/crs/cr4010.py
+@@ -41,8 +41,8 @@ class cr4010(object):
+                 self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["crsmst", "crstrn", "strpom"],
+-            prog=self.__class__.__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["crsmst", "crstrn", "strpom",
++            "emllog"], prog=self.__class__.__name__)
+         if self.sql.error:
+             return
+         gc = GetCtl(self.opts["mf"])
+@@ -75,7 +75,8 @@ class cr4010(object):
+             ("Balances", self.doTagSelect, ("T",0,2), ("T",0,1)),
+             ("History", self.doTagSelect, ("T",0,2), ("T",0,1)),
+             ("Trans", self.doTrans1, ("T",0,2), ("T",0,1)),
+-            ("Orders", self.doOrders, ("T",0,2), ("T",0,1)))
++            ("Orders", self.doOrders, ("T",0,2), ("T",0,1)),
++            ("Mail", self.doMail, ("T",0,2), ("T",0,1)))
+         r1s = (("No","N"),("Yes","Y"))
+         fld = (
+             (("T",0,0,0),"INA",7,"Acc-Num","Account Number",
+@@ -156,6 +157,11 @@ class cr4010(object):
+         self.acno = w
+         self.name = acc[self.sql.crsmst_col.index("crm_name")]
+         self.df.loadEntry("T",0, 1, data=self.name)
++        self.emls = []
++        for eml in ("mgr", "acc", "ord"):
++            add = acc[self.sql.crsmst_col.index("crm_%s_email" % eml)]
++            if add:
++                self.emls.append(add)
+         seq = 3
+         for x in range(0, self.df.topq[1]):
+             self.df.loadEntry("T", 1, x, data=acc[seq])
+@@ -312,6 +318,31 @@ class cr4010(object):
+                 else:
+                     break
+             self.df.enableButtonsTags(state=state)
++        self.df.selPage(index=self.df.lastnbpage)
++
++    def doMail(self):
++        if self.emls:
++            col = self.sql.emllog_col
++            whr = [("eml_too", "in", self.emls)]
++            recs = self.sql.getRec("emllog", where=whr, order="eml_dtt desc")
++            if recs:
++                data = []
++                for dat in recs:
++                    data.append([
++                        dat[col.index("eml_too")],
++                        dat[col.index("eml_dtt")],
++                    dat [col.index("eml_sta")],
++                        dat[col.index("eml_sub")]])
++                tit = "Mail for Account: %s - %s" % (self.acno, self.name)
++                col = (
++                    ("eml_too", "Recipient", 20, "TX"),
++                    ("eml_dtt", "Date-and-Time", 16, "NA"),
++                    ("eml_sta", "Status", 10, "NA"),
++                    ("eml_sub", "Subject", 50, "TX"))
++                state = self.df.disableButtonsTags()
++                SelectChoice(self.df.nb.Page6, tit, col, data)
++                self.df.enableButtonsTags(state=state)
++        self.df.selPage(index=self.df.lastnbpage)
+ 
+     def doNotes(self):
+         state = self.df.disableButtonsTags()
+diff --git a/doc/BWL.rst b/doc/BWL.rst
+index 4e26c0c..b193793 100644
+--- a/doc/BWL.rst
++++ b/doc/BWL.rst
+@@ -155,6 +155,44 @@ When a draw is made the following takes place:
+         + **Teams** - Teams are created by placing the highest rated skip with the highest rated third with the highest rated second with the highest rated lead. This is repeated until all players have been placed.
+         + **Balance** - Teams are then paired and balanced i.e. players might be moved from one team to another to try and equalise the team strengths.
+ 
++Tabs 321 Draw (BC)
++++++++++++++++++++
++Use this routine to make a new 321 draw.
++
+++ **Date** - The date of the draw.
+++ **Time** - The time of the draw. If a draw with the same date and time already exists some of the following options will be available:
++    + **None** - Do nothing, return to the time entry.
++    + **View** - View the existing draw.
++    + **Reprint** - Reprint the existing draw.
++    + **Alter** - Alter the existing draw.
++    + **Delete** - Delete, the existing draw.
+++ **Fees - Member** - The fee charged per member.
+++ **Fees - Visitor** - The fee charged per visitor.
++
++|
++
++Once the above fields have been entered capture all tabs as follows:
++
+++ **Tab Number** - The player's tab number. Enter zero for a visitor. A number will be allocated to the visitor which can then be written on his tab e.g. 901.
+++ **Surname** - The player's surname. Only for visitors.
+++ **Names** - The player's names. Only for visitors.
+++ **Paid** - Whether or not the player has paid.
++
++|
++
++The following *Buttons* are available:
++
+++ **Entered** - Use this button to display all entered players.
+++ **Do Draw** - Use this button to make the draw once all tabs/teams and bounce games have been entered. In the case of *Teams* if there are any tabs that have been entered and have not been allocated to teams you will be prompted to either *Generate*, *Delete* or *Exit*. If *Generate* is selected the program will try to allocate the unallocated tabs into teams.
++    + **Draw Type** - The type of draw i.e. Random or Strength v Strength.
++    + **Apply History** - Whether or not to take previous draws into consideration when making the current draw.
++    + **Competitors** - The preferred number of players per game.
++    + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If 7 rinks are available this must be entered as A1234567,B etc. If there are more rinks available than needed, end rinks will be removed.
+++ **View** - Use this button to view the draw and/or manually change it i.e. move players between teams or replace players with new players.
+++ **Print** - Use this button to print a draw.
++    + **Cash Takings Sheet** - Print a cash takings sheet.
+++ **Exit** - Use this button to exit the program. If the draw has not yet been done you will be prompted to confirm exiting.
++
+ League (BC)
+ ...........
+ Club Records (BC)
+diff --git a/doc/GEN.rst b/doc/GEN.rst
+index 3454050..9e2dcda 100644
+--- a/doc/GEN.rst
++++ b/doc/GEN.rst
+@@ -527,8 +527,9 @@ Trial Balance (GL)
+ ++++++++++++++++++
+ Use this routine to produce a trial balance.
+ 
+++ **Report Type** - Select whether to print single or multiple month balances.
+ + **Opening Balances Only** - Select whether or not to only print opening balances.
+-+ **Include Opening Balances** - Select whether or not to include opening balances.
+++ **Include Opening Balances** - Select whether or not to include opening balances. If *No* is select only the period movements will be printed.
+ + **Starting Period** - The starting financial period in the financial year.
+ + **Ending Period** - The ending financial period in the financial year.
+ + **Ignore Zero Balances** - Select whether or not to ignore zero balances.
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index fe7b166..8d47184 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.7
++:Version:   6.8
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/drs/dr4010.py b/drs/dr4010.py
+index f696fa6..86f7953 100644
+--- a/drs/dr4010.py
++++ b/drs/dr4010.py
+@@ -42,6 +42,7 @@ class dr4010(object):
+ 
+     def setVariables(self):
+         tables = [
++            "emllog",
+             "ctlrep", "ctlmes",
+             "drsact", "drschn", "drsmst", "drstrn", "drstyp",
+             "slsiv1"]
+@@ -99,7 +100,8 @@ class dr4010(object):
+             ("Balances", self.doTagSelect, ("T",0,0), ("T",0,1)),
+             ("History", self.doTagSelect, ("T",0,0), ("T",0,1)),
+             ("Trans", self.doTrans1, ("T",0,0), ("T",0,1)),
+-            ("Other", self.doOthers, ("T",0,0), ("T",0,1)))
++            ("Other", self.doOthers, ("T",0,0), ("T",0,1)),
++            ("Mail", self.doMail, ("T",0,0), ("T",0,1)))
+         r1s = (("No","N"),("Yes","Y"))
+         fld = [
+             [("T",0,0,0),"IUI",3,"Chain Store","",
+@@ -212,6 +214,11 @@ class dr4010(object):
+         self.acno = w
+         self.name = acc[self.sql.drsmst_col.index("drm_name")]
+         self.df.loadEntry("T",pag,p+1,data=acc[3])
++        self.emls = []
++        for eml in ("mgr", "acc", "sls"):
++            add = acc[self.sql.drsmst_col.index("drm_%s_email" % eml)]
++            if add:
++                self.emls.append(add)
+         d = 3
+         for pg in range(1, 3):
+             for x in range(0, self.df.topq[pg]):
+@@ -482,6 +489,31 @@ class dr4010(object):
+                 else:
+                     break
+             self.df.enableButtonsTags(state=state)
++        self.df.selPage(index=self.df.lastnbpage)
++
++    def doMail(self):
++        if self.emls:
++            col = self.sql.emllog_col
++            whr = [("eml_too", "in", self.emls)]
++            recs = self.sql.getRec("emllog", where=whr, order="eml_dtt desc")
++            if recs:
++                data = []
++                for dat in recs:
++                    data.append([
++                        dat[col.index("eml_too")],
++                        dat[col.index("eml_dtt")],
++                        dat[col.index("eml_sta")],
++                        dat[col.index("eml_sub")]])
++                tit = "Mail for Account: %s - %s" % (self.acno, self.name)
++                col = (
++                    ("eml_too", "Recipient", 20, "TX"),
++                    ("eml_dtt", "Date-and-Time", 16, "NA"),
++                    ("eml_sta", "Status", 10, "NA"),
++                    ("eml_sub", "Subject", 50, "TX"))
++                state = self.df.disableButtonsTags()
++                SelectChoice(self.df.nb.Page6, tit, col, data)
++                self.df.enableButtonsTags(state=state)
++        self.df.selPage(index=self.df.lastnbpage)
+ 
+     def doNotes(self):
+         state = self.df.disableButtonsTags()
+diff --git a/gen/gl3010.py b/gen/gl3010.py
+index 629fd5a..5647d87 100644
+--- a/gen/gl3010.py
++++ b/gen/gl3010.py
+@@ -110,7 +110,6 @@ class gl3010(object):
+         self.head = "%03u %-80s" % (self.opts["conum"], self.opts["conam"])
+         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
+         self.btot = [0, 0]
+-        self.pglin = 999
+         bc = self.sql.ctlbat_col
+         tc = self.sql.gentrn_col
+         for num, dat in enumerate(recs):
+@@ -132,7 +131,7 @@ class gl3010(object):
+             trndat = self.sql.getRec("gentrn", where=whr, order=odr)
+             if not trndat:
+                 continue
+-            if self.pglin > self.fpdf.lpp:
++            if self.fpdf.newPage():
+                 self.pageHeading()
+             else:
+                 self.batchHeading()
+@@ -147,13 +146,12 @@ class gl3010(object):
+                 else:
+                     tramt = CCD(trn[tc.index("glt_tramt")], "SD", 13.2)
+                     taxamt = CCD(trn[tc.index("glt_taxamt")], "SD", 13.2)
+-                if self.pglin > self.fpdf.lpp:
++                if self.fpdf.newPage():
+                     self.pageHeading()
+                 self.fpdf.drawText("%s %s %s %s %s %s" % (acno.disp,
+                     trdt.disp, refno.disp, "", tramt.disp, taxamt.disp))
+                 self.btot[0] += 1
+                 self.btot[1] = float(ASD(self.btot[1]) + ASD(tramt.work))
+-                self.pglin += 1
+             self.batchTotal()
+         p.closeProgress()
+         if self.fpdf.page and not p.quit:
+@@ -172,11 +170,10 @@ class gl3010(object):
+         self.fpdf.drawText("General Ledger Batch Error Listing")
+         self.fpdf.drawText()
+         self.fpdf.setFont()
+-        self.pglin = 4
+         self.batchHeading()
+ 
+     def batchHeading(self):
+-        if self.pglin > self.fpdf.lpp - 4:
++        if self.fpdf.newPage(4):
+             self.pageHeading()
+             return
+         self.fpdf.setFont(style="B")
+@@ -191,10 +188,9 @@ class gl3010(object):
+             "  Tax-Amount"))
+         self.fpdf.underLine(self.head)
+         self.fpdf.setFont()
+-        self.pglin += 4
+ 
+     def batchTotal(self):
+-        if self.pglin > self.fpdf.lpp - 5:
++        if self.fpdf.newPage(5):
+             self.pageHeading()
+         self.fpdf.drawText()
+         j = CCD(self.trno.work, "SI", 7)
+@@ -214,7 +210,6 @@ class gl3010(object):
+         self.fpdf.setFont()
+         self.btot[0] = 0
+         self.btot[1] = 0
+-        self.pglin += 5
+ 
+     def doExit(self):
+         self.df.closeProcess()
+diff --git a/gen/gl3020.py b/gen/gl3020.py
+index 22e0be9..2e8a70c 100644
+--- a/gen/gl3020.py
++++ b/gen/gl3020.py
+@@ -355,7 +355,7 @@ class gl3020(object):
+         self.tcrs = 0
+         self.tvat = 0
+         self.trtp = 0
+-        self.pglin = 999
++        self.newpage = True
+         for num, dat in enumerate(recs):
+             p.displayProgress(num)
+             if p.quit:
+@@ -373,20 +373,20 @@ class gl3020(object):
+                 self.typeTotal()
+                 self.trtp = trtp.work
+                 self.batch = batch.work
+-                self.pglin = 999
++                self.newpage = True
+             if batch.work != self.batch:
+                 self.batchTotal()
+                 self.batch = batch.work
+                 if self.totsonly != "Y":
+                     self.typeHeading()
+-            if self.pglin > self.fpdf.lpp:
++            if self.newpage or self.fpdf.newPage():
++                self.newpage = False
+                 self.pageHeading()
+             if self.totsonly != "Y":
+                 self.fpdf.drawText("%s %s %s %s %s %s %s %s %s %s" %
+                     (cono.disp, acno.disp, desc.disp, refno.disp, trdt.disp,
+                     debit.disp, credit.disp, taxamt.disp, taxind.disp,
+                     detail.disp))
+-                self.pglin += 1
+             # Batch Totals
+             self.bqty += 1
+             self.bdrs = float(ASD(self.bdrs) + ASD(debit.work))
+@@ -450,7 +450,6 @@ class gl3020(object):
+                 ("General Ledger Audit Trail for Period", self.sperd,
+                 "to", self.eperd))
+         self.fpdf.drawText()
+-        self.pglin = 4
+         if self.totind == "N":
+             self.typeHeading()
+         else:
+@@ -465,11 +464,10 @@ class gl3020(object):
+                     ("Document Type", "Quantity", "        Debits",
+                     "       Credits", "    Difference", "        V.A.T."))
+             self.fpdf.underLine(self.head)
+-            self.pglin += 4
+             self.fpdf.setFont()
+ 
+     def typeHeading(self):
+-        if self.fpdf.lpp - self.pglin < 4:
++        if self.fpdf.newPage(4):
+             self.pageHeading()
+             return
+         if self.totsonly != "Y":
+@@ -490,10 +488,9 @@ class gl3020(object):
+                 "    Tax-Amount", "T", "Remarks"))
+         self.fpdf.underLine(self.head)
+         self.fpdf.setFont()
+-        self.pglin += 4
+ 
+     def batchTotal(self):
+-        if self.fpdf.lpp - self.pglin < 3:
++        if self.fpdf.newPage(3):
+             self.pageHeading()
+         j = CCD(self.bdrs, "SD", 15.2)
+         k = CCD(self.bcrs, "SD", 15.2)
+@@ -503,20 +500,18 @@ class gl3020(object):
+             self.fpdf.drawText("%-36s %15s %15s %15s %15s" %
+                 ("Batch " + self.batch + " Totals", j.disp, k.disp,
+                 l.disp, m.disp))
+-            self.pglin += 1
+         else:
+             self.fpdf.drawText()
+             self.fpdf.drawText("%-11s %-51s %15s %15s %15s" % (" ",
+                 "Batch " + self.batch + " Totals", j.disp, k.disp, m.disp))
+             self.fpdf.drawText()
+-            self.pglin += 3
+         self.bqty = 0
+         self.bcrs = 0
+         self.bdrs = 0
+         self.bvat = 0
+ 
+     def typeTotal(self):
+-        if self.fpdf.lpp - self.pglin < 2:
++        if self.fpdf.newPage(2):
+             self.pageHeading()
+         j = CCD(self.tdrs, "SD", 15.2)
+         k = CCD(self.tcrs, "SD", 15.2)
+@@ -526,13 +521,10 @@ class gl3020(object):
+             self.fpdf.drawText()
+             self.fpdf.drawText("%-36s %15s %15s %15s %15s" % ("Type Totals",
+                 j.disp, k.disp, l.disp, m.disp))
+-            self.pglin += 2
+         else:
+             self.fpdf.drawText("%-11s %-51s %15s %15s %15s" % (" ",
+                 "Type-Totals", j.disp, k.disp, m.disp))
+-            self.pglin += 1
+         self.fpdf.drawText()
+-        self.pglin += 1
+         self.tqty = 0
+         self.tcrs = 0
+         self.tdrs = 0
+diff --git a/gen/gl3030.py b/gen/gl3030.py
+index 5dadad4..3c17292 100644
+--- a/gen/gl3030.py
++++ b/gen/gl3030.py
+@@ -219,7 +219,7 @@ class gl3030(object):
+             datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
+ 
+     def printReport(self, recs):
+-        self.pglin = 999
++        self.newpage = True
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+         self.head = "%03u %-101s" % (self.opts["conum"], self.opts["conam"])
+         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
+@@ -234,7 +234,8 @@ class gl3030(object):
+                 order="glt_acno, glt_curdt, glt_trdt, glt_type, glt_refno, "\
+                 "glt_batch")
+             if acctot or trn:
+-                if self.pglin == 999 or self.pages == "Y":
++                if self.newpage or self.pages == "Y":
++                    self.newpage = False
+                     self.pageHeading()
+                 else:
+                     self.newAccount()
+@@ -243,25 +244,22 @@ class gl3030(object):
+                 self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %-13s %-13s "\
+                     "%-13s" % (self.sdate.disp + "-01", "", "", "",
+                     "Opening Balance", "", "", w1.disp))
+-                self.pglin += 1
+             for acc in trn:
+                 trdt, refno, trtp, batch, amt, dbt, crt, detail, curdt, \
+                     curmth = self.getTrnValues(acc)
+-                if self.pglin > self.fpdf.lpp:
++                if self.fpdf.newPage():
+                     self.pageHeading()
+                     bf = CCD(acctot, "SD", 13.2)
+                     if bf.work:
+                         self.fpdf.drawText("%32s %-30s %27s %13s" % ("",
+                             "Brought Forward", "", bf.disp))
+-                        self.pglin += 1
+                 acctot = float(ASD(acctot) + ASD(amt.work))
+                 w1 = CCD(acctot, "SD", 13.2)
+                 self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %13s %13s %13s"\
+                     % (trdt.disp, refno.disp, gltrtp[(trtp.work - 1)][0],
+                     batch.disp, detail.disp, dbt.disp, crt.disp, w1.disp))
+-                self.pglin += 1
+             if self.pages == "Y" and (acctot or trn):
+-                self.pglin = 999
++                self.newpage = True
+         p.closeProgress()
+         if p.quit or not self.fpdf.page:
+             return
+@@ -331,11 +329,10 @@ class gl3030(object):
+             ("General Ledger Statements for Accounts", sacc, "to", eacc,
+             "for Period", self.sdate.disp, "to", self.edate.disp))
+         self.fpdf.setFont()
+-        self.pglin = 3
+         self.newAccount()
+ 
+     def newAccount(self):
+-        if self.fpdf.lpp - self.pglin < 5:
++        if self.fpdf.newPage(5):
+             self.pageHeading()
+         else:
+             self.fpdf.setFont(style="B")
+@@ -348,7 +345,6 @@ class gl3030(object):
+                 "       Debit", "      Credit", "     Balance"))
+             self.fpdf.underLine(self.head)
+             self.fpdf.setFont()
+-            self.pglin += 5
+ 
+     def doExit(self):
+         if "args" in self.opts and "noprint" in self.opts["args"]:
+diff --git a/gen/gl3040.py b/gen/gl3040.py
+index 367fe3d..e86dab9 100644
+--- a/gen/gl3040.py
++++ b/gen/gl3040.py
+@@ -27,6 +27,7 @@ COPYING
+ import time
+ from TartanClasses import ASD, CCD, MyFpdf, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import doPrinter, doWriteExport, getModName, showError
++from tartanWork import mthnam
+ 
+ class gl3040(object):
+     def __init__(self, **opts):
+@@ -35,7 +36,6 @@ class gl3040(object):
+             if "args" in self.opts and "noprint" not in self.opts["args"]:
+                 self.opebal = "N"
+                 self.incope = "Y"
+-                self.start = self.s_per
+                 self.end, self.zerbal, self.repprt, self.repeml, self.fpdf = \
+                         self.opts["args"]
+                 self.doEnd()
+@@ -68,43 +68,54 @@ class gl3040(object):
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+             "General Ledger Trial Balance (%s)" % self.__class__.__name__)
+         r1s = (("Yes","Y"), ("No","N"))
++        r2s = (("Single", "S"), ("Multiple", "M"))
+         if "args" in self.opts and "noprint" in self.opts["args"]:
+             var = self.opts["args"]["work"][0]
+             view = None
+             mail = None
+         else:
+-            var = ["N", "Y", "", "", "Y"]
++            var = ["S", "N", "Y", "", "", "Y"]
+             view = ("Y","V")
+             mail = ("Y","N")
+         fld = (
+-            (("T",0,0,0),("IRB",r1s),0,"Opening Balances Only","",
+-                var[0],"Y",self.doOpeBal1,None,None,None),
+-            (("T",0,1,0),("IRB",r1s),0,"Include Opening Balances","",
+-                var[1],"N",self.doOpeBal2,None,None,None),
+-            (("T",0,2,0),"Id2",7,"Starting Period","",
++            (("T",0,0,0),("IRB",r2s),0,"Report Type","",
++                var[0],"N",self.doRType,None,None,None),
++            (("T",0,1,0),("IRB",r1s),0,"Opening Balances Only","",
++                var[1],"Y",self.doOpeBal1,None,None,None),
++            (("T",0,2,0),("IRB",r1s),0,"Include Opening Balances","",
++                var[2],"N",self.doOpeBal2,None,None,None,None,
++                """Y - Closing Balances will be Printed
++N - Period Movements will be Printed"""),
++            (("T",0,3,0),"Id2",7,"Starting Period","",
+                 self.s_per,"N",self.doStartPer,None,None,("efld",)),
+-            (("T",0,3,0),"Id2",7,"Ending Period","",
++            (("T",0,4,0),"Id2",7,"Ending Period","",
+                 self.e_per,"N",self.doEndPer,None,None,("efld",)),
+-            (("T",0,4,0),("IRB",r1s),0,"Ignore Zero Balances","",
+-                var[4],"N",self.doZerBal,None,None,None))
++            (("T",0,5,0),("IRB",r1s),0,"Ignore Zero Balances","",
++                var[5],"N",self.doZerBal,None,None,None))
+         tnd = ((self.doEnd,"y"), )
+         txt = (self.doExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=view, mail=mail)
+ 
++    def doRType(self, frt, pag, r, c, p, i, w):
++        self.rtype = w
++        if self.rtype == "M":
++            self.opebal = "N"
++            self.df.loadEntry(frt, pag, i+1, data=self.opebal)
++            return "sk1"
++
+     def doOpeBal1(self, frt, pag, r, c, p, i, w):
+         self.opebal = w
+         if self.opebal == "Y":
+-            self.start = None
+-            self.end = None
+             self.incope = None
++            self.end = None
+             return "sk3"
+ 
+     def doOpeBal2(self, frt, pag, r, c, p, i, w):
+         self.incope = w
+-        if self.incope == "Y":
++        if self.rtype == "S" and self.incope == "Y":
+             self.start = self.s_per
+-            self.df.loadEntry("T", 0, 2, data=self.start)
++            self.df.loadEntry(frt, pag, p+1, data=self.start)
+             return "sk1"
+ 
+     def doStartPer(self, frt, pag, r, c, p, i, w):
+@@ -118,6 +129,25 @@ class gl3040(object):
+         if w > self.e_per:
+             return "Invalid Period, Outside Financial Period"
+         self.end = w
++        if self.rtype == "M":
++            yrs = int(self.start / 100)
++            mth = self.start % 100
++            self.pers = [self.start]
++            self.mths = [mthnam[mth][1]]
++            per = self.start
++            while per != self.end:
++                mth += 1
++                if mth > 12:
++                    mth = 1
++                    yrs += 1
++                per = (yrs * 100) + mth
++                self.pers.append(per)
++                self.mths.append(mthnam[mth][1])
++            self.gprs = [0.00] * len(self.mths)
++            self.dtot = [0.00] * len(self.mths)
++            if self.incope == "N":
++                self.gprs.append(0.00)
++                self.dtot.append(0.00)
+ 
+     def doZerBal(self, frt, pag, r, c, p, i, w):
+         self.zerbal = w
+@@ -128,9 +158,9 @@ class gl3040(object):
+             self.repeml = self.df.repeml
+             self.t_work = [self.df.t_work[0][0]]
+             self.df.closeProcess()
+-        recs = self.sql.getRec("genmst", cols=["glm_acno",
+-            "glm_desc", "glm_type"], where=[("glm_cono", "=",
+-            self.opts["conum"])], order="glm_type desc, glm_acno")
++        recs = self.sql.getRec("genmst", cols=["glm_acno", "glm_desc",
++            "glm_type"], where=[("glm_cono", "=", self.opts["conum"])],
++            order="glm_type desc, glm_acno")
+         if not recs:
+             showError(self.opts["mf"].body, "Error", "No Accounts Selected")
+         elif self.repprt[2] == "export":
+@@ -154,11 +184,24 @@ class gl3040(object):
+             edate = CCD(self.end, "D2", 7)
+             expheads.append("General Ledger Trial Balance for Period %s "\
+                 "to %s" % (sdate.disp, edate.disp))
+-            expheads.append("(Options: Opening Balances Included %s)" % \
+-                self.incope)
+-        expcolsh = [self.colsh]
+-        expforms = self.forms
++            if self.incope == "N":
++                txt = " Not"
++            else:
++                txt = ""
++            expheads.append("(Options: Opening Balances%s Included)" % txt)
+         self.expdatas = []
++        if self.rtype == "S":
++            expcolsh = [self.colsh]
++            expforms = self.forms
++        else:
++            expcolsh = [self.colsh[:3]]
++            expforms = self.forms[:3]
++            for mth in self.mths:
++                expcolsh[0].append(mth)
++                expforms.append(("SD", 14.2))
++            if self.incope == "N":
++                expcolsh[0].append("Totals")
++                expforms.append(("SD", 14.2))
+         for num, dat in enumerate(recs):
+             p.displayProgress(num)
+             if p.quit:
+@@ -167,8 +210,10 @@ class gl3040(object):
+             vals = self.getValues(dat)
+             if not vals:
+                 continue
+-            self.expdatas.append(["BODY", [vals[0].work, vals[1].work,
+-                vals[2].work, vals[3].work, vals[4].work]])
++            val = []
++            for v in vals:
++                val.append(v.work)
++            self.expdatas.append(["BODY", val])
+         p.closeProgress()
+         self.grandTotal()
+         doWriteExport(xtype=self.repprt[1], name=expnam,
+@@ -185,17 +230,21 @@ class gl3040(object):
+             chrs -= 1
+         if self.opebal == "Y":
+             date = CCD(self.opts["period"][1][0], "D1", 10.0)
+-            self.head2 = "General Ledger Opening Balances as at %s%s" % \
+-                (date.disp, "%s%s")
++            self.head2 = "General Ledger Opening Balances as at %s" % date.disp
+         else:
+             sdate = CCD(self.start, "D2", 7)
+             edate = CCD(self.end, "D2", 7)
+             self.head2 = "General Ledger Trial Balance for Period %s to %s" % \
+                 (sdate.disp, edate.disp)
++        if self.rtype == "S":
++            head = 80
++        else:
++            head = 50 + (len(self.mths) * 15)
++            if self.incope == "N":
++                head += 15
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+         if "args" not in self.opts or "noprint" in self.opts["args"]:
+-            self.fpdf = MyFpdf(name=self.__class__.__name__, head=80)
+-        self.pglin = 999
++            self.fpdf = MyFpdf(name=self.__class__.__name__, head=head)
+         for num, rec in enumerate(recs):
+             p.displayProgress(num)
+             if p.quit:
+@@ -203,11 +252,19 @@ class gl3040(object):
+             vals = self.getValues(rec)
+             if not vals:
+                 continue
+-            if self.pglin > self.fpdf.lpp:
++            if self.fpdf.newPage():
+                 self.pageHeading()
+-            self.fpdf.drawText("%s %1s %-40s %s %s" % (vals[0].disp,
+-                vals[1].disp, vals[2].disp, vals[3].disp, vals[4].disp))
+-            self.pglin += 1
++            if self.rtype == "S":
++                self.fpdf.drawText("%s %1s %-40s %s %s" % (vals[0].disp,
++                    vals[1].disp, vals[2].disp, vals[3].disp, vals[4].disp))
++            else:
++                txt = "%s %1s %-40s" % (vals[0].disp, vals[1].disp,
++                    vals[2].disp)
++                for v in range(len(self.mths)):
++                    txt += " %s" % vals[3 + v].disp
++                if self.incope == "N":
++                    txt += " %s" % vals[4 + v].disp
++                self.fpdf.drawText(txt)
+         p.closeProgress()
+         if self.fpdf.page and not p.quit:
+             self.grandTotal()
+@@ -234,29 +291,65 @@ class gl3040(object):
+             else:
+                 b = CCD(0, "SD", 14.2)
+             bal = float(ASD(bal) + ASD(b.work))
+-        if self.opebal == "N" and self.incope == "Y":
+-            o = self.sql.getRec("gentrn",
+-                cols=["round(sum(glt_tramt),2)"], where=[("glt_cono", "=",
+-                self.opts["conum"]), ("glt_acno", "=", acno.work),
+-                ("glt_curdt", ">", self.s_per), ("glt_curdt", "<",
+-                self.start)], limit=1)
+-            if o and o[0]:
+-                b = CCD(float(o[0]), "SD", 14.2)
+-            else:
+-                b = CCD(0, "SD", 14.2)
+-            bal = float(ASD(bal) + ASD(b.work))
++        if self.rtype == "S":
++            vals = self.getTotals(acno, atyp, bal, self.end)
++            if vals:
++                return (acno, atyp, desc, vals[0], vals[1])
++        else:
++            val = []
++            prt = False
++            if self.incope == "N":
++                tot = 0.00
++            for per in self.pers:
++                vals = self.getTotals(acno, atyp, bal, per)
++                if vals:
++                    prt = True
++                    val.append(vals)
++                    if self.incope == "N":
++                        tot = float(ASD(tot) + ASD(vals.work))
++                else:
++                    val.append(CCD(0, "SD", 14.2))
++            if prt:
++                if self.incope == "N":
++                    val.append(CCD(tot, "SD", 14.2))
++                return [acno, atyp, desc] + val
++
++    def getTotals(self, acno, atyp, bal, per):
++        where = [("glt_cono", "=", self.opts["conum"]),
++            ("glt_acno", "=", acno.work)]
+         if self.opebal == "N":
+-            o = self.sql.getRec("gentrn",
+-                cols=["round(sum(glt_tramt),2)"], where=[("glt_cono", "=",
+-                self.opts["conum"]), ("glt_acno", "=", acno.work),
+-                ("glt_curdt", "between", self.start, self.end)], limit=1)
++            whr = where[:]
++            if self.incope == "Y":
++                whr.append(("glt_curdt", ">=", self.s_per))
++                if self.rtype == "S":
++                    whr.append(("glt_curdt", "<=", self.end))
++                else:
++                    whr.append(("glt_curdt", "<=", per))
++            elif self.rtype == "S":
++                whr.append(("glt_curdt", ">=", self.start))
++                whr.append(("glt_curdt", "<=", self.end))
++            else:
++                whr.append(("glt_curdt", "=", per))
++            o = self.sql.getRec("gentrn", cols=["sum(glt_tramt)"],
++                where=whr, limit=1)
+             if o and o[0]:
+-                b = CCD(float(o[0]), "SD", 14.2)
++                b = CCD(o[0], "SD", 14.2)
+             else:
+                 b = CCD(0, "SD", 14.2)
+             bal = float(ASD(bal) + ASD(b.work))
+         if bal == 0 and self.zerbal == "Y":
+             return
++        if self.rtype == "M":
++            mdx = self.pers.index(per)
++            self.dtot[mdx] = float(ASD(self.dtot[mdx]) + ASD(bal))
++            if self.incope == "N":
++                tdx = len(self.gprs) - 1
++                self.dtot[tdx] = float(ASD(self.dtot[tdx]) + ASD(bal))
++            if atyp.work == "P":
++                self.gprs[mdx] = float(ASD(self.gprs[mdx]) + ASD(bal))
++                if self.incope == "N":
++                    self.gprs[tdx] = float(ASD(self.gprs[tdx]) + ASD(bal))
++            return CCD(bal, "SD", 14.2)
+         if bal < 0:
+             cr = CCD(bal, "SD", 14.2)
+             dr = CCD(0.00, "SD", 14.2)
+@@ -265,9 +358,9 @@ class gl3040(object):
+             cr = CCD(0.00, "SD", 14.2)
+         self.dtot = float(ASD(self.dtot) + ASD(dr.work))
+         self.ctot = float(ASD(self.ctot) + ASD(cr.work))
+-        if atyp.work == "P":
++        if self.opebal == "N" and atyp.work == "P":
+             self.gp = float(ASD(self.gp) + ASD(dr.work) + ASD(cr.work))
+-        return (acno, atyp, desc, dr, cr)
++        return (dr, cr)
+ 
+     def pageHeading(self):
+         self.fpdf.add_page()
+@@ -277,54 +370,100 @@ class gl3040(object):
+         self.fpdf.drawText(self.head2)
+         if self.opebal == "N":
+             self.fpdf.drawText()
+-            self.fpdf.drawText("(Options: Opening Balances Included %s)" % \
+-                (self.incope))
++            if self.incope == "N":
++                txt = " Not"
++            else:
++                txt = ""
++            self.fpdf.drawText("(Options: Opening Balances%s Included)" % txt)
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-7s %-1s %-40s %14s %14s" % \
+-            ("Acc-Num", "T", "Description", "Debit ", "Credit "))
++        if self.rtype == "S":
++            self.fpdf.drawText("%-7s %-1s %-40s %14s %14s" % \
++                ("Acc-Num", "T", "Description", "Debit ", "Credit "))
++        else:
++            txt = "%-7s %-1s %-40s" % ("Acc-Num", "T", "Description")
++            for mth in self.mths:
++                txt += " %13s " % mth
++            if self.incope == "N":
++                txt += " %13s " % "Totals"
++            self.fpdf.drawText(txt)
+         self.fpdf.underLine()
+         self.fpdf.setFont()
+-        if self.opebal == "Y":
+-            self.pglin = 6
+-        else:
+-            self.pglin = 8
+ 
+     def grandTotal(self):
+         if self.repprt[2] == "export":
+-            self.expdatas.append(["ULINES"])
+-            self.expdatas.append(["TOTAL", ["", "", "Grand Totals", self.dtot,
+-                self.ctot]])
+-            self.expdatas.append(["ULINED"])
++            if self.rtype == "S":
++                self.expdatas.append(["ULINES"])
++                self.expdatas.append(["TOTAL", ["", "", "Grand Totals",
++                    self.dtot, self.ctot]])
++                if self.gp > 0:
++                    self.expdatas.append(["TOTAL", ["", "", "Gross-Loss",
++                        self.gp, ""]])
++                else:
++                    self.expdatas.append(["TOTAL", ["", "", "Gross-Profit",
++                        "", self.gp]])
++                diff = float(ASD(self.dtot) + ASD(self.ctot))
++                if diff:
++                    self.expdatas.append(["TOTAL", ["", "", "Difference",
++                        "", diff]])
++            else:
++                self.expdatas.append(["ULINES"])
++                tmp = ["TOTAL", ["", "", "Gross Profit/Loss"] + self.gprs]
++                self.expdatas.append(tmp)
++                for d in self.dtot:
++                    if d:
++                        tmp = ["TOTAL", ["", "", "Difference"] + self.dtot]
++                        self.expdatas.append(tmp)
++                        break
+             return
+-        d = CCD(self.dtot, "SD", 14.2)
+-        c = CCD(self.ctot, "SD", 14.2)
+         self.fpdf.setFont(style="B")
+-        if self.fpdf.lpp - self.pglin < 5:
++        if self.rtype == "S":
++            if self.opebal == "Y":
++                extra = 1
++            else:
++                extra = 3
++            diff = CCD(float(ASD(self.dtot) + ASD(self.ctot)), "SD", 14.2)
++            if diff:
++                extra += 2
++        else:
++            extra = 2
++            diff = False
++            for d in self.dtot:
++                if d:
++                    diff = True
++                    extra += 2
++                    break
++        if self.fpdf.newPage(extra):
+             self.pageHeading()
+         else:
+             self.fpdf.underLine()
+-        self.fpdf.drawText("%9s %-40s %14s %14s" % \
+-            ("", "Grand-Totals", d.disp, c.disp))
+-        self.pglin += 2
+-        if self.pglin > self.fpdf.lpp:
+-            self.pageHeading()
+-        gp = CCD(self.gp, "SD", 14.2)
+-        if gp.work > 0:
+-            self.fpdf.drawText()
++        if self.rtype == "S":
++            d = CCD(self.dtot, "SD", 14.2)
++            c = CCD(self.ctot, "SD", 14.2)
+             self.fpdf.drawText("%9s %-40s %14s %14s" % \
+-                ("", "Gross-Loss", gp.disp, ""))
++                ("", "Grand-Totals", d.disp, c.disp))
++            if self.opebal == "N":
++                self.fpdf.drawText()
++                gp = CCD(self.gp, "SD", 14.2)
++                if gp.work > 0:
++                    self.fpdf.drawText("%9s %-40s %14s %14s" % \
++                        ("", "Gross-Loss", gp.disp, ""))
++                else:
++                    self.fpdf.drawText("%9s %-40s %14s %14s" % \
++                        ("", "Gross-Profit", "", gp.disp))
++            if diff.work:
++                self.fpdf.drawText()
++                self.fpdf.drawText("%9s %-40s %14s %14s" % \
++                    ("", "Difference", "", diff.disp))
+         else:
+-            self.fpdf.drawText()
+-            self.fpdf.drawText("%9s %-40s %14s %14s" % \
+-                ("", "Gross-Profit", "", gp.disp))
+-        self.pglin += 2
+-        diff = CCD(float(ASD(d.work) + ASD(c.work)), "SD", 14.2)
+-        if diff.work:
+-            if self.pglin > self.fpdf.lpp:
+-                self.pageHeading()
+-            self.fpdf.drawText()
+-            self.fpdf.drawText("%9s %-40s %14s %14s" % \
+-                ("", "Difference", "", diff.disp))
++            txt = "%9s %-40s" % ("", "Gross Profit/Loss")
++            for val in self.gprs:
++                txt += " %14s" % CCD(val, "SD", 14.2).disp
++            self.fpdf.drawText(txt)
++            if diff:
++                txt = "%9s %-40s" % ("", "Difference")
++                for val in self.dtot:
++                    txt += " %14s" % CCD(val, "SD", 14.2).disp
++                self.fpdf.drawText(txt)
+         self.fpdf.setFont()
+ 
+     def doExit(self):
+diff --git a/gen/gl3050.py b/gen/gl3050.py
+index b6a2b78..e63c3b1 100644
+--- a/gen/gl3050.py
++++ b/gen/gl3050.py
+@@ -155,8 +155,8 @@ class gl3050(object):
+             "where": [("gdm_cono", "=", self.opts["conum"])]}
+         r1s = (
+             ("Short","S"),
+-            ("History","H"),
+             ("Long","L"),
++            ("History","H"),
+             ("Month","M"),
+             ("Custom","C"))
+         r2s = (("Yes","Y"),("No","N"))
+@@ -329,12 +329,16 @@ Custom  - Customised Report"""),
+             return
+         self.df.loadEntry(frt, pag, p+1, data="")
+         self.df.loadEntry(frt, pag, p+2, data="")
++        if self.typ == "M" and self.val != "C":
++            self.var = "N"
++            self.df.loadEntry(frt, pag, p+3, data=self.var)
++            return "sk3"
+         return "sk2"
+ 
+     def doRepDet(self, frt, pag, r, c, p, i, w):
+         det = self.sql.getRec("gendtm", cols=["gdm_desc"],
+-            where=[("gdm_cono", "=", self.opts["conum"]), ("gdm_code",
+-            "=", w)], limit=1)
++            where=[("gdm_cono", "=", self.opts["conum"]),
++            ("gdm_code", "=", w)], limit=1)
+         if not det:
+             return "Invalid Code"
+         self.det = w
+@@ -1254,7 +1258,6 @@ Custom  - Customised Report"""),
+                 "stream" in self.opts["args"]:
+             self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.width)
+         self.pgnum = 0
+-        self.pglin = 999
+         self.achart = []
+         self.mchart = []
+         self.counter = 0
+@@ -1262,7 +1265,7 @@ Custom  - Customised Report"""),
+             p.displayProgress(num)
+             if dat[6] < self.counter:
+                 dat[3] = "Y"
+-            if self.pglin > self.fpdf.lpp:
++            if self.fpdf.newPage():
+                 dat[3] = "N"
+                 self.pageHeading(dat)
+             if dat[0] == "H":
+@@ -1351,7 +1354,6 @@ Custom  - Customised Report"""),
+                 self.fpdf.drawText(self.linh % line[5])
+             self.fpdf.setFont()
+             self.fpdf.drawText()
+-            self.pglin += 2
+ 
+     def doValues(self, line):
+         ldic = {}
+@@ -1455,7 +1457,6 @@ Custom  - Customised Report"""),
+                 else:
+                     self.fpdf.drawText("%s  %s  %s  %s  %s  %s" % (lyr.disp,
+                         des.disp, ytd.disp, btd.disp, vtd.disp, vtdper.disp))
+-                self.pglin += 1
+                 self.last = True
+         elif self.typ == "H":
+             if self.zer == "Y" and not lyr[0].work and not lyr[1].work \
+@@ -1480,7 +1481,6 @@ Custom  - Customised Report"""),
+                     self.fpdf.drawText("%s  %s  %s  %s  %s  %s  %s  %s" %
+                         (des.disp, lyr[0].disp, lyr[1].disp, lyr[2].disp,
+                             ytd.disp, btd.disp, vtd.disp, vtdper.disp))
+-                self.pglin += 1
+                 self.last = True
+         elif self.typ == "L":
+             if self.zer == "Y" and not mth.work and not bud.work and not \
+@@ -1534,7 +1534,6 @@ Custom  - Customised Report"""),
+                                 "%s  %s  %s  %s  %s" % (des.disp, "", "", "",
+                                 "", ytd.disp, btd.disp, vtd.disp, vtdper.disp,
+                                 lyr.disp))
+-                    self.pglin += 1
+                     self.last = True
+             else:
+                 if self.repprt[2] == "export":
+@@ -1576,7 +1575,6 @@ Custom  - Customised Report"""),
+                                 "%s  %s  %s  %s" % (des.disp, mth.disp,
+                                 bud.disp, vmt.disp, vmtper.disp, ytd.disp,
+                                 btd.disp, vtd.disp, vtdper.disp, lyr.disp))
+-                    self.pglin += 1
+                     self.last = True
+         elif self.typ == "M":
+             if self.zer == "Y":
+@@ -1626,7 +1624,6 @@ Custom  - Customised Report"""),
+                         self.fpdf.drawText(txt, x=p, w=w, fill=1, ln=ln)
+                     else:
+                         self.fpdf.drawText(txt, x=p, w=w, ln=ln)
+-                self.pglin += 1
+                 self.last = True
+                 if line[10]:
+                     self.achart.append([ltp, line[10], ldic["mp1"].work,
+@@ -1693,7 +1690,6 @@ Custom  - Customised Report"""),
+                 self.expdatas.append([txt, work])
+             else:
+                 self.fpdf.drawText(self.lind % tuple(disp))
+-                self.pglin += 1
+                 self.last = True
+ 
+     def doUnderline(self, line):
+@@ -1707,7 +1703,6 @@ Custom  - Customised Report"""),
+             return
+         if line[5] == "Blank":
+             self.fpdf.drawText()
+-            self.pglin += 1
+         elif self.last:
+             if line[5] == "Double":
+                 st = "D"
+@@ -1720,7 +1715,6 @@ Custom  - Customised Report"""),
+             else:
+                 txt = self.linu.replace(self.ulc, self.fpdf.suc)
+             self.fpdf.underLine(t=st, txt=txt)
+-            self.pglin += 1
+         self.last = False
+ 
+     def pageHeading(self, line):
+@@ -1763,7 +1757,6 @@ Custom  - Customised Report"""),
+             return
+         self.fpdf.add_page()
+         self.pgnum += 1
+-        self.pglin = 0
+         if self.typ == "C":
+             self.fpdf.setFont(style="B", size=18)
+             self.fpdf.drawText(self.heds[0])
+@@ -1787,7 +1780,6 @@ Custom  - Customised Report"""),
+                 self.fpdf.drawText("%s" % (self.fpdf.suc * len(self.width)))
+             else:
+                 self.fpdf.drawText()
+-            self.pglin += 6
+             self.emlhead = "Financials for %s as at %s" % (self.opts["conam"],
+                 self.yed)
+         else:
+@@ -1806,12 +1798,10 @@ Custom  - Customised Report"""),
+                         self.fpdf.setFont(style="B")
+                     else:
+                         self.fpdf.drawText(head)
+-                    self.pglin += 1
+                     self.emlhead = head
+                     if self.opt == "Y":
+                         self.printOptions()
+                     self.fpdf.drawText()
+-                    self.pglin += 1
+                 elif line[1] == "B" and num == 3:
+                     if self.var == "N":
+                         self.fpdf.drawText(data.replace("Current-Month",
+@@ -1824,7 +1814,6 @@ Custom  - Customised Report"""),
+                             "                     "\
+                             "               "\
+                             "                     "))
+-                    self.pglin += 1
+                 elif line[1] == "B" and num == 4:
+                     if self.var == "B":
+                         self.fpdf.drawText(data.replace(
+@@ -1838,12 +1827,9 @@ Custom  - Customised Report"""),
+                             "Year       Last-Year        Variance    Var-%",
+                             "Description                               "\
+                             "                                               "))
+-                    self.pglin += 1
+                 else:
+                     self.fpdf.drawText(data)
+-                    self.pglin += 1
+             self.fpdf.drawText("%s" % (self.fpdf.suc * self.width))
+-            self.pglin += 1
+         self.fpdf.setFont()
+ 
+     def printOptions(self):
+@@ -1891,14 +1877,11 @@ Custom  - Customised Report"""),
+         if self.repprt[2] == "export":
+             return txt
+         self.fpdf.drawText()
+-        self.pglin += 1
+         if self.typ == "C":
+             self.fpdf.drawText(txt)
+             self.fpdf.drawText()
+-            self.pglin += 2
+         else:
+             self.fpdf.drawText(txt)
+-            self.pglin += 1
+ 
+     def doMainExit(self):
+         self.df.closeProcess()
+diff --git a/gen/gl3080.py b/gen/gl3080.py
+index 7c109e2..0da2d3c 100644
+--- a/gen/gl3080.py
++++ b/gen/gl3080.py
+@@ -140,7 +140,6 @@ class gl3080(object):
+             mxs=(len(self.pays) + len(self.recs) + len(self.imps)))
+         self.head = "%03u %-30s" % (self.opts["conum"], self.opts["conam"])
+         self.fpdf = MyFpdf(name=self.__class__.__name__, head=90)
+-        self.pglin = 999
+         self.tot_chq = 0
+         self.tot_dep = 0
+         self.tot_imp = 0
+@@ -152,17 +151,14 @@ class gl3080(object):
+             self.fpdf.drawText()
+             self.fpdf.drawText("%-70s" % ("Add: Cheques Not Presented",))
+             self.fpdf.drawText()
+-            self.pglin += 4
+             mxs = len(self.pays) - 1
+             for num, pay in enumerate(self.pays):
+                 p.displayProgress(num)
+                 self.printLine(num, mxs, pay, "C")
+-            self.pglin += 1
+         if self.recs:
+             self.fpdf.drawText()
+             self.fpdf.drawText("%-70s" % ("Less: Deposits Not Presented",))
+             self.fpdf.drawText()
+-            self.pglin += 3
+             mxs = len(self.recs) - 1
+             for num, rec in enumerate(self.recs):
+                 p.displayProgress(len(self.pays) + num)
+@@ -172,7 +168,6 @@ class gl3080(object):
+             self.fpdf.drawText()
+             self.fpdf.drawText("%-70s" % ("+-: Imports Not Captured",))
+             self.fpdf.drawText()
+-            self.pglin += 3
+             mxs = len(self.imps) - 1
+             for num, rec in enumerate(self.imps):
+                 p.displayProgress(len(self.pays) + len(self.imps) + num)
+@@ -200,7 +195,7 @@ class gl3080(object):
+         else:
+             amt = float(ASD(0) - ASD(dat[3]))
+         tramt = CCD(amt, "SD", 13.2)
+-        if self.pglin > self.fpdf.lpp:
++        if self.fpdf.newPage():
+             self.pageHeading()
+         if typ == "C":
+             self.tot_chq = float(ASD(self.tot_chq) + ASD(tramt.work))
+@@ -220,7 +215,6 @@ class gl3080(object):
+         else:
+             self.fpdf.drawText("%-5s %-9s %-10s %-30s %-13s" % \
+                 ("", refno.disp, trdt.disp, desc.disp, tramt.disp))
+-        self.pglin += 1
+ 
+     def extractBalance(self):
+         o = self.sql.getRec("genbal", cols=["glo_cyr"],
+@@ -251,7 +245,6 @@ class gl3080(object):
+             (self.name, self.acno, self.perd))
+         self.fpdf.underLine()
+         self.fpdf.setFont()
+-        self.pglin = 4
+ 
+     def doExit(self):
+         self.df.closeProcess()
+diff --git a/gen/gl4010.py b/gen/gl4010.py
+index eab25b3..2f54385 100644
+--- a/gen/gl4010.py
++++ b/gen/gl4010.py
+@@ -371,7 +371,6 @@ class gl4010(object):
+         self.head = "%03u %-99s" % (self.opts["conum"], self.opts["conam"])
+         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
+         self.pgnum = 0
+-        self.pglin = 999
+         self.num = self.df.t_disp[0][0][0]
+         self.dsc = self.df.t_disp[0][0][1]
+         atype = self.df.t_disp[0][0][2]
+@@ -482,7 +481,6 @@ class gl4010(object):
+             "Page", self.pgnum))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+-        self.pglin = 4
+ 
+     def getObal(self):
+         acbal = self.obal
+diff --git a/gen/gl6030.py b/gen/gl6030.py
+index 4bb32c1..c718b7b 100644
+--- a/gen/gl6030.py
++++ b/gen/gl6030.py
+@@ -559,7 +559,6 @@ class gl6030(object):
+             self.sln_bal = 0.00
+         head = "%03u %-78s" % (self.opts["conum"], self.opts["conam"])
+         self.fpdf = MyFpdf(name=self.__class__.__name__, head=head)
+-        self.pglin = 999
+         self.pageHeading(head)
+         if self.arint == "Y":
+             des = "Assets Register"
+@@ -675,7 +674,6 @@ class gl6030(object):
+             "Control Account", "Ledger", "Difference"))
+         self.fpdf.underLine(txt=desc)
+         self.fpdf.setFont()
+-        self.pglin = 6
+ 
+     def doExit(self):
+         self.df.closeProcess()
+diff --git a/gen/gl6040.py b/gen/gl6040.py
+index 1138fdc..15d58da 100644
+--- a/gen/gl6040.py
++++ b/gen/gl6040.py
+@@ -76,9 +76,8 @@ class gl6040(object):
+     def printReport(self):
+         self.head = "%03u %-80s" % (self.opts["conum"], self.opts["conam"])
+         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
+-        self.pglin = 999
+         for acc in self.accs:
+-            if self.pglin > self.fpdf.lpp:
++            if self.fpdf.newPage():
+                 self.pageHeading()
+             n = self.sql.getRec("ctlmst", cols=["ctm_name"],
+                 where=[("ctm_cono", "=", acc[0])], limit=1)
+@@ -127,7 +126,6 @@ class gl6040(object):
+             a3 = CCD(a, "SD", 13.2)
+             self.fpdf.drawText("%-3s %-32s %15s %15s %15s" % (a0.disp,
+                 n.disp, a1.disp, a2.disp, a3.disp))
+-            self.pglin += 1
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
+             self.__class__.__name__, self.opts["conum"], ext="pdf")
+         self.fpdf.output(pdfnam, "F")
+@@ -141,14 +139,13 @@ class gl6040(object):
+         self.fpdf.drawText(self.head)
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-40s %-10s" %
+-            ("General Ledger Integrated Controls as at",
++            ("General Ledger Intercompany Balances as at",
+             self.df.t_disp[0][0][0]))
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-3s %-32s%15s %15s %15s" %
+             ("Coy", "Company-Name", "Balance-1", "Balance-2", "Difference"))
+         self.fpdf.underLine(txt=self.head)
+         self.fpdf.setFont()
+-        self.pglin = 6
+ 
+     def doExit(self):
+         self.df.closeProcess()
+diff --git a/ms0000.py b/ms0000.py
+index 3d7c227..5bb8995 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -45,7 +45,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 7)
++    VERSION = (6, 8)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+diff --git a/str/st2010.py b/str/st2010.py
+index 40c108b..055a244 100644
+--- a/str/st2010.py
++++ b/str/st2010.py
+@@ -786,8 +786,8 @@ class st2010(object):
+     def doCrsMaint(self):
+         state = self.df.disableButtonsTags()
+         cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
+-            system="STR", code="NewCrs")
+-        if cf.flag == "yes":
++            system="STR", code="NewAcc")
++        if cf.flag == "ok":
+             callModule(self.opts["mf"], self.df, "cr1010",
+                 coy=(self.opts["conum"], self.opts["conam"]), period=None,
+                 user=self.opts["capnm"])
+@@ -797,8 +797,8 @@ class st2010(object):
+     def doStrMaint(self):
+         state = self.df.disableButtonsTags()
+         cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
+-            system="STR", code="NewStr")
+-        if cf.flag == "yes":
++            system="STR", code="NewAcc")
++        if cf.flag == "ok":
+             callModule(self.opts["mf"], self.df, "st1010",
+                 coy=(self.opts["conum"], self.opts["conam"]), period=None,
+                 user=self.opts["capnm"])
+diff --git a/str/st3070.py b/str/st3070.py
+index 7966274..9ddf029 100644
+--- a/str/st3070.py
++++ b/str/st3070.py
+@@ -101,8 +101,8 @@ class st3070(object):
+             self.locd = "ALL"
+         else:
+             acc = self.sql.getRec("strloc", cols=["srl_desc"],
+-                where=[("srl_cono", "=", self.opts["conum"]), ("srl_loc", "=",
+-                w)], limit=1)
++                where=[("srl_cono", "=", self.opts["conum"]),
++                ("srl_loc", "=", w)], limit=1)
+             if not acc:
+                 return "Invalid Location"
+             self.locd = self.locw
+diff --git a/str/st4010.py b/str/st4010.py
+index 9793513..26c4224 100644
+--- a/str/st4010.py
++++ b/str/st4010.py
+@@ -25,8 +25,8 @@ COPYING
+ """
+ 
+ import time
+-from TartanClasses import ASD, Balances, CCD, GetCtl, NotesCreate, Sql, SRec
+-from TartanClasses import RepPrt, TabPrt, TartanDialog
++from TartanClasses import ASD, Balances, CCD, GetCtl, NotesCreate, PrintInvoice 
++from TartanClasses import PrintOrder, RepPrt, Sql, SRec, TabPrt, TartanDialog
+ from tartanFunctions import askChoice, getMarkup
+ from tartanWork import mthnam, sttrtp
+ 
+@@ -108,7 +108,8 @@ class st4010(object):
+             ("Basic", self.doTagSelect, ("T",0,0), ("T",0,1)),
+             ("Balances", self.doTagSelect, ("T",0,0), ("T",0,1)),
+             ("History", self.doTagSelect, ("T",0,0), ("T",0,1)),
+-            ("Trans", self.doTrans1, ("T",0,0), ("T",0,1)))
++            ("Trans", self.doTrans1, ("T",0,0), ("T",0,1)),
++            ("Orders", self.doOrders, ("T",0,0), ("T",0,1)))
+         fld = [
+             (("T",0,0,0),"IUA",3,"Grp","Product Group",
+                 "","N",self.doGroup,gpm,None,("notblank",)),
+@@ -541,6 +542,83 @@ class st4010(object):
+         self.df.enableButtonsTags(state=state)
+         self.df.focusField("T", 4, 1)
+ 
++    def doOrders(self):
++        tit = "Outstanding Orders for Item: %s %s - %s" % \
++            (self.group, self.code, self.desc)
++        data = []
++        tb1 = ["drsmst", "slsiv1", "slsiv2"]
++        wh1 = [
++            ("si2_cono", "=", self.opts["conum"]),
++            ("si2_group", "=", self.group),
++            ("si2_code", "=", self.code),
++            ("si2_loc", "=", self.loc),
++            ("si2_rtn", "in", ("O", "W")),
++            ("si1_invno", "=", ""),
++            ("drm_cono=si2_cono",),
++            ("drm_acno=si1_acno",),
++            ("si1_cono=si2_cono",),
++            ("si1_rtn=si2_rtn",),
++            ("si1_docno=si2_docno",)]
++        recs = self.sql.getRec(tb1, cols=["si2_rtn", "si2_docno",
++            "si1_acno", "drm_name", "si2_qty"],
++            where=wh1, order="si2_docno")
++        for rec in recs:
++            if rec[0] == "O":
++                data.append(["SO"] + rec[1:])
++            else:
++                data.append(["WO"] + rec[1:])
++        tb2 = ["crsmst", "strpom", "strpot"]
++        wh2 = [
++            ("pot_cono", "=", self.opts["conum"]),
++            ("pot_group", "=", self.group),
++            ("pot_code", "=", self.code),
++            ("pom_loc", "=", self.loc),
++            ("pom_delno", "=", ""),
++            ("crm_cono=pot_cono",),
++            ("crm_acno=pom_acno",),
++            ("pom_cono=pot_cono",),
++            ("pom_ordno=pot_ordno",)]
++        recs = self.sql.getRec(tb2, cols=["pot_ordno",
++            "pom_acno", "crm_name", "pot_qty"],
++            where=wh2, order="pot_ordno")
++        for rec in recs:
++            data.append(["PO"] + rec)
++        if data:
++            state = self.df.disableButtonsTags()
++            col = (
++                ("rtn", "UA", 2, "DT"),
++                ("docno", "Na", 9, "Reference"),
++                ("acno", "NA", 7, "Acc-Num"),
++                ("name", "NA", 30, "Name"),
++                ("qty", "SD", 13.2, "  Quantity"))
++            while True:
++                rec = SRec(self.opts["mf"], screen=self.df.nb.Page5, title=tit,
++                    cols=col, where=data, wtype="D")
++                if rec.selection:
++                    self.df.setWidget(self.df.mstFrame, state="hide")
++                    typ = rec.selection[0]
++                    if rec.selection[0] == "SO":
++                        typ = "O"
++                    elif rec.selection[0] == "WO":
++                        typ = "W"
++                    else:
++                        typ = "P"
++                    doc = int(rec.selection[1])
++                    if typ in ("O", "W"):
++                        doc = int(rec.selection[1])
++                        PrintInvoice(self.opts["mf"], self.opts["conum"],
++                            self.opts["conam"], typ, doc, repprt=["N", "V",
++                            "view"], copy="y")
++                    else:
++                        PrintOrder(self.opts["mf"], self.opts["conum"],
++                            self.opts["conam"], doc, repprt=["N", "V",
++                            "view"], copy="y")
++                    self.df.setWidget(self.df.mstFrame, state="show")
++                else:
++                    break
++            self.df.enableButtonsTags(state=state)
++        self.df.selPage(index=self.df.lastnbpage)
++
+     def doNotes(self, wiget=None):
+         state = self.df.disableButtonsTags()
+         self.df.setWidget(self.df.mstFrame, state="hide")
+diff --git a/tartanWork.py b/tartanWork.py
+index 9ca3afe..3072f74 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -3961,9 +3961,9 @@ tarmen = {
+         ["PNNN","ms_fm","ms1030",7,"Module Passwords Maintenance"],
+         ["PNNN","ms_rp","ms3020",7,"Module Passwords Listing"],
+         ["PYNY","ms_fm","ms1040",3,"V.A.T. Records Maintenance"],
+-        ["PYNN","ms_rp","ms3010",3,"V.A.T. Statement"],
+-        ["PNNN","ms_rp","ms3030",3,"Email Log Report"],
+-        ["PNNN","ms_rp","ms3040",3,"Changes Log Report"],
++        ["PYNN","ms_rp","ms3010",2,"V.A.T. Statement"],
++        ["PNNN","ms_rp","ms3030",1,"Email Log Report"],
++        ["PNNN","ms_rp","ms3040",1,"Changes Log Report"],
+         ["PNNN","ms_rp","ms3050",3,"Application Usage Report"],
+         ["PYYY","ms_ye","msy010",6,"Financial Year End Routine"],
+         ["PYYY","ms_ye","msy020",6,"Change Year End Date"],
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 2473990..9954c21 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -483,7 +483,7 @@ if email:
+     from emladd import addrs
+     chgfle = "%s/ver/ver_%s.%s.changes" % (pypath, cver[0], cver[1])
+     if os.path.isfile(chgfle):
+-        serv = ["mail", 465, 2, 1, "paul", "Pakati!@"]
++        serv = ["mail", 465, 2, 1, "paul", "jHlzgrWZDdw4DrS9sFo="]
+         mfrm = "paul@tartan.co.za"
+         subj = "Tartan Update %s.%s is Available" % tuple(cver)
+         info = open(chgfle, "r")
+diff --git a/uty/rp1020.py b/uty/rp1020.py
+index 15f1060..bb7d2e9 100644
+--- a/uty/rp1020.py
++++ b/uty/rp1020.py
+@@ -76,7 +76,7 @@ Therefore No Emailing will be Possible.""")
+                 "gl3030": [
+                     ["S", "", 0, "", "", "N"], []],
+                 "gl3040": [
+-                    ["N", "Y", "", "", "Y"], []],
++                    ["T", "N", "Y", "", "", "Y"], []],
+                 "gl3050": [
+                     ["",0,"S","N","N",1,"N","V","","","B","Y","Y","Y"], []]}],
+             "CR": ["CRS", {

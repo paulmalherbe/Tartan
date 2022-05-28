@@ -110,7 +110,6 @@ class gl3010(object):
         self.head = "%03u %-80s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.btot = [0, 0]
-        self.pglin = 999
         bc = self.sql.ctlbat_col
         tc = self.sql.gentrn_col
         for num, dat in enumerate(recs):
@@ -132,7 +131,7 @@ class gl3010(object):
             trndat = self.sql.getRec("gentrn", where=whr, order=odr)
             if not trndat:
                 continue
-            if self.pglin > self.fpdf.lpp:
+            if self.fpdf.newPage():
                 self.pageHeading()
             else:
                 self.batchHeading()
@@ -147,13 +146,12 @@ class gl3010(object):
                 else:
                     tramt = CCD(trn[tc.index("glt_tramt")], "SD", 13.2)
                     taxamt = CCD(trn[tc.index("glt_taxamt")], "SD", 13.2)
-                if self.pglin > self.fpdf.lpp:
+                if self.fpdf.newPage():
                     self.pageHeading()
                 self.fpdf.drawText("%s %s %s %s %s %s" % (acno.disp,
                     trdt.disp, refno.disp, "", tramt.disp, taxamt.disp))
                 self.btot[0] += 1
                 self.btot[1] = float(ASD(self.btot[1]) + ASD(tramt.work))
-                self.pglin += 1
             self.batchTotal()
         p.closeProgress()
         if self.fpdf.page and not p.quit:
@@ -172,11 +170,10 @@ class gl3010(object):
         self.fpdf.drawText("General Ledger Batch Error Listing")
         self.fpdf.drawText()
         self.fpdf.setFont()
-        self.pglin = 4
         self.batchHeading()
 
     def batchHeading(self):
-        if self.pglin > self.fpdf.lpp - 4:
+        if self.fpdf.newPage(4):
             self.pageHeading()
             return
         self.fpdf.setFont(style="B")
@@ -191,10 +188,9 @@ class gl3010(object):
             "  Tax-Amount"))
         self.fpdf.underLine(self.head)
         self.fpdf.setFont()
-        self.pglin += 4
 
     def batchTotal(self):
-        if self.pglin > self.fpdf.lpp - 5:
+        if self.fpdf.newPage(5):
             self.pageHeading()
         self.fpdf.drawText()
         j = CCD(self.trno.work, "SI", 7)
@@ -214,7 +210,6 @@ class gl3010(object):
         self.fpdf.setFont()
         self.btot[0] = 0
         self.btot[1] = 0
-        self.pglin += 5
 
     def doExit(self):
         self.df.closeProcess()

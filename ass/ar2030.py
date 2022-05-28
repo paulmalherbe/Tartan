@@ -124,6 +124,7 @@ class ar2030(object):
         if not self.args:
             p = ProgressBar(self.opts["mf"].body, mxs=len(recs),
                 typ="Raising Depreciation ... Please Wait")
+        abort = False
         for num, dat in enumerate(recs):
             if not self.args:
                 p.displayProgress(num)

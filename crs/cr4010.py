@@ -41,8 +41,8 @@ class cr4010(object):
                 self.opts["mf"].startLoop()
 
     def setVariables(self):
-        self.sql = Sql(self.opts["mf"].dbm, ["crsmst", "crstrn", "strpom"],
-            prog=self.__class__.__name__)
+        self.sql = Sql(self.opts["mf"].dbm, ["crsmst", "crstrn", "strpom",
+            "emllog"], prog=self.__class__.__name__)
         if self.sql.error:
             return
         gc = GetCtl(self.opts["mf"])
@@ -75,7 +75,8 @@ class cr4010(object):
             ("Balances", self.doTagSelect, ("T",0,2), ("T",0,1)),
             ("History", self.doTagSelect, ("T",0,2), ("T",0,1)),
             ("Trans", self.doTrans1, ("T",0,2), ("T",0,1)),
-            ("Orders", self.doOrders, ("T",0,2), ("T",0,1)))
+            ("Orders", self.doOrders, ("T",0,2), ("T",0,1)),
+            ("Mail", self.doMail, ("T",0,2), ("T",0,1)))
         r1s = (("No","N"),("Yes","Y"))
         fld = (
             (("T",0,0,0),"INA",7,"Acc-Num","Account Number",
@@ -156,6 +157,11 @@ class cr4010(object):
         self.acno = w
         self.name = acc[self.sql.crsmst_col.index("crm_name")]
         self.df.loadEntry("T",0, 1, data=self.name)
+        self.emls = []
+        for eml in ("mgr", "acc", "ord"):
+            add = acc[self.sql.crsmst_col.index("crm_%s_email" % eml)]
+            if add:
+                self.emls.append(add)
         seq = 3
         for x in range(0, self.df.topq[1]):
             self.df.loadEntry("T", 1, x, data=acc[seq])
@@ -312,6 +318,31 @@ class cr4010(object):
                 else:
                     break
             self.df.enableButtonsTags(state=state)
+        self.df.selPage(index=self.df.lastnbpage)
+
+    def doMail(self):
+        if self.emls:
+            col = self.sql.emllog_col
+            whr = [("eml_too", "in", self.emls)]
+            recs = self.sql.getRec("emllog", where=whr, order="eml_dtt desc")
+            if recs:
+                data = []
+                for dat in recs:
+                    data.append([
+                        dat[col.index("eml_too")],
+                        dat[col.index("eml_dtt")],
+                    dat [col.index("eml_sta")],
+                        dat[col.index("eml_sub")]])
+                tit = "Mail for Account: %s - %s" % (self.acno, self.name)
+                col = (
+                    ("eml_too", "Recipient", 20, "TX"),
+                    ("eml_dtt", "Date-and-Time", 16, "NA"),
+                    ("eml_sta", "Status", 10, "NA"),
+                    ("eml_sub", "Subject", 50, "TX"))
+                state = self.df.disableButtonsTags()
+                SelectChoice(self.df.nb.Page6, tit, col, data)
+                self.df.enableButtonsTags(state=state)
+        self.df.selPage(index=self.df.lastnbpage)
 
     def doNotes(self):
         state = self.df.disableButtonsTags()

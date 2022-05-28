@@ -355,7 +355,7 @@ class gl3020(object):
         self.tcrs = 0
         self.tvat = 0
         self.trtp = 0
-        self.pglin = 999
+        self.newpage = True
         for num, dat in enumerate(recs):
             p.displayProgress(num)
             if p.quit:
@@ -373,20 +373,20 @@ class gl3020(object):
                 self.typeTotal()
                 self.trtp = trtp.work
                 self.batch = batch.work
-                self.pglin = 999
+                self.newpage = True
             if batch.work != self.batch:
                 self.batchTotal()
                 self.batch = batch.work
                 if self.totsonly != "Y":
                     self.typeHeading()
-            if self.pglin > self.fpdf.lpp:
+            if self.newpage or self.fpdf.newPage():
+                self.newpage = False
                 self.pageHeading()
             if self.totsonly != "Y":
                 self.fpdf.drawText("%s %s %s %s %s %s %s %s %s %s" %
                     (cono.disp, acno.disp, desc.disp, refno.disp, trdt.disp,
                     debit.disp, credit.disp, taxamt.disp, taxind.disp,
                     detail.disp))
-                self.pglin += 1
             # Batch Totals
             self.bqty += 1
             self.bdrs = float(ASD(self.bdrs) + ASD(debit.work))
@@ -450,7 +450,6 @@ class gl3020(object):
                 ("General Ledger Audit Trail for Period", self.sperd,
                 "to", self.eperd))
         self.fpdf.drawText()
-        self.pglin = 4
         if self.totind == "N":
             self.typeHeading()
         else:
@@ -465,11 +464,10 @@ class gl3020(object):
                     ("Document Type", "Quantity", "        Debits",
                     "       Credits", "    Difference", "        V.A.T."))
             self.fpdf.underLine(self.head)
-            self.pglin += 4
             self.fpdf.setFont()
 
     def typeHeading(self):
-        if self.fpdf.lpp - self.pglin < 4:
+        if self.fpdf.newPage(4):
             self.pageHeading()
             return
         if self.totsonly != "Y":
@@ -490,10 +488,9 @@ class gl3020(object):
                 "    Tax-Amount", "T", "Remarks"))
         self.fpdf.underLine(self.head)
         self.fpdf.setFont()
-        self.pglin += 4
 
     def batchTotal(self):
-        if self.fpdf.lpp - self.pglin < 3:
+        if self.fpdf.newPage(3):
             self.pageHeading()
         j = CCD(self.bdrs, "SD", 15.2)
         k = CCD(self.bcrs, "SD", 15.2)
@@ -503,20 +500,18 @@ class gl3020(object):
             self.fpdf.drawText("%-36s %15s %15s %15s %15s" %
                 ("Batch " + self.batch + " Totals", j.disp, k.disp,
                 l.disp, m.disp))
-            self.pglin += 1
         else:
             self.fpdf.drawText()
             self.fpdf.drawText("%-11s %-51s %15s %15s %15s" % (" ",
                 "Batch " + self.batch + " Totals", j.disp, k.disp, m.disp))
             self.fpdf.drawText()
-            self.pglin += 3
         self.bqty = 0
         self.bcrs = 0
         self.bdrs = 0
         self.bvat = 0
 
     def typeTotal(self):
-        if self.fpdf.lpp - self.pglin < 2:
+        if self.fpdf.newPage(2):
             self.pageHeading()
         j = CCD(self.tdrs, "SD", 15.2)
         k = CCD(self.tcrs, "SD", 15.2)
@@ -526,13 +521,10 @@ class gl3020(object):
             self.fpdf.drawText()
             self.fpdf.drawText("%-36s %15s %15s %15s %15s" % ("Type Totals",
                 j.disp, k.disp, l.disp, m.disp))
-            self.pglin += 2
         else:
             self.fpdf.drawText("%-11s %-51s %15s %15s %15s" % (" ",
                 "Type-Totals", j.disp, k.disp, m.disp))
-            self.pglin += 1
         self.fpdf.drawText()
-        self.pglin += 1
         self.tqty = 0
         self.tcrs = 0
         self.tdrs = 0

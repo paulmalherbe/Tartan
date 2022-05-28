@@ -101,8 +101,8 @@ class st3070(object):
             self.locd = "ALL"
         else:
             acc = self.sql.getRec("strloc", cols=["srl_desc"],
-                where=[("srl_cono", "=", self.opts["conum"]), ("srl_loc", "=",
-                w)], limit=1)
+                where=[("srl_cono", "=", self.opts["conum"]),
+                ("srl_loc", "=", w)], limit=1)
             if not acc:
                 return "Invalid Location"
             self.locd = self.locw

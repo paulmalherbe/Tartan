@@ -219,7 +219,7 @@ class gl3030(object):
             datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
 
     def printReport(self, recs):
-        self.pglin = 999
+        self.newpage = True
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
         self.head = "%03u %-101s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
@@ -234,7 +234,8 @@ class gl3030(object):
                 order="glt_acno, glt_curdt, glt_trdt, glt_type, glt_refno, "\
                 "glt_batch")
             if acctot or trn:
-                if self.pglin == 999 or self.pages == "Y":
+                if self.newpage or self.pages == "Y":
+                    self.newpage = False
                     self.pageHeading()
                 else:
                     self.newAccount()
@@ -243,25 +244,22 @@ class gl3030(object):
                 self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %-13s %-13s "\
                     "%-13s" % (self.sdate.disp + "-01", "", "", "",
                     "Opening Balance", "", "", w1.disp))
-                self.pglin += 1
             for acc in trn:
                 trdt, refno, trtp, batch, amt, dbt, crt, detail, curdt, \
                     curmth = self.getTrnValues(acc)
-                if self.pglin > self.fpdf.lpp:
+                if self.fpdf.newPage():
                     self.pageHeading()
                     bf = CCD(acctot, "SD", 13.2)
                     if bf.work:
                         self.fpdf.drawText("%32s %-30s %27s %13s" % ("",
                             "Brought Forward", "", bf.disp))
-                        self.pglin += 1
                 acctot = float(ASD(acctot) + ASD(amt.work))
                 w1 = CCD(acctot, "SD", 13.2)
                 self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %13s %13s %13s"\
                     % (trdt.disp, refno.disp, gltrtp[(trtp.work - 1)][0],
                     batch.disp, detail.disp, dbt.disp, crt.disp, w1.disp))
-                self.pglin += 1
             if self.pages == "Y" and (acctot or trn):
-                self.pglin = 999
+                self.newpage = True
         p.closeProgress()
         if p.quit or not self.fpdf.page:
             return
@@ -331,11 +329,10 @@ class gl3030(object):
             ("General Ledger Statements for Accounts", sacc, "to", eacc,
             "for Period", self.sdate.disp, "to", self.edate.disp))
         self.fpdf.setFont()
-        self.pglin = 3
         self.newAccount()
 
     def newAccount(self):
-        if self.fpdf.lpp - self.pglin < 5:
+        if self.fpdf.newPage(5):
             self.pageHeading()
         else:
             self.fpdf.setFont(style="B")
@@ -348,7 +345,6 @@ class gl3030(object):
                 "       Debit", "      Credit", "     Balance"))
             self.fpdf.underLine(self.head)
             self.fpdf.setFont()
-            self.pglin += 5
 
     def doExit(self):
         if "args" in self.opts and "noprint" in self.opts["args"]:

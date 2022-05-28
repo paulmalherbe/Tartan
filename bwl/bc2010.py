@@ -156,8 +156,8 @@ class bc2010(object):
         self.dbase = bwlctl["ctb_dbase"]
         self.order = bwlctl["ctb_order"]
         self.mixed = bwlctl["ctb_mixed"]
-        self.ratem = CCD(bwlctl["ctb_ratem"], "UD", 6.2)
-        self.ratev = CCD(bwlctl["ctb_ratev"], "UD", 6.2)
+        self.ratem = bwlctl["ctb_ratem"]
+        self.ratev = bwlctl["ctb_ratev"]
         self.greens = bwlctl["ctb_greens"]
         t = time.localtime()
         self.sysdt = ((t[0] * 10000) + (t[1] * 100) + t[2])
@@ -194,9 +194,9 @@ class bc2010(object):
                 "whether to base the Draw on Positions, Ratings or a "\
                 "Combination of Both."),
             (("T",0,6,0),"IUD",5.2,"Fees - Member R","",
-                self.ratem.work,"N",self.doRate,None,None,("efld",)),
+                self.ratem,"N",self.doRate,None,None,("efld",)),
             (("T",0,6,0),"IUD",5.2," Visitor R","",
-                self.ratev.work,"N",self.doRate,None,None,("efld",)))
+                self.ratev,"N",self.doRate,None,None,("efld",)))
         tnd = ((self.doMEnd,"y"),)
         txt = (self.doMExit,)
         # Set font as big as possible up to 24pts
@@ -288,9 +288,9 @@ class bc2010(object):
         self.dtype = drm[self.sql.bwldrm_col.index("bdm_dtype")]
         self.dhist = drm[self.sql.bwldrm_col.index("bdm_dhist")]
         self.tsize = drm[self.sql.bwldrm_col.index("bdm_tsize")]
-        self.mrate = drm[self.sql.bwldrm_col.index("bdm_mrate")]
+        self.mrate = CCD(drm[self.sql.bwldrm_col.index("bdm_mrate")], "UD", 6.2)
         self.mf.loadEntry("T", 0, 6, data=self.mrate)
-        self.vrate = drm[self.sql.bwldrm_col.index("bdm_vrate")]
+        self.vrate = CCD(drm[self.sql.bwldrm_col.index("bdm_vrate")], "UD", 6.2)
         self.mf.loadEntry("T", 0, 7, data=self.vrate)
 
     def doLoadTabs(self):
@@ -417,9 +417,9 @@ class bc2010(object):
 
     def doRate(self, frt, pag, r, c, p, i, w):
         if p == 6:
-            self.ratem = CCD(w, "UD", 6.2)
+            self.mrate = CCD(w, "UD", 6.2)
         else:
-            self.ratev = CCD(w, "UD", 6.2)
+            self.vrate = CCD(w, "UD", 6.2)
 
     def doMEnd(self):
         if self.viewer:
@@ -483,7 +483,7 @@ class bc2010(object):
         else:
             vfy = ("efld",)
         fld = (
-            (("T",0,0,0),"OUI",3,"Entered: Total"),
+            (("T",0,0,0),"OUI",3,"Tabs Entered: Total"),
             (("T",0,0,0),"OUI",3," Males"),
             (("T",0,0,0),"OUI",3," Females"),
             (("T",1,0,0),"I@btb_tab",0,"","Tab Number(noesc)",
@@ -1813,9 +1813,9 @@ Combination Number %10s"""
         av2 = round(rt2 / ct2, 2)
         if gtot:
             if av1 > av2:
-                dif = av1 - av2
+                dif = round(av1 - av2, 2)
             else:
-                dif = av2 - av1
+                dif = round(av2 - av1, 2)
             if dif > self.tot:
                 self.tot = dif
         draw1[1] = av1
@@ -2246,7 +2246,7 @@ Combination Number %10s"""
         # Insert bwldrm
         self.sql.insRec("bwldrm", data=[self.opts["conum"], self.date,
             self.time, self.mixgd, self.mixrt, self.nbase, self.dtype,
-            self.dhist, self.tsize, self.ratem.work, self.ratev.work])
+            self.dhist, self.tsize, self.mrate.work, self.vrate.work])
         if not self.drawn:
             return
         # Insert bwldrt
@@ -2310,27 +2310,30 @@ Combination Number %10s"""
             dg.focusField("T", 1, 1)
             return
         dg.setWidget(dg.mstFrame, state="hide")
-        if not self.ratem.work and not self.ratev.work:
-            rated = "N"
-        else:
-            rated = "Y"
         r1s = (("No", "N"), ("Yes", "Y"), ("Only", "O"))
         r2s = (("Yes", "Y"), ("No", "N"))
-        fld = (
+        fld = [
             (("T",0,0,0),("IRB",r1s),0,"Print Cards","",
                 "N","Y",self.doCards,None,None,None),
             (("T",0,1,0),"INA",30,"Heading","",
                 "","Y",self.doHead,None,None,("notblank",)),
             (("T",0,2,0),"IUI",2,"Number of Ends","",
-                0,"Y",self.doEnds,None,None,("notzero",)),
-            (("T",0,3,0),("IRB",r2s),0,"Cash Takings Sheet","",
-                rated,"Y",self.doTakings,None,None,None),
-            (("T",0,4,0),("IRB",r2s),0,"Tabs Draw Listing","",
+                0,"Y",self.doEnds,None,None,("notzero",))]
+        if self.mrate.work or self.vrate.work:
+            fld.append(
+                (("T",0,3,0),("IRB",r2s),0,"Cash Takings Sheet","",
+                    "Y","Y",self.doTakings,None,None,None))
+            idx = 4
+        else:
+            self.takings = "N"
+            idx = 3
+        fld.extend([
+            (("T",0,idx,0),("IRB",r2s),0,"Tabs Draw Listing","",
                 "N","Y",self.doListing,None,None,None),
-            (("T",0,5,0),("IRB",r2s),0,"Tabs Draw Board","",
+            (("T",0,idx+1,0),("IRB",r2s),0,"Tabs Draw Board","",
                 "Y","Y",self.doBoard,None,None,None),
-            (("T",0,6,0),("IRB",r2s),0,"Include Empty Rinks","",
-                "N","Y",self.doEmpty,None,None,None))
+            (("T",0,idx+2,0),("IRB",r2s),0,"Include Empty Rinks","",
+                "N","Y",self.doEmpty,None,None,None)])
         self.pd = TartanDialog(self.opts["mf"], tops=True,
             title="Print Dialog", eflds=fld, tend=((self.doPEnd, "n"),),
             txit=(self.doPExit,), view=("N","V"))
