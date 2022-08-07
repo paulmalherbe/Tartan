@@ -56,7 +56,7 @@ class drc110(object):
         if not self.acc:
             self.new = True
             self.acc = [self.opts["conum"], "N", "E", "N",
-                "statement_normal", "Y", "", ""]
+                "recurring_charges", "statement_normal", "Y", "", ""]
         else:
             self.new = False
         if self.genleg:
@@ -80,7 +80,6 @@ class drc110(object):
                 ("tpm_title", "", 0, "Title"),
                 ("tpm_type", "", 0, "T")),
             "where": [
-                ("tpm_type", "=", "S"),
                 ("tpm_system", "=", "DRS")],
             "order": "tpm_tname"}
         r1s = (("Yes","Y"),("No","N"))
@@ -112,14 +111,16 @@ class drc110(object):
         fld.extend([
             (("T",0,seq,0),("IRB",r1s),0,"Chain Stores","",
                 self.acc[3],"N",None,None,None,None),
-            (("T",0,seq + 1,0),"INA",20,"Statement Template","",
-                self.acc[4],"N",self.doTplNam,tpm,None,None),
-            (("T",0,seq + 2,0),("IRB",r1s),0,"Statement Ageing","",
-                self.acc[5],"N",None,None,None,None,None,"Select whether "\
+            (("T",0,seq + 1,0),"INA",20,"Charges Template","",
+                self.acc[4],"N",self.doChgTpl,tpm,None,None),
+            (("T",0,seq + 2,0),"INA",20,"Statement Template","",
+                self.acc[5],"N",self.doStaTpl,tpm,None,None),
+            (("T",0,seq + 3,0),("IRB",r1s),0,"Statement Ageing","",
+                self.acc[6],"N",None,None,None,None,None,"Select whether "\
                 "to print Aged Balances at the End of the Statement "\
                 "or only a Total Balance."),
-            (("T",0,seq + 3,0),"ITX",50,"Email Address","",
-                self.acc[6],"N",None,None,None,("email",))])
+            (("T",0,seq + 4,0),"ITX",50,"Email Address","",
+                self.acc[7],"N",None,None,None,("email",))])
         but = (
             ("Accept",None,self.doAccept,0,("T",0,1),("T",0,0)),
             ("Quit",None,self.doExit,1,None,None))
@@ -164,7 +165,13 @@ class drc110(object):
         else:
             return ""
 
-    def doTplNam(self, frt, pag, r, c, p, i, w):
+    def doChgTpl(self, frt, pag, r, c, p, i, w):
+        acc = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w),
+            ("tpm_type", "=", "I"), ("tpm_system", "=", "DRS")], limit=1)
+        if not acc:
+            return "Invalid Template Name"
+
+    def doStaTpl(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w),
             ("tpm_type", "=", "S"), ("tpm_system", "=", "DRS")], limit=1)
         if not acc:

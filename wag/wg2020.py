@@ -28,7 +28,7 @@ import os, time
 from TartanClasses import ASD, CCD, GetCtl, LoanInterest, PrintPayslip
 from TartanClasses import ProgressBar, Sql, TartanDialog
 from tartanFunctions import askQuestion, dateDiff, getSingleRecords
-from tartanFunctions import mthendDate, payeTables, showError
+from tartanFunctions import mthendDate, payeTables, showError, showInfo
 
 class wg2020(object):
     def __init__(self, **opts):
@@ -256,16 +256,20 @@ class wg2020(object):
                 chk = True
             if chk:
                 self.doPrint()
-                if self.export:
-                    # Trailer for BEST
-                    value = int(round((self.etotal * 100), 0))
-                    self.export.write("%1s%4s%1s%30s%013u%47s\r\n" % \
-                        (2, self.bestac, "T", "", value, ""))
-                    self.export.close()
                 if self.preview == "Y":
                     self.opts["mf"].dbm.rollbackDbase()
+                    showInfo(self.opts["mf"].window, "Preview",
+                        """Please Note That this was a Preview Only.
+
+No Records Have Been Updated.""")
                 else:
                     self.opts["mf"].dbm.commitDbase()
+                    if self.export:
+                        # Trailer for BEST
+                        value = int(round((self.etotal * 100), 0))
+                        self.export.write("%1s%4s%1s%30s%013u%47s\r\n" % \
+                            (2, self.bestac, "T", "", value, ""))
+                        self.export.close()
         self.opts["mf"].closeLoop()
 
     def doExit(self):

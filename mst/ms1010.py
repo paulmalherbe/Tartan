@@ -24,9 +24,10 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os, time
+import time
 from TartanClasses import TartanDialog, ShowImage, Sql, TabPrt
-from tartanFunctions import askQuestion, callModule, mthendDate, showError
+from tartanFunctions import askQuestion, callModule, getFileName, mthendDate
+from tartanFunctions import showError
 from tartanWork import allsys, tabdic
 
 class ms1010(object):
@@ -123,7 +124,7 @@ class ms1010(object):
                     fld.append((("T",3,pos,0),("IRB",r1s),0,allsys[sss][0],"",
                         "N","N",None,None,None,None))
                     pos += 1
-        fld.append((("T",4,0,0),"IFF",75,"Letterhead Image","",
+        fld.append((("T",4,0,0),"ITX",55,"Letterhead Image","",
                 "","N",self.doLogo,log,None,("fle","blank")))
         but = (
             ("Accept",None,self.doAccept,0,("T",1,2),(("T",1,1),("T",4,0))),
@@ -252,10 +253,9 @@ class ms1010(object):
             if self.img:
                 self.img.destroyImage()
         else:
-            self.logo = os.path.normpath(w)
-            if self.displayLogo(self.logo):
+            chk = getFileName(w, wrkdir=self.opts["mf"].rcdic["wrkdir"])
+            if self.displayLogo(chk):
                 return "Invalid Logo Image"
-            self.df.loadEntry(frt, pag, p, data=self.logo)
 
     def displayLogo(self, logo):
         try:

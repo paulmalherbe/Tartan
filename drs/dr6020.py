@@ -33,10 +33,8 @@ class dr6020(object):
         self.opts = opts
         if self.setVariables():
             if "args" in opts:
-                self.curdt = opts["args"][0]
-                for self.chain, self.acno in opts["args"][1]:
+                for self.chain, self.acno in opts["args"]:
                     self.doReAgeAuto()
-                self.opts["mf"].dbm.commitDbase()
             else:
                 self.dataHeader()
                 self.opts["mf"].startLoop()
@@ -90,13 +88,11 @@ class dr6020(object):
                 ("drm_chain", "=", 0),
                 ("drm_stat", "<>", "X")]
         fld = [
-            [["T",0,0,0],"ID2",7,"Period","Current Financial Period",
-                self.curdt,"Y",self.doCurdt,None,None,("efld",)],
-            [["T",0,1,0],"INA",7,"Acc-Num","Account Number",
-                "","N",self.doAccno,drm,None,("notblank",)],
-            [["T",0,1,0],"ONA",30,"Name"]]
+            [["T",0,0,0],"INA",7,"Acc-Num","Account Number",
+                "","Y",self.doAccno,drm,None,("notblank",)],
+            [["T",0,0,0],"ONA",30,"Name"]]
         if self.chains == "Y":
-            fld.insert(1, [["T",0,0,0],"IUI",3,"Chain","Chain Store",
+            fld.insert(0, [["T",0,0,0],"IUI",3,"Chain","Chain Store",
                 "","N",self.doChain,drc,None,("efld",)])
         else:
             self.chain = 0
@@ -218,11 +214,8 @@ class dr6020(object):
                 chain=self.chain, acno=self.acno, pbar=None)
 
     def endTop(self):
-        self.df.clearEntry("T", 0, 2)
-        self.df.clearEntry("T", 0, 3)
-        if self.chains == "Y":
-            self.df.clearEntry("T", 0, 4)
-        self.df.focusField("T", 0, 2)
+        self.df.clearFrame("T", 0)
+        self.df.focusField("T", 0, 1)
 
     def exitTop(self):
         self.opts["mf"].dbm.commitDbase(ask=True)

@@ -115,7 +115,7 @@ class dr3040(object):
             chn = CCD(rec[0], "UI", 3)
             acno = CCD(rec[1], "NA", 7)
             name = CCD(rec[2], "NA", 30)
-            col, trns = getTrn(self.opts["mf"].dbm, "drs", dte=self.curdt,
+            col, trns = getTrn(self.opts["mf"].dbm, "drs", cdt=self.curdt,
                 whr=[("drt_cono", "=", self.opts["conum"]), ("drt_chain", "=",
                 chn.work), ("drt_acno", "=", acno.work)], zer="N")
             if not trns:

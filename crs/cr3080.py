@@ -420,14 +420,13 @@ If you decide to do this, you must remember to upload the BEST file to the Bank 
             if d in self.form.newdic:
                 dat = crm[cmc.index(col)]
                 self.form.newdic[d][tdc.index("tpd_text")] = dat
-        jon = "cra_curdt <= %s" % self.curdt
         whr = [
             ("crt_cono", "=", self.opts["conum"]),
             ("crt_acno", "=", self.acno),
             ("crt_payind", "=", "Y"),
             ("crt_paydt", "<=", self.duedtw)]
-        ctc, crt = getTrn(self.opts["mf"].dbm, "crs", jon=jon, whr=whr,
-            zer="N")
+        ctc, crt = getTrn(self.opts["mf"].dbm, "crs", cdt=self.curdt,
+            whr=whr, zer="N")
         if not crt:
             return
         bal = 0

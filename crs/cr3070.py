@@ -124,7 +124,7 @@ class cr3070(object):
             ("crt_cono", "=", self.opts["conum"]),
             ("crt_acno", "=", self.acno.work)]
         odr = "crt_curdt, crt_trdt, crt_ref1"
-        self.ctc, self.crt = getTrn(self.opts["mf"].dbm, "crs", dte=self.curdt,
+        self.ctc, self.crt = getTrn(self.opts["mf"].dbm, "crs", cdt=self.curdt,
             whr=whr, odr=odr)
         if self.crt:
             if self.prnt == "N":

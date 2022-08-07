@@ -109,7 +109,7 @@ class st5040(object):
         code = rec[col.index("stv_code")]
         loc = rec[col.index("stv_loc")]
         vqty = CCD(rec[col.index("stv_qty")], "SD", 12.2)
-        vprc = CCD(rec[col.index("stv_ucost")], "UD", 12.2)
+        vprc = CCD(rec[col.index("stv_ucost")], "SD", 12.2)
         # Test for Variances
         bals = Balances(self.opts["mf"], "STR", self.opts["conum"], self.curdt,
             keys=(grp, code, loc, ("P", self.opts["period"][0])))

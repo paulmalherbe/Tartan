@@ -883,18 +883,28 @@ class tp1010(object):
                 if typ[1].upper() in ("A", "V", "W", "X"):
                     if not txt:
                         if x == det[0]:
-                            txt = 'det = [\n        ["%s"' % y
+                            ttt.write("det = [\n")
+                            txt = '        ["%s"' % y
                         else:
                             txt = '        ["%s"' % y
                     else:
-                        txt += ', "%s"' % y
+                        chk = '%s, "%s"' % (txt, y)
+                        if len(chk) > 76:
+                            ttt.write("%s,\n" % txt)
+                            txt = '            "%s"' % y
+                        else:
+                            txt = chk
                 elif not txt:
                     if x == det[0]:
-                        txt = "det = [\n        [%s" % y
-                    else:
-                        txt = "        [%s" % y
+                        ttt.write("det = [\n")
+                    txt = "        [%s" % y
                 else:
-                    txt += ", %s" % y
+                    chk = '%s, %s' % (txt, y)
+                    if len(chk) > 76:
+                        ttt.write("%s,\n" % txt)
+                        txt = '            %s' % y
+                    else:
+                        txt = chk
             fle.write("%s\n" % mes)
             if x == det[-1]:
                 ttt.write("%s]]\n" % txt)

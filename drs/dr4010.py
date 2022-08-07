@@ -333,7 +333,7 @@ class dr4010(object):
         if self.paidup == "Y":
             col, recs = getTrn(self.opts["mf"].dbm, "drs", whr=whr)
         else:
-            col, recs = getTrn(self.opts["mf"].dbm, "drs", dte=self.curdt,
+            col, recs = getTrn(self.opts["mf"].dbm, "drs", cdt=self.curdt,
                 whr=whr)
         if recs:
             data = []
@@ -571,7 +571,7 @@ class dr4010(object):
                 col, recs = getTrn(self.opts["mf"].dbm, "drs", whr=whr)
             else:
                 col, recs = getTrn(self.opts["mf"].dbm, "drs",
-                    dte=self.curdt, whr=whr)
+                    cdt=self.curdt, whr=whr)
             cols = []
             data = []
             dic = self.sql.drstrn_dic

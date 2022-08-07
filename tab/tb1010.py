@@ -24,7 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import json, os
+import os
 from TartanClasses import RepPrt, Sql, TartanDialog
 from tartanFunctions import askQuestion, copyList, makeArray, getPrgPath
 from tartanWork import dattyp, tabdic
@@ -268,8 +268,19 @@ class tb1010(object):
                     outf.write("""
         "%s": [""" % key)
                     for fld in tabdic[tab][key]:
-                        outf.write("""
-            %s""" % json.dumps(fld))
+                        f = ""
+                        for d in fld:
+                            if type(d) not in (int, float):
+                                d = '"%s"' % d
+                            if not f:
+                                f = """
+            [%s""" % d
+                            elif len(f) + len(str(d)) >= 76:
+                                outf.write("%s,\n" % f)
+                                f = "                %s" % d
+                            else:
+                                f = "%s, %s" % (f, d)
+                        outf.write("""%s]""" % f)
                         if fld == tabdic[tab][key][-1]:
                             outf.write("""]""")
                         else:

@@ -318,20 +318,6 @@ os.remove("%s/tarzip.zip" % bd)
 # Rename and/or Remove paths and files
 if os.path.isdir("ver"):
     shutil.rmtree("ver")
-# Create tarimp module for pyinstaller
-ofl = open("tarimp.py", "w")
-ofl.write("# Tartan Modules to Include with Pyinstaller Exe\n")
-ofl.write("import sys\n")
-for fle in glob.iglob("*.py"):
-    if fle.count("__pycache__"):
-        continue
-    ofl.write("import %s\n" % fle.replace("/", ".").replace(".py", ""))
-for fle in glob.iglob("???/*.py"):
-    if fle.count("__pycache__"):
-        continue
-    ofl.write("import %s\n" % fle.replace("/", ".").replace(".py", ""))
-ofl.close()
-#print("")
 # Change to Base Directory
 os.chdir(bd)
 # Create zip file for pyinstaller
@@ -363,10 +349,15 @@ if windows:
                 exeCmd("ssh %s python %s" % (name, cmd))
     for bit in bits:
         print("Packaging %s bit" % bit)
-        xpth = "/home/paul/.wine%s/dosdevices/x:" % bit
+        WPFX = "%s/.wine%s" % (bd, bit)
+        if bit in ("7", "8", "32"):
+            cmd = "WINEARCH=win32 WINEPREFIX=%s /usr/bin/wine" % WPFX
+        else:
+            cmd = "WINEARCH=win64 WINEPREFIX=%s /usr/bin/wine64" % WPFX
+        xpth = "%s/dosdevices/x:" % WPFX
         if not os.path.exists(xpth):
             os.symlink(home, xpth)
-        cmd = "wine_%s cmd /c python %s/uty/mkwins.py -a%s" % (bit, bv, bit)
+        cmd = "%s cmd /c python %s/uty/mkwins.py -a%s" % (cmd, bv, bit)
         if upgpip:
             cmd += " -u"
         if tmpfle:

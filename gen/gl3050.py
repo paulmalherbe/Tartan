@@ -330,7 +330,7 @@ Custom  - Customised Report"""),
         self.df.loadEntry(frt, pag, p+1, data="")
         self.df.loadEntry(frt, pag, p+2, data="")
         if self.typ == "M" and self.val != "C":
-            self.var = "N"
+            self.var = ""
             self.df.loadEntry(frt, pag, p+3, data=self.var)
             return "sk3"
         return "sk2"

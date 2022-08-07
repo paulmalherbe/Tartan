@@ -25,10 +25,8 @@ COPYING
 """
 
 import os, time
-from TartanClasses import ASD, Batches, CCD, GetCtl, MyFpdf, Sql, TartanDialog
-from tartanFunctions import doDrawTable, doPrinter, getModName
+from TartanClasses import ASD, Batches, GetCtl, Sql, TartanDialog, PrintCharges
 from tartanFunctions import getSingleRecords, getVatRate, mthendDate
-from tartanFunctions import textFormat
 
 class dr2030(object):
     def __init__(self, **opts):
@@ -39,8 +37,8 @@ class dr2030(object):
 
     def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["ctlmst", "ctlvrf", "ctlvtf",
-            "drsmst", "drstrn", "drsrcm", "drsrct", "genmst", "gentrn"],
-            prog=self.__class__.__name__)
+            "drsmst", "drstrn", "drsrcm", "drsrct", "drsrci", "genmst",
+            "gentrn", "tplmst"], prog=self.__class__.__name__)
         if self.sql.error:
             return
         self.gc = GetCtl(self.opts["mf"])
@@ -48,6 +46,7 @@ class dr2030(object):
         if not drsctl:
             return
         self.glint = drsctl["ctd_glint"]
+        self.ctmpl = drsctl["ctd_chgtpl"]
         self.fromad = drsctl["ctd_emadd"]
         if self.glint == "Y":
             ctlctl = self.gc.getCtl("ctlctl", self.opts["conum"])
@@ -84,6 +83,16 @@ class dr2030(object):
             return
 
     def doProcess(self):
+        tpm = {
+            "stype": "R",
+            "tables": ("tplmst",),
+            "cols": (
+                ("tpm_tname", "", 0, "Template"),
+                ("tpm_title", "", 0, "Title", "Y")),
+            "where": [
+                ("tpm_type", "=", "I"),
+                ("tpm_system", "=", "DRS")],
+            "order": "tpm_tname"}
         r1s = (
             ("Monthly","M"),
             ("Quarterly","3"),
@@ -97,8 +106,10 @@ class dr2030(object):
                 "N","N",self.doAll,None,None,None),
             (("T",0,2,0),"INa",9,"2nd Reference","",
                 "","N",self.doRef2,None,None,None),
-            (("T",0,3,0),("IRB",r2s),1,"Invoices","",
-                "N","N",self.doInv,None,None,None))
+            (("T",0,3,0),("IRB",r2s),1,"Print Invoices","",
+                "N","N",self.doInv,None,None,None),
+            (("T",0,4,0),"INA",20,"Invoice Template","",
+                self.ctmpl,"N",self.doTmp,tpm,None,None))
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)
         self.df = TartanDialog(self.opts["mf"], eflds=fld,
@@ -131,6 +142,18 @@ class dr2030(object):
         if self.inv == "N":
             self.df.loadEntry(frt, pag, p+2, data="")
             return "nd"
+        self.cwd = None
+        self.docs = []
+
+    def doTmp(self, frt, pag, r, c, p, i, w):
+        chk = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w),
+            ("tpm_type", "=", "I"), ("tpm_system", "=", "DRS")], limit=1)
+        if not chk:
+            return "Invalid Template"
+        self.tname = w
+
+    def doCons(self, frt, pag, r, c, p, i, w):
+        self.cons = w
 
     def doEml(self, frt, pag, r, c, p, i, w):
         self.eml = w
@@ -139,246 +162,122 @@ class dr2030(object):
         self.df.closeProcess()
         if self.allc == "N":
             recs = getSingleRecords(self.opts["mf"], "drsrcm", ("dcm_num",
-                "dcm_desc"), where=self.wher)
+                "dcm_desc"), where=self.wher, order="dcm_num")
         else:
-            recs = self.sql.getRec("drsrcm", where=self.wher)
-        if recs:
-            if self.inv == "Y" and self.df.repeml[1] == "N":
-                self.fpdf = MyFpdf(orientation="L", fmat="A4",
-                    name=self.__class__.__name__, head=128)
-            for dcm in recs:
-                num = dcm[self.sql.drsrcm_col.index("dcm_num")]
-                desc = dcm[self.sql.drsrcm_col.index("dcm_desc")]
-                day = dcm[self.sql.drsrcm_col.index("dcm_day")]
-                if day == 30:
-                    self.trdt = mthendDate((self.bh.curdt * 100) + 1)
-                else:
-                    self.trdt = (self.bh.curdt * 100) + day
-                vat = dcm[self.sql.drsrcm_col.index("dcm_vat")]
-                self.vatrte = getVatRate(self.sql, self.opts["conum"],
-                    vat, self.trdt)
-                glac = dcm[self.sql.drsrcm_col.index("dcm_glac")]
-                nxt = self.sql.getRec("drstrn", cols=["max(drt_ref1)"],
-                    where=[("drt_cono", "=", self.opts["conum"]), ("drt_ref1",
-                    "like", "RC%03i%s" % (num, "%"))], limit=1)
-                if not nxt[0]:
-                    nxt = 0
-                else:
-                    nxt = int(nxt[0][5:])
-                tot_val = 0
-                tot_vat = 0
-                rec = self.sql.getRec("drsrct", where=[("dct_cono", "=",
-                    self.opts["conum"]), ("dct_num", "=", num), ("dct_start",
-                    "<=", self.bh.curdt), ("dct_end", ">=", self.bh.curdt)])
-                col = self.sql.drsrct_col
-                for dct in rec:
-                    self.chain = dct[col.index("dct_chain")]
-                    self.acno = dct[col.index("dct_acno")]
-                    # Check for Redundancy
-                    chk = self.sql.getRec("drsmst", cols=["drm_stat"],
-                        where=[("drm_cono", "=", self.opts["conum"]),
-                        ("drm_chain", "=", self.chain), ("drm_acno", "=",
-                        self.acno)], limit=1)
-                    if chk[0] == "X":
-                        continue
-                    # Check for Valid Period
-                    charge = False
-                    start = dct[col.index("dct_start")]
-                    year = int(start / 100)
-                    month = start % 100
-                    while start <= self.bh.curdt:
-                        if start == self.bh.curdt:
-                            charge = True
-                            break
-                        month += self.mths
-                        if month > 12:
-                            year += 1
-                            month -= 12
-                        start = (year * 100) + month
-                    if not charge:
-                        continue
-                    # Create Transactions
-                    nxt += 1
-                    self.ref = "RC%03i%04i" % (num, nxt)
-                    self.detail = textFormat(dct[col.index("dct_detail")], 73)
-                    self.amnt = dct[col.index("dct_amnt")]
-                    self.vmnt = round(self.amnt * self.vatrte / 100, 2)
-                    self.tmnt = float(ASD(self.amnt) + ASD(self.vmnt))
-                    tot_val = float(ASD(tot_val) + ASD(self.amnt))
-                    tot_vat = float(ASD(tot_vat) + ASD(self.vmnt))
-                    # Debtors (drstrn)
-                    self.sql.insRec("drstrn", data=[self.opts["conum"],
-                        self.chain, self.acno, 1, self.ref, self.bh.batno,
-                        self.trdt, self.ref2, self.tmnt, self.vmnt,
-                        self.bh.curdt, self.detail[0], vat, "Y",
-                        self.opts["capnm"], self.sysdtw, 0])
-                    if self.inv == "Y":
-                        # Create Invoice
-                        self.doInvoice()
-                    # VAT (ctlvtf)
-                    amnt = float(ASD(0) - ASD(self.amnt))
-                    vmnt = float(ASD(0) - ASD(self.vmnt))
-                    data = [self.opts["conum"], vat, "O", self.bh.curdt,
-                        "D", 1, self.bh.batno, self.ref, self.trdt, self.acno,
-                        self.detail[0], amnt, vmnt, 0, self.opts["capnm"],
-                        self.sysdtw, 0]
-                    self.sql.insRec("ctlvtf", data=data)
-                if self.glint == "Y":
-                    ref = "RC%07i" % num
-                    # Update Debtors Control
-                    amnt = float(ASD(tot_val) + ASD(tot_vat))
-                    data = (self.opts["conum"], self.drsctl, self.bh.curdt,
+            recs = self.sql.getRec("drsrcm", where=self.wher, order="dcm_num")
+        for dcm in recs:
+            num = dcm[self.sql.drsrcm_col.index("dcm_num")]
+            desc = dcm[self.sql.drsrcm_col.index("dcm_desc")]
+            day = dcm[self.sql.drsrcm_col.index("dcm_day")]
+            if day == 30:
+                self.trdt = mthendDate((self.bh.curdt * 100) + 1)
+            else:
+                self.trdt = (self.bh.curdt * 100) + day
+            vat = dcm[self.sql.drsrcm_col.index("dcm_vat")]
+            self.vatrte = getVatRate(self.sql, self.opts["conum"],
+                vat, self.trdt)
+            glac = dcm[self.sql.drsrcm_col.index("dcm_glac")]
+            nxt = self.sql.getRec("drstrn", cols=["max(drt_ref1)"],
+                where=[("drt_cono", "=", self.opts["conum"]),
+                ("drt_ref1", "like", "RCI%")], limit=1)
+            if not nxt[0]:
+                nxt = 0
+            else:
+                nxt = int(nxt[0][3:])
+            tot_val = 0
+            tot_vat = 0
+            rec = self.sql.getRec("drsrct", where=[("dct_cono", "=",
+                self.opts["conum"]), ("dct_num", "=", num), ("dct_start",
+                "<=", self.bh.curdt), ("dct_end", ">=", self.bh.curdt)])
+            col = self.sql.drsrct_col
+            for dct in rec:
+                chain = dct[col.index("dct_chain")]
+                acno = dct[col.index("dct_acno")]
+                # Check for Redundancy
+                chk = self.sql.getRec("drsmst", cols=["drm_stat"],
+                    where=[("drm_cono", "=", self.opts["conum"]),
+                    ("drm_chain", "=", chain), ("drm_acno", "=",
+                    acno)], limit=1)
+                if chk[0] == "X":
+                    continue
+                # Check for Valid Period
+                charge = False
+                start = dct[col.index("dct_start")]
+                year = int(start / 100)
+                month = start % 100
+                while start <= self.bh.curdt:
+                    if start == self.bh.curdt:
+                        charge = True
+                        break
+                    month += self.mths
+                    if month > 12:
+                        year += 1
+                        month -= 12
+                    start = (year * 100) + month
+                if not charge:
+                    continue
+                # Create Transactions
+                nxt += 1
+                refno = "RCI%06i" % nxt
+                detail = dct[col.index("dct_detail")]
+                amnt = dct[col.index("dct_amnt")]
+                vmnt = round(amnt * self.vatrte / 100, 2)
+                tmnt = float(ASD(amnt) + ASD(vmnt))
+                tot_val = float(ASD(tot_val) + ASD(amnt))
+                tot_vat = float(ASD(tot_vat) + ASD(vmnt))
+                # Debtors (drstrn)
+                self.sql.insRec("drstrn", data=[self.opts["conum"],
+                    chain, acno, 1, refno, self.bh.batno,
+                    self.trdt, refno, tmnt, vmnt,
+                    self.bh.curdt, detail[:30], vat, "Y",
+                    self.opts["capnm"], self.sysdtw, 0])
+                # Invoice Table
+                self.sql.insRec("drsrci", data=[self.opts["conum"],
+                    chain, acno, refno, self.trdt,
+                    detail, amnt, self.vatrte,
+                    self.opts["capnm"], self.sysdtw])
+                if self.inv == "Y":
+                    self.docs.append(refno)
+                # VAT (ctlvtf)
+                amnt = float(ASD(0) - ASD(amnt))
+                vmnt = float(ASD(0) - ASD(vmnt))
+                data = [self.opts["conum"], vat, "O", self.bh.curdt,
+                    "D", 1, self.bh.batno, refno, self.trdt, acno,
+                    detail[:30], amnt, vmnt, 0, self.opts["capnm"],
+                    self.sysdtw, 0]
+                self.sql.insRec("ctlvtf", data=data)
+            if self.glint == "Y":
+                ref = "RC%07i" % num
+                # Update Debtors Control
+                amnt = float(ASD(tot_val) + ASD(tot_vat))
+                data = (self.opts["conum"], self.drsctl, self.bh.curdt,
+                    self.trdt, 1, ref, self.bh.batno, amnt, 0, desc,
+                    "", "", 0, self.opts["capnm"], self.sysdtw, 0)
+                self.sql.insRec("gentrn", data=data)
+                # Update Sales Account
+                amnt = float(ASD(0) - ASD(tot_val))
+                data = (self.opts["conum"], glac, self.bh.curdt, self.trdt,
+                    1, ref, self.bh.batno, amnt, 0, desc, "", "", 0,
+                    self.opts["capnm"], self.sysdtw, 0)
+                self.sql.insRec("gentrn", data=data)
+                amnt = float(ASD(0) - ASD(tot_vat))
+                if amnt:
+                    # Update VAT Control
+                    data = (self.opts["conum"], self.vatctl, self.bh.curdt,
                         self.trdt, 1, ref, self.bh.batno, amnt, 0, desc,
                         "", "", 0, self.opts["capnm"], self.sysdtw, 0)
                     self.sql.insRec("gentrn", data=data)
-                    # Update Sales Account
-                    amnt = float(ASD(0) - ASD(tot_val))
-                    data = (self.opts["conum"], glac, self.bh.curdt, self.trdt,
-                        1, ref, self.bh.batno, amnt, 0, desc, "", "", 0,
-                        self.opts["capnm"], self.sysdtw, 0)
-                    self.sql.insRec("gentrn", data=data)
-                    amnt = float(ASD(0) - ASD(tot_vat))
-                    if amnt:
-                        # Update VAT Control
-                        data = (self.opts["conum"], self.vatctl, self.bh.curdt,
-                            self.trdt, 1, ref, self.bh.batno, amnt, 0, desc,
-                            "", "", 0, self.opts["capnm"], self.sysdtw, 0)
-                        self.sql.insRec("gentrn", data=data)
-                # Update Recurring Charge (drsrcm)
-                self.sql.updRec("drsrcm", cols=["dcm_last"],
-                    data=[self.bh.curdt], where=[("dcm_cono", "=",
-                    self.opts["conum"]), ("dcm_num", "=", num), ("dcm_freq",
-                    "=", self.freq)])
-            self.opts["mf"].dbm.commitDbase()
-            if self.inv == "Y" and self.df.repeml[1] == "N":
-                self.doPrint()
+            # Update Recurring Charge (drsrcm)
+            self.sql.updRec("drsrcm", cols=["dcm_last"], data=[self.bh.curdt],
+                where=[("dcm_cono", "=", self.opts["conum"]), ("dcm_num", "=",
+                num), ("dcm_freq", "=", self.freq)])
+        self.opts["mf"].dbm.commitDbase()
+        if self.inv == "Y" and self.docs:
+            # Create Invoice
+            PrintCharges(self.opts["mf"], self.opts["conum"],
+                self.opts["conam"], self.docs, tname=self.tname,
+                repprt=self.df.repprt, repeml=self.df.repeml, copy="n")
         self.opts["mf"].closeLoop()
-
-    def doInvoice(self):
-        if self.df.repeml[1] == "Y":
-            self.fpdf = MyFpdf(orientation="L", fmat="A4",
-                name=self.__class__.__name__, head=128)
-        cw = self.fpdf.get_string_width("X")
-        ld = self.fpdf.font[2]
-        ica = CCD(self.tmnt, "SD", 13.2)
-        iva = CCD(float(ASD(self.tmnt) - ASD(self.amnt)), "SD", 13.2)
-        ivr = CCD(self.vatrte, "UD", 5.2)
-        self.drawInvoice(cw, ld)
-        row = 20
-        for detail in self.detail:
-            row += 1
-            self.fpdf.drawText(x=22.2*cw, y=row*ld, txt=detail)
-        self.fpdf.drawText(x=97*cw, y=row*ld, txt=ivr.disp)
-        self.fpdf.drawText(x=103*cw, y=row*ld, txt=ica.disp)
-        self.printTotals(cw, ld, ica, iva)
-        if self.df.repeml[1] == "Y":
-            self.doPrint()
-
-    def drawInvoice(self, cw, ld):
-        self.fpdf.add_page()
-        self.fpdf.setFont("courier", "B", 16)
-        self.fpdf.drawText(x=22*cw, y=1*ld, txt=self.ctm_name)
-        self.fpdf.setFont("courier", "B", 14)
-        self.fpdf.drawText(x=108*cw, y=2*ld, w=16, align="R", txt="Tax Invoice")
-        self.fpdf.setFont("courier", "B", self.fpdf.font[1])
-        if self.ctm_logo:
-            self.fpdf.image(self.ctm_logo, 45, 3, 138, 28)
-        else:
-            self.fpdf.drawText(x=22*cw, y=2.5*ld, txt=self.ctm_add1)
-            self.fpdf.drawText(x=22*cw, y=3.5*ld, txt=self.ctm_add2)
-            self.fpdf.drawText(x=22*cw, y=4.5*ld, txt=self.ctm_add3)
-            self.fpdf.drawText(x=22*cw, y=5.5*ld, txt=self.ctm_pcode)
-            self.fpdf.drawText(x=54*cw, y=2.5*ld,
-                txt="RegNo: %s" % self.ctm_regno)
-            self.fpdf.drawText(x=54*cw, y=3.5*ld,
-                txt="TaxNo: %s" % self.ctm_taxno)
-            self.fpdf.drawText(x=54*cw, y=4.5*ld,
-                txt="TelNo: %s" % self.ctm_tel)
-            self.fpdf.drawText(x=54*cw, y=5.5*ld,
-                txt="FaxNo: %s" % self.ctm_fax)
-        drm = self.sql.getRec("drsmst", where=[("drm_cono", "=",
-            self.opts["conum"]), ("drm_chain", "=", self.chain), ("drm_acno",
-            "=", self.acno)], limit=1)
-        col = self.sql.drsmst_col
-        self.fpdf.drawText(x=22.5*cw, y=10.5*ld, txt=drm[col.index("drm_name")])
-        self.fpdf.drawText(x=22.5*cw, y=11.5*ld, txt=drm[col.index("drm_add1")])
-        self.fpdf.drawText(x=22.5*cw, y=12.5*ld, txt=drm[col.index("drm_add2")])
-        self.fpdf.drawText(x=22.5*cw, y=13.5*ld, txt=drm[col.index("drm_add3")])
-        self.fpdf.drawText(x=22.5*cw, y=14.5*ld, txt=drm[col.index("drm_pcod")])
-        if self.ctm_b_name:
-            dat = "Name:    %s" % self.ctm_b_name
-            dat = "%s\nBranch:  %s" % (dat, self.ctm_b_branch)
-            dat = "%s\nCode:    %s" % (dat, self.ctm_b_ibt)
-            dat = "%s\nAccount: %s\n " % (dat, self.ctm_b_acno)
-            self.fpdf.drawText(x=22.5*cw, y=37*ld, txt=dat, ctyp="M")
-        self.emadd = CCD(drm[col.index("drm_acc_email")], "TX")
-        # Tables
-        r1 = {
-            "margins": ((22.5, 53), (8, 9)),
-            "repeat": (1, 1),
-            "rows": [
-                [22, 8.5, [[32, 1.5, .8, "Charge To:", False]]],
-                [22, 10, [[32, 5.5]]],
-                [22, 16, [
-                    [9, 1.5, .8, "Acc-Num", True],
-                    [20, 1.5, .8, "V.A.T. Number", True],
-                    [42, 1.5, .8, "Contact Person", True],
-                    [12, 1.5, .8, "Date", True],
-                    [11, 1.5, .8, "Inv-Number", True]]],
-                [22, 17.5, [
-                    [9, 1.5, 0, self.acno, True],
-                    [20, 1.5, 0, drm[col.index("drm_vatno")], True],
-                    [42, 1.5, 0, drm[col.index("drm_sls")]],
-                    [12, 1.5, 0, CCD(self.trdt, "D1", 10).disp, True],
-                    [11, 1.5, 0, "%10s" % self.ref]]],
-                [22, 19, [
-                    [74, 1.5, .8, "Description", False],
-                    [7, 1.5, .8, " Tax-%", False],
-                    [13, 1.5, .8, "       Value", False]]],
-                [22, 20.5, [
-                    [74, 12.5],
-                    [7, 12.5],
-                    [13, 12.5]]],
-                [22, 33, [
-                    [11, 1.5, .8, "Taxable"],
-                    [12, 1.5],
-                    [12, 1.5, .8, "Non-Taxable"],
-                    [12, 1.5],
-                    [11, 1.5, .8, "Total Tax"],
-                    [11, 1.5],
-                    [12, 1.5, .8, "Total Value"],
-                    [13, 1.5]]]]}
-        if self.ctm_b_name:
-            r1["rows"].extend([
-                [22, 35, [[40, 1.5, .8, "Banking Details", False]]],
-                [22, 36.5, [[40, 5.5]]]])
-        doDrawTable(self.fpdf, r1, cw=cw, ld=ld, font=False)
-
-    def printTotals(self, cw, ld, ica, iva):
-        tot = [0, 0, iva.work, ica.work]
-        if iva.work:
-            tot[0] = float(ASD(ica.work) - ASD(iva.work))
-        else:
-            tot[1] = ica.work
-        self.fpdf.drawText(x=32*cw, y=33.2*ld, txt=CCD(tot[0],"SD",13.2).disp)
-        self.fpdf.drawText(x=56*cw, y=33.2*ld, txt=CCD(tot[1],"SD",13.2).disp)
-        self.fpdf.drawText(x=78*cw, y=33.2*ld, txt=CCD(tot[2],"SD",13.2).disp)
-        self.fpdf.drawText(x=103*cw, y=33.2*ld, txt=CCD(tot[3],"SD",13.2).disp)
-
-    def doPrint(self):
-        if not self.fpdf.page:
-            return
-        if self.df.repeml[1] == "Y":
-            self.df.repeml[2] = self.emadd.work
-            key = "%s_%s_%s" % (self.opts["conum"], self.chain, self.acno)
-        else:
-            key = "%s_all_all" % self.opts["conum"]
-        pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
-            self.__class__.__name__, key, ext="pdf")
-        self.fpdf.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header="%s Invoice" % self.opts["conam"], repprt=self.df.repprt,
-            fromad=self.fromad, repeml=self.df.repeml)
 
     def doExit(self):
         self.df.closeProcess()

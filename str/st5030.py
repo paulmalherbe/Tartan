@@ -143,7 +143,7 @@ class st5030(object):
                 ["d", "NA", 10,   "U.O.I",        "y"],
                 ["e", "NA",  8,   "Bin-Loc",      "y"],
                 ["f", "SD", 12.2, "File-Cost",    "y"],
-                ["g", "UD", 12.2, "Stkt-Cost",    "y"],
+                ["g", "SD", 12.2, "Stkt-Cost",    "y"],
                 ["h", "SD", 12.2, "File-Qty",     "y"],
                 ["i", "SD", 12.2, "Stkt-Qty",     "y"],
                 ["j", "SD", 12.2, "Qty-Diff",     "y"],

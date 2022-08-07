@@ -70,7 +70,6 @@ class tb1020(object):
                 else:
                     sql.updRec("verupd", data=[self.opts["ver"], self.sysdtw])
                 self.dbm.commitDbase()
-            self.doFixAge()
             self.doFinal()
             if self.dbm.dbase == "SQLite":
                 self.dbm.commitDbase()
@@ -392,6 +391,8 @@ class tb1020(object):
                         new = 4
                     elif self.table == "bwlctl" and nam == "ctb_tplnam":
                         new = "comp_cards"
+                    elif self.table == "bwldrm" and nam == "bdm_dedit":
+                        new = "N"
                     elif self.table == "bwlgme" and nam == "bcg_sfor":
                         new = old[olddic["bcg_shots_for"][0]]
                     elif self.table == "bwlgme" and nam == "bcg_sagt":
@@ -451,7 +452,7 @@ class tb1020(object):
                     cmd = "Insert into %s (%s) values %s" % (
                                         self.table, clm, tft)
                     sql.sqlRec((cmd, dat))
-                    #self.dbm.commitDbase()
+                    self.dbm.commitDbase()
             if pbar:
                 p2.closeProgress()
             # Update Report Writer for missing columns
@@ -641,33 +642,6 @@ class tb1020(object):
         if table in datdic:
             for dat in datdic[table]:
                 sql.insRec(table, data=dat)
-
-    def doFixAge(self):
-        if self.opts["mf"] and self.opts["mf"].window:
-            spl = SplashScreen(self.opts["mf"].body,
-                "Checking Age Records\n\nPlease Wait")
-            self.opts["mf"].updateStatus("Checking Age Records")
-        elif self.opts["bar"]:
-            print("Checking Age Records .... Please Wait")
-        for sss in ("crs", "drs"):
-            sql = Sql(self.dbm, ["%smst" % sss, "%sage" % sss], prog=__name__)
-            if sss == "drs":
-                col = ["dra_cono", "dra_chain", "dra_acno"]
-                grp = "dra_cono, dra_chain, dra_acno"
-            else:
-                col = ["cra_cono", "cra_acno"]
-                grp = "cra_cono, cra_acno"
-            recs = sql.getRec("%sage" % sss, cols=col, group=grp)
-            for rec in recs:
-                whr = []
-                for n, c in enumerate(col):
-                    whr.append((c.replace("a_", "m_"), "=", rec[n]))
-                if not sql.getRec("%smst" % sss, where=whr):
-                    sql.delRec("%sage" % sss, cols=col, data=rec)
-            self.dbm.commitDbase()
-        if self.opts["mf"] and self.opts["mf"].window:
-            self.opts["mf"].updateStatus("")
-            spl.closeSplash()
 
     def doFinal(self):
         chg = False

@@ -54,7 +54,7 @@ class dr3060(object):
             "Fax-Number", "Contact Details", "Deliver", "Rep", "Act", "Typ",
             "P", "Rft", "C-Limit"]
         self.forms = [("UI", 3), ("NA", 7), ("NA", 30), ("NA", 30),
-            ("NA", 4), ("NA", 12), ("NA", 12), ("NA", 40), ("Na", 7),
+            ("NA", 4), ("NA", 12), ("NA", 12), ("TX", 50), ("Na", 7),
             ("Na", 3), ("UA", 3), ("UA", 3), ("UI", 1), ("UI", 3),
             ("UI", 3), ("UI", 7)]
         return True
@@ -243,7 +243,10 @@ class dr3060(object):
         else:
             contact = dat[col.index("drm_sls")]
             email = dat[col.index("drm_sls_email")].split(",")
-        nameml = CCD("%s <%s>" % (contact, email[0]), "NA", 40)
+        if self.df.repprt[2] == "export":
+            nameml = CCD("%s <%s>" % (contact, email[0]), "TX", 50)
+        else:
+            nameml = CCD(contact, "NA", 40)
         delv = CCD(dat[col.index("drm_delivery")], "Na", 7)
         rep = CCD(dat[col.index("drm_rep")], "Na", 3)
         bact = CCD(dat[col.index("drm_bus_activity")], "UA", 3)

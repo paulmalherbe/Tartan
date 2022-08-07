@@ -335,6 +335,7 @@ class st2010(object):
             return "Invalid Account, Redundant"
         self.acno = w
         self.name = self.crsmst[self.sql.crsmst_col.index("crm_name")]
+        self.vatn = self.crsmst[self.sql.crsmst_col.index("crm_vatno")]
         self.df.loadEntry(frt, pag, p+1, data=self.name)
 
     def doOrdBy(self, frt, pag, r, c, p, i, w):
@@ -365,11 +366,12 @@ class st2010(object):
                 self.ordno = CCD((int(ordno[0]) + 1), "UI", 9).work
                 self.othno = CCD((int(ordno[0]) + 1), "Na", 9).work
             self.df.loadEntry(self.df.frt, self.df.pag, 1, data=self.ordno)
-            # Create Document Transaction (Head)
+            # Create Document Transaction (Header)
             self.dad1, self.dad2, self.dad3, self.dad4 = "", "", "", ""
             data = [self.opts["conum"], self.ordno, self.loc, self.trdt,
-                self.acno, self.dad1, self.dad2, self.dad3, self.dad4, "", "",
-                "", "", self.ordby, "", "", 0, self.opts["capnm"], self.sysdtw]
+                self.acno, self.dad1, self.dad2, self.dad3, self.dad4, "",
+                "", "", self.vatn, self.ordby, "", "", 0, self.opts["capnm"],
+                self.sysdtw]
             # Write and Commit Header
             self.sql.insRec("strpom", data=data)
             self.opts["mf"].dbm.commitDbase()
@@ -387,7 +389,7 @@ class st2010(object):
                     repprt=self.pr.repprt, repeml=self.pr.repeml,
                     copy=self.acttyp.lower())
                 self.df.setWidget(self.df.mstFrame, state="show")
-                # Update Deletetion
+                # Update Deletion
                 self.sql.updRec("strpom", cols=["pom_delno"], data=["cancel"],
                     where=[("pom_cono", "=", self.opts["conum"]), ("pom_ordno",
                     "=", self.ordno)])
@@ -945,6 +947,7 @@ class st2010(object):
                 where=[("pom_cono", "=", self.opts["conum"]), ("pom_ordno",
                 "=", self.ordno), ("pom_acno", "=", self.acno)])
             self.opts["mf"].dbm.commitDbase()
+        self.doClearTots()
         self.df.focusField("T", 0, 1)
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

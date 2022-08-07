@@ -124,6 +124,7 @@ class cs2020(object):
                 else:
                     auto = 1
                 refno = "CS%07d" % auto
+                batno = "CSHMRGE"
                 ttyp = rec[self.sql.cshana_col.index("can_type")]
                 iamnt = rec[self.sql.cshana_col.index("can_incamt")]
                 vamnt = rec[self.sql.cshana_col.index("can_vatamt")]
@@ -137,8 +138,8 @@ class cs2020(object):
                 acno = rec[self.sql.cshana_col.index("can_code")]
                 trdt = rec[self.sql.cshana_col.index("can_trdt")]
                 curdt = int(trdt / 100)
-                data.extend([acno, curdt, trdt, 4, refno, "CSHMRGE",
-                    eamnt, vamnt, "Cash Analysis", vcod])
+                data.extend([acno, curdt, trdt, 4, refno, batno, eamnt,
+                    vamnt, "Cash Analysis", vcod])
                 data.extend(["", 0, self.opts["capnm"], self.sysdt])
                 self.sql.insRec("gentrn", data=data)
                 # VAT Control
@@ -159,7 +160,7 @@ class cs2020(object):
                     data.append("O")
                 else:
                     data.append("I")
-                data.extend([curdt, "G", 4, "CSHMRG", refno, trdt, acno,
+                data.extend([curdt, "G", 4, batno, refno, trdt, acno,
                     "Cash Analysis", eamnt, vamnt, 0, self.opts["capnm"],
                     self.sysdt])
                 self.sql.insRec("ctlvtf", data=data)

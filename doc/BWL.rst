@@ -103,7 +103,7 @@ The following *Buttons* are available:
     + **Team Size** - The preferred number of players per team.
     + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
     + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If 7 rinks are available this must be entered as A1234567,B etc. If there are more rinks available than needed, end rinks will be removed.
-+ **View/Edit Draw** - Use this button to view the draw and/or manually change it i.e. move players between teams or replace players with new players.
++ **View/Edit Draw** - Use this button to view the draw and/or manually change it i.e. move players between teams, replace players with new players or delete players from the draw.
 + **Print** - Use this button to print a draw.
     + **Print Cards** - Select whether to print score cards.
         + **Heading** - Enter the heading to be printed on the score cards.
@@ -188,7 +188,7 @@ The following *Buttons* are available:
     + **Apply History** - Whether or not to take previous draws into consideration when making the current draw.
     + **Competitors** - The preferred number of players per game.
     + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If 7 rinks are available this must be entered as A1234567,B etc. If there are more rinks available than needed, end rinks will be removed.
-+ **View** - Use this button to view the draw and/or manually change it i.e. move players between teams or replace players with new players.
++ **View** - Use this button to view the draw.
 + **Print** - Use this button to print a draw.
     + **Cash Takings Sheet** - Print a cash takings sheet.
 + **Exit** - Use this button to exit the program. If the draw has not yet been done you will be prompted to confirm exiting.

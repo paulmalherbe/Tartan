@@ -37,7 +37,7 @@ class bc3020(object):
             self.opts["mf"].startLoop()
 
     def setVariables(self):
-        self.sql = Sql(self.opts["mf"].dbm, ["bwldrm", "bwldrt", "bwltab"],
+        self.sql = Sql(self.opts["mf"].dbm, ["bwldrt", "bwltab"],
             prog=self.__class__.__name__)
         if self.sql.error:
             return

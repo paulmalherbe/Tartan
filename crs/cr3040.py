@@ -111,7 +111,7 @@ class cr3040(object):
                 break
             acno = CCD(rec[0], "NA", 7)
             name = CCD(rec[1], "NA", 30)
-            col, recs = getTrn(self.opts["mf"].dbm, "crs", dte=self.curdt,
+            col, recs = getTrn(self.opts["mf"].dbm, "crs", cdt=self.curdt,
                 whr=[("crt_cono", "=", self.opts["conum"]), ("crt_acno", "=",
                 acno.work)], zer="N")
             if not recs:

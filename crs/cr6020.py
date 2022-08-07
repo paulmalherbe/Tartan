@@ -33,10 +33,8 @@ class cr6020(object):
         self.opts = opts
         if self.setVariables():
             if "args" in opts:
-                self.curdt = opts["args"][0]
-                for self.acno in opts["args"][1]:
+                for self.acno in opts["args"]:
                     self.doReAgeAuto()
-                self.opts["mf"].dbm.commitDbase()
             else:
                 self.dataHeader()
                 self.opts["mf"].startLoop()
@@ -69,11 +67,9 @@ class cr6020(object):
                 ("crm_cono", "=", self.opts["conum"]),
                 ("crm_stat", "<>", "X")]}
         fld = [
-            [["T",0,0,0],"ID2",7,"Period","Current Financial Period",
-                self.curdt,"N",self.doCurdt,None,None,("efld",)],
-            [["T",0,1,0],"INA",7,"Acc-Num","Account Number",
-                "","N",self.doAccno,crm,None,("notblank",)],
-            [["T",0,1,0],"ONA",30,"Name"]]
+            [["T",0,0,0],"INA",7,"Acc-Num","Account Number",
+                "","Y",self.doAccno,crm,None,("notblank",)],
+            [["T",0,0,0],"ONA",30,"Name"]]
         tnd = ((self.endTop, "n"),)
         txt = (self.exitTop,)
         self.but = (
@@ -85,9 +81,6 @@ class cr6020(object):
                 "Automatically Re-Age the Account Based on Date"))
         self.df = TartanDialog(self.opts["mf"], eflds=fld, tend=tnd,
             txit=txt, butt=self.but)
-
-    def doCurdt(self, frt, pag, r, c, p, i, w):
-        self.curdt = w
 
     def doAccno(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("crsmst", cols=["crm_name", "crm_stat"],
@@ -182,9 +175,8 @@ class cr6020(object):
                 acno=self.acno, pbar=None)
 
     def endTop(self):
-        self.df.clearEntry("T", 0, 2)
-        self.df.clearEntry("T", 0, 3)
-        self.df.focusField("T", 0, 2)
+        self.df.clearFrame("T", 0)
+        self.df.focusField("T", 0, 1)
 
     def exitTop(self):
         self.opts["mf"].dbm.commitDbase(ask=True)

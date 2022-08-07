@@ -447,6 +447,8 @@ class bc1010(object):
         self.opts["mf"].dbm.commitDbase()
 
     def doConvert(self):
+        if self.tab < self.nstart:
+            return
         titl = "Enter Member's Tab Number"
         ent = SimpleDialog(parent=self.df.window, title=titl,
             cols=(("a", "Tab Number          ", 6, "UI", "Tab"),))

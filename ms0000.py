@@ -24,6 +24,24 @@ COPYING
 """
 
 import getpass, gc, glob, io, os, platform, shutil, sys, time
+try:
+    # Check that required modules are installed
+    from tartanWork import pymoda
+except:
+    print("tartanWork cannot be imported")
+    sys.exit(0)
+errs = []
+for mod in pymoda:
+    if len(mod) == 4 and sys.platform != mod[3]:
+        continue
+    try:
+        mod = __import__(mod[0])
+    except:
+        errs.append(mod[1])
+if errs:
+    for err in errs:
+        print("%-16s: Not Installed" % err)
+    sys.exit(0)
 from TartanClasses import Dbase, ViewPDF, FileDialog, FITZ, GUI, GetCtl
 from TartanClasses import MainFrame, MakeManual, MkWindow, PwdConfirm
 from TartanClasses import ScrollText, SelectChoice, SplashScreen, Sql
@@ -32,7 +50,7 @@ from tartanFunctions import askQuestion, askChoice, b64Convert, chkMod
 from tartanFunctions import copyList, dateDiff, httpDownload, getPeriods
 from tartanFunctions import getPrgPath, loadRcFile, projectDate
 from tartanFunctions import runModule, showError, showException, showInfo
-from tartanWork import allsys, tabdic, tarmen
+from tartanWork import allsys, pymodb, tabdic, tarmen
 try:
     from send2trash import send2trash
     TRASH = True
@@ -45,7 +63,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 8)
+    VERSION = (6, 9)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -61,6 +79,7 @@ class ms0000(object):
             ("help", False),
             ("itoggle", False),
             ("loader", False),
+            ("imods", False),
             ("output", False),
             ("program", None),
             ("query", None),
@@ -93,6 +112,8 @@ class ms0000(object):
                 self.itoggle = True
             elif o in ("-l", "--loader"):
                 self.loader = True
+            elif o in ("-m", "--imods"):
+                self.imods = True
             elif o in ("-o", "--output"):
                 self.output = True
             elif o in ("-p", "--program"):
@@ -178,6 +199,7 @@ Options:
             -h, --help              This Help Message
             -i, --image             Toggle the Tartan image option.
             -l, --loader            Try and remove module before importing
+            -m, --imods             Try to install missing modules using pip
             -o, --output            Toggle stdout redirection to stdout.txt
             -P, --pdf=              View a pdf file using built in viewer
             -p, --program=          Execute program directly bypassing the menu
@@ -200,25 +222,36 @@ Options:
             elif not self.user:
                 print("xdisplay False but No User Name")
                 self.doExit(dbm=False)
+        if self.imods:
+            # Import/Upgrade All modules
+            if getattr(sys, 'frozen', False):
+                print("Tartan is frozen, Upgrades not Possible.")
+                sys.exit()
+            try:
+                # Upgrade pip
+                from subprocess import check_call as chke
+                import importlib.util as chki
+                if chki.find_spec("pip") is None:
+                    raise Exception("pip Not Found")
+                cmd = [sys.executable, "-m", "pip", "install", "-qU"]
+                chke(cmd + ["pip"])
+                # Install and or Install all modules
+                for mod in pymoda + pymodb:
+                    if len(mod) == 4 and sys.platform != mod[3]:
+                        continue
+                    print("Installing/Upgrading", mod[1])
+                    try:
+                        chke(cmd + [mod[1]])
+                    except:
+                        raise Exception("Module %s Not Found" % mod[1])
+            except Exception as err:
+                print(err)
+            sys.exit()
         # Check that required modules are installed
-        mods = [
-            ("fpdf", "fpdf", "__version__"),
-            ("PIL", "pillow", "__version__"),
-            ("fitz", "pymupdf", "version")]
-        if sys.platform == "win32":
-            mods.append(("win32api", "pywin32", None))
-        if not self.version:
-            errs = False
-            if self.xdisplay and not GUI:
-                errs = True
-                print("Tkinter/ttk not Available or Installed")
-            for mod in mods:
-                if not chkMod(mod[0]):
-                    errs = True
-                    print("%-16s: Not Installed" % mod[1])
-            if errs:
-                self.doExit(dbm=False)
-        else:
+        if not self.version and self.xdisplay and not GUI:
+            print("Tkinter/ttk not Available or Installed")
+            self.doExit(dbm=False)
+        elif self.version:
             # Print/Display all dependancies
             nm = platform.uname()
             print("%-16s: %s" % ("Tartan", self.cv[1]))
@@ -231,26 +264,9 @@ Options:
             from TartanClasses import tk
             print("%-16s: %s" % ("tcl/tk",
                 tk.Tcl().eval("info patchlevel")))
-            mods.extend([
-                ("sqlite3", "pysqlite", "version"),
-                ("sqlite3", "sqlite3", "sqlite_version"),
-                ("markdown", "markdown", "__version__"),
-                ("ofxtools", "ofxtools", "__version__"),
-                ("openpyxl", "openpyxl", "__version__"),
-                ("progress", "progress", "__version__"),
-                ("psycopg2", "psycopg2", "__version__"),
-                ("pyaes", "pyaes", "VERSION"),
-                ("pygal", "pygal", "__version__"),
-                ("Crypto", "pycryptodome", "__version__"),
-                ("pyexcel_ods", "pyexcel-ods", "__version__"),
-                ("pyexcel_xls", "pyexcel-xls", "__version__"),
-                ("smb", "pysmb", None),
-                ("requests", "requests", "__version__"),
-                ("send2trash", "send2trash", None),
-                ("svglib", "svglib", ("svglib", "__version__")),
-                ("tkcolorpicker", "tkcolorpicker", None),
-                ("tkinterhtml", "tkinterhtml", None)])
-            for mod in mods:
+            for mod in pymoda + pymodb:
+                if len(mod) == 4 and sys.platform != mod[3]:
+                    continue
                 ver = chkMod(mod[0])
                 if not ver:
                     print("%-16s: Not Installed" % mod[1])
@@ -408,6 +424,7 @@ Options:
             mods = copyList(self.usrmod)
             mods.append(["PNNN", "mm_sy", "tb1010", 9, "Amend Tables"])
             mods.append(["PNNN", "mm_sy", "tb1030", 9, "Edit Tables"])
+            mods.append(["PNNN", "mm_sy", "tb1050", 9, "Delete Trans"])
             mods.append(["PNNN", "mm_sy", "tb3010", 9, "Print Tables"])
             found = False
             for mod in mods:
@@ -955,7 +972,7 @@ System --> Change Password""")
         return self.pwderr
 
     def doPGet(self, frt, pag, r, c, p, i, w):
-        if w != b64Convert("decode", self.mpwd):
+        if w not in (b64Convert("decode", self.mpwd), self.mf.override):
             return "Invalid Password"
         self.pwderr = False
 
@@ -1909,9 +1926,9 @@ if __name__ == "__main__":
     # Load options
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-            "ab:c:de:f:hiklnoP:p:q:R:r:s:t:u:vxz", [
+            "ab:c:de:f:hiklmnoP:p:q:R:r:s:t:u:vxz", [
             "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
-            "help", "image", "loader", "output", "pdf=", "program=",
+            "help", "image", "loader", "imods", "output", "pdf=", "program=",
             "query=", "rcfdir=", "rcfile=", "script=", "tcode=",
             "user=", "version", "xdisplay", "zerobar"])
     except:

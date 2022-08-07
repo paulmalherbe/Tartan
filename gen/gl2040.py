@@ -577,7 +577,7 @@ class gl2040(object):
                 "Reference Number, Transaction Date, Company Number, "\
                 "Account Number, Transaction Amount, V.A.T. Code, "\
                 "V.A.T. Amount, Details. If there is a VAT Code with "\
-                "no VAT Amount, it will be Calculated."),
+                "Zero VAT Amount, it will be Calculated."),
             ("View Entries",lst,None,0,("C",1,1),("C",1,2)),
             ("End Batch",None,self.exitPage,0,("C",1,1),("C",1,2)),
             ("Abort Batch",None,self.doAbort,1,None,None)]

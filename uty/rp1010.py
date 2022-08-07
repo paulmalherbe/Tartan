@@ -455,6 +455,16 @@ class rp1010(object):
                 self.df.clearLine(pag)
                 return "xt"
             else:
+                err = False
+                for t in self.df.c_work[pag]:
+                    if not t[1]:
+                        break
+                    elif t[1] == tab:
+                        err = True
+                if err:
+                    showError(self.opts["mf"].body, "Error",
+                        "Table Already Exists")
+                    return "xt"
                 self.df.loadEntry(frt, pag, p+1, data=tab)
                 dsc = self.doGetTableDesc(tab)
                 self.df.loadEntry(frt, pag, p+2, data=dsc)
@@ -1292,6 +1302,10 @@ class rp1010(object):
             if not exc[1]:
                 break
             c = exc[1]
+            if self.opts["mf"].dbm.dbase == "PgSQL":
+                if c.count("drt_ref1 = si1_docno") or \
+                        c.count("si1_docno = drt_ref1"):
+                    c = c.replace("si1_docno", "format('%9s', si1_docno)")
             v = c.split("(v)")
             for x in range(1, len(v)):
                 n = int(v[x][:1])

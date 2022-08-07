@@ -75,9 +75,9 @@ class dr3050(object):
             "cols": (
                 ("dtp_code", "", 0, "Cod"),
                 ("dtp_desc", "", 0, "Description", "Y"))}
-        r1s = (("Agedt","A"),("Curdt","C"))
-        r2s = (("Yes","Y"),("No","N"))
-        r3s = (("Yes","Y"),("No","N"),("Only","O"))
+        r1s = (("Agedt","A"), ("Curdt","C"))
+        r2s = (("Yes","Y"), ("No","N"))
+        r3s = (("Yes","Y"), ("No","N"), ("Only","O"))
         if "args" in self.opts and "noprint" in self.opts["args"]:
             var = self.opts["args"]["work"][0]
             view = None
@@ -88,7 +88,9 @@ class dr3050(object):
             mail = ("Y","N")
         fld = (
             (("T",0,0,0),("IRB",r1s),0,"Base","",
-                var[0],"Y",self.doBase,None,None,None),
+                var[0],"Y",self.doBase,None,None,None,None,
+                """Agedt: Produce a report based on Ageing Period
+Curdt: Produce a report based on Financial Period"""),
             (("T",0,1,0),"ID2",7,"Cut-Off Period","",
                 int(self.sysdtw / 100),"N",self.doCutOff,None,None,None),
             (("T",0,2,0),("IRB",r2s),0,"Totals Only","",

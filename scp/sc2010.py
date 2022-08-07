@@ -90,7 +90,7 @@ class sc2010(object):
             "butt": [
                 ("Delete", self.doDelete, True),
                 ("Print All", self.doPrint)]}
-        r1s = (("Male","M"), ("Female","F"), ("Both","B"))
+        r1s = (("Male","M"), ("Female","F"), ("Mixed","B"))
         r2s = (("Fours","4"), ("Trips","3"), ("Pairs","2"), ("Singles","1"))
         r3s = (("Knockout","K"), ("Round-Robin","R"))
         fld = (

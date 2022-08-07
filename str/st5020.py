@@ -248,9 +248,9 @@ class st5020(object):
             (("C",0,0,3),"ONA",10,"U.O.I"),
             (("C",0,0,4),"OUA",8,"Bin")])
         if self.costs == "N":
-            fld.append((("C",0,0,5),"OUD",9.2,"Unit-Cost"))
+            fld.append((("C",0,0,5),"OSD",9.2,"Unit-Cost"))
         else:
-            fld.append((("C",0,0,5),"IUD",9.2,"Unit-Cost","",
+            fld.append((("C",0,0,5),"ISD",9.2,"Unit-Cost","",
                 "","N",self.doUcost,None,None,("efld",)))
         fld.append((("C",0,0,6),"ISD",9.2,"Quantity","",
                 "","N",self.doQty,None,None,("efld",)))

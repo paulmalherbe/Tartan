@@ -121,10 +121,10 @@ def cutpasteMenu(event):
 
 def getPrgPath():
     import os, sys
-    prgdir = os.path.realpath(sys.path[0])
-    if not os.path.isdir(prgdir):
-        prgdir = os.path.dirname(prgdir)
-    return prgdir
+    if getattr(sys, "frozen", False):
+        return sys._MEIPASS
+    else:
+        return os.path.dirname(os.path.abspath(__file__))
 
 def showDialog(screen, dtype, title, mess, butt=None, dflt=None):
     try:
@@ -603,12 +603,10 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
     # Email Document
     sp = None
     if repeml and repeml[1] == "Y" and repeml[2]:
-        ok = None
         try:
             dbm = Dbase(mf.rcdic)
             if dbm.err:
-                ok = "DB-ERR"
-                raise Exception
+                raise Exception("Database Error")
             dbm.openDbase()
             sql = Sql(dbm, tables=["ctlsys", "ctlmst", "emllog"])
             if not conum:
@@ -655,45 +653,43 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
                     subj = header
                 else:
                     subj = "PDF Report"
-            while not ok:
-                if splash:
-                    sp = SplashScreen(mf.window.focus_displayof(),
-                        "E-Mailing the Report to:\n\n%s\n\nPlease Wait....." %
-                        toad[0])
-                if not attach or not attach[0]:
-                    att = [pdfnam]
-                else:
-                    att = [pdfnam] + copyList(attach)
-                ok = sendMail(smtp[0:6], fromad, toad, subj, mess, attach=att,
-                    wrkdir=mf.rcdic["wrkdir"])
-                if splash:
-                    sp.closeSplash()
-                if not ok:
-                    if skip:
-                        ok = "SKIPPED"
-                    else:
-                        ok = askQuestion(mf.window.focus_displayof(),
-                            "E-Mail Error", "Problem Delivering This "\
-                            "Message.\n\nTo: %s\nSubject: %s\n\nWould "\
-                            "You Like to Retry?" % (toad, subj))
-                        if ok == "yes":
-                            ok = None
+            if not attach or not attach[0]:
+                att = [pdfnam]
+            else:
+                att = [pdfnam] + copyList(attach)
+            for eml in toad:
+                ok = False
+                while not ok:
+                    if splash:
+                        sp = SplashScreen(mf.window.focus_displayof(),
+                            "E-Mailing the Report to:\n\n%s\n\nPlease Wait.." %
+                            eml)
+                    ok = sendMail(smtp[0:6], fromad, eml, subj, mess,
+                        attach=att, wrkdir=mf.rcdic["wrkdir"])
+                    if splash:
+                        sp.closeSplash()
+                    if not ok:
+                        if skip:
+                            ok = "SKIPPED"
                         else:
-                            ok = "FAILED"
-                else:
-                    ok = "OK"
+                            ok = askQuestion(mf.window.focus_displayof(),
+                                "E-Mail Error", "Problem Delivering This "\
+                                "Message.\n\nTo: %s\nSubject: %s\n\nWould "\
+                                "You Like to Retry?" % (toad[0], subj))
+                            if ok == "yes":
+                                ok = False
+                            else:
+                                ok = "FAILED"
+                    else:
+                        ok = "OK"
+                try:
+                    sql.insRec("emllog", data=[fromad.strip(), eml, subj,
+                        "%04i-%02i-%02i %02i:%02i" % time.localtime()[0:5], ok])
+                except:
+                    pass
         except Exception as err:
             showException(mf.window.focus_displayof(), mf.rcdic["wrkdir"],
                 "E-Mail Error\n\n%s" % err)
-            if not ok:
-                ok = "UNKNOWN"
-        # Try and Log the email status into table emllog
-        for add in toad:
-            try:
-                sql.insRec("emllog", data=[fromad.strip(), add.strip(), subj,
-                    "%04i-%02i-%02i %02i:%02i" % time.localtime()[0:5], ok])
-            except:
-                pass
         try:
             dbm.commitDbase()
             dbm.closeDbase()
@@ -845,6 +841,8 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
         for word in words:
             if not subj:
                 subj = word[0].upper() + word[1:].lower()
+            elif word.startswith("RCI"):
+                subj = "%s %s" % (subj, word)
             else:
                 subj = "%s %s" % (subj, word[0].upper() + word[1:].lower())
         return subj
@@ -961,18 +959,12 @@ def mthendDate(date):
     """
     Function to return the month-end date of a date
     """
-    from tartanWork import mthnam
+    import calendar
 
     yy = int(date / 10000)
     mm = int((date % 10000) / 100)
-    if mm == 2:
-        if not yy % 4:
-            dd = 29
-        else:
-            dd = 28
-    else:
-        dd = mthnam[mm][2]
-    return (yy * 10000) + (mm * 100) + dd
+    dy = calendar.monthrange(yy, mm)[1]
+    return int((yy * 10000) + (mm * 100) + dy)
 
 def projectDate(date, period, typ="days"):
     """
@@ -1151,35 +1143,51 @@ def getPrinters(wrkdir=".", donly=False):
                 from win32print import EnumPrinters
                 lst = EnumPrinters(2)
                 for l in lst:
-                    if l[2].strip() not in data:
-                        data.append(l[2].strip())
+                    if l[2] not in data:
+                        data.append(l[2])
         else:
-            # Get the default printer
-            proc = subprocess.Popen("lpstat -d", shell=True, bufsize=0,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, close_fds=True)
-            prt = proc.stdout.readline()
-            if type(prt) == bytes:
-                prt = prt.decode("utf-8")
-            dflt = prt.strip().split(":")
-            if len(dflt) != 2:
-                raise Exception("No Default Printer")
-            dflt = dflt[1].strip()
-            if not donly:
-                if dflt:
-                    data.append(dflt)
-                proc = subprocess.Popen("lpstat -a", shell=True, bufsize=0,
+            try:
+                # Use pycups
+                import cups
+                conn = cups.Connection()
+                # Get the default printer
+                dflt = conn.getDefault()
+                if not donly:
+                    if dflt:
+                        data.append(dflt)
+                    lst = conn.getPrinters()
+                    for l in lst:
+                        if lst[l]["printer-state"] == 3 and l not in data:
+                            data.append(l)
+            except:
+                # Use lpstat
+                # Get the default printer
+                proc = subprocess.Popen("lpstat -d", shell=True, bufsize=0,
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE, close_fds=True)
-                lst = proc.stdout.readlines()
-                for l in lst:
-                    if type(l) == bytes:
-                        l = l.decode("utf-8")
-                    l = l.rstrip().replace('"', "").replace("'", "")
-                    if l.count("accepting requests"):
-                        p = l.split()
-                        if p[0].strip() not in data:
-                            data.append(p[0].strip())
+                prt = proc.stdout.readline()
+                if type(prt) == bytes:
+                    prt = prt.decode("utf-8")
+                dflt = prt.strip().split(":")
+                if len(dflt) != 2:
+                    dflt = None
+                else:
+                    dflt = dflt[1].strip()
+                if not donly:
+                    if dflt:
+                        data.append(dflt)
+                    proc = subprocess.Popen("lpstat -a", shell=True, bufsize=0,
+                        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE, close_fds=True)
+                    lst = proc.stdout.readlines()
+                    for l in lst:
+                        if type(l) == bytes:
+                            l = l.decode("utf-8")
+                        l = l.rstrip().replace('"', "").replace("'", "")
+                        if l.count("accepting requests"):
+                            p = l.split()
+                            if p[0].rstrip() not in data:
+                                data.append(p[0].rstrip())
     except Exception as err:
         data = []
         dflt = None
@@ -1209,14 +1217,14 @@ def removeFunctions(nam, dec=0):
     nam = nam.replace(")", "")
     return(nam.strip())
 
-def getTrn(dbm, sys, dte=None, jon=None, whr=None, odr=None, neg=True, zer="Y", lim=None):
+def getTrn(dbm, sys, cdt=None, jon=None, whr=None, odr=None, neg=True, zer="Y", lim=None):
     """
     This function returns a list of column names and a list of lists of data.
 
     sys = crs - Creditor's Ledger
           drs - Debtor's Ledger
           mem - Member's Ledger
-    dte = A cut-off curdt period where any transactions zeroed before this
+    cdt = A cut-off curdt period where any transactions zeroed before this
           period will not be returned.
     jon = An addition to the join statement e.g. "cra_curdt <= 200612"
     whr = A list of tuples of where statements e.g. [("drt_cono", "=", 7)]
@@ -1227,47 +1235,47 @@ def getTrn(dbm, sys, dte=None, jon=None, whr=None, odr=None, neg=True, zer="Y", 
     """
     from TartanClasses import ASD, Sql
     if sys == "crs":
-        tab = "crstrn"
+        tab = ["crstrn", "crsage"]
         sql = Sql(dbm, tab, prog=__name__)
         col = copyList(sql.crstrn_col)
         join = "left outer join crsage on cra_cono=crt_cono and "\
             "cra_acno=crt_acno and cra_type=crt_type and cra_ref1=crt_ref1"
-        if dte:
+        if cdt:
             if whr:
-                whr.append(("crt_curdt", "<=", dte))
+                whr.append(("crt_curdt", "<=", cdt))
             else:
-                whr = [("crt_curdt", "<=", dte)]
-            join = "%s and cra_curdt <= %s" % (join, dte)
+                whr = [("crt_curdt", "<=", cdt)]
+            join = "%s and cra_curdt <= %s" % (join, cdt)
         if jon:
             join = "%s and %s" % (join, jon)
     elif sys == "drs":
-        tab = "drstrn"
+        tab = ["drstrn", "drsage"]
         sql = Sql(dbm, tab, prog=__name__)
         col = copyList(sql.drstrn_col)
         join = "left outer join drsage on dra_cono=drt_cono and "\
             "dra_chain=drt_chain and dra_acno=drt_acno and "\
             "dra_type=drt_type and dra_ref1=drt_ref1"
-        if dte:
+        if cdt:
             if whr:
-                whr.append(("drt_curdt", "<=", dte))
+                whr.append(("drt_curdt", "<=", cdt))
             else:
-                whr = [("drt_curdt", "<=", dte)]
-            join = "%s and dra_curdt <= %s" % (join, dte)
+                whr = [("drt_curdt", "<=", cdt)]
+            join = "%s and dra_curdt <= %s" % (join, cdt)
         if jon:
             join = "%s and %s" % (join, jon)
     elif sys == "mem":
-        tab = "memtrn"
+        tab = ["memtrn", "memage"]
         sql = Sql(dbm, tab, prog=__name__)
         col = copyList(sql.memtrn_col)
         join = "left outer join memage on mta_cono=mlt_cono and "\
             "mta_memno=mlt_memno and mta_type=mlt_type and "\
             "mta_refno=mlt_refno"
-        if dte:
+        if cdt:
             if whr:
-                whr.append(("mlt_curdt", "<=", dte))
+                whr.append(("mlt_curdt", "<=", cdt))
             else:
-                whr = [("mlt_curdt", "<=", dte)]
-            join = "%s and mta_curdt <= %s" % (join, dte)
+                whr = [("mlt_curdt", "<=", cdt)]
+            join = "%s and mta_curdt <= %s" % (join, cdt)
         if jon:
             join = "%s and %s" % (join, jon)
     else:
@@ -1278,20 +1286,20 @@ def getTrn(dbm, sys, dte=None, jon=None, whr=None, odr=None, neg=True, zer="Y", 
     grp = grp[:-2]
     if sys == "crs":
         col.append("max(cra_curdt)")
-        col.append("round(sum(cra_amnt), 2)")
+        col.append("sum(cra_amnt)")
         if not odr:
             odr = "crt_trdt, crt_type, crt_ref1"
     elif sys == "drs":
         col.append("max(dra_curdt)")
-        col.append("round(sum(dra_amnt), 2)")
+        col.append("sum(dra_amnt)")
         if not odr:
             odr = "drt_trdt, drt_type, drt_ref1"
     else:
         col.append("max(mta_curdt)")
-        col.append("round(sum(mta_amnt), 2)")
+        col.append("sum(mta_amnt)")
         if not odr:
             odr = "mlt_trdt, mlt_type, mlt_refno"
-    recs = sql.getRec(tables=tab, join=join, cols=col, where=whr, group=grp,
+    recs = sql.getRec(tab[0], join=join, cols=col, where=whr, group=grp,
         order=odr, limit=lim)
     col[-2] = "curdt"
     col[-1] = "paid"
@@ -1312,13 +1320,32 @@ def getTrn(dbm, sys, dte=None, jon=None, whr=None, odr=None, neg=True, zer="Y", 
         pay = rec[col.index("paid")]
         if pay is None:
             pay = 0.0
-            rec[col.index("paid")] = pay
+        if cdt:
+            if sys == "crs":
+                ccc = ["sum(cra_amnt)"]
+                whr = [("cra_cono", "=", rec[0]), ("cra_acno", "=", rec[1]),
+                    ("cra_atyp", "=", rec[2]), ("cra_aref", "=", rec[3]),
+                    ("cra_curdt", ">", cdt)]
+            elif cdt and sys == "drs":
+                ccc = ["sum(dra_amnt)"]
+                whr = [("dra_cono", "=", rec[0]), ("dra_chain", "=", rec[1]),
+                    ("dra_acno", "=", rec[2]), ("dra_atyp", "=", rec[3]),
+                    ("dra_aref", "=", rec[4]), ("dra_curdt", ">", cdt)]
+            elif cdt:
+                ccc = ["sum(mta_amnt)"]
+                whr = [("mta_cono", "=", rec[0]), ("mta_memno", "=", rec[1]),
+                    ("mta_atyp", "=", rec[2]), ("mta_aref", "=", rec[3]),
+                    ("mta_curdt", ">", cdt)]
+            mor = sql.getRec(tab[1], cols=ccc, where=whr, limit=1)
+            if mor[0]:
+                pay = float(ASD(pay) + ASD(mor[0]))
+        rec[col.index("paid")] = pay
         bal = float(ASD(amt) - ASD(pay))
         tot = float(ASD(tot) + ASD(bal))
         rec.append(bal)
         if bal or zer == "A":
             dat.append(rec)
-        elif zer == "Y" and (not dte or rec[col.index("curdt")] >= dte):
+        elif zer == "Y" and (not cdt or rec[col.index("curdt")] >= cdt):
             dat.append(rec)
     if not neg and tot < 0:
         return col, []
@@ -1460,7 +1487,7 @@ def chkGenAcc(mf, coy, acc, ctl=True, pwd=True):
             if not cf.pwd or cf.flag == "no":
                 return "%s Is A Control Account" % acc
         else:
-            return "%s Is A Control Account" % acc
+            return "%s Is an Integrated Control Account" % acc
     return rec
 
 def chkAggregate(fld):
@@ -2303,7 +2330,7 @@ def getFileName(path, wrkdir=None, check=False):
         if wrkdir:
             nam = os.path.join(wrkdir, os.path.basename(pth))
         else:
-            nam = os.path.basename(pth)
+            nam = os.path.join(os.getcwd(), os.path.basename(pth))
         if not os.path.exists(nam):
             fle = open(nam, "wb")
             con.retrieveFile(svr[3], pth, fle)
@@ -2544,20 +2571,22 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
     crw.append(("%s_tramt" % pfx, "<", 0))
     drw = whr[:]
     drw.append(("%s_tramt" % pfx, ">", 0))
+    tdt = "%s_trdt" % pfx
     cdt = "%s_curdt" % pfx
     amt = "%s_tramt" % pfx
-    cr = sql.getRec(tab, where=crw)             # Credit transactions
+    cr = sql.getRec(tab, where=crw, order=tdt)     # Credit transactions
     if cr:
-        dr = sql.getRec(tab, where=drw)         # Debit transactions
+        dr = sql.getRec(tab, where=drw, order=tdt) # Debit transactions
         if dr:
-            for cno, ctr in enumerate(cr):      # For each credit transaction
+            for cno, ctr in enumerate(cr):         # For each credit transaction
                 if pbar:
                     pbar.displayProgress()
-                ccdt = ctr[col.index(cdt)]      # Current period
-                cbal = ctr[col.index(amt)]      # Credit amount
-                camt = cbal                     # Amount to allocate
-                for dno, dtr in enumerate(dr):  # For each debit transaction
-                    dbal = dtr[col.index(amt)]  # Debit amount
+                ccdt = ctr[col.index(cdt)]         # Current period
+                cbal = ctr[col.index(amt)]         # Credit amount
+                camt = cbal                        # Amount to allocate
+                for dno, dtr in enumerate(dr):     # For each debit transaction
+                    dcdt = dtr[col.index(cdt)]     # Current period
+                    dbal = dtr[col.index(amt)]     # Debit amount
                     if not dbal:
                         continue
                     damt = float(ASD(dbal) + ASD(camt))
@@ -2578,7 +2607,10 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
                             data.append(dtr[col.index("%s_refno" % pfx)])
                         else:
                             data.append(dtr[col.index("%s_ref1" % pfx)])
-                        data.append(ccdt)
+                        if ccdt < dcdt:
+                            data.append(dcdt)
+                        else:
+                            data.append(ccdt)
                         data.append(ctr[col.index("%s_type" % pfx)])
                         data.append(ctr[col.index("%s_ref1" % pfx)])
                         data.extend([diff, 0])
@@ -2634,7 +2666,10 @@ def printPDF(prt, fle, cpy=1):
         for pge in fd:
             # Fitz
             buf = io.BytesIO()
-            rect = pge.MediaBox
+            try:
+                rect = pge.mediabox
+            except:
+                rect = pge.MediaBox
             siz = [int(rect[2]), int(rect[3])]
             mat = fitz.Matrix(4.16667, 4.16667)
             clp = fitz.Rect(0, 0, siz[0], siz[1])
@@ -2666,9 +2701,14 @@ def printPDF(prt, fle, cpy=1):
             del dcf
         win32print.ClosePrinter(hdl)
     else:
-        import subprocess
-        subprocess.Popen(["/usr/bin/lp", "-d%s" % prt, "-n%s" % cpy, fle],
-            stdout=subprocess.PIPE)
+        try:
+            import cups
+            conn = cups.Connection()
+            conn.printFile(prt, fle, fle, options={"copies": str(cpy)})
+        except:
+            import subprocess
+            subprocess.Popen(["/usr/bin/lp", "-d%s" % prt, "-n%s" % cpy, fle],
+                stdout=subprocess.PIPE)
 
 def doWriteExport(**args):
     """

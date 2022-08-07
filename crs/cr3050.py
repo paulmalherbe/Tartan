@@ -71,7 +71,7 @@ class cr3050(object):
                 ("crm_name", "", 0, "Name", "Y")),
             "where": [("crm_cono", "=", self.opts["conum"])],
             "autoc": False}
-        r1s = (("Agedt", "A"),("Curdt","C"))
+        r1s = (("Agedt", "A"), ("Curdt","C"))
         r2s = (("Yes", "Y"), ("No", "N"))
         r3s = (("Yes", "Y"), ("No", "N"), ("Only", "O"))
         if "args" in self.opts and "noprint" in self.opts["args"]:
@@ -84,7 +84,9 @@ class cr3050(object):
             mail = ("Y", "N")
         fld = (
             (("T",0,0,0),("IRB",r1s),0,"Base","",
-                var[0],"Y",self.doBase,None,None,None),
+                var[0],"Y",self.doBase,None,None,None,None,
+                """Agedt: Produce a report based on Ageing Period
+Curdt: Produce a report based on Financial Period"""),
             (("T",0,1,0),"Id2",7,"Cut-Off Period","",
                 int(self.sysdtw / 100),"N",self.doCutOff,None,None,None),
             (("T",0,2,0),("IRB",r2s),0,"Totals Only","",

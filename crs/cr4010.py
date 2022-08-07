@@ -232,7 +232,7 @@ class cr4010(object):
         if self.paidup == "Y":
             col, recs = getTrn(self.opts["mf"].dbm, "crs", whr=whr)
         else:
-            col, recs = getTrn(self.opts["mf"].dbm, "crs", dte=self.curdt,
+            col, recs = getTrn(self.opts["mf"].dbm, "crs", cdt=self.curdt,
                 whr=whr)
         if recs:
             data = []
@@ -397,7 +397,7 @@ class cr4010(object):
                 col, recs = getTrn(self.opts["mf"].dbm, "crs", whr=whr)
             else:
                 col, recs = getTrn(self.opts["mf"].dbm, "crs",
-                    dte=self.curdt, whr=whr)
+                    cdt=self.curdt, whr=whr)
             cols = []
             data = []
             dic = self.sql.crstrn_dic

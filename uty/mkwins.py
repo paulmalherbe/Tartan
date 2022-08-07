@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import getopt, os, pathlib, shutil, subprocess, sys
+import getopt, glob, os, pathlib, shutil, subprocess, sys
 from zipfile import ZipFile
 
 # Generate Tartan Executable
@@ -17,44 +17,31 @@ def doFind(name=None, path="C:\\"):
     return found
 
 def doUpgrade():
-    for mod in [
-            "pip",
-            "beepy",
-            "docutils",
-            "fpdf",
-            "importlib_metadata",
-            "markdown",
-            "ofxtools",
-            "openpyxl",
-            "pillow",
-            "progress",
-            "psycopg2",
-            "pyaes",
-            "pycryptodome",
-            "pyexcel-ods",
-            "pyexcel-xls",
-            "pygal",
-            "pymupdf",
-            "pysmb",
-            "pywin32",
-            "reportlab",
-            "requests",
-            "send2trash",
-            "svglib",
-            "tkcolorpicker",
-            "tkinterhtml",
-            "pyinstaller==4.5.1"]:
+    print("Upgrading python modules")
+    sys.path.insert(0, os.path.join(TMP, "tartan"))
+    from tartanWork import pymoda, pymodb
+    mods = ["pip", "docutils", "pyinstaller"]
+    for mod in pymoda + pymodb:
+        if len(mod) == 4 and mod[3] != "win32":
+            continue
+        mods.append(mod[1])
+    for mod in mods:
         try:
-            os.system("pip -q install %s --upgrade" % mod)
-        except:
-            pass
+            os.system("pip -q install %s --user "\
+                "--no-warn-script-location --upgrade" % mod)
+            print("Upgraded", mod)
+        except Exception as err:
+            print(err)
 
 HOM = str(pathlib.Path.home())
 if "WINEPREFIX" in os.environ:
     MAP = "x:"
 else:
     MAP = "\\\\192.168.0.1\\paul"
-PFX = None                                      # Windows version
+if sys.maxsize > 2**32:
+    PFX = "64"
+else:
+    PFX = "32"
 DPT = os.path.join("c:\\", "Tartan", "prg")     # Directory for pyinstaller exe
 EXE = os.path.join("%s\\" % MAP, "TartanExe")   # Destination of installer
 SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
@@ -86,12 +73,6 @@ Usage: python mkwins.py [options]
         TMP = v
     elif o == "-u":
         UPG = True
-# Test Architecture
-if PFX is None:
-    if "WINEPREFIX" in os.environ:
-        PFX = os.environ["WINEPREFIX"].split("wine")[1]
-    else:
-        PFX = input("Archtecture: ")
 # Set default variables
 ISC = doFind("iscc.exe")
 ISS = "tartan.iss"
@@ -100,9 +81,6 @@ VER = fle.read().strip()
 fle.close()
 # Open the log file
 out = open("%s\\log" % HOM, "w")
-# Upgrade
-if UPG:
-    doUpgrade()
 # Delete installation directories
 shutil.rmtree(DPT, ignore_errors=True)
 shutil.rmtree(TMP, ignore_errors=True)
@@ -116,6 +94,21 @@ os.chdir(TMP)
 # Unzip sources
 with ZipFile(os.path.join(SRC, "tartan-6.zip"), "r") as zipObj:
    zipObj.extractall()
+# Create tarimp module for pyinstaller
+ofl = open("%s\\tartan\\tarimp.py" % TMP, "w")
+ofl.write("# Tartan Modules to Include with Pyinstaller Exe\n")
+ofl.write("import sys\n")
+for fle in glob.iglob("tartan\\*.py"):
+    if fle.count("__pycache__"):
+        continue
+    ofl.write("import %s\n" % os.path.basename(fle).replace(".py", ""))
+for fle in glob.iglob("tartan\\???\\*.py"):
+    if fle.count("__pycache__"):
+        continue
+    imp = os.path.basename(os.path.dirname(fle))
+    imp = "%s.%s" % (imp, os.path.basename(fle).replace(".py", ""))
+    ofl.write("import %s\n" % imp)
+ofl.close()
 # Generate pygal css directory
 try:
     import pygal
@@ -124,9 +117,11 @@ try:
 except:
     print("Missing pygal module")
     sys.exit()
+# Upgrade
+if UPG:
+    doUpgrade()
 # Run pyinstaller
 os.chdir(os.path.join(TMP, "tartan"))
-#shutil.copy(SPC, ".")
 subprocess.call(["pyinstaller", "windows.spec"], stdout=out, stderr=out)
 # Copy files to DPT
 shutil.copy("tartan.ico", DPT)

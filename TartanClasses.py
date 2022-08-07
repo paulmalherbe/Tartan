@@ -26,8 +26,8 @@ COPYING
 # ========================================================
 # Standard Python modules
 # ========================================================
-import calendar, copy, csv, datetime, functools, glob, gzip, math, os, re
-import shutil, subprocess, sys, tarfile, tempfile, textwrap, threading, time
+import copy, csv, datetime, functools, glob, gzip, math, os, re, shutil
+import subprocess, sys, tarfile, tempfile, textwrap, threading, time
 import webbrowser
 # ========================================================
 # TARTAN Standard Functions and Variables e.g. showError
@@ -63,6 +63,7 @@ except:
 try:
     import fpdf
 except:
+    print("Missing python fpdf module")
     os._exit(1)
 if not fpdf.fpdf.Image:
     print("Missing python-imaging-module")
@@ -268,173 +269,6 @@ try:
             except:
                 pass
             return "break"
-
-    class MyCalendar(tk.Toplevel, object):
-        datetime = calendar.datetime.datetime
-        timedelta = calendar.datetime.timedelta
-
-        def __init__(self, parent, **kw):
-            """
-            WIDGET-SPECIFIC OPTIONS
-                locale, fwday, fdate, titlebg, titlefg, calendarbg, font
-            """
-            params = {
-                "fwday": 0,
-                "fdate": None,
-                "locale": None,
-                "bwidth": 1,
-                "relief": "ridge",
-                "font": "Courier 10 bold"}
-            params.update(kw)
-            for key in params:
-                setattr(self, key, params[key])
-            self.idate = self.doCheckDate()
-            self.font = tkfont.Font(font=self.font)
-            super().__init__(relief="raised", pady=2)
-            self.overrideredirect(True)
-            x = parent.winfo_rootx()
-            y = parent.winfo_rooty() + parent.winfo_height()
-            self.geometry("+%d+%d" % (x, y))
-            self.cal = calendar.TextCalendar(self.fwday)
-            self.doSetupStyles()        # creates custom styles
-            self.doCreateTopbar()       # create top bar
-            self.doBuildCalendar()      # create the calendar
-            self.wait_window()
-
-        def doCheckDate(self):
-            year = None
-            if self.fdate:
-                date = CCD(self.fdate, "D1", 10)
-                if not date.err:
-                    year = int(date.work / 10000)
-                    month = int(date.work / 100) % 100
-                    day = date.work % 100
-            if not year:
-                year = self.datetime.now().year
-                month = self.datetime.now().month
-                day = self.datetime.now().day
-            self.selected = year * 10000 + month * 100 + day
-            return self.datetime(year, month, day)
-
-        def doSetupStyles(self):
-            # custom ttk styles
-            style = ttk.Style(self.master)
-            arrow_layout = lambda ddd: ([("Button.focus",
-                {"children": [("Button.%sarrow" % ddd, None)]})])
-            style.layout("L.TButton", arrow_layout("left"))
-            style.layout("R.TButton", arrow_layout("right"))
-
-        def doCreateTopbar(self):
-            tbr = MyFrame(self, relief="flat")
-            tbr.columnconfigure(1, weight=1)
-            tbr.pack(side="top", fill="x", padx=2, pady=2)
-            lbtn = ArrowButton(tbr, direction="left", command=self.doPrevMonth)
-            rbtn = ArrowButton(tbr, direction="right", command=self.doNextMonth)
-            self.header = MyLabel(tbr, anchor="c", text="", font=self.font)
-            lbtn.grid(row=0, column=0, sticky="w")
-            self.header.grid(row=0, column=1, padx=6, sticky="ew")
-            rbtn.grid(row=0, column=2, sticky="w")
-            self.calendar = None
-
-        def doBuildCalendar(self):
-            # update header text (Month, YEAR)
-            header = self.cal.formatmonthname(self.idate.year,
-                self.idate.month, 0)
-            self.header["text"] = header.title()
-            # create calendar
-            if self.calendar:
-                self.calendar.destroy()
-            self.calendar = MyFrame(self, bg="grey")
-            self.calendar.pack(fill="both", expand=True, side="bottom",
-                padx=1, pady=1)
-            cols = self.cal.formatweekheader(3).split()
-            for num, col in enumerate(cols):
-                day = MyLabel(self.calendar, text=col, font=self.font)
-                day.grid(row=0, column=num, padx=1, pady=1)
-            self.caldat = self.cal.monthdayscalendar(self.idate.year,
-                self.idate.month)
-            for seq, row in enumerate(self.caldat):
-                for num, col in enumerate(row):
-                    if col:
-                        color = bool(int(col) == self.idate.day)
-                        if color:
-                            color = ("red", "white")
-                        day = MyLabel(self.calendar, text="%3s" % col,
-                            color=color, font=self.font)
-                        day.bind("<ButtonRelease-1>", self.doPressed)
-                    else:
-                        day = MyLabel(self.calendar, text="%3s" % "",
-                            color=False, font=self.font)
-                    day.grid(row=seq + 1, column=num, padx=1, pady=1)
-            # set the minimal size for the widget and other bindings
-            self.calendar.bind("<Map>", self.doMinsize)
-            self.calendar.bind("<Up>", self.doNextPeriod)
-            self.calendar.bind("<Down>", self.doNextPeriod)
-            self.calendar.bind("<Left>", self.doNextPeriod)
-            self.calendar.bind("<Right>", self.doNextPeriod)
-            self.calendar.bind("<Escape>", self.doQuit)
-            self.calendar.bind("<Return>", self.doQuit)
-            self.calendar.bind("<KP_Enter>", self.doQuit)
-            self.calendar.bind("<ButtonRelease-1>", self.doPressed)
-            self.calendar.focus_set()
-
-        def doMinsize(self, event):
-            self.master.minsize(self.winfo_width(), self.winfo_height())
-
-        def doShowSelection(self, text, bbox):
-            x, y, width, height = bbox
-
-        def doPressed(self, event):
-            """Clicked somewhere in the calendar."""
-            day = int(event.widget.cget("text"))
-            self.selected = self.idate.year * 10000
-            self.selected = self.selected + self.idate.month * 100
-            self.selected = self.selected + day
-            self.doQuit()
-
-        def doPrevMonth(self):
-            """Update calendar to show the previous month."""
-            self.idate = self.idate - self.timedelta(days=1)
-            self.idate = self.datetime(self.idate.year, self.idate.month, 1)
-            self.doBuildCalendar()
-
-        def doNextMonth(self):
-            """Update calendar to show the next month."""
-            year, month = self.idate.year, self.idate.month
-            self.idate = self.idate + self.timedelta(
-                days=calendar.monthrange(year, month)[1] + 1)
-            self.idate = self.datetime(self.idate.year, self.idate.month, 1)
-            self.doBuildCalendar()
-
-        def doNextPeriod(self, event):
-            mth = (int(self.selected / 100)) % 100
-            if event.keysym == "Left":
-                self.selected = projectDate(self.selected, -1)
-            elif event.keysym == "Right":
-                self.selected = projectDate(self.selected, 1)
-            elif event.keysym == "Up":
-                self.selected = projectDate(self.selected, -7)
-            else:
-                self.selected = projectDate(self.selected, 7)
-            self.idate = self.datetime(int(self.selected / 10000),
-                int(self.selected / 100) % 100, self.selected % 100)
-            chk = (int(self.selected / 100)) % 100
-            if chk == mth:
-                for seq, row in enumerate(self.caldat):
-                    for num, col in enumerate(row):
-                        wid = self.calendar.grid_slaves(row=seq+1, column=num)
-                        if col and bool(int(col) == self.idate.day):
-                            wid[0].configure(style="Red.TLabel")
-                        else:
-                            wid[0].configure(style="TLabel")
-            else:
-                self.doBuildCalendar()
-
-        def doQuit(self, event=None):
-            if event and event.keysym == "Escape":
-                self.selected = None
-            self.calendar.destroy()
-            self.destroy()
 
     class MyCheckButton(ttk.Checkbutton):
         def __init__(self, parent, **kwargs):
@@ -738,7 +572,7 @@ try:
                     b.bind("<Enter>", self.doEnter)
                     b.bind("<Leave>", self.doLeave)
                     if but[0].lower() == dflt.lower():
-                        b.focus_force()
+                        dflt = b
             self.frame.update_idletasks()
             # Message window width and height
             w = self.frame.winfo_reqwidth()
@@ -758,15 +592,18 @@ try:
                 self.frame.winfo_toplevel().deiconify()
             # Make message window modal
             self.msgwin.grab_set()
-            if self.parent:
+            # Set focus to default button or message window
+            if dflt:
+                dflt.focus_force()
+            else:
                 self.msgwin.focus_set()
+            if self.parent:
                 self.msgwin.wait_window()
                 self.parent.update_idletasks()
+                if grabs is not None:
+                    grabs.grab_set()
             else:
-                self.msgwin.focus_force()
                 self.msgwin.mainloop()
-            if self.parent and grabs:
-                grabs.grab_set()
 
         def doEnter(self, event):
             event.widget.focus_set()
@@ -2977,10 +2814,8 @@ class CCD(object):
     CB = CheckButton Box
     CD = Currency Decimal Signed i.e. thousands separated by comma
     CI = Currency Integer Signed i.e. thousands separated by comma
-    D0 = Date (CCYYMMDD)
     D1 = Date (CCYYMMDD)
     D2 = Current Period Date (CCYYMM)
-    D3 = Date (DD-MMM-YYYY)
     DT = Date and Time (DD-MMM-YYYY-HH:MM)
     FF = File or Directory Format
     HA = Normal Alphanumeric Hidden as for Passwords
@@ -3079,21 +2914,10 @@ class CCD(object):
         self.disp = None
         self.work = None
         self.err = ""
-        if self.types in ("D0","d0"):
-            # ==================================================================
-            # Work around for previous format error
-            # ==================================================================
-            if self.data[3:6].upper() in self.mthnum:
-                self.chkD3_Date()
-            # ==================================================================
-            else:
-                self.chkD0_Date()
-        elif self.types in ("D1","d1"):
+        if self.types in ("D1","d1"):
             self.chkD1_Date()
         elif self.types in ("D2","d2"):
             self.chkD2_Date()
-        elif self.types in ("D3","d3"):
-            self.chkD3_Date()
         elif self.types in ("DM","dM"):
             self.chkDM_Date()
         elif self.types in ("DT","dT"):
@@ -3151,14 +2975,6 @@ class CCD(object):
         else:
             self.err = "Invalid Input, Retry (%s)" % self.types
 
-    def chkD0_Date(self):
-        date = self.data.replace("-", "")
-        self.disp = date
-        try:
-            self.work = int(date.replace("-", ""))
-        except:
-            self.work = date
-
     def chkD1_Date(self):
         date = self.data.replace("-", "").replace("/", "")
         if date in ("", "0", "00000000") and (self.types == "d1"):
@@ -3175,27 +2991,14 @@ class CCD(object):
                 yy += 1900
             elif yy < 100:
                 yy += 2000
-            if mm < 1 or mm > 12:
-                self.err = "Invalid Date (D1-1)"
-                return
-            chkmth = []
-            for mth in tartanWork.mthnam:
-                chkmth.append(mth[:])
-            if mm == 2:
-                if not yy % 4:
-                    chkmth[2][2] = 29
-                else:
-                    chkmth[2][2] = 28
-            if dd < 1 or dd > chkmth[mm][2]:
-                self.err = "Invalid Date (D1-2)"
-                return
+            datetime.datetime(yy, mm, dd)
             self.work = (yy * 10000) + (mm * 100) + dd
             self.disp = "%04i-%02i-%02i" % (yy, mm, dd)
             if len(self.disp) < self.size:
                 self.disp = self.disp + (
                     " " * (int(self.size / 1) - len(self.disp)))
         except:
-            self.err = "Invalid Date (D1-3)"
+            self.err = "Invalid Date (D1)"
 
     def chkD2_Date(self):
         date = self.data.replace("-", "").replace("/", "")
@@ -3212,45 +3015,14 @@ class CCD(object):
                 yy += 1900
             elif yy < 100:
                 yy += 2000
-            if mm < 1 or mm > 12:
-                self.err = "Invalid Month (D2-1)"
-            else:
-                self.work = (yy * 100) + mm
-                self.disp = "%04i-%02i" % (yy, mm)
-                if len(self.disp) < self.size:
-                    self.disp = self.disp + (
-                        " " * (int(self.size / 1) - len(self.disp)))
+            datetime.datetime(yy, mm, 1)
+            self.work = (yy * 100) + mm
+            self.disp = "%04i-%02i" % (yy, mm)
+            if len(self.disp) < self.size:
+                self.disp = self.disp + (
+                    " " * (int(self.size / 1) - len(self.disp)))
         except:
-            self.err = "Invalid Current Date (D2-2)"
-
-    def chkD3_Date(self):
-        date = self.data
-        self.work = date
-        self.disp = date
-        try:
-            yy = int(date[7:11])
-            mm = self.mthnum[date[3:6].upper()]
-            dd = int(date[0:2])
-            if 100 > yy > 30:
-                yy += 1900
-            elif yy < 100:
-                yy += 2000
-            chkmth = []
-            for mth in tartanWork.mthnam:
-                chkmth.append(mth[:])
-            if mm == 2:
-                if not yy % 4:
-                    chkmth[2][2] = 29
-                else:
-                    chkmth[2][2] = 28
-            if mm < 1 or mm > 12:
-                self.err = "Invalid Month (D3-1)"
-            elif dd < 1 or dd > chkmth[mm][2]:
-                self.err = "Invalid Day (D3-2)"
-            else:
-                self.isoDate = (yy * 10000) + (mm*100) + dd
-        except:
-            self.err = "Invalid Date (D3-3)"
+            self.err = "Invalid Current Date (D2)"
 
     def chkDM_Date(self):
         date = self.data.replace("-", "")
@@ -3286,20 +3058,7 @@ class CCD(object):
                 yy += 1900
             elif yy < 100:
                 yy += 2000
-            if mm < 1 or mm > 12:
-                self.err = "Invalid Date (D1-1)"
-                return
-            chkmth = []
-            for mth in tartanWork.mthnam:
-                chkmth.append(mth[:])
-            if mm == 2:
-                if not yy % 4:
-                    chkmth[2][2] = 29
-                else:
-                    chkmth[2][2] = 28
-            if dd < 1 or dd > chkmth[mm][2]:
-                self.err = "Invalid Date (D1-2)"
-                return
+            datetime.datetime(yy, mm, dd, hh, tt)
             self.work = (yy*100000000)+(mm*1000000)+(dd*10000)+(hh*100)+tt
             self.disp = "%04i-%02i-%02i %02i:%02i" % (yy, mm, dd, hh, tt)
             if len(self.disp) < self.size:
@@ -4315,9 +4074,6 @@ Export - The report in the selected format will be opened
                     self.tsiz.append([0,0,0])
                     self.topv.append([])
                     self.colv.append([])
-            if len(col) > 4 and not col[8] and col[1][1:] in ("D1", "d1"):
-                # Enable date selection
-                col[8] = {"stype": "D"}
             if col[0][0] == "T":
                 if col[0][1] == 0:
                     self.topz = True
@@ -5025,19 +4781,6 @@ Export - The report in the selected format will be opened
     def selectItem(self, pag, opts):
         if opts["stype"] == "C":
             self.rs = self.selChoice(opts)
-        elif opts["stype"] == "D":
-            if self.frt == "T":
-                fwid = self.topEntry[pag][self.pos]
-            else:
-                fwid = self.colEntry[pag][self.pos]
-            grb = fwid.grab_current()
-            fwid.configure(state="disabled")
-            cal = MyCalendar(fwid, fdate=fwid.get())
-            if grb:
-                grb.grab_set()
-            fwid.configure(state="normal")
-            fwid.focus_force()
-            return cal.selected
         elif opts["stype"] == "F":
             return self.selFile(opts)
         elif opts["stype"] == "M" and "func" in opts:
@@ -5081,6 +4824,8 @@ Export - The report in the selected format will be opened
                 return sel
         elif opts["stype"] == "X":
             return self.selColour(opts)
+        else:
+            return
         if self.rs.selection:
             if "comnd" in opts and opts["comnd"]:
                 ok = opts["comnd"](self.frt, pag, self.row, self.col,
@@ -7964,7 +7709,7 @@ class ShowImage(object):
     def __init__(self, vbox, flenam, wrkdir=None, msiz=400, crop=False):
         self.vbox = vbox
         self.crop = crop
-        flenam = getFileName(flenam, wrkdir=wrkdir, check=False)
+        flenam = getFileName(flenam, wrkdir=wrkdir)
         if flenam:
             pilimg = Image.open(flenam)
             width = int(pilimg.size[0])
@@ -8818,15 +8563,15 @@ class AgeAll(object):
 
     def doGetData(self):
         if self.system.lower() == "crs":
-            col = ["crt_trdt", "crt_ref1", "crt_type", "crt_tramt"]
+            col = ["crt_ref1", "crt_type", "crt_curdt", "crt_tramt"]
             whr = [("crt_cono", "=", self.cono), ("crt_acno", "=",
                 self.acno)]
         elif self.system.lower() == "drs":
-            col = ["drt_trdt", "drt_ref1", "drt_type", "drt_tramt"]
+            col = ["drt_ref1", "drt_type", "drt_curdt", "drt_tramt"]
             whr = [("drt_cono", "=", self.cono), ("drt_chain", "=",
                 self.achn), ("drt_acno", "=", self.acno)]
         else:
-            col = ["mlt_trdt", "mlt_refno", "mlt_type", "mlt_tramt"]
+            col = ["mlt_refno", "mlt_type", "mlt_curdt", "mlt_tramt"]
             whr = [("mlt_cono", "=", self.cono), ("mlt_memno", "=",
                 self.acno)]
         get, recs = getTrn(self.mf.dbm, self.system.lower(), whr=whr)
@@ -8856,7 +8601,7 @@ class AgeAll(object):
                 trbal = 0
             alloc = float(ASD(dat[5]) - ASD(trbal))
             if alloc:
-                self.doAlloc(dat[2], dat[1], alloc)
+                self.doAlloc(dat[2], dat[1], dat[0], alloc)
         alloc = float(ASD(self.aamt) + ASD(self.adis) - ASD(unal))
         if alloc:
             self.doAllocAge(alloc)
@@ -8869,28 +8614,11 @@ class AgeAll(object):
             return
         for tr in self.ageT.data:
             if tr[6]:
-                self.doAlloc(tr[2], tr[1], tr[6])
+                self.doAlloc(tr[2], tr[1], tr[0], tr[6])
         totl = float(ASD(self.aamt) + ASD(self.adis))
         alloc = float(ASD(totl) + ASD(self.ageT.total.work))
         if alloc:
             self.doAllocAge(alloc)
-
-    def doAlloc(self, typ, ref, amt):
-        if self.system.lower() == "drs":
-            data = self.agekey[:3] + [typ, ref, self.aged, self.atyp,
-                self.aref, amt, 0]
-            sql = Sql(self.mf.dbm, "drsage", prog=__name__)
-            sql.insRec("drsage", data=data)
-        elif self.system.lower() == "crs":
-            data = self.agekey[:2] + [typ, ref, self.aged, self.atyp,
-                self.aref, amt, 0]
-            sql = Sql(self.mf.dbm, "crsage", prog=__name__)
-            sql.insRec("crsage", data=data)
-        else:
-            data = self.agekey[:2] + [typ, ref, self.aged, self.atyp,
-                self.aref, amt, 0]
-            sql = Sql(self.mf.dbm, "memage", prog=__name__)
-            sql.insRec("memage", data=data)
 
     def doAllocAge(self, alloc):
         if not self.adis:
@@ -8903,9 +8631,28 @@ class AgeAll(object):
             da = self.adis
             aa = float(ASD(alloc) - ASD(self.adis))
         if da:
-            self.doAlloc(6, self.aref, da)
+            self.doAlloc(self.aged, 6, self.aref, da)
         if aa:
-            self.doAlloc(self.atyp, self.aref, aa)
+            self.doAlloc(self.aged, self.atyp, self.aref, aa)
+
+    def doAlloc(self, cdt, typ, ref, amt):
+        if cdt < self.aged:
+            cdt = self.aged
+        if self.system.lower() == "crs":
+            data = self.agekey[:2] + [typ, ref, cdt, self.atyp,
+                self.aref, amt, 0]
+            sql = Sql(self.mf.dbm, "crsage", prog=__name__)
+            sql.insRec("crsage", data=data)
+        elif self.system.lower() == "drs":
+            data = self.agekey[:3] + [typ, ref, cdt, self.atyp,
+                self.aref, amt, 0]
+            sql = Sql(self.mf.dbm, "drsage", prog=__name__)
+            sql.insRec("drsage", data=data)
+        else:
+            data = self.agekey[:2] + [typ, ref, cdt, self.atyp,
+                self.aref, amt, 0]
+            sql = Sql(self.mf.dbm, "memage", prog=__name__)
+            sql.insRec("memage", data=data)
 
 class AgeTrans(object):
     """
@@ -8947,9 +8694,9 @@ class AgeTrans(object):
         elif self.system == "mem":
             typ = ("XX", tartanWork.mltrtp)
         self.cols = (
-            (0, "   Date",    10,   "D1", None),
-            (1, "Reference",   9,   "Na", None),
-            (2, "Typ",         3,   typ,  None),
+            (0, "Reference",   9,   "Na", None),
+            (1, "Typ",         3,   typ,  None),
+            (2, "Cur-Dte",     7,   "D2", None),
             (3, "    Amount", 13.2, "SD", None),
             (4, " Allocated", 13.2, "SD", None),
             (5, "   Balance", 13.2, "SD", None))
@@ -9142,14 +8889,14 @@ class Balances(object):
             whr = [("crt_cono", "=", self.conum), ("crt_acno", "=", self.acno)]
             w = copyList(whr)
             w.append(("crt_curdt", "<", self.curdt))
-            obal = self.sql.getRec("crstrn",
-                cols=["round(sum(crt_tramt), 2)"], where=w, limit=1)
+            obal = self.sql.getRec("crstrn", cols=["sum(crt_tramt)"],
+                where=w, limit=1)
             if not obal or not obal[0]:
                 obal = 0.0
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), dte=self.curdt,
+            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=self.curdt,
                 whr=whr, zer=trans)
         elif self.system == "DRS":
             whr = [("drt_cono", "=", self.conum), ("drt_chain", "=",
@@ -9163,7 +8910,7 @@ class Balances(object):
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), dte=self.curdt,
+            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=self.curdt,
                 whr=whr, zer=trans)
         elif self.system == "MEM":
             whr = [("mlt_cono","=",self.conum), ("mlt_memno","=",self.memno)]
@@ -9176,7 +8923,7 @@ class Balances(object):
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), dte=self.curdt,
+            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=self.curdt,
                 whr=whr, zer=trans)
         else:
             return
@@ -11920,6 +11667,289 @@ class PrintOrder(object):
             return self.form.tptp[mrgcod][1]
         return ""
 
+class PrintCharges(object):
+    def __init__(self, mf, conum, conam, docs, **args):
+        self.mf = mf
+        self.conum = conum
+        self.conam = conam
+        self.docs = docs
+        defaults = {
+            "tname": "recurring_charges",
+            "repprt": ["N", "V", "view"],
+            "repeml": ["N", "N", "", "", "Y"],
+            "copy": "n",
+            "splash": True}
+        for nam in args:
+            if nam in ("repprt", "repeml"):
+                defaults[nam] = copyList(args[nam])
+            else:
+                defaults[nam] = args[nam]
+        for nam in defaults:
+            setattr(self, nam, defaults[nam])
+        if self.setVariables():
+            self.doProcess()
+
+    def setVariables(self):
+        self.sql = Sql(self.mf.dbm, ["ctlmst", "drsmst", "drsrci"],
+            prog=__name__)
+        if self.sql.error:
+            return False
+        gc = GetCtl(self.mf)
+        drsctl = gc.getCtl("drsctl", self.conum)
+        if not drsctl:
+            return
+        self.fromad = drsctl["ctd_emadd"]
+        if self.repeml:
+            self.emadd = self.repeml[2]
+        else:
+            self.emadd = ""
+        return True
+
+    def doProcess(self):
+        rcc = self.sql.drsrci_col
+        dmc = self.sql.drsmst_col
+        self.form = DrawForm(self.mf.dbm, self.tname)
+        txt = self.form.sql.tpldet_col.index("tpd_text")
+        tdc = self.form.sql.tpldet_col
+        self.doLoadStatic()
+        self.form.doNewDetail()
+        printed = False
+        for doc in self.docs:
+            self.docno = CCD(doc, "NA", 9)
+            # drsrci
+            rci = self.sql.getRec("drsrci", where=[("dci_cono", "=",
+                self.conum), ("dci_docno", "=", self.docno.work)], limit=1)
+            if not rci:
+                continue
+            if self.splash:
+                sp = SplashScreen(self.mf.body,
+                    "Generating Forms\n\n   Please Wait...")
+            for fld in rcc:
+                if fld in self.form.tptp:
+                    self.form.tptp[fld][1] = rci[rcc.index(fld)]
+            # drsmst
+            drm = self.sql.getRec("drsmst", where=[("drm_cono", "=",
+                self.conum), ("drm_chain", "=", rci[rcc.index("dci_chain")]),
+                ("drm_acno", "=", rci[rcc.index("dci_acno")])], limit=1)
+            # Use accounts name else manager
+            eml = drm[dmc.index("drm_acc_email")]
+            if not eml:
+                eml = drm[dmc.index("drm_mgr_email")]
+            for fld in dmc:
+                if fld in self.form.tptp:
+                    d = "%s_C00" % fld
+                    self.form.newdic[d][txt] = drm[dmc.index(fld)]
+            self.form.account_details("drm", dmc, drm, 0)
+            self.form.document_date(rci[rcc.index("dci_date")])
+            self.doBody(dmc, drm, rcc, rci, tdc)
+            self.doTotal(tdc)
+            self.doTail(tdc)
+            if self.splash:
+                sp.closeSplash()
+            if self.repeml[1] == "Y" and not self.emadd:
+                self.repeml[2] = eml
+                self.doPrint()
+            printed = True
+        if printed and (self.repeml[1] == "N" or self.emadd):
+            self.repeml[2] = self.emadd
+            self.doPrint()
+
+    def doBody(self, dmc, drm, rcc, rci, tdc):
+        page = 0
+        count = 0
+        self.total_taxable = 0
+        self.total_nontaxable = 0
+        self.total_tax = 0
+        self.total_value = 0
+        ldic = {}
+        for cod in self.form.body:
+            if cod == "line_value":
+                continue
+            if cod == "dci_desc":
+                des = self.form.doSplitText("dci_desc_C00",
+                    rci[rcc.index(cod)])
+                if not des[-1]:
+                    del des[-1]
+            elif cod in dmc:
+                ldic[cod] = CCD(drm[dmc.index(cod)],
+                    self.form.tptp[cod][0][1],
+                    self.form.tptp[cod][0][2])
+            else:
+                ldic[cod] = CCD(rci[rcc.index(cod)],
+                    self.form.tptp[cod][0][1],
+                    self.form.tptp[cod][0][2])
+        excamt = ldic["dci_charge"].work
+        incrat = float(ASD(100.0) + ASD(ldic["dci_vat_rate"].work))
+        incamt = round((excamt * incrat / 100.0), 2)
+        vatamt = float(ASD(incamt) - ASD(excamt))
+        if excamt == incamt:
+            self.total_nontaxable = float(ASD(self.total_nontaxable) + \
+                ASD(excamt))
+        else:
+            self.total_taxable = float(ASD(self.total_taxable) + \
+                ASD(excamt))
+        self.total_tax = float(ASD(self.total_tax) + ASD(vatamt))
+        self.total_value = float(ASD(self.total_value) + ASD(incamt))
+        ldic["line_value"] = CCD(incamt, "SD", 11.2)
+        for n, l in enumerate(des):
+            #if count == self.form.maxlines:
+            #    page = self.doCfwd(page)
+            count = self.doHeader(page, tdc)
+            if n == 0 and len(des) == 1:
+                incl = copyList(self.form.body)
+            elif n + 1 == len(des):
+                incl = copyList(self.form.body)
+            else:
+                incl = []
+            for code in self.form.body:
+                seq = "%s_C%02i" % (code, count)
+                if code == "dci_desc":
+                    data = l
+                elif code in incl:
+                    data = ldic[code].work
+                else:
+                    data = "BLANK"
+                self.form.newdic[seq][tdc.index("tpd_text")] = data
+                self.form.doDrawDetail(self.form.newdic[seq])
+            count += 1
+        for x in range(count, self.form.maxlines):
+            for cod in self.form.body:
+                seq = "%s_C%02i" % (cod, x)
+                self.form.newdic[seq][tdc.index("tpd_text")] = "BLANK"
+                self.form.doDrawDetail(self.form.newdic[seq])
+
+    def doTotal(self, tdc):
+        for c in self.form.total:
+            line = None
+            if c in self.form.newdic:
+                line = self.form.newdic[c]
+            else:
+                t = "%s_T00" % c
+                if t in self.form.newdic:
+                    line = self.form.newdic[t]
+            if line:
+                self.form.doDrawDetail(line)
+            d = "%s_C00" % c
+            if d in self.form.newkey:
+                line = self.form.newdic[d]
+                mrgcod = line[tdc.index("tpd_mrgcod")]
+                line[tdc.index("tpd_text")] = getattr(self, "%s" % mrgcod)
+                self.form.doDrawDetail(line)
+
+    def doTail(self, tdc):
+        for c in self.form.tail:
+            line = None
+            if c in self.form.newdic:
+                line = self.form.newdic[c]
+            else:
+                t = "%s_T00" % c
+                if t in self.form.newdic:
+                    line = self.form.newdic[t]
+            if line:
+                if line[tdc.index("tpd_mrgcod")] == "message":
+                    if not self.message:
+                        continue
+                self.form.doDrawDetail(line)
+            d = "%s_C00" % c
+            if d in self.form.newdic:
+                line = self.form.newdic[d]
+                mrgcod = line[tdc.index("tpd_mrgcod")]
+                line[tdc.index("tpd_text")] = self.doGetData(mrgcod)
+                self.form.doDrawDetail(line, fmat=False)
+
+    def doPrint(self):
+        pfx = "Inv"
+        head = "%s Invoice" % self.conam.upper()
+        if self.repeml[1] == "Y" and not self.emadd:
+            head = "%s %s" % (head, self.docno.work)
+            pdfnam = getModName(self.mf.rcdic["wrkdir"], pfx,
+                "%s_%s" % (self.conum, self.docno.work), ext="pdf")
+        else:
+            if len(self.docs) == 1:
+                head = "%s %s" % (head, self.docno.work)
+            else:
+                head += "S"
+                for doc in self.docs:
+                    head += " %s" % doc[0]
+            pdfnam = getModName(self.mf.rcdic["wrkdir"], pfx,
+                "%s_all" % self.conum, ext="pdf")
+        self.form.output(pdfnam, "F")
+        doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
+            fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
+        if self.repeml[1] == "Y" and not self.emadd:
+            self.form = DrawForm(self.mf.dbm, self.tname)
+            self.doLoadStatic()
+            self.form.doNewDetail()
+
+    def doLoadStatic(self):
+        # ctlmst
+        cmc = self.sql.ctlmst_col
+        ctm = self.sql.getRec("ctlmst", where=[("ctm_cono", "=",
+            self.conum)], limit=1)
+        for fld in cmc:
+            dat = ctm[cmc.index(fld)]
+            if fld in self.form.tptp:
+                if fld == "ctm_logo":
+                    self.form.letterhead(cmc, ctm, fld, dat)
+                    continue
+                self.form.tptp[fld][1] = dat
+        if "letterhead" in self.form.tptp:
+            self.form.letterhead(cmc, ctm, "letterhead", None)
+        if "document_type" in self.form.tptp:
+            if self.copy.lower() == "a":
+                typ = "AMENDED"
+            elif self.copy.lower() == "y":
+                typ = "COPY"
+            else:
+                typ = ""
+            if ctm[cmc.index("ctm_taxno")]:
+                typ = "%s TAX" % typ
+            self.form.tptp["document_type"][1] = "%s INVOICE" % typ
+        self.form.bank_details(cmc, ctm, 0)
+        if "terms" in self.form.tptp:
+            acc = self.sql.getRec("ctlmes", cols=["mss_detail"],
+                where=[("mss_system", "=", "CON"), ("mss_message", "=", 1)],
+                limit=1)
+            if acc:
+                self.form.tptp["terms"][1] = acc[0]
+            else:
+                del self.form.tptp["terms"]
+
+    def doHeader(self, page, tdc):
+        self.form.add_page()
+        for key in self.form.newkey:
+            line = self.form.newdic[key]
+            if line[tdc.index("tpd_place")] != "A":
+                continue
+            nl = copyList(line)
+            if nl[tdc.index("tpd_detseq")] == "page_number_C00":
+                nl[tdc.index("tpd_text")] = str(page)
+            elif nl[tdc.index("tpd_type")] == "T" and \
+                        nl[tdc.index("tpd_ttyp")] == "H":
+                mrgcod = nl[tdc.index("tpd_mrgcod")]
+                if mrgcod and self.form.tptp[mrgcod][0][1][0] == "S":
+                    txt = nl[tdc.index("tpd_text")]
+                    nl[tdc.index("tpd_text")] = "%s " % txt
+            elif nl[tdc.index("tpd_type")] == "C" and not nl[5]:
+                mrgcod = nl[tdc.index("tpd_mrgcod")]
+                nl[tdc.index("tpd_text")] = self.doGetData(mrgcod)
+            if key == "document_type_C00":
+                self.form.doDrawDetail(nl, fmat=False)
+            else:
+                self.form.doDrawDetail(nl)
+        return 0
+
+    def doCfwd(self, page):
+        line = copyList(self.form.cfwd)
+        line[5] = "Continued on Page %i" % (page + 1)
+        self.form.doDrawDetail(line)
+        return page + 1
+
+    def doGetData(self, mrgcod):
+        if mrgcod and mrgcod in self.form.tptp and self.form.tptp[mrgcod][1]:
+            return self.form.tptp[mrgcod][1]
+        return ""
+
 class PrintInvoice(object):
     def __init__(self, mf, conum, conam, dtype, docs, **args):
         self.mf = mf
@@ -13095,6 +13125,7 @@ class PrintDraw(object):
             self.time)], limit=1)
         self.dtype = bdm[self.sql.bwldrm_col.index("bdm_dtype")]
         self.dhist = bdm[self.sql.bwldrm_col.index("bdm_dhist")]
+        self.dedit = bdm[self.sql.bwldrm_col.index("bdm_dedit")]
         self.ratem = CCD(bdm[self.sql.bwldrm_col.index("bdm_mrate")], "UD", 6.2)
         self.ratev = CCD(bdm[self.sql.bwldrm_col.index("bdm_vrate")], "UD", 6.2)
         self.dated = CCD(self.date, "D1", 10).disp
@@ -13296,8 +13327,8 @@ class PrintDraw(object):
 
     def pageHeading(self, htyp="A", grn="A"):
         if not self.cdes:
-            txt = "TABS for the %s of %s (Type %s, Hist %s)" % (self.timed,
-                self.dated, self.dtype, self.dhist)
+            txt = "TABS for the %s of %s (T-%s, H-%s, E-%s)" % (self.timed,
+                self.dated, self.dtype, self.dhist, self.dedit)
         else:
             txt = "%s for the %s of %s" % (self.cdes, self.timed, self.dated)
         if htyp == "C":
@@ -15881,8 +15912,6 @@ class NotesCreate(object):
 
     def mainProcess(self):
         tit = "%s Notes" % tartanWork.allsys[self.sys][0]
-        cal = {
-            "stype": "D"}
         self.ntm = {
             "stype": "R",
             "tables": ("ctlnot",),
@@ -15906,7 +15935,7 @@ class NotesCreate(object):
             (("T",0,1,0),("IRB",r1s),0,"Action Flag","",
                 "N","N",self.doActFlag,None,None,None),
             (("T",0,2,0),"I@not_adate",0,"","",
-                self.sysdtw,"N",self.doActDate,cal,None,("efld",)),
+                self.sysdtw,"N",self.doActDate,None,None,("efld",)),
             (("T",0,3,0),"I@not_auser",0,"","",
                 self.user,"N",self.doActUser,None,None,("efld",)))
         tnd = ((self.doEnd,"y"), )
@@ -16400,8 +16429,8 @@ class FileImport(object):
                     for col, cdd in enumerate(self.impcol):
                         if cdd[1] is None:
                             dat = ""
-
-                        dat = rdd[cdd[1]]
+                        else:
+                            dat = rdd[cdd[1]]
                         if self.ftype in ("xls", "xlsx"):
                             if cdd[2] in ("D1", "d1"):
                                 if isinstance(dat, datetime.date):
@@ -16646,7 +16675,7 @@ class MyFpdf(fpdf.FPDF):
             self.set_x(x)
         elif y:
             self.set_y(y)
-        if font:
+        if font is not None:
             if type(font) in (list, tuple) and len(font) == 3:
                 family, style, size = font
                 self.setFont(family, style, size)
@@ -16904,8 +16933,11 @@ class DrawForm(MyFpdf):
             if border and not self.line_width:
                 self.set_line_width(0.2)
             self.set_xy(x1, y1)
-            self.cell(w=x2-x1, h=y2-y1, txt=text, border=border, ln=ln,
-                align=align, fill=fill)
+            try:
+                self.cell(w=x2-x1, h=y2-y1, txt=text, border=border, ln=ln,
+                    align=align, fill=fill)
+            except Exception as err:
+                print(err)
 
     def doMultiText(self, x1=0, y1=0, x2=0, y2=0, text="", font="courier", size=10, colour=0, bold=False, italic=False, uline=False, align="", border=0, ln=1, fill=0):
         if text:
@@ -16951,7 +16983,10 @@ class DrawForm(MyFpdf):
             h = y2 - y1
         else:
             h = 0
-        self.image(text, x1, y1, w, h, type="", link="")
+        try:
+            self.image(text, x1, y1, w, h)
+        except Exception as err:
+            print(err)
 
     def doBarcode(self, x1=0, y1=0, x2=0, y2=0, text="", font="interleaved 2of5 nt", size=1, colour=0):
         if self.draw_color != rgb(colour):
@@ -17274,9 +17309,15 @@ class DrawForm(MyFpdf):
 
     def changeSize(self, pdfnam):
         doc = fitz.open(pdfnam)
-        mbox = doc[0].MediaBox
+        try:
+            mbox = doc[0].mediabox
+        except:
+            mbox = doc[0].MediaBox
         mbox[1] = float(mbox[3] - (self.get_y() * 3))
-        doc[0].setMediaBox(mbox)
+        try:
+            doc[0].set_mediabox(mbox)
+        except:
+            doc[0].setMediaBox(mbox)
         doc2 = fitz.open()
         try:
             doc2.insert_pdf(doc, from_page=0, to_page=0)
@@ -17545,6 +17586,8 @@ class SimpleDialog(object):
                 wid = MyEntry(nframe, maxsize=0, width=int(col[2]),
                     cmd=(self.goNext, num))
                 wid.bind("<F1>", functools.partial(self.goNext, num))
+            elif col[3] == "TX":
+                wid = MyEntry(nframe, width=int(col[2]), cmd=(self.goNext, num))
             else:
                 wid = MyEntry(nframe, maxsize=int(col[2]), width=int(col[2]),
                     cmd=(self.goNext, num))
@@ -18432,10 +18475,10 @@ class ViewPDF(object):
                         pass
                     self.win.title(pdfnam)
                     self.doDisplay()
-            else:
+            elif pdfnam:
                 raise Exception("Invalid File Name\n\n%s" % pdfnam)
         except Exception as err:
-            showError(None, "Error", "Cannot Display Report.\n\n%s" % err)
+            showError(None, "Error", "Cannot Display Document.\n\n%s" % err)
         if self.mf:
             self.mf.window.deiconify()
 
@@ -18453,11 +18496,11 @@ class ViewPDF(object):
         self.sw = self.win.winfo_screenwidth()
         self.sh = int(self.win.winfo_screenheight() * .90)
         self.doc = fitz.open(self.pdfnam)
-        if self.doc.needsPass:
-            if not self.doPassword():
-                return
-        self.lastpg = self.doc.pageCount
-        rect = self.doc[0].MediaBox
+        pwd = self.doc.needs_pass
+        if pwd and not self.doPassword():
+            return
+        self.lastpg = self.doc.page_count
+        rect = self.doc[0].mediabox
         if not self.doc[0].rotation:
             self.siz = [rect[2], rect[3]]
         else:
@@ -18521,10 +18564,10 @@ class ViewPDF(object):
         self.bt4["menu"] = self.bt4.menu
         mods = [
             ("Print", self.doPrint),
+            ("Save as..", self.doSave),
             ("Send to..", self.doSend),
             ("Help", self.doHelp)]
         if self.mf and self.mf.dbm:
-            mods.insert(1, ("Save as..", self.doSave))
             try:
                 gc = GetCtl(self.mf)
                 ctlsys = gc.getCtl("ctlsys", error=False)
@@ -18739,16 +18782,10 @@ class ViewPDF(object):
             self.pags = []
             self.prec = {}
             for page in self.doc:
-                annot = page.firstAnnot
+                annot = page.first_annot
                 while annot:
-                    try:
-                        annot = page.delete_annot(annot)
-                    except:
-                        annot = page.deleteAnnot(annot)
-                try:
-                    found = page.search_for(self.search)
-                except:
-                    found = page.searchFor(self.search)
+                    annot = page.delete_annot(annot)
+                found = page.search_for(self.search)
                 if found:
                     self.found = True
                     for inst in found:
@@ -18756,10 +18793,7 @@ class ViewPDF(object):
                         if numb not in self.pags:
                             self.pags.append(numb)
                             self.prec[numb] = inst
-                        try:
-                            page.add_highlight_annot(inst)
-                        except:
-                            page.addHighlightAnnot(inst)
+                        page.add_highlight_annot(inst)
             if self.pags:
                 self.pgno = self.pags[0]
             frm.destroy()
@@ -18805,12 +18839,9 @@ class ViewPDF(object):
         self.prec = {}
         self.search = ""
         for page in self.doc:
-            annot = page.firstAnnot
+            annot = page.first_annot
             while annot:
-                try:
-                    annot = page.delete_annot(annot)
-                except:
-                    annot = page.deleteAnnot(annot)
+                annot = page.delete_annot(annot)
         self.showPage()
 
     def doUnbind(self, unbind=True, key=True, exc=None):
@@ -18841,14 +18872,9 @@ class ViewPDF(object):
         self.pgd.delete(0, "end")
         self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
         self.pgd.configure(state="disabled")
-        try:
-            dlist = page.get_displaylist()
-            pix = dlist.get_pixmap(matrix=self.matrix, alpha=False)
-            self.ti = tk.PhotoImage(data=pix.tobytes("ppm"))
-        except:
-            dlist = page.getDisplayList()
-            pix = dlist.getPixmap(matrix=self.matrix, alpha=False)
-            self.ti = tk.PhotoImage(data=pix.getImageData("ppm"))
+        dlist = page.get_displaylist()
+        pix = dlist.get_pixmap(matrix=self.matrix, alpha=False)
+        self.ti = tk.PhotoImage(data=pix.tobytes("ppm"))
         self.cv.create_image(0, 0, image=self.ti, anchor="nw", tags="img")
         self.cv.configure(width=self.ti.width(), height=self.ti.height())
         # Limit display size to %-tage of screen size
@@ -18929,10 +18955,7 @@ class ViewPDF(object):
             def addText(txt, tsz, bbx):
                 txts.append((tsz, txt, page.number + 1, bbx))
             txts = []
-            try:
-                blocks = page.get_text("dict")["blocks"]
-            except:
-                blocks = page.getText("dict")["blocks"]
+            blocks = page.get_text("dict")["blocks"]
             for b in blocks:
                 if b["type"] == 0:
                     ts = 0
@@ -18991,10 +19014,7 @@ class ViewPDF(object):
             # Try to Generate own toc
             sizs = {}
             for page in self.doc:
-                try:
-                    blocks = page.get_text("dict")["blocks"]
-                except:
-                    blocks = page.getText("dict")["blocks"]
+                blocks = page.get_text("dict")["blocks"]
                 for b in blocks:
                     if b["type"] == 0:
                         for l in b["lines"]:
@@ -19046,47 +19066,46 @@ class ViewPDF(object):
         self.doUnbind(False)
         if sc.selection:
             for page in self.doc:
-                annot = page.firstAnnot
+                annot = page.first_annot
                 while annot:
-                    try:
-                        annot = page.delete_annot(annot)
-                    except:
-                        annot = page.deleteAnnot(annot)
+                    annot = page.delete_annot(annot)
             bbox = cdata[sc.selection[0]]
             rect = fitz.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
             self.pgno = int(sc.selection[2])
             page = self.doc[self.pgno - 1]
             self.prec[self.pgno] = rect
-            try:
-                page.add_highlight_annot(rect)
-            except:
-                page.addHighlightAnnot(rect)
+            page.add_highlight_annot(rect)
             self.cont = True
             self.showPage()
         self.cv.focus_force()
 
     def doSave(self):
-        if sys.platform == "win32":
-            lastdir = os.path.join(self.mf.rcdic["wrkdir"], "savedir")
+        if self.mf:
+            if sys.platform == "win32":
+                lastdir = os.path.join(self.mf.rcdic["wrkdir"], "savedir")
+            else:
+                lastdir = os.path.join(self.mf.rcdic["wrkdir"], ".savedir")
+            if os.path.exists(lastdir):
+                infle = open(lastdir, "r")
+                name = infle.readline().rstrip()
+                infle.close()
+            else:
+                name = self.mf.rcdic["wrkdir"]
         else:
-            lastdir = os.path.join(self.mf.rcdic["wrkdir"], ".savedir")
-        if os.path.exists(lastdir):
-            infle = open(lastdir, "r")
-            name = infle.readline().rstrip()
-            infle.close()
-        else:
-            name = self.mf.rcdic["wrkdir"]
-        path = tkfile.asksaveasfilename(title="Choose Filename",
+            name = os.getcwd()
+        path = tkfile.asksaveasfilename(title="Enter Filename",
             defaultextension=".pdf", filetypes=[("pdf Files", "*.pdf")],
             initialdir=name, initialfile=os.path.basename(self.pdfnam))
         if path:
             try:
                 shutil.copyfile(self.pdfnam, path)
-                infle = open(lastdir, "w")
-                infle.write(os.path.dirname(os.path.normpath(path)))
-                infle.close()
+                if self.mf:
+                    infle = open(lastdir, "w")
+                    infle.write(os.path.dirname(os.path.normpath(path)))
+                    infle.close()
             except Exception as err:
                 showError(None, "Error", err)
+        self.doClose()
 
     def doSend(self):
         if sys.platform == "win32":
@@ -19141,7 +19160,7 @@ class ViewPDF(object):
             while not ok:
                 sp = SplashScreen(self.mf.window.focus_displayof(),
                     "E-Mailing the Report to:\n\n%s\n\nPlease Wait....." % add)
-                ok = sendMail(self.server, fromad, toad, subj, mess=body,
+                ok = sendMail(self.server, fromad, add, subj, mess=body,
                     attach=att, wrkdir=self.mf.rcdic["wrkdir"])
                 sp.closeSplash()
                 if not ok:
@@ -19223,10 +19242,7 @@ class ViewPDF(object):
                     fle = os.path.join(tempfile.gettempdir(), "%s.pdf" % tme)
                     doc2 = fitz.open()
                     for pg in pag:
-                        try:
-                            doc2.insert_pdf(self.doc, from_page=pg, to_page=pg)
-                        except:
-                            doc2.insertPDF(self.doc, from_page=pg, to_page=pg)
+                        doc2.insert_pdf(self.doc, from_page=pg, to_page=pg)
                     doc2.save(fle)
                     doc2.close()
                 cpy = int(spn.get())

@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
 =================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.8
+:Version:   6.9
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -60,7 +60,7 @@ The following dependencies must be installed using pip:
 + pymupdf               # Used for viewing pdf files
 + pywin32               # Windows only
 
-Additionally, the following dependencies should also be installed using pip:
+Additionally, the following dependencies should also be installed using pip or at a later stage using the -m command line option of Tartan.
 
 + beepy                 # Used to play a notification sound
 + docutils              # Used to display licence
@@ -71,6 +71,7 @@ Additionally, the following dependencies should also be installed using pip:
 + progress              # Curses Progress Bar
 + pyaes                 # Password Manager - pm1010
 + pycryptodome          # Password Manager - pm1010
++ pycups                # Printer Utility - Linux only
 + pyexcel               # XLS File Reader
 + pyexcel-ods           # ODS File Reader
 + pygal                 # SVG Charts

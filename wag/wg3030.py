@@ -179,8 +179,8 @@ class wg3030(object):
             self.fpdf.drawText("%2s %-54s %13s %13s" % (k, n, t.disp, s.disp))
         self.fpdf.output(pdfnam, "F")
         doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header=self.tit, repprt=self.df.repprt,
-            fromad=self.fromad, repeml=self.df.repeml)
+            header=self.tit, repprt=self.df.repprt, fromad=self.fromad,
+            repeml=self.df.repeml)
         self.opts["mf"].closeLoop()
 
     def doExit(self):
