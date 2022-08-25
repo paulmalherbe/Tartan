@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
 =================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.9
+:Version:   6.10
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -60,7 +60,7 @@ The following dependencies must be installed using pip:
 + pymupdf               # Used for viewing pdf files
 + pywin32               # Windows only
 
-Additionally, the following dependencies should also be installed using pip or at a later stage using the -m command line option of Tartan.
+Additionally, the following dependencies should also be installed using pip or, at a later stage, using the -m command line option.
 
 + beepy                 # Used to play a notification sound
 + docutils              # Used to display licence
@@ -100,7 +100,8 @@ Windows Binary
 ..............
 Download the applicable file from https://tartan.co.za or if you are in possession of a CD this is not necessary.
 
-+ Tartan_6.x-XP.exe for Windows prior to Windows-10
++ Tartan_6.x-7.exe for Windows 7.
++ Tartan_6.x-8.exe for Windows 8.
 + Tartan_6.x-32.exe for Windows-10 32 bit architecture.
 + Tartan_6.x-64.exe for Windows-10 64 bit architecture.
 
@@ -114,7 +115,7 @@ Linux and Source
 ................
 Start Tartan by entering the following command:
 
-    `python -OO program_path/ms0000.py [options]`
+    `python program_path/ms0000.py [options]`
 
 To find out what the available command line options are, use the -h option.
 

@@ -118,7 +118,7 @@ class cr6020(object):
         for b in range(3):
             wid = getattr(self.df, "B%s" % b)
             self.df.setWidget(wid, "disabled")
-        col = ["crt_trdt","crt_ref1","crt_type","crt_tramt","paid","balance"]
+        col = ["crt_ref1","crt_type","crt_curdt","crt_tramt","paid","balance"]
         whr = [
             ("crt_cono", "=", self.opts["conum"]),
             ("crt_acno", "=", self.acno)]

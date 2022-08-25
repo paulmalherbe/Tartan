@@ -1,5 +1,21 @@
-changes = """ver_6.9
-=======
+changes = """ver_6.10 2022-08-25
+===================
+ 1) Impoved the stock revaluation tool.
+ 2) Improved the report generator utility.
+ 3) Fixed a problem with sales document numbering.
+ 4) Fixed a bug with creditor and debtor transaction ageing.
+ 5) Added the option to reprint stock take variance reports.
+ 6) Fixed a bug in calculating the cost value in the invoicing module.
+ 7) Updated some items in the reference manual.
+ 8) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.9 2022-08-12
+==================
  1) Improved the debtor's recurring charges module.
  2) Improved the History procedure in the bowls tabs-inn module.
  3) Fixed a bug in the purchase orders module relating to V.A.T. numbers.

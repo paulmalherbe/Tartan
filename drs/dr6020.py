@@ -156,7 +156,7 @@ class dr6020(object):
         for b in range(3):
             wid = getattr(self.df, "B%s" % b)
             self.df.setWidget(wid, "disabled")
-        col = ["drt_trdt","drt_ref1","drt_type","drt_tramt","paid","balance"]
+        col = ["drt_ref1","drt_type","drt_curdt","drt_tramt","paid","balance"]
         whr = [
             ("drt_cono", "=", self.opts["conum"]),
             ("drt_chain", "=", self.chain),

@@ -25,7 +25,7 @@ COPYING
 """
 
 import os
-from TartanClasses import FileDialog, RepPrt, TartanDialog, SChoice
+from TartanClasses import CCD, FileDialog, RepPrt, TartanDialog, SChoice
 from TartanClasses import SplashScreen, Sql
 from tartanFunctions import askQuestion, chkAggregate, copyList, showError
 from tartanFunctions import showInfo
@@ -207,7 +207,7 @@ class rp1010(object):
             (("T",6,0,0),"IUI",2,"Order Sequence","",
                 "","N",self.doOrdSeq,None,None,("between",0,14)),
             (("C",6,0,0),"OUI",2,"Sq","","","N",self.doOrder,None,None,None),
-            (("C",6,0,1),"INA",20,"Column","Column Name",
+            (("C",6,0,1),"ITX",(20,50),"Column","Column Name",
                 "","N",self.doRepOrd,self.cols,self.doColDel,("notblank",)),
             (("C",6,0,2),"ONA",30,"Description"),
             (("C",6,0,3),"IUA",1,"D","Ascending or Descending",
@@ -571,6 +571,8 @@ class rp1010(object):
         return "nd"
 
     def doGetColDetail(self, col):
+        if col.count("format"):
+            col = col.split()[1].replace(")","")
         dsc = self.sql.getRec("ffield", cols=["ff_desc", "ff_type",
             "ff_size"], where=[("ff_name", "=", col)], limit=1)
         return dsc
@@ -1303,9 +1305,13 @@ class rp1010(object):
                 break
             c = exc[1]
             if self.opts["mf"].dbm.dbase == "PgSQL":
-                if c.count("drt_ref1 = si1_docno") or \
-                        c.count("si1_docno = drt_ref1"):
-                    c = c.replace("si1_docno", "format('%9s', si1_docno)")
+                for ccc in ("si1_docno", "si2_docno"):
+                    if c.count("drt_ref1 = %s" % ccc) or \
+                            c.count("%s = drt_ref1" % ccc):
+                        c = c.replace(ccc, "format('%s', %s)" % ("%9s", ccc))
+                    elif c.count("stt_ref1 = %s" % ccc) or \
+                            c.count("%s = stt_ref1" % ccc):
+                        c = c.replace(ccc, "format('%s', %s)" % ("%9s", ccc))
             v = c.split("(v)")
             for x in range(1, len(v)):
                 n = int(v[x][:1])
@@ -1327,11 +1333,13 @@ class rp1010(object):
                 for z in (" and ", " or "):
                     if v[x].find(z) != -1:
                         break
-                h = self.var_det[n][0] + y + "%s" % d
+                h = self.var_det[n][0] + y + CCD(self.var_det[n][3],
+                    self.var_det[n][1], self.var_det[n][2]).disp
+                h = h.replace("=", ": ")
                 if not heds:
-                    heds = "(%s" % h
+                    heds = h
                 else:
-                    heds = heds + ", " + h
+                    heds = heds + " " + h
             if not excs:
                 excs = c
             else:
@@ -1340,8 +1348,6 @@ class rp1010(object):
             excs = None
         else:
             excs = excs.replace('"', "'")
-        if heds:
-            heds = heds + ")"
         heads.append(heds)
         # ORDER
         order = ""

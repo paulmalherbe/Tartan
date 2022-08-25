@@ -256,7 +256,7 @@ class tb1010(object):
                         ddd.append(d)
                 fmt += "\n"
                 tabdic[self.tab]["idx"].append(ddd)
-            fle = os.path.join(getPrgPath(), "stdtab.py")
+            fle = os.path.join(getPrgPath()[1], "stdtab.py")
             outf = open(fle, "w")
             outf.write("""tabdic = {""")
             tabs = list(tabdic.keys())

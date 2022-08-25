@@ -110,7 +110,7 @@ class ml6010(object):
         for b in range(2):
             wid = getattr(self.df, "B%s" % b)
             self.df.setWidget(wid, "disabled")
-        col = ["mlt_trdt","mlt_refno","mlt_type","mlt_tramt","paid","balance"]
+        col = ["mlt_refno","mlt_type","mlt_curdt","mlt_tramt","paid","balance"]
         whr = [
             ("mlt_cono", "=", self.opts["conum"]),
             ("mlt_memno", "=", self.memno)]

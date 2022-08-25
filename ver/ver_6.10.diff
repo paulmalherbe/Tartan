@@ -1,0 +1,1853 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index fe8b2de..f2bf53d 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -593,7 +593,7 @@ try:
+             # Make message window modal
+             self.msgwin.grab_set()
+             # Set focus to default button or message window
+-            if dflt:
++            if dflt and type(dflt) is MyButton:
+                 dflt.focus_force()
+             else:
+                 self.msgwin.focus_set()
+@@ -2035,6 +2035,7 @@ class Dbase(object):
+                 mess = "Would you like to COMMIT All Changes?"
+             if self.screen is None:
+                 scrn = "text"
++                mess += "\nCommit"
+             else:
+                 scrn = self.screen
+             self.commit = askQuestion(scrn, "Commit?", mess, default=default)
+@@ -2434,7 +2435,7 @@ Table %s in Program %s""" % (err, table, self.prog))
+                 os._exit(1)
+             # Test and Correct for a Column in Unique Keys (e.g. drt_ref1)
+             if unique:
+-                cols = self.sqlRec(state=("Select * from ftable where "
++                cols = self.sqlRec(state=("Select * from ftable where "\
+                     "ft_tabl=%s and ft_type = 'U' order by ft_seq" %
+                     self.dbm.dbf, (table,)))
+                 ok = False
+@@ -7423,10 +7424,13 @@ class ScrollHtml(object):
+             pos = b.cget("underline")
+             if pos != -1:
+                 self.binds.append(b.cget("text")[pos])
+-        self.frame = HtmlFrame(self.root,
+-            vertical_scrollbar=self.vertical,
+-            horizontal_scrollbar=self.horizontal,
+-            fontscale=1.5)
++        try:
++            self.frame = HtmlFrame(self.root,
++                vertical_scrollbar=self.vertical,
++                horizontal_scrollbar=self.horizontal,
++                fontscale=1.5)
++        except Exception as err:
++            print(err)
+         for key in ("Left", "Right", "Up", "Down", "Prior", "Next"):
+             self.window.bind("<%s>" % key, self._scroll)
+         self.frame.set_content(self.mess)
+@@ -14092,7 +14096,12 @@ class RepPrt(object):
+         self.cg = []                # list of all sign change columns
+         self.gp = []                # list of all group columns
+         func = 0
++        self.cdic = {}
+         for num, col in enumerate(self.cols):
++            if col[0].count(" as "):
++                self.cdic[col[0].split(" as ")[1]] = col[1:]
++            else:
++                self.cdic[col[0]] = col[1:]
+             agg = chkAggregate(col[0])
+             if agg and col[1][1:] in ("D", "d"):
+                 if type(col) == tuple:
+@@ -14566,7 +14575,9 @@ class RepPrt(object):
+             if self.dend:
+                 # Total description at end of line
+                 if typ == "s":
+-                    dsc = self.sdic[self.stots[snum][0]][sdet] + " %s" % sdet
++                    ccc = self.cdic[self.stots[snum][0]]
++                    det = CCD(sdet, ccc[0], ccc[1]).disp
++                    dsc = self.sdic[self.stots[snum][0]][sdet] + " %s" % det
+                 else:
+                     dsc = "Grand Total"
+                 siz = len(dsc)
+@@ -14574,7 +14585,9 @@ class RepPrt(object):
+                 fld.append(dsc)
+                 cld.append(dsc)
+             elif typ == "s":
+-                dsc = self.sdic[self.stots[snum][0]][sdet] + " %s" % sdet
++                ccc = self.cdic[self.stots[snum][0]]
++                det = CCD(sdet, ccc[0], ccc[1]).disp
++                dsc = self.sdic[self.stots[snum][0]][sdet] + " %s" % det
+                 fld.insert(0, dsc)
+                 cld[0] = dsc
+             else:
+@@ -16607,7 +16620,7 @@ class MyFpdf(fpdf.FPDF):
+     def setValues(self, name, head, font="", border=""):
+         # Add TTF Fonts
+         try:
+-            for pth in glob.glob(os.path.join(getPrgPath(), "fnt/*.ttf")):
++            for pth in glob.glob(os.path.join(getPrgPath()[1], "fnt/*.ttf")):
+                 nam = os.path.basename(pth)
+                 self.add_font(nam, "", pth, uni=True)
+         except:
+@@ -17309,20 +17322,11 @@ class DrawForm(MyFpdf):
+ 
+     def changeSize(self, pdfnam):
+         doc = fitz.open(pdfnam)
+-        try:
+-            mbox = doc[0].mediabox
+-        except:
+-            mbox = doc[0].MediaBox
++        mbox = doc[0].mediabox
+         mbox[1] = float(mbox[3] - (self.get_y() * 3))
+-        try:
+-            doc[0].set_mediabox(mbox)
+-        except:
+-            doc[0].setMediaBox(mbox)
++        doc[0].set_mediabox(mbox)
+         doc2 = fitz.open()
+-        try:
+-            doc2.insert_pdf(doc, from_page=0, to_page=0)
+-        except:
+-            doc2.insertPDF(doc, from_page=0, to_page=0)
++        doc2.insert_pdf(doc, from_page=0, to_page=0)
+         doc2.save(pdfnam)
+         doc.close()
+         doc2.close()
+@@ -17463,7 +17467,7 @@ Mobile:            27-82-9005260
+         self.b2.configure(state="disabled")
+         self.about.place_forget()
+         try:
+-            docdir = os.path.join(getPrgPath(), "doc")
++            docdir = os.path.join(getPrgPath()[0], "doc")
+             if HTML and os.path.isfile(os.path.join(docdir, "gnugpl.html")):
+                 fle = "gnugpl.html"
+             elif os.path.isfile(os.path.join(docdir, "gnugpl.md")):
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index a5a3d9f..fac8af1 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -2047,11 +2047,11 @@ Combination Number %10s"""
+             dte = rec[self.sql.bwldrt_col.index("bdt_date")]
+             tim = rec[self.sql.bwldrt_col.index("bdt_time")]
+             rnk = rec[self.sql.bwldrt_col.index("bdt_rink")]
+-            svs = self.sql.getRec("bwldrm", cols=["bdm_dhist"],
++            his = self.sql.getRec("bwldrm", cols=["bdm_dhist"],
+                 where=[("bdm_cono", "=", self.opts["conum"]),
+                 ("bdm_date", "=", dte), ("bdm_time", "=", tim)],
+                 limit=1)
+-            if svs[0] == "N":
++            if his[0] == "N":
+                 # History not applied on draw
+                 continue
+             if dte == self.date and tim == self.time:
+@@ -2739,7 +2739,7 @@ Combination Number %10s"""
+                 ("Neither", "N")]
+             txt = "This Draw Has Not Been Done"
+             ok = askChoice(self.opts["mf"].body, "Exit",
+-                mess=txt, butt=but, default="None")
++                mess=txt, butt=but, default="Neither")
+             if ok == "N":
+                 self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+                 return
+diff --git a/bwl/bcc110.py b/bwl/bcc110.py
+index 74c8b7f..69e1ac0 100644
+--- a/bwl/bcc110.py
++++ b/bwl/bcc110.py
+@@ -138,7 +138,7 @@ class bcc110(object):
+                 "When the Draw is Trips Use Pairs Instead of Fours "\
+                 "when Applicable."),
+             (("T",0,seq + 8,0),"IUI",2,"Weeks Between Draws","",
+-                self.acc[12],"N",None,None,None,("between", 0, 4),None,
++                self.acc[12],"N",None,None,None,("between", 0, 9),None,
+                 "Minimum number of Weeks that Players Should Not be "\
+                 "Drawn in the Same Team."),
+             (("T",0,seq + 9,0),"IUD",5.2,"Rate - Member","",
+diff --git a/crs/cr6020.py b/crs/cr6020.py
+index d3f1b0f..0076219 100644
+--- a/crs/cr6020.py
++++ b/crs/cr6020.py
+@@ -118,7 +118,7 @@ class cr6020(object):
+         for b in range(3):
+             wid = getattr(self.df, "B%s" % b)
+             self.df.setWidget(wid, "disabled")
+-        col = ["crt_trdt","crt_ref1","crt_type","crt_tramt","paid","balance"]
++        col = ["crt_ref1","crt_type","crt_curdt","crt_tramt","paid","balance"]
+         whr = [
+             ("crt_cono", "=", self.opts["conum"]),
+             ("crt_acno", "=", self.acno)]
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index def59c9..1ba1e0e 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.9
++:Version:   6.10
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -60,7 +60,7 @@ The following dependencies must be installed using pip:
+ + pymupdf               # Used for viewing pdf files
+ + pywin32               # Windows only
+ 
+-Additionally, the following dependencies should also be installed using pip or at a later stage using the -m command line option of Tartan.
++Additionally, the following dependencies should also be installed using pip or, at a later stage, using the -m command line option.
+ 
+ + beepy                 # Used to play a notification sound
+ + docutils              # Used to display licence
+@@ -100,7 +100,8 @@ Windows Binary
+ ..............
+ Download the applicable file from https://tartan.co.za or if you are in possession of a CD this is not necessary.
+ 
+-+ Tartan_6.x-XP.exe for Windows prior to Windows-10
+++ Tartan_6.x-7.exe for Windows 7.
+++ Tartan_6.x-8.exe for Windows 8.
+ + Tartan_6.x-32.exe for Windows-10 32 bit architecture.
+ + Tartan_6.x-64.exe for Windows-10 64 bit architecture.
+ 
+@@ -114,7 +115,7 @@ Linux and Source
+ ................
+ Start Tartan by entering the following command:
+ 
+-    `python -OO program_path/ms0000.py [options]`
++    `python program_path/ms0000.py [options]`
+ 
+ To find out what the available command line options are, use the -h option.
+ 
+diff --git a/drs/dr6020.py b/drs/dr6020.py
+index 9d12819..bdcfe58 100644
+--- a/drs/dr6020.py
++++ b/drs/dr6020.py
+@@ -156,7 +156,7 @@ class dr6020(object):
+         for b in range(3):
+             wid = getattr(self.df, "B%s" % b)
+             self.df.setWidget(wid, "disabled")
+-        col = ["drt_trdt","drt_ref1","drt_type","drt_tramt","paid","balance"]
++        col = ["drt_ref1","drt_type","drt_curdt","drt_tramt","paid","balance"]
+         whr = [
+             ("drt_cono", "=", self.opts["conum"]),
+             ("drt_chain", "=", self.chain),
+diff --git a/mem/ml6010.py b/mem/ml6010.py
+index 2153cfa..333f571 100644
+--- a/mem/ml6010.py
++++ b/mem/ml6010.py
+@@ -110,7 +110,7 @@ class ml6010(object):
+         for b in range(2):
+             wid = getattr(self.df, "B%s" % b)
+             self.df.setWidget(wid, "disabled")
+-        col = ["mlt_trdt","mlt_refno","mlt_type","mlt_tramt","paid","balance"]
++        col = ["mlt_refno","mlt_type","mlt_curdt","mlt_tramt","paid","balance"]
+         whr = [
+             ("mlt_cono", "=", self.opts["conum"]),
+             ("mlt_memno", "=", self.memno)]
+diff --git a/ms0000.py b/ms0000.py
+index 8f282aa..4040ee6 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -63,7 +63,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 9)
++    VERSION = (6, 10)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -175,7 +175,7 @@ class ms0000(object):
+                     name = "tracer_%s.txt" % pid
+                 else:
+                     name = "stdout_%s.txt" % pid
+-                self.stdout = os.path.join(getPrgPath(), name)
++                self.stdout = os.path.join(getPrgPath()[0], name)
+                 try:
+                     if not os.path.exists(self.stdout):
+                         sys.stdout = io.open(self.stdout, "w")
+@@ -214,6 +214,12 @@ Options:
+             -z, --zerobar           Do not have a progressbar with -ptarBck
+ """)
+             self.doExit(dbm=False)
++        if self.script:
++            try:
++                exec("import %s" % self.script)
++            except:
++                pass
++            self.doExit()
+         if not self.version and not self.xdisplay:
+             nodisp = ("tarBck", "tarUpd")
+             if not self.query and self.program not in nodisp:
+@@ -241,9 +247,12 @@ Options:
+                         continue
+                     print("Installing/Upgrading", mod[1])
+                     try:
+-                        chke(cmd + [mod[1]])
++                        if mod[1] == "psycopg2":
++                            chke(cmd + [mod[1] + "-binary"])
++                        else:
++                            chke(cmd + [mod[1]])
+                     except:
+-                        raise Exception("Module %s Not Found" % mod[1])
++                        print("Module Not Found")
+             except Exception as err:
+                 print(err)
+             sys.exit()
+@@ -400,12 +409,6 @@ Options:
+         if not self.user:
+             # Exit if not valid user
+             self.doExit()
+-        if self.script:
+-            if self.user["lvl"] > 6:
+-                exec("import %s" % self.script)
+-            else:
+-                print("Invalid Security Level")
+-            self.doExit()
+         if self.query:
+             # Excecute sql query
+             if self.user["lvl"] > 6:
+@@ -1500,7 +1503,7 @@ System --> Change Password""")
+             else:
+                 os.spawnv(os.P_WAIT, "/bin/tar",
+                     ("tar", "-xzf", fle, "-C", upgdir))
+-                shutil.copytree("%s/tartan" % upgdir, getPrgPath(),
++                shutil.copytree("%s/tartan" % upgdir, getPrgPath()[1],
+                     dirs_exist_ok=True)
+                 shutil.rmtree("%s/tartan" % upgdir)
+             os._exit(0)
+@@ -1635,7 +1638,7 @@ System --> Change Password""")
+         for ddd in doc:
+             if ddd != doc[0]:
+                 man += "\nPageBreak\n"
+-            rst = os.path.join(getPrgPath(), "doc", "%s.rst" % ddd)
++            rst = os.path.join(getPrgPath()[0], "doc", "%s.rst" % ddd)
+             if os.path.exists(rst):
+                 fle = open(rst, "r")
+                 if len(doc) == 1 and ddd != "SYS":
+@@ -1754,7 +1757,7 @@ System --> Change Password""")
+                             name = "tracer_%s.txt" % pid
+                         else:
+                             name = "stdout_%s.txt" % pid
+-                        os.remove(os.path.join(getPrgPath(), name))
++                        os.remove(os.path.join(getPrgPath()[0], name))
+                     except:
+                         pass
+             except:
+diff --git a/sls/si2010.py b/sls/si2010.py
+index 1883e04..c3f84d9 100644
+--- a/sls/si2010.py
++++ b/sls/si2010.py
+@@ -1601,13 +1601,14 @@ class si2010(object):
+             actdoc = self.docno
+             self.doGetDocno("O")
+             self.sql.updRec("slsiv1", cols=["si1_rtn","si1_docno","si1_date",
+-                "si1_capdt"], data=["O", self.docno, self.trdt, self.sysdtw],
+-                where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
+-                self.typs), ("si1_docno", "=", actdoc)])
+-            self.sql.updRec("slsiv2", cols=["si2_rtn","si2_docno","si2_capdt"],
+-                data=["O", self.docno, self.sysdtw], where=[("si2_cono", "=",
+-                self.opts["conum"]), ("si2_rtn", "=", self.typs), ("si2_docno",
+-                "=", actdoc)])
++                "si1_capnm", "si1_capdt"], data=["O", self.docno, self.trdt,
++                self.opts["capnm"], self.sysdtw], where=[("si1_cono", "=",
++                self.opts["conum"]), ("si1_rtn", "=", self.typs),
++                ("si1_docno", "=", actdoc)])
++            self.sql.updRec("slsiv2", cols=["si2_rtn","si2_docno","si2_capnm",
++                "si2_capdt"], data=["O", self.docno, self.opts["capnm"],
++                self.sysdtw], where=[("si2_cono", "=", self.opts["conum"]),
++                ("si2_rtn", "=", self.typs), ("si2_docno", "=", actdoc)])
+             self.sql.updRec("slsiv3", cols=["si3_rtn", "si3_docno"], data=["O",
+                 self.docno], where=[("si3_cono", "=", self.opts["conum"]),
+                 ("si3_rtn", "=", self.typs), ("si3_docno", "=", actdoc)])
+@@ -1635,9 +1636,10 @@ class si2010(object):
+                 where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
+                 self.typs), ("si1_docno", "=", actdoc)])
+             # Move the order/quote body lines to the new invoice
+-            self.sql.updRec("slsiv2", cols=["si2_rtn", "si2_docno"],
+-                data=["I", self.docno], where=[("si2_cono", "=",
+-                self.opts["conum"]), ("si2_rtn", "=", self.typs),
++            self.sql.updRec("slsiv2", cols=["si2_rtn", "si2_docno",
++                "si2_capnm", "si2_capdt"], data=["I", self.docno,
++                self.opts["capnm"], self.sysdtw], where=[("si2_cono",
++                "=", self.opts["conum"]), ("si2_rtn", "=", self.typs),
+                 ("si2_docno", "=", actdoc)])
+             # Update slsiv3
+             self.sql.updRec("slsiv3", cols=["si3_rtn", "si3_docno"],
+@@ -1648,8 +1650,8 @@ class si2010(object):
+             # Check and change V.A.T. rates if applicable and reload screen
+             chg = False
+             recs = self.sql.getRec("slsiv2", where=[("si2_cono", "=",
+-                self.opts["conum"]), ("si2_rtn", "=", "I"), ("si2_docno", "=",
+-                self.docno)])
++                self.opts["conum"]), ("si2_rtn", "=", "I"), ("si2_docno",
++                "=", self.docno)])
+             for rec in recs:
+                 cod = rec[self.sql.slsiv2_col.index("si2_vat_code")]
+                 rat = rec[self.sql.slsiv2_col.index("si2_vat_rate")]
+@@ -1666,8 +1668,8 @@ class si2010(object):
+             actdoc = None
+         # Create Stores Transactions
+         trn = self.sql.getRec("slsiv2", where=[("si2_cono", "=",
+-            self.opts["conum"]), ("si2_rtn", "=", self.typs), ("si2_docno",
+-            "=", self.docno)])
++            self.opts["conum"]), ("si2_rtn", "=", self.typs),
++            ("si2_docno", "=", self.docno)])
+         if not trn:
+             return
+         for line in trn:
+@@ -1698,13 +1700,14 @@ class si2010(object):
+                 ref2 = self.ribbon[0]
+             else:
+                 ref2 = ""
+-            # Write record
++            # Write strtrn record
+             data = [self.opts["conum"], self.grp, self.code, self.loc,
+                 self.trdt, rtn, self.othno, self.batch, ref2, qty, cst, sel,
+                 self.curdt, self.name, self.chain, self.acno, self.repno,
+                 "INV", self.disrat, "", self.opts["capnm"], self.sysdtw, 0]
+             self.sql.insRec("strtrn", data=data)
+             if gtype[0] == "R":
++                # Recipe issue and receive items
+                 items = self.sql.getRec("slsiv3", where=[("si3_cono",
+                     "=", self.opts["conum"]), ("si3_rtn", "=", self.typs),
+                     ("si3_docno", "=", self.othno), ("si3_line", "=",
+@@ -1873,20 +1876,25 @@ class si2010(object):
+     def doGetDocno(self, atype):
+         # Get Next Document Number
+         docno = self.sql.getRec("slsiv1", cols=["max(si1_docno)"],
+-            where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
+-            atype)], limit=1)[0]
++            where=[("si1_cono", "=", self.opts["conum"]),
++            ("si1_rtn", "=", atype)], limit=1)[0]
+         if not docno:
+             docno = 0
+         if atype not in ("C", "I"):
+             docno += 1
+         else:
++            if atype == "I":
++                dtyp = 1
++            else:
++                dtyp = 4
+             check = True
+             while check:
+                 docno += 1
+                 nxt = CCD(docno, "Na", 9).work
+                 check = self.sql.getRec("drstrn", where=[("drt_cono",
+                     "=", self.opts["conum"]), ("drt_chain", "=", self.chain),
+-                    ("drt_acno", "=", self.acno), ("drt_ref1", "=", nxt)])
++                    ("drt_acno", "=", self.acno), ("drt_type", "=", dtyp),
++                    ("drt_ref1", "=", nxt)])
+         self.docno = CCD(docno, "UI", 9).work
+         self.othno = CCD(docno, "Na", 9).work
+ 
+diff --git a/str/st2010.py b/str/st2010.py
+index 35ec296..1508151 100644
+--- a/str/st2010.py
++++ b/str/st2010.py
+@@ -352,6 +352,10 @@ class st2010(object):
+         self.delno = w
+ 
+     def doDelDate(self, frt, pag, r, c, p, i, w):
++        if w < self.opts["period"][1][0] or w > self.opts["period"][2][0]:
++            return "Invalid Date, Not In Financial Period"
++        if w > self.sysdtw:
++            return "Invalid Date, In the Future"
+         self.deldt = w
+ 
+     def doTopEnd(self):
+diff --git a/str/st3030.py b/str/st3030.py
+index bd31e30..f93eb3c 100644
+--- a/str/st3030.py
++++ b/str/st3030.py
+@@ -88,7 +88,7 @@ class st3030(object):
+         fld.extend([
+             (("T",0,1,0),"IUA",3,"Product Group","",
+                 "","Y",self.doGroup,grp,None,None),
+-            (("T",0,2,0),("IRB",r1s),0,"Ignore Out of Stock","",
++            (("T",0,2,0),("IRB",r1s),0,"Ignore Zero Balances","",
+                 "Y","N",self.doNoStock,None,None,None),
+             (("T",0,3,0),("IRB",r2s),0,"Report Type","",
+                 "S","N",self.doType,None,None,None),
+@@ -312,7 +312,7 @@ class st3030(object):
+         cst, bal = getCost(self.sql, self.opts["conum"], grp.work, code.work,
+             loc=self.loc, qty=1, ind="AL", bal=True)
+         qty = CCD(bal[0], "SD", 12.2)
+-        if self.nostock == "Y" and qty.work <= 0:
++        if self.nostock == "Y" and qty.work == 0:
+             return
+         acst = CCD(cst[0], "SD", 10.2)
+         lcst = CCD(cst[1], "SD", 10.2)
+diff --git a/str/st3080.py b/str/st3080.py
+index 52210e6..80ef3d0 100644
+--- a/str/st3080.py
++++ b/str/st3080.py
+@@ -266,7 +266,7 @@ class st3080(object):
+             bal[1] = 0
+         qbal = CCD(bal[0], "SD", 12.2)
+         vbal = CCD(bal[1], "SD", 12.2)
+-        if self.zero == "Y" and qbal.work == 0 and vbal.work == 0:
++        if self.zero == "Y" and vbal.work == 0:
+             return
+         self.gtot = float(ASD(self.gtot) + ASD(vbal.work))
+         return (grp, code, desc, uoi, qbal, vbal)
+diff --git a/str/st3120.py b/str/st3120.py
+index 430e814..0996b06 100644
+--- a/str/st3120.py
++++ b/str/st3120.py
+@@ -63,7 +63,7 @@ class st3120(object):
+ 
+     def mainProcess(self):
+         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
+-            "Stock On Hand Report (%s)" % self.__class__.__name__)
++            "Stock Reorder Report (%s)" % self.__class__.__name__)
+         loc = {
+             "stype": "R",
+             "tables": ("strloc",),
+diff --git a/str/st5020.py b/str/st5020.py
+index 4cd7979..e5536c9 100644
+--- a/str/st5020.py
++++ b/str/st5020.py
+@@ -78,20 +78,22 @@ class st5020(object):
+             "where": [
+                 ("st1_cono", "=", self.opts["conum"]),
+                 ("st1_type", "not", "in", ("R", "X"))],
+-            "whera": [["T", "st1_group", 4, 0]],
++            "whera": [],
+             "order": "st1_group, st1_code",
+             "index": 1}
+         r1s = (("Grp/Code","N"),("Bin Number","B"))
+         r2s = (("Yes","Y"),("No","N"))
+-        r3s = (("No","N"),("Last","L"),("Average","A"))
++        r3s = (("Last","L"),("Average","A"),("No","N"))
+         if self.locs == "N":
+             self.loc = "1"
+             fld = []
+             idx = 0
++            stm1["whera"] = [["T", "st1_group", 3, 0]]
+         else:
+             fld = [(("T",0,0,0),"IUA",1,"Location","",
+                 "","N",self.doLoc,loc,None,("efld",))]
+             idx = 1
++            stm1["whera"] = [["T", "st1_group", 4, 0]]
+         fld.extend([
+             (("T",0,idx,0),("IRB",r2s),0,"Auto Sequence","",
+                 "N","N",self.doAuto,None,None,None),
+@@ -104,7 +106,7 @@ class st5020(object):
+             (("T",0,idx+4,0),"INA",20,"First Code","",
+                 "","N",self.doFcode,stm1,None,None),
+             (("T",0,idx+5,0),("IRB",r3s),0,"Cost Prices","",
+-                "N","N",self.doCosts,None,None,None)])
++                "L","N",self.doCosts,None,None,None)])
+         tnd = ((self.endPage1,"y"),)
+         txt = (self.exitPage1,)
+         self.df1 = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+@@ -112,14 +114,16 @@ class st5020(object):
+ 
+     def doLoc(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec("strloc", cols=["srl_desc"],
+-            where=[("srl_cono", "=", self.opts["conum"]), ("srl_loc", "=", w)],
+-            limit=1)
++            where=[("srl_cono", "=", self.opts["conum"]),
++            ("srl_loc", "=", w)], limit=1)
+         if not acc:
+             return "Invalid Location Code"
+         self.loc = w
+-        chk = self.sql.getRec("strvar", where=[("stv_cono", "=",
+-            self.opts["conum"]), ("stv_loc", "=", self.loc)])
+-        if chk:
++        chk = self.sql.getRec("strvar", cols=["count(*)"],
++            where=[("stv_cono", "=", self.opts["conum"]),
++            ("stv_loc", "=", self.loc), ("stv_mrgdt", "=", 0)],
++            limit=1)
++        if chk and chk[0]:
+             self.df1.setWidget(self.df1.mstFrame, "hide")
+             but = (("Continue", "C"), ("Delete", "D"), ("Exit", "E"))
+             ok = askChoice(self.opts["mf"].body, "Existing",
+@@ -129,7 +133,8 @@ class st5020(object):
+                 return "xt"
+             if ok == "D":
+                 self.sql.delRec("strvar", where=[("stv_cono", "=",
+-                    self.opts["conum"]), ("stv_loc", "=", self.loc)])
++                    self.opts["conum"]), ("stv_loc", "=", self.loc),
++                    ("stv_mrgdt", "=", 0)])
+                 self.opts["mf"].dbm.commitDbase(ask=True,
+                     mess="Would you like to COMMIT Deletions?")
+                 if self.opts["mf"].dbm.commit == "no":
+@@ -301,8 +306,10 @@ class st5020(object):
+                     data.append(getCost(self.sql, self.opts["conum"], line[0],
+                         line[1], loc=self.loc, ind=self.costs))
+                 data.append(line[2])
++            data.extend(["", 0, 0])
+             whr = [("stv_cono", "=", data[0]), ("stv_group", "=", data[1]),
+-                ("stv_code", "=", data[2]), ("stv_loc", "=", self.loc)]
++                ("stv_code", "=", data[2]), ("stv_loc", "=", self.loc),
++                ("stv_mrgdt", "=", 0)]
+             var = self.sql.getRec("strvar", where=whr, limit=1)
+             if var:
+                 self.sql.delRec("strvar", where=whr)
+@@ -370,11 +377,12 @@ Please Correct your Import File and then Try Again.""" % err)
+             ("stv_cono", "=", self.opts["conum"]),
+             ("stv_group", "=", self.group2),
+             ("stv_code", "=", self.code2),
+-            ("stv_loc", "=", self.loc)]
++            ("stv_loc", "=", self.loc),
++            ("stv_mrgdt", "=", 0)]
+         if self.sql.getRec("strvar", where=whr, limit=1):
+             self.sql.delRec("strvar", where=whr)
+         self.sql.insRec("strvar", data=[self.opts["conum"], self.group2,
+-            self.code2, self.loc, self.bin, self.qty, self.ucost])
++            self.code2, self.loc, self.bin, self.qty, self.ucost, "", 0, 0])
+         self.opts["mf"].dbm.commitDbase()
+ 
+     def doNextOne(self):
+@@ -399,8 +407,8 @@ Please Correct your Import File and then Try Again.""" % err)
+     def doGetValues(self):
+         var = self.sql.getRec("strvar", where=[("stv_cono", "=",
+             self.opts["conum"]), ("stv_group", "=", self.group2),
+-            ("stv_code", "=", self.code2), ("stv_loc", "=", self.loc)],
+-            limit=1)
++            ("stv_code", "=", self.code2), ("stv_loc", "=", self.loc),
++            ("stv_mrgdt", "=", 0)], limit=1)
+         if var:
+             qty = var[self.sql.strvar_col.index("stv_qty")]
+             cst = var[self.sql.strvar_col.index("stv_ucost")]
+diff --git a/str/st5030.py b/str/st5030.py
+index d73b5fa..730bc0f 100644
+--- a/str/st5030.py
++++ b/str/st5030.py
+@@ -61,26 +61,51 @@ class st5030(object):
+                 ("srl_loc", "", 0, "L"),
+                 ("srl_desc", "", 0, "Description", "Y")),
+             "where": [("srl_cono", "=", self.opts["conum"])]}
+-        fld = (
+-            (("T",0,0,0),"ID1",10,"Reporting Date","",
+-                self.sysdtw,"Y",self.doDate,None,None,("efld",)),
+-            (("T",0,1,0),"IUA",1,"Location","",
+-                "","Y",self.doLoc,loc,None,("efld",)),)
++        self.dte = {
++            "stype": "R",
++            "tables": ("strvar",),
++            "cols": (
++                ("stv_mrgdt", "", 0, "Mrg-Date"),),
++            "where": [("stv_cono", "=", self.opts["conum"])],
++            "group": "stv_mrgdt",
++            "order": "stv_mrgdt"}
++        r1s = (("Yes",  "Y"), ("No", "N"))
++        fld = [
++            [("T",0,0,0),("IRB",r1s),0,"Reprint Report","",
++                "N","Y",self.doReprint,None,None,None],
++            [("T",0,1,0),"ID1",10,"Enter Date","",
++                0,"N",self.doDate,self.dte,None,("efld",)],
++            [("T",0,2,0),"IUA",1,"Location","",
++                "","Y",self.doLoc,loc,None,("efld",)]]
+         tnd = ((self.doEnd,"Y"), )
+         txt = (self.doExit, )
+         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
+             tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
+ 
++    def doReprint(self, frt, pag, r, c, p, i, w):
++        self.reprt = w
++        if self.reprt == "N":
++            self.df.topf[0][1][4] = "Reporting Date"
++            self.dte["where"].append(("stv_mrgdt", "=", 0))
++            self.df.loadEntry(frt, pag, p+1, data=self.sysdtw)
++        else:
++            self.df.topf[0][1][4] = "Merged Date"
++            if ("stv_mrgdt", "=", 0) in self.dte["where"]:
++                self.dte["where"].remove(("stv_mrgdt", "=", 0))
++
+     def doDate(self, frt, pag, r, c, p, i, w):
+-        if w < self.opts["period"][1][0] or w > self.opts["period"][2][0]:
++        if self.reprt == "N" and (w < self.opts["period"][1][0] or \
++                w > self.opts["period"][2][0]):
+             return "Invalid Date, Not in Financial Period"
+         self.date = w
+         self.dated = self.df.t_disp[pag][0][p]
++        if self.reprt == "N":
++            self.curdt = int(self.date / 100)
+ 
+     def doLoc(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec("strloc", cols=["srl_desc"],
+-            where=[("srl_cono", "=", self.opts["conum"]), ("srl_loc", "=", w)],
+-            limit=1)
++            where=[("srl_cono", "=", self.opts["conum"]),
++            ("srl_loc", "=", w)], limit=1)
+         if not acc:
+             return "Invalid Location Code"
+         self.loc = w
+@@ -88,9 +113,15 @@ class st5030(object):
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+-        recs = self.sql.getRec("strvar", where=[("stv_cono",
+-            "=", self.opts["conum"]), ("stv_loc", "=", self.loc)],
+-            order="stv_group, stv_code")
++        whr = [
++            ("stv_cono", "=", self.opts["conum"]),
++            ("stv_loc", "=", self.loc)]
++        if self.reprt == "N":
++            whr.append(("stv_mrgdt", "=", 0))
++        else:
++            whr.append(("stv_mrgdt", "=", self.date))
++        recs = self.sql.getRec("strvar", where=whr,
++            order="stv_group, stv_code, stv_seq")
+         if not recs:
+             showError(self.opts["mf"].body, "Processing Error",
+                 "No Records Selected")
+@@ -108,29 +139,42 @@ class st5030(object):
+                 break
+             grp = dat[self.sql.strvar_col.index("stv_group")]
+             code = dat[self.sql.strvar_col.index("stv_code")]
+-            sbin = dat[self.sql.strvar_col.index("stv_bin")]
+-            qty1 = dat[self.sql.strvar_col.index("stv_qty")]
+-            prc = dat[self.sql.strvar_col.index("stv_ucost")]
+-            bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
+-                int(self.date / 100), keys=(grp, code, self.loc,
+-                ("P", self.opts["period"][0])))
+-            m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
+-            fq = y_cb[0]
+-            if ac:
+-                fp = ac
++            vbin = dat[self.sql.strvar_col.index("stv_bin")]
++            vqty = dat[self.sql.strvar_col.index("stv_qty")]
++            vprc = dat[self.sql.strvar_col.index("stv_ucost")]
++            if self.reprt == "N":
++                bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
++                    self.curdt, keys=(grp, code, self.loc,
++                    ("P", self.opts["period"][0])))
++                mob, mmv, mcb, yob, ymv, ycb, ac, lc, ls = bals.doStrBals()
++                fqty, fval = ycb
++                if fval and fqty:
++                    fprc = round((fval / fqty), 2)
++                else:
++                    fprc = 0
++                if fprc != vprc and vprc:
++                    prc = vprc
++                else:
++                    prc = fprc
++                vval = round((prc * vqty),2)
++                qdif = float(ASD(vqty) - ASD(fqty))
++                vdif = float(ASD(vval) - ASD(fval))
+             else:
+-                fp = lc
+-            qdif = float(ASD(fq) - ASD(qty1))
+-            if not qdif:
++                qdif = dat[self.sql.strvar_col.index("stv_qdif")]
++                vdif = dat[self.sql.strvar_col.index("stv_vdif")]
++                fqty = float(ASD(vqty) - ASD(qdif))
++                prc = float(ASD(round(vqty * vprc, 2)) - ASD(vdif))
++                if fqty:
++                    prc = round(prc / fqty, 2)
++            if not qdif and not vdif:
+                 continue
+-            vdif = round(qdif * fp, 2)
+-            rslt = self.sql.getRec("strmf1", cols=["st1_desc",
+-                "st1_uoi"], where=[("st1_cono", "=", self.opts["conum"]),
++            rslt = self.sql.getRec("strmf1", cols=["st1_desc", "st1_uoi"],
++                where=[("st1_cono", "=", self.opts["conum"]),
+                 ("st1_group", "=", grp), ("st1_code", "=", code)],
+                 limit=1)
+             desc = rslt[0]
+             uoi = rslt[1]
+-            data.append([grp,code,desc,uoi,sbin,fp,prc,fq,qty1,qdif,vdif])
++            data.append([grp,code,desc,uoi,vbin,prc,prc,fqty,vqty,qdif,vdif])
+         p.closeProgress()
+         if not p.quit:
+             name = self.__class__.__name__
+diff --git a/str/st5040.py b/str/st5040.py
+index 192e1ce..44b554f 100644
+--- a/str/st5040.py
++++ b/str/st5040.py
+@@ -25,7 +25,7 @@ COPYING
+ """
+ 
+ import time
+-from TartanClasses import ASD, Balances, CCD, GetCtl, ProgressBar, Sql
++from TartanClasses import ASD, Balances, GetCtl, ProgressBar, Sql
+ from TartanClasses import TartanDialog
+ from tartanFunctions import showError
+ 
+@@ -81,8 +81,9 @@ class st5040(object):
+             "stv_ucost"]
+         recs = self.sql.getRec(tables=["strmf1", "strvar"], cols=col,
+             where=[("stv_cono", "=", self.opts["conum"]),
+-            ("stv_cono=st1_cono",), ("stv_group=st1_group",),
+-            ("stv_code=st1_code",)], order="stv_group, stv_code, stv_loc")
++            ("stv_mrgdt", "=", 0), ("stv_cono=st1_cono",),
++            ("stv_group=st1_group",), ("stv_code=st1_code",)],
++            order="stv_group, stv_code, stv_loc")
+         if not recs:
+             showError(self.opts["mf"].body, "Processing Error",
+             "No Records Selected")
+@@ -90,12 +91,15 @@ class st5040(object):
+             p = ProgressBar(self.opts["mf"].body, typ="F", mxs=len(recs))
+             for num, dat in enumerate(recs):
+                 p.displayProgress(num)
+-                self.updateTables(num+1, col, dat)
+-                self.sql.delRec("strvar", where=[("stv_cono", "=",
+-                    self.opts["conum"]), ("stv_group", "=",
+-                    dat[col.index("stv_group")]),
++                prc, qdif, vdif = self.updateTables(num+1, col, dat)
++                cols = ["stv_ucost", "stv_mrgdt", "stv_qdif", "stv_vdif"]
++                data = [prc, self.date, qdif, vdif]
++                self.sql.updRec("strvar", cols=cols, data=data,
++                    where=[("stv_cono", "=", self.opts["conum"]),
++                    ("stv_group", "=", dat[col.index("stv_group")]),
+                     ("stv_code", "=", dat[col.index("stv_code")]),
+-                    ("stv_loc", "=", dat[col.index("stv_loc")])])
++                    ("stv_loc", "=", dat[col.index("stv_loc")]),
++                    ("stv_mrgdt", "=", 0)])
+             self.opts["mf"].dbm.commitDbase()
+             p.closeProgress()
+         self.opts["mf"].closeLoop()
+@@ -104,78 +108,72 @@ class st5040(object):
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+ 
+-    def updateTables(self, cnt, col, rec):
++    def updateTables(self, ref, col, rec):
+         grp = rec[col.index("stv_group")]
+         code = rec[col.index("stv_code")]
+         loc = rec[col.index("stv_loc")]
+-        vqty = CCD(rec[col.index("stv_qty")], "SD", 12.2)
+-        vprc = CCD(rec[col.index("stv_ucost")], "SD", 12.2)
++        vqty = rec[col.index("stv_qty")]
++        vprc = rec[col.index("stv_ucost")]
+         # Test for Variances
+         bals = Balances(self.opts["mf"], "STR", self.opts["conum"], self.curdt,
+             keys=(grp, code, loc, ("P", self.opts["period"][0])))
+         m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
+-        fqty = CCD(y_cb[0], "SD", 12.2)
+-        fval = CCD(y_cb[1], "SD", 12.2)
+-        if fval.work and fqty.work:
+-            c = round((fval.work / fqty.work), 2)
++        fqty, fval = y_cb
++        if fval and fqty:
++            fprc = round((fval / fqty), 2)
+         else:
+-            c = 0
+-        fprc = CCD(c, "SD", 12.2)
+-        if fprc.work != vprc.work and vprc.work:
+-            prc = vprc.work
++            fprc = 0
++        if fprc != vprc and vprc:
++            prc = vprc
+         else:
+-            prc = fprc.work
+-        prc = CCD(prc, "SD", 12.2)
+-        val = round((prc.work * vqty.work),2)
+-        vval = CCD(val, "SD", 12.2)
+-        qdif = CCD(float(ASD(vqty.work) - ASD(fqty.work)), "SD", 12.2)
+-        vdif = CCD(float(ASD(vval.work) - ASD(fval.work)), "SD", 12.2)
+-        if not qdif.work and not vdif.work:
+-            return
+-        # Stores Ledger Transaction
+-        if qdif.work >= 0:
+-            rtn = 5
+-        else:
+-            rtn = 6
+-        ref = CCD(cnt, "Na", 9).work
+-        self.sql.insRec("strtrn", data=[self.opts["conum"],
+-            rec[col.index("stv_group")], rec[col.index("stv_code")],
+-            rec[col.index("stv_loc")], self.date, rtn, ref, "ST-MERG", "",
+-            qdif.work, vdif.work, 0, self.curdt, "Stock Take Adjustment", 0,
+-            "", "", "STR", 0, "", self.opts["capnm"], self.sysdtw, 0])
+-        if self.glint == "N":
+-            return
+-        # General Ledger Control Transaction (Stock On Hand)
+-        col = self.sql.gentrn_col
+-        acc = self.sql.getRec("gentrn", where=[("glt_cono", "=",
+-            self.opts["conum"]), ("glt_acno", "=", self.stk_soh), ("glt_curdt",
+-            "=", self.curdt), ("glt_trdt", "=", self.date), ("glt_type", "=",
+-            4), ("glt_refno", "=", "STOCK-ADJ"), ("glt_batch", "=",
+-            "ST-MERG")], limit=1)
+-        if acc:
+-            amnt = float(ASD(acc[col.index("glt_tramt")]) + ASD(vdif.work))
+-            self.sql.updRec("gentrn", cols=["glt_tramt"], data=[amnt],
+-                where=[("glt_seq", "=", acc[col.index("glt_seq")])])
+-        else:
+-            self.sql.insRec("gentrn", data=[self.opts["conum"], self.stk_soh,
+-                self.curdt, self.date, 4, "STOCK-ADJ", "ST-MERG", vdif.work, 0,
+-                "Stock Take Adjustment", "N", "", 0, self.opts["capnm"],
+-                self.sysdtw, 0])
+-        # General Ledger Control Transaction (Stock Suspense)
+-        val = float(ASD(0) - ASD(vdif.work))
+-        acc = self.sql.getRec("gentrn", where=[("glt_cono", "=",
+-            self.opts["conum"]), ("glt_acno", "=", self.stk_susp),
+-            ("glt_curdt", "=", self.curdt), ("glt_trdt", "=", self.date),
+-            ("glt_type", "=", 4), ("glt_refno", "=", "STOCK-ADJ"),
+-            ("glt_batch", "=", "ST-MERG")], limit=1)
+-        if acc:
+-            amnt = float(ASD(acc[col.index("glt_tramt")]) + ASD(val))
+-            self.sql.updRec("gentrn", cols=["glt_tramt"], data=[amnt],
+-                where=[("glt_seq", "=", acc[col.index("glt_seq")])])
+-        else:
+-            self.sql.insRec("gentrn", data=[self.opts["conum"], self.stk_susp,
+-                self.curdt, self.date, 4, "STOCK-ADJ", "ST-MERG", val, 0,
+-                "Stock Take Adjustment", "N", "", 0, self.opts["capnm"],
+-                self.sysdtw, 0])
++            prc = fprc
++        vval = round((prc * vqty),2)
++        qdif = float(ASD(vqty) - ASD(fqty))
++        vdif = float(ASD(vval) - ASD(fval))
++        if qdif or vdif:
++            # Stores Ledger Transaction
++            if qdif >= 0:
++                rtn = 5
++            else:
++                rtn = 6
++            self.sql.insRec("strtrn", data=[self.opts["conum"],
++                rec[col.index("stv_group")], rec[col.index("stv_code")],
++                rec[col.index("stv_loc")], self.date, rtn, ref, "ST-MERG", "",
++                qdif, vdif, 0, self.curdt, "Stock Take Adjustment", 0,
++                "", "", "STR", 0, "", self.opts["capnm"], self.sysdtw, 0])
++            if self.glint == "Y":
++                # General Ledger Control Transaction (Stock On Hand)
++                col = self.sql.gentrn_col
++                acc = self.sql.getRec("gentrn", where=[("glt_cono", "=",
++                    self.opts["conum"]), ("glt_acno", "=", self.stk_soh),
++                    ("glt_curdt", "=", self.curdt), ("glt_trdt", "=",
++                    self.date), ("glt_type", "=", 4), ("glt_refno", "=",
++                    "STOCK-ADJ"), ("glt_batch", "=", "ST-MERG")], limit=1)
++                if acc:
++                    amnt = float(ASD(acc[col.index("glt_tramt")]) + ASD(vdif))
++                    self.sql.updRec("gentrn", cols=["glt_tramt"], data=[amnt],
++                        where=[("glt_seq", "=", acc[col.index("glt_seq")])])
++                else:
++                    self.sql.insRec("gentrn", data=[self.opts["conum"],
++                        self.stk_soh, self.curdt, self.date, 4, "STOCK-ADJ",
++                        "ST-MERG", vdif, 0, "Stock Take Adjustment",
++                        "N", "", 0, self.opts["capnm"], self.sysdtw, 0])
++                # General Ledger Control Transaction (Stock Suspense)
++                val = float(ASD(0) - ASD(vdif))
++                acc = self.sql.getRec("gentrn", where=[("glt_cono", "=",
++                    self.opts["conum"]), ("glt_acno", "=", self.stk_susp),
++                    ("glt_curdt", "=", self.curdt), ("glt_trdt", "=",
++                    self.date), ("glt_type", "=", 4), ("glt_refno", "=",
++                    "STOCK-ADJ"), ("glt_batch", "=", "ST-MERG")], limit=1)
++                if acc:
++                    amnt = float(ASD(acc[col.index("glt_tramt")]) + ASD(val))
++                    self.sql.updRec("gentrn", cols=["glt_tramt"], data=[amnt],
++                        where=[("glt_seq", "=", acc[col.index("glt_seq")])])
++                else:
++                    self.sql.insRec("gentrn", data=[self.opts["conum"],
++                        self.stk_susp, self.curdt, self.date, 4, "STOCK-ADJ",
++                        "ST-MERG", val, 0, "Stock Take Adjustment", "N", "",
++                        0, self.opts["capnm"], self.sysdtw, 0])
++        return (prc, qdif, vdif)
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+diff --git a/str/st6020.py b/str/st6020.py
+index a377926..d9a3744 100644
+--- a/str/st6020.py
++++ b/str/st6020.py
+@@ -34,13 +34,20 @@ class st6020(object):
+     def __init__(self, **opts):
+         self.opts = opts
+         if self.setVariables():
+-            self.dataHeader()
+-            self.opts["mf"].startLoop()
++            if "args" in opts:
++                self.loc, self.date, self.hist, mths = opts["args"]
++                self.curdt = int(self.date / 100)
++                self.minus = "Y"
++                if self.hist == "Y":
++                    self.loadPers(mths)
++                self.doEnd()
++            else:
++                self.dataHeader()
++                self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["gentrn", "strmf1", "strmf2",
+-            "strgmu", "strcmu", "strprc", "strtrn"],
+-                prog=self.__class__.__name__)
++        self.sql = Sql(self.opts["mf"].dbm, ["gentrn", "strloc", "strmf1",
++            "strmf2", "strtrn"], prog=self.__class__.__name__)
+         if self.sql.error:
+             return
+         gc = GetCtl(self.opts["mf"])
+@@ -61,35 +68,80 @@ class st6020(object):
+             self.stk_susp = ctlctl["stk_susp"]
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
++        self.sper = int(self.opts["period"][1][0] / 100)
+         return True
+ 
+     def dataHeader(self):
+-        r1s = (("Average", "A"), ("Last", "L"))
+-        r2s = (("Yes", "Y"), ("No", "N"))
+-        fld = [
+-            (("T",0,0,0),"ID1",10,"Effective Date","",
+-                self.sysdtw,"N",self.doDate,None,None,("efld",)),
+-            (("T",0,1,0),("IRB",r1s),0,"Cost Method","",
+-                "L","N",self.doMethod,None,None,None),
+-            (("T",0,2,0),("IRB",r2s),0,"Clear Minuses","",
+-                "Y","N",self.doMinus,None,None,None)]
+-        tnd = ((self.endPage,"y"),)
+-        txt = (self.exitPage,)
++        r1s = (("Yes", "Y"), ("No", "N"))
++        if self.locs == "Y":
++            idx = 1
++            fld = [(("T",0,0,0),"IUA",1,"Location","",
++                "1","Y",self.doLoc,None,None,("efld",))]
++        else:
++            idx = 0
++            fld = []
++            self.loc = "1"
++        fld.extend([
++            (("T",0,idx,0),"ID1",10,"Effective Date","",
++                self.sysdtw,"Y",self.doDate,None,None,("efld",)),
++            (("T",0,idx+1,0),("IRB",r1s),0,"Change History","",
++                "N","N",self.doHist,None,None,None),
++            (("T",0,idx+2,0),"IUI",2,"Number of Months","",
++                0,"N",self.doMths,None,None,("efld",)),
++            (("T",0,idx+3,0),("IRB",r1s),0,"Clear Minuses","",
++                "Y","N",self.doMinus,None,None,None)])
++        tnd = ((self.doEnd,"y"),)
++        txt = (self.doExit,)
+         self.df = TartanDialog(self.opts["mf"], eflds=fld, tend=tnd,
+             txit=txt)
+ 
++    def doLoc(self, frt, pag, r, c, p, i, w):
++        chk = self.sql.getRec("strloc", where=[("srl_cono", "=",
++            self.opts["conum"]), ("srl_loc", "=", w)], limit=1)
++        if not chk:
++            return "Invalid Location"
++        self.loc = w
++
+     def doDate(self, frt, pag, r, c, p, i, w):
++        if w < self.opts["period"][1][0] or w > self.opts["period"][2][0]:
++            return "Invalid Date, Not in Financial Period"
+         self.date = w
+         self.curdt = int(w / 100)
+ 
+-    def doMethod(self, frt, pag, r, c, p, i, w):
+-        self.method = w
++    def doHist(self, frt, pag, r, c, p, i, w):
++        self.hist = w
++        if self.hist == "N":
++            return "sk1"
++
++    def doMths(self, frt, pag, r, c, p, i, w):
++        self.loadPers(w)
+ 
+     def doMinus(self, frt, pag, r, c, p, i, w):
+         self.minus = w
+ 
+-    def endPage(self):
+-        self.df.closeProcess()
++    def loadPers(self, mths):
++        yr = int(self.curdt / 100)
++        mt = (self.curdt % 100) - mths
++        if mt < 1:
++            yr -= 1
++            mt += 12
++        hper = (yr * 100) + mt
++        if hper < self.sper:
++            return "Out of Financial Period"
++        self.pers = [hper]
++        while hper < self.curdt:
++            yr = int(hper / 100)
++            mt = (hper % 100) + 1
++            if mt > 12:
++                yr += 1
++                mt -= 12
++            hper = (yr * 100) + mt
++            self.pers.append(hper)
++        self.pers.append(self.curdt)
++
++    def doEnd(self):
++        if "args" not in self.opts:
++            self.df.closeProcess()
+         whr = [
+             ("st2_cono", "=", self.opts["conum"]),
+             ("st1_cono=st2_cono",),
+@@ -100,49 +152,110 @@ class st6020(object):
+         recs = self.sql.getRec(tables=["strmf1", "strmf2"], cols=["st2_group",
+             "st2_code", "st2_loc"], where=whr, order="st2_group, st2_code")
+         if not recs:
+-            showError(self.opts["mf"].body, "Processing Error",
+-            "No Stock Records")
++            if "args" not in self.opts:
++                showError(self.opts["mf"].body, "Processing Error",
++                    "No Stock Records")
++            else:
++                print("No Stock Records")
+         else:
+             self.cnt = 0
+-            if self.method == "L":
+-                txt = "Valuation of Stock at Last Cost"
+-            else:
+-                txt = "Valuation of Stock at Average Cost"
+-            p = ProgressBar(self.opts["mf"].body, mxs=len(recs), typ=txt)
++            txt = "Re-Valuation of Stock at Last Cost"
++            if "args" not in self.opts:
++                p = ProgressBar(self.opts["mf"].body, mxs=len(recs), typ=txt)
++            obal = self.sql.getRec("strtrn", cols=["sum(stt_cost)"],
++                where=[("stt_cono", "=", self.opts["conum"]), ("stt_loc",
++                "=", self.loc)], limit=1)[0]
+             for num, rec in enumerate(recs):
+-                p.displayProgress(num)
+-                self.updateTables(rec)
+-            p.closeProgress()
+-            self.opts["mf"].dbm.commitDbase(ask=True)
+-        self.opts["mf"].closeLoop()
++                if "args" not in self.opts:
++                    p.displayProgress(num)
++                if self.hist == "Y":
++                    self.doHistory(rec)
++                self.doCurrent(rec)
++            if "args" not in self.opts:
++                p.closeProgress()
++            cbal = self.sql.getRec("strtrn", cols=["sum(stt_cost)"],
++                where=[("stt_cono", "=", self.opts["conum"]), ("stt_loc",
++                "=", self.loc)], limit=1)[0]
++            tval = float(ASD(cbal) - ASD(obal))
++            if self.glint == "Y" and tval:
++                # Next automatic reference
++                acc = self.sql.getRec("gentrn",
++                    cols=["max(glt_refno)"], where=[("glt_cono", "=",
++                    self.opts["conum"]), ("glt_acno", "=", self.stk_susp),
++                    ("glt_refno", "like", "SR_______"), ("glt_batch", "=",
++                    "ST-RVAL")], limit=1)
++                if acc:
++                    try:
++                        auto = int(acc[0][2:]) + 1
++                    except:
++                        auto = 1
++                else:
++                    auto = 1
++                refno = "SR%07d" % auto
++                # General Ledger Control Transaction (Stock On Hand)
++                self.sql.insRec("gentrn", data=[self.opts["conum"],
++                    self.stk_soh, self.curdt, self.date, 4, refno,
++                    "ST-RVAL", tval, 0, txt, "N", "", 0,
++                    self.opts["capnm"], self.sysdtw, 0])
++                # General Ledger Control Transaction (Stock Reconciliation)
++                val = float(ASD(0) - ASD(tval))
++                self.sql.insRec("gentrn", data=[self.opts["conum"],
++                    self.stk_susp, self.curdt, self.date, 4, refno,
++                    "ST-RVAL", val, 0, txt, "N", "", 0,
++                    self.opts["capnm"], self.sysdtw, 0])
++            txt = """Old Stock Balance:    %s
++New Stock Balance:    %s\n""" % (CCD(obal, "SD", 12.2).disp,
++        CCD(cbal, "SD", 12.2).disp)
++            self.opts["mf"].dbm.commitDbase(ask=True, mess=txt)
++        if "args" not in self.opts:
++            self.opts["mf"].closeLoop()
+ 
+-    def exitPage(self):
++    def doExit(self):
+         self.df.closeProcess()
+         self.opts["mf"].closeLoop()
+ 
+-    def updateTables(self, rec):
++    def doHistory(self, rec):
++        grp, cod, loc = rec
++        whr = [
++            ("stt_cono", "=", self.opts["conum"]),
++            ("stt_group", "=", grp),
++            ("stt_code", "=", cod),
++            ("stt_loc", "=", loc),
++            ("stt_type", "in", (1, 3))]
++        for per in self.pers:
++            w = whr[:]
++            w.append(("stt_curdt", "<=", per))
++            chk = self.sql.getRec("strtrn", cols=["max(stt_curdt)", "stt_qty",
++                "stt_cost"], where=whr, group="stt_curdt, stt_qty, stt_cost",
++                order="stt_curdt desc", limit=1)
++            if not chk:
++                continue
++            cst = round((chk[2] / chk[1]), 2)
++            self.sql.sqlRec("Update strtrn set stt_cost = stt_qty * %s "\
++                "where stt_cono = %s and stt_group = '%s' and "\
++                "stt_code = '%s' and stt_loc = '%s' and stt_type not in "\
++                "(1,3) and stt_curdt = %s" % (cst, self.opts["conum"], grp,
++                cod, loc, per))
++
++    def doCurrent(self, rec):
+         bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
+-            int(self.sysdtw / 100), keys=(rec[0], rec[1], rec[2], ("P",
+-            self.opts["period"][0])))
++            self.curdt, keys=(rec[0], rec[1], rec[2],
++            ("P", self.opts["period"][0])))
+         m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
++        fqty, fval = y_cb
+         if self.minus == "N" and not ac and not lc:
+             return
+-        fqty = CCD(y_cb[0], "SD", 12.2)
+-        fval = CCD(y_cb[1], "SD", 12.2)
+-        if self.minus == "Y" and fqty.work < 0:
++        if self.minus == "Y" and fqty < 0:
+             nqty = 0
+         else:
+-            nqty = fqty.work
+-        if self.method == "L" and lc:
+-            nval = nqty * lc
+-        elif self.method == "A" and ac:
+-            nval = nqty * ac
+-        elif lc:
+-            nval = nqty * lc
++            nqty = fqty
++        if lc:
++            ncst = lc
+         else:
+-            nval = nqty * ac
+-        dqty = float(ASD(nqty) - ASD(fqty.work))
+-        dval = float(ASD(nval) - ASD(fval.work))
++            ncst = ac
++        nval = round((nqty * ncst), 2)
++        dqty = float(ASD(nqty) - ASD(fqty))
++        dval = float(ASD(nval) - ASD(fval))
+         if not dqty and not dval:
+             return
+         # Stores Ledger Transaction
+@@ -150,22 +263,62 @@ class st6020(object):
+             rtn = 5
+         else:
+             rtn = 6
++        self.cnt += 1
+         txt = "Revaluation"
+         self.sql.insRec("strtrn", data=[self.opts["conum"], rec[0], rec[1],
+             rec[2], self.date, rtn, self.cnt, "ST-RVAL", "", dqty, dval, 0,
+             self.curdt, txt, 0, "", "", "STR", 0, "", self.opts["capnm"],
+             self.sysdtw, 0])
+-        if self.glint == "N":
+-            self.cnt = self.cnt + 1
+-            return
+-        # General Ledger Control Transaction (Stock On Hand)
+-        self.sql.insRec("gentrn", data=[self.opts["conum"], self.stk_soh,
+-            self.curdt, self.date, 4, self.cnt, "ST-RVAL", dval, 0, txt, "N",
+-            "", 0, self.opts["capnm"], self.sysdtw, 0])
+-        # General Ledger Control Transaction (Stock Reconciliation)
+-        val = float(ASD(0) - ASD(dval))
+-        self.sql.insRec("gentrn", data=[self.opts["conum"], self.stk_susp,
+-            self.curdt, self.date, 4, self.cnt, "ST-RVAL", val, 0, txt, "N",
+-            "", 0, self.opts["capnm"], self.sysdtw, 0])
++
++if __name__ == "__main__":
++    import getopt, sys
++    from TartanClasses import Dbase, MainFrame
++    from tartanFunctions import getPeriods, loadRcFile
++    try:
++        opts, args = getopt.getopt(sys.argv[1:],"c:d:h:l:m:p:r:")
++    except:
++        print("")
++        print("Usage: -cconum -pperiod -rrcfile -llocation -ddate -hhistory -mmonths")
++        print("")
++        sys.exit()
++    coy = 1
++    num = None
++    rcf = None
++    loc = "1"
++    t = time.localtime()
++    dte = (t[0] * 10000) + (t[1] * 100) + t[2]
++    hst = "N"
++    mth = 0
++    for o, v in opts:
++        if o == "-c":
++            coy = int(v)
++        elif o == "-d":
++            dte = int(v)
++        elif o == "-h":
++            hst = v
++        elif o == "-l":
++            loc = v
++        elif o == "-m":
++            mth = int(v)
++        elif o == "-p":
++            num = int(v)
++        elif o == "-r":
++            rcf = v
++    mf = MainFrame(xdisplay=False)
++    mf.dbm = Dbase(rcdic=loadRcFile(rcfile=rcf))
++    if not mf.dbm.err:
++        mf.dbm.openDbase()
++        sql = Sql(mf.dbm, "ctlynd")
++        if not num:
++            num = sql.getRec("ctlynd", cols=["max(cye_period)"],
++                where=[("cye_cono", "=", coy)], limit=1)[0]
++        per = getPeriods(mf, coy, num)
++        if per[1] and per[2]:
++            per = (num, (per[0].work, per[0].disp), (per[1].work, per[1].disp))
++            ex = st6020(**{"mf": mf, "conum": coy, "period": per,
++                "capnm": "paul", "args": (loc, dte, hst, mth)})
++        else:
++            print("Invalid Period %s for Company %s" % (num, coy))
++        mf.dbm.closeDbase()
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+diff --git a/tab/tb1010.py b/tab/tb1010.py
+index 2dde80d..f1bc556 100644
+--- a/tab/tb1010.py
++++ b/tab/tb1010.py
+@@ -256,7 +256,7 @@ class tb1010(object):
+                         ddd.append(d)
+                 fmt += "\n"
+                 tabdic[self.tab]["idx"].append(ddd)
+-            fle = os.path.join(getPrgPath(), "stdtab.py")
++            fle = os.path.join(getPrgPath()[1], "stdtab.py")
+             outf = open(fle, "w")
+             outf.write("""tabdic = {""")
+             tabs = list(tabdic.keys())
+diff --git a/tarchg.py b/tarchg.py
+index bab5885..a018d62 100644
+--- a/tarchg.py
++++ b/tarchg.py
+@@ -1,5 +1,5 @@
+-changes = """ver_6.9
+-=======
++changes = """ver_6.9 2022-08-07
++==================
+  1) Improved the debtor's recurring charges module.
+  2) Improved the History procedure in the bowls tabs-inn module.
+  3) Fixed a bug in the purchase orders module relating to V.A.T. numbers.
+@@ -922,4 +922,4 @@ Note:
+ -----
+ You can only upgrade to this version if your current version is 4.1.10 or later
+ 
+-"""
+\ No newline at end of file
++"""
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index 29fe75d..f25da01 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -121,10 +121,11 @@ def cutpasteMenu(event):
+ 
+ def getPrgPath():
+     import os, sys
++    epath = os.path.dirname(sys.executable)
+     if getattr(sys, "frozen", False):
+-        return sys._MEIPASS
++        return sys._MEIPASS, epath
+     else:
+-        return os.path.dirname(os.path.abspath(__file__))
++        return os.path.dirname(os.path.abspath(__file__)), epath
+ 
+ def showDialog(screen, dtype, title, mess, butt=None, dflt=None):
+     try:
+@@ -206,7 +207,7 @@ def loadRcFile(rcfile=None, default=False):
+     if FITZ:
+         vwr = [""]
+     else:
+-        win = os.path.join(getPrgPath(), "uty", "SumatraPDF.exe")
++        win = os.path.join(getPrgPath()[1], "uty", "SumatraPDF.exe")
+         vwr = ["/usr/bin/evince", win]
+     tardir = os.path.join(Path.home(), "Tartan")
+     if not os.path.isdir(tardir):
+@@ -2130,25 +2131,26 @@ def getCost(sql, cono, group, code, loc=None, qty=1, ind="I", recp=False, tot=Fa
+             where=where, group=grp, limit=1)
+         if not bals:
+             bals = [0, 0]
+-        if "A" in csts:
+-            # Average Cost
+-            if bals[0] and qqq == bals[0]:
+-                ac = round((bals[1] / qty), 2)
+-                tc = bals[1]
+-            elif bals[0]:
+-                ac = round((bals[1] / bals[0]), 2)
+-        if "L" in csts:
+-            # Last Cost
+-            whr = where[:]
+-            whr.append(("stt_type", "in", (1, 3)))
+-            chk = sql.getRec("strtrn", cols=["stt_qty", "stt_cost"],
+-                where=whr, order="stt_capdt desc, stt_seq desc")
+-            for rec in chk:
+-                q = CCD(rec[0], "SD", 11.2)
+-                c = CCD(rec[1], "SD", 11.2)
+-                if q.work and q.work > 0 and c.work:
+-                    lc = round((c.work / q.work), 2)
+-                    break
++        # Average Cost
++        if bals[0] and qqq == bals[0]:
++            ac = round((bals[1] / qty), 2)
++            tc = bals[1]
++        elif bals[0]:
++            ac = round((bals[1] / bals[0]), 2)
++        # Last Cost
++        whr = where[:]
++        whr.append(("stt_type", "in", (1, 3)))
++        chk = sql.getRec("strtrn", cols=["stt_qty", "stt_cost"],
++            where=whr, order="stt_capdt desc, stt_seq desc")
++        for rec in chk:
++            q = CCD(rec[0], "SD", 11.2)
++            c = CCD(rec[1], "SD", 11.2)
++            if q.work and q.work > 0 and c.work:
++                lc = round((c.work / q.work), 2)
++                break
++        # If average cost is zero
++        if not ac and lc:
++            ac = lc
+         if "S" in csts:
+             # Standard Cost
+             whr = [
+@@ -2313,11 +2315,13 @@ def getFileName(path, wrkdir=None, check=False):
+     fle = None
+     pth = None
+     try:
++        import socket
+         from smb.SMBConnection import SMBConnection
++        socket.setdefaulttimeout(5)
+         svr = path.replace("/", "|").replace("\\", "|")
+         svr = svr.split("|")
+         con = SMBConnection("", "", "", svr[2])
+-        con.connect(svr[2], timeout=5)
++        con.connect(svr[2])
+         for p in svr[4:]:
+             if not pth:
+                 pth = p
+diff --git a/tartanWork.py b/tartanWork.py
+index 04fd21d..ec5ab84 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -3045,7 +3045,7 @@ tabdic = {
+         "fld": [
+             [0, "rpo_rnam", "NA", 10.0, "Report Name", "Name"],
+             [1, "rpo_seq", "UI", 2.0, "Sequence", "Sq"],
+-            [2, "rpo_column", "NA", 20.0, "Column Name", "Name"],
++            [2, "rpo_column", "TX", 50.0, "Column Name", "Name"],
+             [3, "rpo_type", "NA", 1.0, "Ascending or Descending", "O"],
+             [4, "rpo_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+@@ -3563,10 +3563,15 @@ tabdic = {
+             [3, "stv_loc", "UA", 1.0, "Location", "L"],
+             [4, "stv_bin", "UA", 8.0, "Bin Number", "Bin-Num"],
+             [5, "stv_qty", "SD", 9.2, "Quantity", "Quantity"],
+-            [6, "stv_ucost", "SD", 9.2, "Unit Cost Price", "Unit-Cost"]],
+-        "idx": [
+-            ["Stock Take Variance", 1, "U", "stv_cono", "stv_group",
+-                "stv_code", "stv_loc"]]},
++            [6, "stv_ucost", "SD", 9.2, "Unit Cost Price", "Unit-Cost"],
++            [7, "stv_mrgdt", "d1", 10.0, "Merge Date", "Merge-Date"],
++            [8, "stv_qdif", "SD", 9.2, "Quantity Difference", "Qty-Diff"],
++            [9, "stv_vdif", "SD", 9.2, "Value Difference", "Val-Diff"],
++            [10, "stv_seq", "US", 10.0, "Sequence", "Sequence"]],
++        "idx": [
++            ["Stock Take Variance", 1, "U", "stv_seq"],
++            ["", 2, "N", "stv_cono", "stv_group", "stv_code", "stv_loc",
++                "stv_mrgdt"]]},
+     "telcon": {
+         "fld": [
+             [0, "tdc_name", "NA", 50.0, "Name", "Name"],
+diff --git a/uty/mklinux.py b/uty/mklinux.py
+index 1508a9f..36c3011 100644
+--- a/uty/mklinux.py
++++ b/uty/mklinux.py
+@@ -2,7 +2,11 @@
+ import getopt, glob, os, pathlib, shutil, subprocess, sys
+ from zipfile import ZipFile
+ 
++"""
++Use this module to create a pyinstaller executable for linux
++"""
+ # Generate Tartan Executable
++
+ def doUpgrade():
+     print("Upgrading python modules")
+     sys.path.insert(0, os.path.join(TMP, "tartan"))
+@@ -25,8 +29,9 @@ DPT = os.path.join(HOM, "Tartan", "prg")        # Directory for pyinstaller exe
+ EXE = os.path.join(HOM, "TartanExe")            # Destination of installer
+ SRC = os.path.join(HOM, "TartanSve")            # Repository of tartan.zip
+ TMP = os.path.join(HOM, "Temp")                 # Working Directory
++onefle = False                                  # Generate a single file
+ UPG = False                                     # Upgrade python modules
+-opts, args = getopt.getopt(sys.argv[1:], "a:d:e:hs:t:u")
++opts, args = getopt.getopt(sys.argv[1:], "a:d:e:fhs:t:u")
+ for o, v in opts:
+     if o == "-a":
+         PFX = v
+@@ -34,12 +39,15 @@ for o, v in opts:
+         DPT = v
+     elif o == "-e":
+         EXE = v
++    elif o == "-f":
++        onefle = True
+     elif o == "-h":
+         print("""
+ Usage: python mklinux.py [options]
+ 
+     -d The Installed Path e.g. /home/paul/Tartan\prg
+     -e The Destination Path e.g. /home/paul/TartanExe
++    -f Generate Onefile
+     -s The Source path e.g. /home/paul/TartanSve
+     -t Temporary Work Directory e.g. /home/paul/Temp
+     -u Upgrade python modules
+@@ -98,13 +106,20 @@ if UPG:
+     doUpgrade()
+ # Run pyinstaller
+ os.chdir(os.path.join(TMP, "tartan"))
+-subprocess.call(["pyinstaller", "linux.spec"], stdout=out, stderr=out)
++if onefle:
++    os.rename("ms0000.fle", "ms0000.spec")
++else:
++    os.rename("ms0000.dir", "ms0000.spec")
++subprocess.call(["pyinstaller", "ms0000.spec"], stdout=out, stderr=out)
+ # Copy files to DPT
+ shutil.copy("tartan.ico", DPT)
+-shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
++if onefle:
++    shutil.copy(os.path.join("dist", "ms0000"), DPT)
++else:
++    shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
+ os.chdir(HOM)
+ # Create tar file
+-subprocess.call(["zip", "-rq", os.path.join(EXE, "tartan-6-lnx.bin"), "Tartan"])
++subprocess.call(["zip", "-rq", os.path.join(EXE, "tartan-6-lnx.zip"), "Tartan"])
+ shutil.rmtree(TMP)
+ shutil.rmtree(DPT)
+ out.close()
+diff --git a/uty/mkwindows.py b/uty/mkwindows.py
+index bb3b85b..f2774d8 100644
+--- a/uty/mkwindows.py
++++ b/uty/mkwindows.py
+@@ -2,6 +2,9 @@
+ import getopt, glob, os, pathlib, shutil, subprocess, sys
+ from zipfile import ZipFile
+ 
++"""
++Use this module to create a pyinstaller executable for windows
++"""
+ # Generate Tartan Executable
+ def doFind(name=None, path="C:\\"):
+     found = None
+@@ -37,7 +40,7 @@ HOM = str(pathlib.Path.home())
+ if "WINEPREFIX" in os.environ:
+     MAP = "x:"
+ else:
+-    MAP = "\\\\192.168.0.1\\paul"
++    MAP = "\\\\home\\paul"
+ if sys.maxsize > 2**32:
+     PFX = "64"
+ else:
+@@ -46,8 +49,9 @@ DPT = os.path.join("c:\\", "Tartan", "prg")     # Directory for pyinstaller exe
+ EXE = os.path.join("%s\\" % MAP, "TartanExe")   # Destination of installer
+ SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
+ TMP = os.path.join("%s\\" % HOM, "Temp")        # Working Directory
++onefle = False                                  # Generate a single file
+ UPG = False                                     # Upgrade python modules
+-opts, args = getopt.getopt(sys.argv[1:], "a:d:e:hs:t:u")
++opts, args = getopt.getopt(sys.argv[1:], "a:d:e:fhs:t:u")
+ for o, v in opts:
+     if o == "-a":
+         PFX = v
+@@ -55,13 +59,16 @@ for o, v in opts:
+         DPT = v
+     elif o == "-e":
+         EXE = v
++    elif o == "-f":
++        onefle = True
+     elif o == "-h":
+         print("""
+-Usage: python mkwins.py [options]
++Usage: python mkwindows.py [options]
+ 
+     -a Architecture as in 7, 8, 32 and 64
+     -d The Installed Path e.g. c:\Tartan\prg
+     -e The Destination Path e.g. x:\TartanExe
++    -f generate Onefile
+     -s The Source path e.g. x:\TartanSve
+     -t Temporary Work Directory e.g. x:\Temp
+     -u Upgrade python modules
+@@ -122,10 +129,17 @@ if UPG:
+     doUpgrade()
+ # Run pyinstaller
+ os.chdir(os.path.join(TMP, "tartan"))
+-subprocess.call(["pyinstaller", "windows.spec"], stdout=out, stderr=out)
++if onefle:
++    os.rename("ms0000.fle", "ms0000.spec")
++else:
++    os.rename("ms0000.dir", "ms0000.spec")
++subprocess.call(["pyinstaller", "ms0000.spec"], stdout=out, stderr=out)
+ # Copy files to DPT
+ shutil.copy("tartan.ico", DPT)
+-shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
++if onefle:
++    shutil.copy(os.path.join("dist", "ms0000"), DPT)
++else:
++    shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
+ # Create installers and Copy installers to EXE
+ if "WINEPREFIX" in os.environ:
+     if PFX == "7":
+diff --git a/uty/ms0000.dir b/uty/ms0000.dir
+index c5d5aea..c85f0ed 100755
+--- a/uty/ms0000.dir
++++ b/uty/ms0000.dir
+@@ -10,10 +10,12 @@ a = Analysis(['ms0000.py'],
+         pathex=['.'],
+         binaries=[],
+         datas=data,
+-        hiddenimports=['tkinter', 'tarimp', 'pyexcel_io.writers.csvw',
++        hiddenimports=['tkinter', 'tarimp',
+             'pyexcel_ods', 'pyexcel_ods.odsr', 'pyexcel_ods.odsw',
+             'pyexcel_xls', 'pyexcel_xls.xlsr', 'pyexcel_xls.xlsw',
+-            'PIL._tkinter_finder'],
++            'pyexcel_io.writers', 'pyexcel_io.writers.csvw',
++            'pyexcel_io.writers.csvz', 'pyexcel_io.writers.tsv',
++            'pyexcel_io.writers.tsvz', 'PIL._tkinter_finder'],
+         hookspath=[],
+         runtime_hooks=[],
+         excludes=['PyQt4', 'PyQt5'],
+diff --git a/uty/ms0000.fle b/uty/ms0000.fle
+index c45f408..a0b6c72 100755
+--- a/uty/ms0000.fle
++++ b/uty/ms0000.fle
+@@ -2,16 +2,20 @@
+ from PyInstaller.utils.hooks import collect_data_files
+ 
+ block_cipher = None
+-data = [('doc/*', 'doc')]
++data = [
++    ('doc/*', 'doc'),
++    ('../pygal/css/*.css', 'pygal/css')]
+ data.extend(collect_data_files('tkinterhtml'))
+ a = Analysis(['ms0000.py'],
+         pathex=['.'],
+         binaries=[],
+         datas=data,
+-        hiddenimports=['tkinter', 'tarimp', 'pyexcel_io.writers.csvw',
++        hiddenimports=['tkinter', 'tarimp',
+             'pyexcel_ods', 'pyexcel_ods.odsr', 'pyexcel_ods.odsw',
+             'pyexcel_xls', 'pyexcel_xls.xlsr', 'pyexcel_xls.xlsw',
+-            'PIL._tkinter_finder'],
++            'pyexcel_io.writers', 'pyexcel_io.writers.csvw',
++            'pyexcel_io.writers.csvz', 'pyexcel_io.writers.tsv',
++            'pyexcel_io.writers.tsvz', 'PIL._tkinter_finder'],
+         hookspath=[],
+         hooksconfig={},
+         runtime_hooks=[],
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 79321fa..9a29961 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -1,7 +1,10 @@
+ #!usr/bin/env python
+ 
++"""
++Use this module to package Tartan and to make linux and/or windows Executables.
++"""
++
+ import getopt
+-import glob
+ import os
+ import pathlib
+ import shutil
+@@ -48,6 +51,8 @@ def addPage(doc, fle, last=False):
+     data.close()
+ 
+ def getName(nam, x, y, z=None):
++    if "%s.%s" % (x, y) == newver:
++        return "%s %s" % (nam, time.strftime("%Y-%m-%d", time.localtime()))
+     for src in (bo, bx):
+         dd = os.path.join(bd, src)
+         if z is None:
+@@ -70,9 +75,11 @@ incunc = True
+ upgpip = False
+ verinc = False
+ windows = False
++linux = False
++onefle = False
+ tmpfle = None
+ try:
+-    opts, args = getopt.getopt(sys.argv[1:], "b:ceghipt:uv:w:")
++    opts, args = getopt.getopt(sys.argv[1:], "b:cefghilpt:uv:w:")
+ except:
+     print("Required arguments missing", sys.argv[1:])
+     sys.exit()
+@@ -88,15 +95,17 @@ Usage: python pkgprg.py [options]
+     -b Base Directory
+     -c Create a cd
+     -e Email changes
++    -f Onefile
+     -g Exclude Uncommitted
+     -h This Help
+     -i Increment Version
++    -l Linux Executable
+     -p Publish Version
+     -t Temporary Work Directory
+     -u Upgrade python modules
+     -v New Version Number
+     -w Windows Installer for Architecture 0=all, 7, 8, 32 and 64""")
+-        exeCmd("python uty/mkwins.py -h")
++        exeCmd("python uty/mkwindows.py -h")
+         sys.exit()
+     elif o == "-b":
+         bd = v
+@@ -104,10 +113,14 @@ Usage: python pkgprg.py [options]
+         mkcd = True
+     elif o == "-e":
+         email = True
++    elif o == "-f":
++        onefle = True
+     elif o == "-g":
+         incunc = False
+     elif o == "-i":
+         verinc = True
++    elif o == "-l":
++        linux = True
+     elif o == "-p":
+         publish = True
+         windows = True
+@@ -272,11 +285,6 @@ if newver and newver != "%s.%s" % VERSION:
+                         chg.write("\n")
+         chg.write('"""')
+         chg.close()
+-        # Create changes rst
+-        rst = open("doc/Changes.txt", "w")
+-        chg = __import__("tarchg")
+-        rst.write(chg.changes)
+-        rst.close()
+         # Create current file
+         cur = open("%s/%s/current" % (bd, bx), "w")
+         cur.write("%s\n" % newver)
+@@ -310,7 +318,7 @@ os.mkdir(os.path.join(bd, sn))
+ # Change directory to system directory
+ os.chdir("%s/%s" % (bd, sn))
+ # Copy files
+-for fle in ("tartan.iss", "ucrtbase.7", "ucrtbase.8", "windows.spec"):
++for fle in ("tartan.iss","ucrtbase.7","ucrtbase.8","ms0000.dir","ms0000.fle"):
+     shutil.copy(os.path.join(vd, "uty", fle), ".")
+ # Unzip the repository into the system directory
+ exeCmd("unzip -qq %s/tarzip" % bd)
+@@ -342,10 +350,12 @@ if windows:
+                 print("Packaging %s bit" % bit)
+                 if bit in bits:
+                     bits.remove(bit)
+-                cmd = "%s\\\\mkwins.py -a%s" % (url, bit)
++                cmd = "%s\\\\mkwindows.py -a%s" % (url, bit)
++                if onefle:
++                    cmd += " -f"
+                 if upgpip:
+                     # Update dependancies
+-                    cmd = "%s -u" % cmd
++                    cmd += " -u"
+                 exeCmd("ssh %s python %s" % (name, cmd))
+     for bit in bits:
+         print("Packaging %s bit" % bit)
+@@ -357,12 +367,17 @@ if windows:
+         xpth = "%s/dosdevices/x:" % WPFX
+         if not os.path.exists(xpth):
+             os.symlink(home, xpth)
+-        cmd = "%s cmd /c python %s/uty/mkwins.py -a%s" % (cmd, bv, bit)
++        cmd = "%s cmd /c python %s/uty/mkwindows.py -a%s" % (cmd, bv, bit)
+         if upgpip:
+             cmd += " -u"
+         if tmpfle:
+             cmd += " -t%s" % tmpfle
+         exeCmd(cmd)
++if linux:
++    cmd = "python %s/uty/mklinux.py" % bv
++    if onefle:
++        cmd += " -f"
++    exeCmd(cmd)
+ if publish:
+     # Publish
+     # Change to pypath directory
+@@ -384,6 +399,11 @@ if publish:
+     doc.close()
+     exeCmd("rst2pdf %s/%s/doc/Manual.rst -o /tmp/Manual.pdf "\
+             "-s %s/%s/doc/mystylesheet" % (bd, bv, bd, bv))
++    # Create changes rst
++    rst = open("doc/Changes.txt", "w")
++    chg = __import__("tarchg")
++    rst.write(chg.changes)
++    rst.close()
+     # Move Current to Old
+     exeCmd("mv %s/%s/%s_%s.%s.tgz %s/%s/" %
+         (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+@@ -399,16 +419,16 @@ if publish:
+     if windows:
+         # Rename Windows exe's
+         if "32" in bits:
+-            exeCmd("cp -p %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
++            exeCmd("mv %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
+                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+         if "64" in bits:
+-            exeCmd("cp -p %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
++            exeCmd("mv %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
+                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+         if "8" in bits:
+-            exeCmd("cp -p %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
++            exeCmd("mv %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
+                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+         if "7" in bits:
+-            exeCmd("cp -p %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
++            exeCmd("mv %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
+                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+     print("Version Number is %s.%s" % tuple(cver))
+     # Dropbox
+diff --git a/uty/rp1010.py b/uty/rp1010.py
+index 35b8764..b22580f 100644
+--- a/uty/rp1010.py
++++ b/uty/rp1010.py
+@@ -25,7 +25,7 @@ COPYING
+ """
+ 
+ import os
+-from TartanClasses import FileDialog, RepPrt, TartanDialog, SChoice
++from TartanClasses import CCD, FileDialog, RepPrt, TartanDialog, SChoice
+ from TartanClasses import SplashScreen, Sql
+ from tartanFunctions import askQuestion, chkAggregate, copyList, showError
+ from tartanFunctions import showInfo
+@@ -207,7 +207,7 @@ class rp1010(object):
+             (("T",6,0,0),"IUI",2,"Order Sequence","",
+                 "","N",self.doOrdSeq,None,None,("between",0,14)),
+             (("C",6,0,0),"OUI",2,"Sq","","","N",self.doOrder,None,None,None),
+-            (("C",6,0,1),"INA",20,"Column","Column Name",
++            (("C",6,0,1),"ITX",(20,50),"Column","Column Name",
+                 "","N",self.doRepOrd,self.cols,self.doColDel,("notblank",)),
+             (("C",6,0,2),"ONA",30,"Description"),
+             (("C",6,0,3),"IUA",1,"D","Ascending or Descending",
+@@ -571,6 +571,8 @@ class rp1010(object):
+         return "nd"
+ 
+     def doGetColDetail(self, col):
++        if col.count("format"):
++            col = col.split()[1].replace(")","")
+         dsc = self.sql.getRec("ffield", cols=["ff_desc", "ff_type",
+             "ff_size"], where=[("ff_name", "=", col)], limit=1)
+         return dsc
+@@ -1303,9 +1305,13 @@ class rp1010(object):
+                 break
+             c = exc[1]
+             if self.opts["mf"].dbm.dbase == "PgSQL":
+-                if c.count("drt_ref1 = si1_docno") or \
+-                        c.count("si1_docno = drt_ref1"):
+-                    c = c.replace("si1_docno", "format('%9s', si1_docno)")
++                for ccc in ("si1_docno", "si2_docno"):
++                    if c.count("drt_ref1 = %s" % ccc) or \
++                            c.count("%s = drt_ref1" % ccc):
++                        c = c.replace(ccc, "format('%s', %s)" % ("%9s", ccc))
++                    elif c.count("stt_ref1 = %s" % ccc) or \
++                            c.count("%s = stt_ref1" % ccc):
++                        c = c.replace(ccc, "format('%s', %s)" % ("%9s", ccc))
+             v = c.split("(v)")
+             for x in range(1, len(v)):
+                 n = int(v[x][:1])
+@@ -1327,11 +1333,13 @@ class rp1010(object):
+                 for z in (" and ", " or "):
+                     if v[x].find(z) != -1:
+                         break
+-                h = self.var_det[n][0] + y + "%s" % d
++                h = self.var_det[n][0] + y + CCD(self.var_det[n][3],
++                    self.var_det[n][1], self.var_det[n][2]).disp
++                h = h.replace("=", ": ")
+                 if not heds:
+-                    heds = "(%s" % h
++                    heds = h
+                 else:
+-                    heds = heds + ", " + h
++                    heds = heds + " " + h
+             if not excs:
+                 excs = c
+             else:
+@@ -1340,8 +1348,6 @@ class rp1010(object):
+             excs = None
+         else:
+             excs = excs.replace('"', "'")
+-        if heds:
+-            heds = heds + ")"
+         heads.append(heds)
+         # ORDER
+         order = ""

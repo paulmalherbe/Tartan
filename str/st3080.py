@@ -266,7 +266,7 @@ class st3080(object):
             bal[1] = 0
         qbal = CCD(bal[0], "SD", 12.2)
         vbal = CCD(bal[1], "SD", 12.2)
-        if self.zero == "Y" and qbal.work == 0 and vbal.work == 0:
+        if self.zero == "Y" and vbal.work == 0:
             return
         self.gtot = float(ASD(self.gtot) + ASD(vbal.work))
         return (grp, code, desc, uoi, qbal, vbal)

@@ -2,19 +2,10 @@
 import getopt, glob, os, pathlib, shutil, subprocess, sys
 from zipfile import ZipFile
 
+"""
+Use this module to create a pyinstaller executable for linux
+"""
 # Generate Tartan Executable
-def doFind(name=None, path="C:\\"):
-    found = None
-    for ddd in ("Program Files", "Program Files (x86)"):
-        temp = os.path.join(path, ddd)
-        for root, dirs, files in os.walk(temp):
-            for fle in files:
-                if fle.lower() == name.lower():
-                    found = os.path.join(root, name)
-                    break
-        if found:
-            break
-    return found
 
 def doUpgrade():
     print("Upgrading python modules")
@@ -34,20 +25,13 @@ def doUpgrade():
             print(err)
 
 HOM = str(pathlib.Path.home())
-if "WINEPREFIX" in os.environ:
-    MAP = "x:"
-else:
-    MAP = "\\\\192.168.0.1\\paul"
-if sys.maxsize > 2**32:
-    PFX = "64"
-else:
-    PFX = "32"
-DPT = os.path.join("c:\\", "Tartan", "prg")     # Directory for pyinstaller exe
-EXE = os.path.join("%s\\" % MAP, "TartanExe")   # Destination of installer
-SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
-TMP = os.path.join("%s\\" % HOM, "Temp")        # Working Directory
+DPT = os.path.join(HOM, "Tartan", "prg")        # Directory for pyinstaller exe
+EXE = os.path.join(HOM, "TartanExe")            # Destination of installer
+SRC = os.path.join(HOM, "TartanSve")            # Repository of tartan.zip
+TMP = os.path.join(HOM, "Temp")                 # Working Directory
+onefle = False                                  # Generate a single file
 UPG = False                                     # Upgrade python modules
-opts, args = getopt.getopt(sys.argv[1:], "a:d:e:hs:t:u")
+opts, args = getopt.getopt(sys.argv[1:], "a:d:e:fhs:t:u")
 for o, v in opts:
     if o == "-a":
         PFX = v
@@ -55,15 +39,17 @@ for o, v in opts:
         DPT = v
     elif o == "-e":
         EXE = v
+    elif o == "-f":
+        onefle = True
     elif o == "-h":
         print("""
-Usage: python mkwins.py [options]
+Usage: python mklinux.py [options]
 
-    -a Architecture as in 7, 8, 32 and 64
-    -d The Installed Path e.g. c:\Tartan\prg
-    -e The Destination Path e.g. x:\TartanExe
-    -s The Source path e.g. x:\TartanSve
-    -t Temporary Work Directory e.g. x:\Temp
+    -d The Installed Path e.g. /home/paul/Tartan\prg
+    -e The Destination Path e.g. /home/paul/TartanExe
+    -f Generate Onefile
+    -s The Source path e.g. /home/paul/TartanSve
+    -t Temporary Work Directory e.g. /home/paul/Temp
     -u Upgrade python modules
 """)
         sys.exit()
@@ -74,13 +60,11 @@ Usage: python mkwins.py [options]
     elif o == "-u":
         UPG = True
 # Set default variables
-ISC = doFind("iscc.exe")
-ISS = "tartan.iss"
 fle = open(os.path.join(EXE, "current"), "r")
 VER = fle.read().strip()
 fle.close()
 # Open the log file
-out = open("%s\\log" % HOM, "w")
+out = open("%s/log" % HOM, "w")
 # Delete installation directories
 shutil.rmtree(DPT, ignore_errors=True)
 shutil.rmtree(TMP, ignore_errors=True)
@@ -95,14 +79,14 @@ os.chdir(TMP)
 with ZipFile(os.path.join(SRC, "tartan-6.zip"), "r") as zipObj:
    zipObj.extractall()
 # Create tarimp module for pyinstaller
-ofl = open("%s\\tartan\\tarimp.py" % TMP, "w")
+ofl = open("%s/tartan/tarimp.py" % TMP, "w")
 ofl.write("# Tartan Modules to Include with Pyinstaller Exe\n")
 ofl.write("import sys\n")
-for fle in glob.iglob("tartan\\*.py"):
+for fle in glob.iglob("tartan/*.py"):
     if fle.count("__pycache__"):
         continue
     ofl.write("import %s\n" % os.path.basename(fle).replace(".py", ""))
-for fle in glob.iglob("tartan\\???\\*.py"):
+for fle in glob.iglob("tartan/???/*.py"):
     if fle.count("__pycache__"):
         continue
     imp = os.path.basename(os.path.dirname(fle))
@@ -122,20 +106,20 @@ if UPG:
     doUpgrade()
 # Run pyinstaller
 os.chdir(os.path.join(TMP, "tartan"))
-subprocess.call(["pyinstaller", "windows.spec"], stdout=out, stderr=out)
+if onefle:
+    os.rename("ms0000.fle", "ms0000.spec")
+else:
+    os.rename("ms0000.dir", "ms0000.spec")
+subprocess.call(["pyinstaller", "ms0000.spec"], stdout=out, stderr=out)
 # Copy files to DPT
 shutil.copy("tartan.ico", DPT)
-shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
-# Create installers and Copy installers to EXE
-if "WINEPREFIX" in os.environ:
-    if PFX == "7":
-        shutil.copy("ucrtbase.7", os.path.join(DPT, "ucrtbase.dll"))
-    elif PFX == "8":
-        shutil.copy("ucrtbase.8", os.path.join(DPT, "ucrtbase.dll"))
-subprocess.call([ISC, ISS], stdout=out, stderr=out)
-shutil.copy(os.path.join("Output", "Tartan.exe"),
-    os.path.join(EXE, "tartan-6-%s.exe" % PFX))
+if onefle:
+    shutil.copy(os.path.join("dist", "ms0000"), DPT)
+else:
+    shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
 os.chdir(HOM)
+# Create tar file
+subprocess.call(["zip", "-rq", os.path.join(EXE, "tartan-6-lnx.zip"), "Tartan"])
 shutil.rmtree(TMP)
 shutil.rmtree(DPT)
 out.close()

@@ -1601,13 +1601,14 @@ class si2010(object):
             actdoc = self.docno
             self.doGetDocno("O")
             self.sql.updRec("slsiv1", cols=["si1_rtn","si1_docno","si1_date",
-                "si1_capdt"], data=["O", self.docno, self.trdt, self.sysdtw],
-                where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
-                self.typs), ("si1_docno", "=", actdoc)])
-            self.sql.updRec("slsiv2", cols=["si2_rtn","si2_docno","si2_capdt"],
-                data=["O", self.docno, self.sysdtw], where=[("si2_cono", "=",
-                self.opts["conum"]), ("si2_rtn", "=", self.typs), ("si2_docno",
-                "=", actdoc)])
+                "si1_capnm", "si1_capdt"], data=["O", self.docno, self.trdt,
+                self.opts["capnm"], self.sysdtw], where=[("si1_cono", "=",
+                self.opts["conum"]), ("si1_rtn", "=", self.typs),
+                ("si1_docno", "=", actdoc)])
+            self.sql.updRec("slsiv2", cols=["si2_rtn","si2_docno","si2_capnm",
+                "si2_capdt"], data=["O", self.docno, self.opts["capnm"],
+                self.sysdtw], where=[("si2_cono", "=", self.opts["conum"]),
+                ("si2_rtn", "=", self.typs), ("si2_docno", "=", actdoc)])
             self.sql.updRec("slsiv3", cols=["si3_rtn", "si3_docno"], data=["O",
                 self.docno], where=[("si3_cono", "=", self.opts["conum"]),
                 ("si3_rtn", "=", self.typs), ("si3_docno", "=", actdoc)])
@@ -1635,9 +1636,10 @@ class si2010(object):
                 where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
                 self.typs), ("si1_docno", "=", actdoc)])
             # Move the order/quote body lines to the new invoice
-            self.sql.updRec("slsiv2", cols=["si2_rtn", "si2_docno"],
-                data=["I", self.docno], where=[("si2_cono", "=",
-                self.opts["conum"]), ("si2_rtn", "=", self.typs),
+            self.sql.updRec("slsiv2", cols=["si2_rtn", "si2_docno",
+                "si2_capnm", "si2_capdt"], data=["I", self.docno,
+                self.opts["capnm"], self.sysdtw], where=[("si2_cono",
+                "=", self.opts["conum"]), ("si2_rtn", "=", self.typs),
                 ("si2_docno", "=", actdoc)])
             # Update slsiv3
             self.sql.updRec("slsiv3", cols=["si3_rtn", "si3_docno"],
@@ -1648,8 +1650,8 @@ class si2010(object):
             # Check and change V.A.T. rates if applicable and reload screen
             chg = False
             recs = self.sql.getRec("slsiv2", where=[("si2_cono", "=",
-                self.opts["conum"]), ("si2_rtn", "=", "I"), ("si2_docno", "=",
-                self.docno)])
+                self.opts["conum"]), ("si2_rtn", "=", "I"), ("si2_docno",
+                "=", self.docno)])
             for rec in recs:
                 cod = rec[self.sql.slsiv2_col.index("si2_vat_code")]
                 rat = rec[self.sql.slsiv2_col.index("si2_vat_rate")]
@@ -1666,8 +1668,8 @@ class si2010(object):
             actdoc = None
         # Create Stores Transactions
         trn = self.sql.getRec("slsiv2", where=[("si2_cono", "=",
-            self.opts["conum"]), ("si2_rtn", "=", self.typs), ("si2_docno",
-            "=", self.docno)])
+            self.opts["conum"]), ("si2_rtn", "=", self.typs),
+            ("si2_docno", "=", self.docno)])
         if not trn:
             return
         for line in trn:
@@ -1698,13 +1700,14 @@ class si2010(object):
                 ref2 = self.ribbon[0]
             else:
                 ref2 = ""
-            # Write record
+            # Write strtrn record
             data = [self.opts["conum"], self.grp, self.code, self.loc,
                 self.trdt, rtn, self.othno, self.batch, ref2, qty, cst, sel,
                 self.curdt, self.name, self.chain, self.acno, self.repno,
                 "INV", self.disrat, "", self.opts["capnm"], self.sysdtw, 0]
             self.sql.insRec("strtrn", data=data)
             if gtype[0] == "R":
+                # Recipe issue and receive items
                 items = self.sql.getRec("slsiv3", where=[("si3_cono",
                     "=", self.opts["conum"]), ("si3_rtn", "=", self.typs),
                     ("si3_docno", "=", self.othno), ("si3_line", "=",
@@ -1873,20 +1876,25 @@ class si2010(object):
     def doGetDocno(self, atype):
         # Get Next Document Number
         docno = self.sql.getRec("slsiv1", cols=["max(si1_docno)"],
-            where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
-            atype)], limit=1)[0]
+            where=[("si1_cono", "=", self.opts["conum"]),
+            ("si1_rtn", "=", atype)], limit=1)[0]
         if not docno:
             docno = 0
         if atype not in ("C", "I"):
             docno += 1
         else:
+            if atype == "I":
+                dtyp = 1
+            else:
+                dtyp = 4
             check = True
             while check:
                 docno += 1
                 nxt = CCD(docno, "Na", 9).work
                 check = self.sql.getRec("drstrn", where=[("drt_cono",
                     "=", self.opts["conum"]), ("drt_chain", "=", self.chain),
-                    ("drt_acno", "=", self.acno), ("drt_ref1", "=", nxt)])
+                    ("drt_acno", "=", self.acno), ("drt_type", "=", dtyp),
+                    ("drt_ref1", "=", nxt)])
         self.docno = CCD(docno, "UI", 9).work
         self.othno = CCD(docno, "Na", 9).work
 

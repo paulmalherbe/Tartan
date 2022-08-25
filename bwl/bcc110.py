@@ -138,7 +138,7 @@ class bcc110(object):
                 "When the Draw is Trips Use Pairs Instead of Fours "\
                 "when Applicable."),
             (("T",0,seq + 8,0),"IUI",2,"Weeks Between Draws","",
-                self.acc[12],"N",None,None,None,("between", 0, 4),None,
+                self.acc[12],"N",None,None,None,("between", 0, 9),None,
                 "Minimum number of Weeks that Players Should Not be "\
                 "Drawn in the Same Team."),
             (("T",0,seq + 9,0),"IUD",5.2,"Rate - Member","",

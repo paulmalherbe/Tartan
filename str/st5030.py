@@ -61,26 +61,51 @@ class st5030(object):
                 ("srl_loc", "", 0, "L"),
                 ("srl_desc", "", 0, "Description", "Y")),
             "where": [("srl_cono", "=", self.opts["conum"])]}
-        fld = (
-            (("T",0,0,0),"ID1",10,"Reporting Date","",
-                self.sysdtw,"Y",self.doDate,None,None,("efld",)),
-            (("T",0,1,0),"IUA",1,"Location","",
-                "","Y",self.doLoc,loc,None,("efld",)),)
+        self.dte = {
+            "stype": "R",
+            "tables": ("strvar",),
+            "cols": (
+                ("stv_mrgdt", "", 0, "Mrg-Date"),),
+            "where": [("stv_cono", "=", self.opts["conum"])],
+            "group": "stv_mrgdt",
+            "order": "stv_mrgdt"}
+        r1s = (("Yes",  "Y"), ("No", "N"))
+        fld = [
+            [("T",0,0,0),("IRB",r1s),0,"Reprint Report","",
+                "N","Y",self.doReprint,None,None,None],
+            [("T",0,1,0),"ID1",10,"Enter Date","",
+                0,"N",self.doDate,self.dte,None,("efld",)],
+            [("T",0,2,0),"IUA",1,"Location","",
+                "","Y",self.doLoc,loc,None,("efld",)]]
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
             tend=tnd, txit=txt, view=("Y","V"), mail=("Y","N"))
 
+    def doReprint(self, frt, pag, r, c, p, i, w):
+        self.reprt = w
+        if self.reprt == "N":
+            self.df.topf[0][1][4] = "Reporting Date"
+            self.dte["where"].append(("stv_mrgdt", "=", 0))
+            self.df.loadEntry(frt, pag, p+1, data=self.sysdtw)
+        else:
+            self.df.topf[0][1][4] = "Merged Date"
+            if ("stv_mrgdt", "=", 0) in self.dte["where"]:
+                self.dte["where"].remove(("stv_mrgdt", "=", 0))
+
     def doDate(self, frt, pag, r, c, p, i, w):
-        if w < self.opts["period"][1][0] or w > self.opts["period"][2][0]:
+        if self.reprt == "N" and (w < self.opts["period"][1][0] or \
+                w > self.opts["period"][2][0]):
             return "Invalid Date, Not in Financial Period"
         self.date = w
         self.dated = self.df.t_disp[pag][0][p]
+        if self.reprt == "N":
+            self.curdt = int(self.date / 100)
 
     def doLoc(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("strloc", cols=["srl_desc"],
-            where=[("srl_cono", "=", self.opts["conum"]), ("srl_loc", "=", w)],
-            limit=1)
+            where=[("srl_cono", "=", self.opts["conum"]),
+            ("srl_loc", "=", w)], limit=1)
         if not acc:
             return "Invalid Location Code"
         self.loc = w
@@ -88,9 +113,15 @@ class st5030(object):
 
     def doEnd(self):
         self.df.closeProcess()
-        recs = self.sql.getRec("strvar", where=[("stv_cono",
-            "=", self.opts["conum"]), ("stv_loc", "=", self.loc)],
-            order="stv_group, stv_code")
+        whr = [
+            ("stv_cono", "=", self.opts["conum"]),
+            ("stv_loc", "=", self.loc)]
+        if self.reprt == "N":
+            whr.append(("stv_mrgdt", "=", 0))
+        else:
+            whr.append(("stv_mrgdt", "=", self.date))
+        recs = self.sql.getRec("strvar", where=whr,
+            order="stv_group, stv_code, stv_seq")
         if not recs:
             showError(self.opts["mf"].body, "Processing Error",
                 "No Records Selected")
@@ -108,29 +139,42 @@ class st5030(object):
                 break
             grp = dat[self.sql.strvar_col.index("stv_group")]
             code = dat[self.sql.strvar_col.index("stv_code")]
-            sbin = dat[self.sql.strvar_col.index("stv_bin")]
-            qty1 = dat[self.sql.strvar_col.index("stv_qty")]
-            prc = dat[self.sql.strvar_col.index("stv_ucost")]
-            bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
-                int(self.date / 100), keys=(grp, code, self.loc,
-                ("P", self.opts["period"][0])))
-            m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
-            fq = y_cb[0]
-            if ac:
-                fp = ac
+            vbin = dat[self.sql.strvar_col.index("stv_bin")]
+            vqty = dat[self.sql.strvar_col.index("stv_qty")]
+            vprc = dat[self.sql.strvar_col.index("stv_ucost")]
+            if self.reprt == "N":
+                bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
+                    self.curdt, keys=(grp, code, self.loc,
+                    ("P", self.opts["period"][0])))
+                mob, mmv, mcb, yob, ymv, ycb, ac, lc, ls = bals.doStrBals()
+                fqty, fval = ycb
+                if fval and fqty:
+                    fprc = round((fval / fqty), 2)
+                else:
+                    fprc = 0
+                if fprc != vprc and vprc:
+                    prc = vprc
+                else:
+                    prc = fprc
+                vval = round((prc * vqty),2)
+                qdif = float(ASD(vqty) - ASD(fqty))
+                vdif = float(ASD(vval) - ASD(fval))
             else:
-                fp = lc
-            qdif = float(ASD(fq) - ASD(qty1))
-            if not qdif:
+                qdif = dat[self.sql.strvar_col.index("stv_qdif")]
+                vdif = dat[self.sql.strvar_col.index("stv_vdif")]
+                fqty = float(ASD(vqty) - ASD(qdif))
+                prc = float(ASD(round(vqty * vprc, 2)) - ASD(vdif))
+                if fqty:
+                    prc = round(prc / fqty, 2)
+            if not qdif and not vdif:
                 continue
-            vdif = round(qdif * fp, 2)
-            rslt = self.sql.getRec("strmf1", cols=["st1_desc",
-                "st1_uoi"], where=[("st1_cono", "=", self.opts["conum"]),
+            rslt = self.sql.getRec("strmf1", cols=["st1_desc", "st1_uoi"],
+                where=[("st1_cono", "=", self.opts["conum"]),
                 ("st1_group", "=", grp), ("st1_code", "=", code)],
                 limit=1)
             desc = rslt[0]
             uoi = rslt[1]
-            data.append([grp,code,desc,uoi,sbin,fp,prc,fq,qty1,qdif,vdif])
+            data.append([grp,code,desc,uoi,vbin,prc,prc,fqty,vqty,qdif,vdif])
         p.closeProgress()
         if not p.quit:
             name = self.__class__.__name__

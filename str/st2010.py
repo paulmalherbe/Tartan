@@ -352,6 +352,10 @@ class st2010(object):
         self.delno = w
 
     def doDelDate(self, frt, pag, r, c, p, i, w):
+        if w < self.opts["period"][1][0] or w > self.opts["period"][2][0]:
+            return "Invalid Date, Not In Financial Period"
+        if w > self.sysdtw:
+            return "Invalid Date, In the Future"
         self.deldt = w
 
     def doTopEnd(self):

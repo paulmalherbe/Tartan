@@ -78,20 +78,22 @@ class st5020(object):
             "where": [
                 ("st1_cono", "=", self.opts["conum"]),
                 ("st1_type", "not", "in", ("R", "X"))],
-            "whera": [["T", "st1_group", 4, 0]],
+            "whera": [],
             "order": "st1_group, st1_code",
             "index": 1}
         r1s = (("Grp/Code","N"),("Bin Number","B"))
         r2s = (("Yes","Y"),("No","N"))
-        r3s = (("No","N"),("Last","L"),("Average","A"))
+        r3s = (("Last","L"),("Average","A"),("No","N"))
         if self.locs == "N":
             self.loc = "1"
             fld = []
             idx = 0
+            stm1["whera"] = [["T", "st1_group", 3, 0]]
         else:
             fld = [(("T",0,0,0),"IUA",1,"Location","",
                 "","N",self.doLoc,loc,None,("efld",))]
             idx = 1
+            stm1["whera"] = [["T", "st1_group", 4, 0]]
         fld.extend([
             (("T",0,idx,0),("IRB",r2s),0,"Auto Sequence","",
                 "N","N",self.doAuto,None,None,None),
@@ -104,7 +106,7 @@ class st5020(object):
             (("T",0,idx+4,0),"INA",20,"First Code","",
                 "","N",self.doFcode,stm1,None,None),
             (("T",0,idx+5,0),("IRB",r3s),0,"Cost Prices","",
-                "N","N",self.doCosts,None,None,None)])
+                "L","N",self.doCosts,None,None,None)])
         tnd = ((self.endPage1,"y"),)
         txt = (self.exitPage1,)
         self.df1 = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
@@ -112,14 +114,16 @@ class st5020(object):
 
     def doLoc(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("strloc", cols=["srl_desc"],
-            where=[("srl_cono", "=", self.opts["conum"]), ("srl_loc", "=", w)],
-            limit=1)
+            where=[("srl_cono", "=", self.opts["conum"]),
+            ("srl_loc", "=", w)], limit=1)
         if not acc:
             return "Invalid Location Code"
         self.loc = w
-        chk = self.sql.getRec("strvar", where=[("stv_cono", "=",
-            self.opts["conum"]), ("stv_loc", "=", self.loc)])
-        if chk:
+        chk = self.sql.getRec("strvar", cols=["count(*)"],
+            where=[("stv_cono", "=", self.opts["conum"]),
+            ("stv_loc", "=", self.loc), ("stv_mrgdt", "=", 0)],
+            limit=1)
+        if chk and chk[0]:
             self.df1.setWidget(self.df1.mstFrame, "hide")
             but = (("Continue", "C"), ("Delete", "D"), ("Exit", "E"))
             ok = askChoice(self.opts["mf"].body, "Existing",
@@ -129,7 +133,8 @@ class st5020(object):
                 return "xt"
             if ok == "D":
                 self.sql.delRec("strvar", where=[("stv_cono", "=",
-                    self.opts["conum"]), ("stv_loc", "=", self.loc)])
+                    self.opts["conum"]), ("stv_loc", "=", self.loc),
+                    ("stv_mrgdt", "=", 0)])
                 self.opts["mf"].dbm.commitDbase(ask=True,
                     mess="Would you like to COMMIT Deletions?")
                 if self.opts["mf"].dbm.commit == "no":
@@ -301,8 +306,10 @@ class st5020(object):
                     data.append(getCost(self.sql, self.opts["conum"], line[0],
                         line[1], loc=self.loc, ind=self.costs))
                 data.append(line[2])
+            data.extend(["", 0, 0])
             whr = [("stv_cono", "=", data[0]), ("stv_group", "=", data[1]),
-                ("stv_code", "=", data[2]), ("stv_loc", "=", self.loc)]
+                ("stv_code", "=", data[2]), ("stv_loc", "=", self.loc),
+                ("stv_mrgdt", "=", 0)]
             var = self.sql.getRec("strvar", where=whr, limit=1)
             if var:
                 self.sql.delRec("strvar", where=whr)
@@ -370,11 +377,12 @@ Please Correct your Import File and then Try Again.""" % err)
             ("stv_cono", "=", self.opts["conum"]),
             ("stv_group", "=", self.group2),
             ("stv_code", "=", self.code2),
-            ("stv_loc", "=", self.loc)]
+            ("stv_loc", "=", self.loc),
+            ("stv_mrgdt", "=", 0)]
         if self.sql.getRec("strvar", where=whr, limit=1):
             self.sql.delRec("strvar", where=whr)
         self.sql.insRec("strvar", data=[self.opts["conum"], self.group2,
-            self.code2, self.loc, self.bin, self.qty, self.ucost])
+            self.code2, self.loc, self.bin, self.qty, self.ucost, "", 0, 0])
         self.opts["mf"].dbm.commitDbase()
 
     def doNextOne(self):
@@ -399,8 +407,8 @@ Please Correct your Import File and then Try Again.""" % err)
     def doGetValues(self):
         var = self.sql.getRec("strvar", where=[("stv_cono", "=",
             self.opts["conum"]), ("stv_group", "=", self.group2),
-            ("stv_code", "=", self.code2), ("stv_loc", "=", self.loc)],
-            limit=1)
+            ("stv_code", "=", self.code2), ("stv_loc", "=", self.loc),
+            ("stv_mrgdt", "=", 0)], limit=1)
         if var:
             qty = var[self.sql.strvar_col.index("stv_qty")]
             cst = var[self.sql.strvar_col.index("stv_ucost")]

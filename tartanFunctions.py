@@ -121,10 +121,11 @@ def cutpasteMenu(event):
 
 def getPrgPath():
     import os, sys
+    epath = os.path.dirname(sys.executable)
     if getattr(sys, "frozen", False):
-        return sys._MEIPASS
+        return sys._MEIPASS, epath
     else:
-        return os.path.dirname(os.path.abspath(__file__))
+        return os.path.dirname(os.path.abspath(__file__)), epath
 
 def showDialog(screen, dtype, title, mess, butt=None, dflt=None):
     try:
@@ -206,7 +207,7 @@ def loadRcFile(rcfile=None, default=False):
     if FITZ:
         vwr = [""]
     else:
-        win = os.path.join(getPrgPath(), "uty", "SumatraPDF.exe")
+        win = os.path.join(getPrgPath()[1], "uty", "SumatraPDF.exe")
         vwr = ["/usr/bin/evince", win]
     tardir = os.path.join(Path.home(), "Tartan")
     if not os.path.isdir(tardir):
@@ -2130,25 +2131,26 @@ def getCost(sql, cono, group, code, loc=None, qty=1, ind="I", recp=False, tot=Fa
             where=where, group=grp, limit=1)
         if not bals:
             bals = [0, 0]
-        if "A" in csts:
-            # Average Cost
-            if bals[0] and qqq == bals[0]:
-                ac = round((bals[1] / qty), 2)
-                tc = bals[1]
-            elif bals[0]:
-                ac = round((bals[1] / bals[0]), 2)
-        if "L" in csts:
-            # Last Cost
-            whr = where[:]
-            whr.append(("stt_type", "in", (1, 3)))
-            chk = sql.getRec("strtrn", cols=["stt_qty", "stt_cost"],
-                where=whr, order="stt_capdt desc, stt_seq desc")
-            for rec in chk:
-                q = CCD(rec[0], "SD", 11.2)
-                c = CCD(rec[1], "SD", 11.2)
-                if q.work and q.work > 0 and c.work:
-                    lc = round((c.work / q.work), 2)
-                    break
+        # Average Cost
+        if bals[0] and qqq == bals[0]:
+            ac = round((bals[1] / qty), 2)
+            tc = bals[1]
+        elif bals[0]:
+            ac = round((bals[1] / bals[0]), 2)
+        # Last Cost
+        whr = where[:]
+        whr.append(("stt_type", "in", (1, 3)))
+        chk = sql.getRec("strtrn", cols=["stt_qty", "stt_cost"],
+            where=whr, order="stt_capdt desc, stt_seq desc")
+        for rec in chk:
+            q = CCD(rec[0], "SD", 11.2)
+            c = CCD(rec[1], "SD", 11.2)
+            if q.work and q.work > 0 and c.work:
+                lc = round((c.work / q.work), 2)
+                break
+        # If average cost is zero
+        if not ac and lc:
+            ac = lc
         if "S" in csts:
             # Standard Cost
             whr = [
@@ -2313,11 +2315,13 @@ def getFileName(path, wrkdir=None, check=False):
     fle = None
     pth = None
     try:
+        import socket
         from smb.SMBConnection import SMBConnection
+        socket.setdefaulttimeout(5)
         svr = path.replace("/", "|").replace("\\", "|")
         svr = svr.split("|")
         con = SMBConnection("", "", "", svr[2])
-        con.connect(svr[2], timeout=5)
+        con.connect(svr[2])
         for p in svr[4:]:
             if not pth:
                 pth = p

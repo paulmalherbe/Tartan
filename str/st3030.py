@@ -88,7 +88,7 @@ class st3030(object):
         fld.extend([
             (("T",0,1,0),"IUA",3,"Product Group","",
                 "","Y",self.doGroup,grp,None,None),
-            (("T",0,2,0),("IRB",r1s),0,"Ignore Out of Stock","",
+            (("T",0,2,0),("IRB",r1s),0,"Ignore Zero Balances","",
                 "Y","N",self.doNoStock,None,None,None),
             (("T",0,3,0),("IRB",r2s),0,"Report Type","",
                 "S","N",self.doType,None,None,None),
@@ -312,7 +312,7 @@ class st3030(object):
         cst, bal = getCost(self.sql, self.opts["conum"], grp.work, code.work,
             loc=self.loc, qty=1, ind="AL", bal=True)
         qty = CCD(bal[0], "SD", 12.2)
-        if self.nostock == "Y" and qty.work <= 0:
+        if self.nostock == "Y" and qty.work == 0:
             return
         acst = CCD(cst[0], "SD", 10.2)
         lcst = CCD(cst[1], "SD", 10.2)

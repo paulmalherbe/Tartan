@@ -63,7 +63,7 @@ class st3120(object):
 
     def mainProcess(self):
         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
-            "Stock On Hand Report (%s)" % self.__class__.__name__)
+            "Stock Reorder Report (%s)" % self.__class__.__name__)
         loc = {
             "stype": "R",
             "tables": ("strloc",),

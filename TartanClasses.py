@@ -593,7 +593,7 @@ try:
             # Make message window modal
             self.msgwin.grab_set()
             # Set focus to default button or message window
-            if dflt:
+            if dflt and type(dflt) is MyButton:
                 dflt.focus_force()
             else:
                 self.msgwin.focus_set()
@@ -2035,6 +2035,7 @@ class Dbase(object):
                 mess = "Would you like to COMMIT All Changes?"
             if self.screen is None:
                 scrn = "text"
+                mess += "\nCommit"
             else:
                 scrn = self.screen
             self.commit = askQuestion(scrn, "Commit?", mess, default=default)
@@ -2434,7 +2435,7 @@ Table %s in Program %s""" % (err, table, self.prog))
                 os._exit(1)
             # Test and Correct for a Column in Unique Keys (e.g. drt_ref1)
             if unique:
-                cols = self.sqlRec(state=("Select * from ftable where "
+                cols = self.sqlRec(state=("Select * from ftable where "\
                     "ft_tabl=%s and ft_type = 'U' order by ft_seq" %
                     self.dbm.dbf, (table,)))
                 ok = False
@@ -7423,10 +7424,13 @@ class ScrollHtml(object):
             pos = b.cget("underline")
             if pos != -1:
                 self.binds.append(b.cget("text")[pos])
-        self.frame = HtmlFrame(self.root,
-            vertical_scrollbar=self.vertical,
-            horizontal_scrollbar=self.horizontal,
-            fontscale=1.5)
+        try:
+            self.frame = HtmlFrame(self.root,
+                vertical_scrollbar=self.vertical,
+                horizontal_scrollbar=self.horizontal,
+                fontscale=1.5)
+        except Exception as err:
+            print(err)
         for key in ("Left", "Right", "Up", "Down", "Prior", "Next"):
             self.window.bind("<%s>" % key, self._scroll)
         self.frame.set_content(self.mess)
@@ -14092,7 +14096,12 @@ class RepPrt(object):
         self.cg = []                # list of all sign change columns
         self.gp = []                # list of all group columns
         func = 0
+        self.cdic = {}
         for num, col in enumerate(self.cols):
+            if col[0].count(" as "):
+                self.cdic[col[0].split(" as ")[1]] = col[1:]
+            else:
+                self.cdic[col[0]] = col[1:]
             agg = chkAggregate(col[0])
             if agg and col[1][1:] in ("D", "d"):
                 if type(col) == tuple:
@@ -14566,7 +14575,9 @@ class RepPrt(object):
             if self.dend:
                 # Total description at end of line
                 if typ == "s":
-                    dsc = self.sdic[self.stots[snum][0]][sdet] + " %s" % sdet
+                    ccc = self.cdic[self.stots[snum][0]]
+                    det = CCD(sdet, ccc[0], ccc[1]).disp
+                    dsc = self.sdic[self.stots[snum][0]][sdet] + " %s" % det
                 else:
                     dsc = "Grand Total"
                 siz = len(dsc)
@@ -14574,7 +14585,9 @@ class RepPrt(object):
                 fld.append(dsc)
                 cld.append(dsc)
             elif typ == "s":
-                dsc = self.sdic[self.stots[snum][0]][sdet] + " %s" % sdet
+                ccc = self.cdic[self.stots[snum][0]]
+                det = CCD(sdet, ccc[0], ccc[1]).disp
+                dsc = self.sdic[self.stots[snum][0]][sdet] + " %s" % det
                 fld.insert(0, dsc)
                 cld[0] = dsc
             else:
@@ -16607,7 +16620,7 @@ class MyFpdf(fpdf.FPDF):
     def setValues(self, name, head, font="", border=""):
         # Add TTF Fonts
         try:
-            for pth in glob.glob(os.path.join(getPrgPath(), "fnt/*.ttf")):
+            for pth in glob.glob(os.path.join(getPrgPath()[1], "fnt/*.ttf")):
                 nam = os.path.basename(pth)
                 self.add_font(nam, "", pth, uni=True)
         except:
@@ -17309,20 +17322,11 @@ class DrawForm(MyFpdf):
 
     def changeSize(self, pdfnam):
         doc = fitz.open(pdfnam)
-        try:
-            mbox = doc[0].mediabox
-        except:
-            mbox = doc[0].MediaBox
+        mbox = doc[0].mediabox
         mbox[1] = float(mbox[3] - (self.get_y() * 3))
-        try:
-            doc[0].set_mediabox(mbox)
-        except:
-            doc[0].setMediaBox(mbox)
+        doc[0].set_mediabox(mbox)
         doc2 = fitz.open()
-        try:
-            doc2.insert_pdf(doc, from_page=0, to_page=0)
-        except:
-            doc2.insertPDF(doc, from_page=0, to_page=0)
+        doc2.insert_pdf(doc, from_page=0, to_page=0)
         doc2.save(pdfnam)
         doc.close()
         doc2.close()
@@ -17463,7 +17467,7 @@ Mobile:            27-82-9005260
         self.b2.configure(state="disabled")
         self.about.place_forget()
         try:
-            docdir = os.path.join(getPrgPath(), "doc")
+            docdir = os.path.join(getPrgPath()[0], "doc")
             if HTML and os.path.isfile(os.path.join(docdir, "gnugpl.html")):
                 fle = "gnugpl.html"
             elif os.path.isfile(os.path.join(docdir, "gnugpl.md")):

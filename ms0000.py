@@ -63,7 +63,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 9)
+    VERSION = (6, 10)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -175,7 +175,7 @@ class ms0000(object):
                     name = "tracer_%s.txt" % pid
                 else:
                     name = "stdout_%s.txt" % pid
-                self.stdout = os.path.join(getPrgPath(), name)
+                self.stdout = os.path.join(getPrgPath()[0], name)
                 try:
                     if not os.path.exists(self.stdout):
                         sys.stdout = io.open(self.stdout, "w")
@@ -214,6 +214,12 @@ Options:
             -z, --zerobar           Do not have a progressbar with -ptarBck
 """)
             self.doExit(dbm=False)
+        if self.script:
+            try:
+                exec("import %s" % self.script)
+            except:
+                pass
+            self.doExit()
         if not self.version and not self.xdisplay:
             nodisp = ("tarBck", "tarUpd")
             if not self.query and self.program not in nodisp:
@@ -241,9 +247,12 @@ Options:
                         continue
                     print("Installing/Upgrading", mod[1])
                     try:
-                        chke(cmd + [mod[1]])
+                        if mod[1] == "psycopg2":
+                            chke(cmd + [mod[1] + "-binary"])
+                        else:
+                            chke(cmd + [mod[1]])
                     except:
-                        raise Exception("Module %s Not Found" % mod[1])
+                        print("Module Not Found")
             except Exception as err:
                 print(err)
             sys.exit()
@@ -399,12 +408,6 @@ Options:
             self.userLogin()
         if not self.user:
             # Exit if not valid user
-            self.doExit()
-        if self.script:
-            if self.user["lvl"] > 6:
-                exec("import %s" % self.script)
-            else:
-                print("Invalid Security Level")
             self.doExit()
         if self.query:
             # Excecute sql query
@@ -1500,7 +1503,7 @@ System --> Change Password""")
             else:
                 os.spawnv(os.P_WAIT, "/bin/tar",
                     ("tar", "-xzf", fle, "-C", upgdir))
-                shutil.copytree("%s/tartan" % upgdir, getPrgPath(),
+                shutil.copytree("%s/tartan" % upgdir, getPrgPath()[1],
                     dirs_exist_ok=True)
                 shutil.rmtree("%s/tartan" % upgdir)
             os._exit(0)
@@ -1635,7 +1638,7 @@ System --> Change Password""")
         for ddd in doc:
             if ddd != doc[0]:
                 man += "\nPageBreak\n"
-            rst = os.path.join(getPrgPath(), "doc", "%s.rst" % ddd)
+            rst = os.path.join(getPrgPath()[0], "doc", "%s.rst" % ddd)
             if os.path.exists(rst):
                 fle = open(rst, "r")
                 if len(doc) == 1 and ddd != "SYS":
@@ -1754,7 +1757,7 @@ System --> Change Password""")
                             name = "tracer_%s.txt" % pid
                         else:
                             name = "stdout_%s.txt" % pid
-                        os.remove(os.path.join(getPrgPath(), name))
+                        os.remove(os.path.join(getPrgPath()[0], name))
                     except:
                         pass
             except:

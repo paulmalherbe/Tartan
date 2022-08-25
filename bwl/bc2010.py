@@ -2047,11 +2047,11 @@ Combination Number %10s"""
             dte = rec[self.sql.bwldrt_col.index("bdt_date")]
             tim = rec[self.sql.bwldrt_col.index("bdt_time")]
             rnk = rec[self.sql.bwldrt_col.index("bdt_rink")]
-            svs = self.sql.getRec("bwldrm", cols=["bdm_dhist"],
+            his = self.sql.getRec("bwldrm", cols=["bdm_dhist"],
                 where=[("bdm_cono", "=", self.opts["conum"]),
                 ("bdm_date", "=", dte), ("bdm_time", "=", tim)],
                 limit=1)
-            if svs[0] == "N":
+            if his[0] == "N":
                 # History not applied on draw
                 continue
             if dte == self.date and tim == self.time:
@@ -2739,7 +2739,7 @@ Combination Number %10s"""
                 ("Neither", "N")]
             txt = "This Draw Has Not Been Done"
             ok = askChoice(self.opts["mf"].body, "Exit",
-                mess=txt, butt=but, default="None")
+                mess=txt, butt=but, default="Neither")
             if ok == "N":
                 self.df.focusField(self.df.frt, self.df.pag, self.df.col)
                 return

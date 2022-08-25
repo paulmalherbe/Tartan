@@ -25,7 +25,7 @@ COPYING
 """
 
 import time
-from TartanClasses import ASD, Balances, CCD, GetCtl, ProgressBar, Sql
+from TartanClasses import ASD, Balances, GetCtl, ProgressBar, Sql
 from TartanClasses import TartanDialog
 from tartanFunctions import showError
 
@@ -81,8 +81,9 @@ class st5040(object):
             "stv_ucost"]
         recs = self.sql.getRec(tables=["strmf1", "strvar"], cols=col,
             where=[("stv_cono", "=", self.opts["conum"]),
-            ("stv_cono=st1_cono",), ("stv_group=st1_group",),
-            ("stv_code=st1_code",)], order="stv_group, stv_code, stv_loc")
+            ("stv_mrgdt", "=", 0), ("stv_cono=st1_cono",),
+            ("stv_group=st1_group",), ("stv_code=st1_code",)],
+            order="stv_group, stv_code, stv_loc")
         if not recs:
             showError(self.opts["mf"].body, "Processing Error",
             "No Records Selected")
@@ -90,12 +91,15 @@ class st5040(object):
             p = ProgressBar(self.opts["mf"].body, typ="F", mxs=len(recs))
             for num, dat in enumerate(recs):
                 p.displayProgress(num)
-                self.updateTables(num+1, col, dat)
-                self.sql.delRec("strvar", where=[("stv_cono", "=",
-                    self.opts["conum"]), ("stv_group", "=",
-                    dat[col.index("stv_group")]),
+                prc, qdif, vdif = self.updateTables(num+1, col, dat)
+                cols = ["stv_ucost", "stv_mrgdt", "stv_qdif", "stv_vdif"]
+                data = [prc, self.date, qdif, vdif]
+                self.sql.updRec("strvar", cols=cols, data=data,
+                    where=[("stv_cono", "=", self.opts["conum"]),
+                    ("stv_group", "=", dat[col.index("stv_group")]),
                     ("stv_code", "=", dat[col.index("stv_code")]),
-                    ("stv_loc", "=", dat[col.index("stv_loc")])])
+                    ("stv_loc", "=", dat[col.index("stv_loc")]),
+                    ("stv_mrgdt", "=", 0)])
             self.opts["mf"].dbm.commitDbase()
             p.closeProgress()
         self.opts["mf"].closeLoop()
@@ -104,78 +108,72 @@ class st5040(object):
         self.df.closeProcess()
         self.opts["mf"].closeLoop()
 
-    def updateTables(self, cnt, col, rec):
+    def updateTables(self, ref, col, rec):
         grp = rec[col.index("stv_group")]
         code = rec[col.index("stv_code")]
         loc = rec[col.index("stv_loc")]
-        vqty = CCD(rec[col.index("stv_qty")], "SD", 12.2)
-        vprc = CCD(rec[col.index("stv_ucost")], "SD", 12.2)
+        vqty = rec[col.index("stv_qty")]
+        vprc = rec[col.index("stv_ucost")]
         # Test for Variances
         bals = Balances(self.opts["mf"], "STR", self.opts["conum"], self.curdt,
             keys=(grp, code, loc, ("P", self.opts["period"][0])))
         m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
-        fqty = CCD(y_cb[0], "SD", 12.2)
-        fval = CCD(y_cb[1], "SD", 12.2)
-        if fval.work and fqty.work:
-            c = round((fval.work / fqty.work), 2)
+        fqty, fval = y_cb
+        if fval and fqty:
+            fprc = round((fval / fqty), 2)
         else:
-            c = 0
-        fprc = CCD(c, "SD", 12.2)
-        if fprc.work != vprc.work and vprc.work:
-            prc = vprc.work
+            fprc = 0
+        if fprc != vprc and vprc:
+            prc = vprc
         else:
-            prc = fprc.work
-        prc = CCD(prc, "SD", 12.2)
-        val = round((prc.work * vqty.work),2)
-        vval = CCD(val, "SD", 12.2)
-        qdif = CCD(float(ASD(vqty.work) - ASD(fqty.work)), "SD", 12.2)
-        vdif = CCD(float(ASD(vval.work) - ASD(fval.work)), "SD", 12.2)
-        if not qdif.work and not vdif.work:
-            return
-        # Stores Ledger Transaction
-        if qdif.work >= 0:
-            rtn = 5
-        else:
-            rtn = 6
-        ref = CCD(cnt, "Na", 9).work
-        self.sql.insRec("strtrn", data=[self.opts["conum"],
-            rec[col.index("stv_group")], rec[col.index("stv_code")],
-            rec[col.index("stv_loc")], self.date, rtn, ref, "ST-MERG", "",
-            qdif.work, vdif.work, 0, self.curdt, "Stock Take Adjustment", 0,
-            "", "", "STR", 0, "", self.opts["capnm"], self.sysdtw, 0])
-        if self.glint == "N":
-            return
-        # General Ledger Control Transaction (Stock On Hand)
-        col = self.sql.gentrn_col
-        acc = self.sql.getRec("gentrn", where=[("glt_cono", "=",
-            self.opts["conum"]), ("glt_acno", "=", self.stk_soh), ("glt_curdt",
-            "=", self.curdt), ("glt_trdt", "=", self.date), ("glt_type", "=",
-            4), ("glt_refno", "=", "STOCK-ADJ"), ("glt_batch", "=",
-            "ST-MERG")], limit=1)
-        if acc:
-            amnt = float(ASD(acc[col.index("glt_tramt")]) + ASD(vdif.work))
-            self.sql.updRec("gentrn", cols=["glt_tramt"], data=[amnt],
-                where=[("glt_seq", "=", acc[col.index("glt_seq")])])
-        else:
-            self.sql.insRec("gentrn", data=[self.opts["conum"], self.stk_soh,
-                self.curdt, self.date, 4, "STOCK-ADJ", "ST-MERG", vdif.work, 0,
-                "Stock Take Adjustment", "N", "", 0, self.opts["capnm"],
-                self.sysdtw, 0])
-        # General Ledger Control Transaction (Stock Suspense)
-        val = float(ASD(0) - ASD(vdif.work))
-        acc = self.sql.getRec("gentrn", where=[("glt_cono", "=",
-            self.opts["conum"]), ("glt_acno", "=", self.stk_susp),
-            ("glt_curdt", "=", self.curdt), ("glt_trdt", "=", self.date),
-            ("glt_type", "=", 4), ("glt_refno", "=", "STOCK-ADJ"),
-            ("glt_batch", "=", "ST-MERG")], limit=1)
-        if acc:
-            amnt = float(ASD(acc[col.index("glt_tramt")]) + ASD(val))
-            self.sql.updRec("gentrn", cols=["glt_tramt"], data=[amnt],
-                where=[("glt_seq", "=", acc[col.index("glt_seq")])])
-        else:
-            self.sql.insRec("gentrn", data=[self.opts["conum"], self.stk_susp,
-                self.curdt, self.date, 4, "STOCK-ADJ", "ST-MERG", val, 0,
-                "Stock Take Adjustment", "N", "", 0, self.opts["capnm"],
-                self.sysdtw, 0])
+            prc = fprc
+        vval = round((prc * vqty),2)
+        qdif = float(ASD(vqty) - ASD(fqty))
+        vdif = float(ASD(vval) - ASD(fval))
+        if qdif or vdif:
+            # Stores Ledger Transaction
+            if qdif >= 0:
+                rtn = 5
+            else:
+                rtn = 6
+            self.sql.insRec("strtrn", data=[self.opts["conum"],
+                rec[col.index("stv_group")], rec[col.index("stv_code")],
+                rec[col.index("stv_loc")], self.date, rtn, ref, "ST-MERG", "",
+                qdif, vdif, 0, self.curdt, "Stock Take Adjustment", 0,
+                "", "", "STR", 0, "", self.opts["capnm"], self.sysdtw, 0])
+            if self.glint == "Y":
+                # General Ledger Control Transaction (Stock On Hand)
+                col = self.sql.gentrn_col
+                acc = self.sql.getRec("gentrn", where=[("glt_cono", "=",
+                    self.opts["conum"]), ("glt_acno", "=", self.stk_soh),
+                    ("glt_curdt", "=", self.curdt), ("glt_trdt", "=",
+                    self.date), ("glt_type", "=", 4), ("glt_refno", "=",
+                    "STOCK-ADJ"), ("glt_batch", "=", "ST-MERG")], limit=1)
+                if acc:
+                    amnt = float(ASD(acc[col.index("glt_tramt")]) + ASD(vdif))
+                    self.sql.updRec("gentrn", cols=["glt_tramt"], data=[amnt],
+                        where=[("glt_seq", "=", acc[col.index("glt_seq")])])
+                else:
+                    self.sql.insRec("gentrn", data=[self.opts["conum"],
+                        self.stk_soh, self.curdt, self.date, 4, "STOCK-ADJ",
+                        "ST-MERG", vdif, 0, "Stock Take Adjustment",
+                        "N", "", 0, self.opts["capnm"], self.sysdtw, 0])
+                # General Ledger Control Transaction (Stock Suspense)
+                val = float(ASD(0) - ASD(vdif))
+                acc = self.sql.getRec("gentrn", where=[("glt_cono", "=",
+                    self.opts["conum"]), ("glt_acno", "=", self.stk_susp),
+                    ("glt_curdt", "=", self.curdt), ("glt_trdt", "=",
+                    self.date), ("glt_type", "=", 4), ("glt_refno", "=",
+                    "STOCK-ADJ"), ("glt_batch", "=", "ST-MERG")], limit=1)
+                if acc:
+                    amnt = float(ASD(acc[col.index("glt_tramt")]) + ASD(val))
+                    self.sql.updRec("gentrn", cols=["glt_tramt"], data=[amnt],
+                        where=[("glt_seq", "=", acc[col.index("glt_seq")])])
+                else:
+                    self.sql.insRec("gentrn", data=[self.opts["conum"],
+                        self.stk_susp, self.curdt, self.date, 4, "STOCK-ADJ",
+                        "ST-MERG", val, 0, "Stock Take Adjustment", "N", "",
+                        0, self.opts["capnm"], self.sysdtw, 0])
+        return (prc, qdif, vdif)
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

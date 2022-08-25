@@ -1,7 +1,10 @@
 #!usr/bin/env python
 
+"""
+Use this module to package Tartan and to make linux and/or windows Executables.
+"""
+
 import getopt
-import glob
 import os
 import pathlib
 import shutil
@@ -48,6 +51,8 @@ def addPage(doc, fle, last=False):
     data.close()
 
 def getName(nam, x, y, z=None):
+    if "%s.%s" % (x, y) == newver:
+        return "%s %s" % (nam, time.strftime("%Y-%m-%d", time.localtime()))
     for src in (bo, bx):
         dd = os.path.join(bd, src)
         if z is None:
@@ -70,9 +75,11 @@ incunc = True
 upgpip = False
 verinc = False
 windows = False
+linux = False
+onefle = False
 tmpfle = None
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "b:ceghipt:uv:w:")
+    opts, args = getopt.getopt(sys.argv[1:], "b:cefghilpt:uv:w:")
 except:
     print("Required arguments missing", sys.argv[1:])
     sys.exit()
@@ -88,15 +95,17 @@ Usage: python pkgprg.py [options]
     -b Base Directory
     -c Create a cd
     -e Email changes
+    -f Onefile
     -g Exclude Uncommitted
     -h This Help
     -i Increment Version
+    -l Linux Executable
     -p Publish Version
     -t Temporary Work Directory
     -u Upgrade python modules
     -v New Version Number
     -w Windows Installer for Architecture 0=all, 7, 8, 32 and 64""")
-        exeCmd("python uty/mkwins.py -h")
+        exeCmd("python uty/mkwindows.py -h")
         sys.exit()
     elif o == "-b":
         bd = v
@@ -104,10 +113,14 @@ Usage: python pkgprg.py [options]
         mkcd = True
     elif o == "-e":
         email = True
+    elif o == "-f":
+        onefle = True
     elif o == "-g":
         incunc = False
     elif o == "-i":
         verinc = True
+    elif o == "-l":
+        linux = True
     elif o == "-p":
         publish = True
         windows = True
@@ -272,11 +285,6 @@ if newver and newver != "%s.%s" % VERSION:
                         chg.write("\n")
         chg.write('"""')
         chg.close()
-        # Create changes rst
-        rst = open("doc/Changes.txt", "w")
-        chg = __import__("tarchg")
-        rst.write(chg.changes)
-        rst.close()
         # Create current file
         cur = open("%s/%s/current" % (bd, bx), "w")
         cur.write("%s\n" % newver)
@@ -310,7 +318,7 @@ os.mkdir(os.path.join(bd, sn))
 # Change directory to system directory
 os.chdir("%s/%s" % (bd, sn))
 # Copy files
-for fle in ("tartan.iss", "ucrtbase.7", "ucrtbase.8", "windows.spec"):
+for fle in ("tartan.iss","ucrtbase.7","ucrtbase.8","ms0000.dir","ms0000.fle"):
     shutil.copy(os.path.join(vd, "uty", fle), ".")
 # Unzip the repository into the system directory
 exeCmd("unzip -qq %s/tarzip" % bd)
@@ -342,10 +350,12 @@ if windows:
                 print("Packaging %s bit" % bit)
                 if bit in bits:
                     bits.remove(bit)
-                cmd = "%s\\\\mkwins.py -a%s" % (url, bit)
+                cmd = "%s\\\\mkwindows.py -a%s" % (url, bit)
+                if onefle:
+                    cmd += " -f"
                 if upgpip:
                     # Update dependancies
-                    cmd = "%s -u" % cmd
+                    cmd += " -u"
                 exeCmd("ssh %s python %s" % (name, cmd))
     for bit in bits:
         print("Packaging %s bit" % bit)
@@ -357,12 +367,17 @@ if windows:
         xpth = "%s/dosdevices/x:" % WPFX
         if not os.path.exists(xpth):
             os.symlink(home, xpth)
-        cmd = "%s cmd /c python %s/uty/mkwins.py -a%s" % (cmd, bv, bit)
+        cmd = "%s cmd /c python %s/uty/mkwindows.py -a%s" % (cmd, bv, bit)
         if upgpip:
             cmd += " -u"
         if tmpfle:
             cmd += " -t%s" % tmpfle
         exeCmd(cmd)
+if linux:
+    cmd = "python %s/uty/mklinux.py" % bv
+    if onefle:
+        cmd += " -f"
+    exeCmd(cmd)
 if publish:
     # Publish
     # Change to pypath directory
@@ -384,6 +399,11 @@ if publish:
     doc.close()
     exeCmd("rst2pdf %s/%s/doc/Manual.rst -o /tmp/Manual.pdf "\
             "-s %s/%s/doc/mystylesheet" % (bd, bv, bd, bv))
+    # Create changes rst
+    rst = open("doc/Changes.txt", "w")
+    chg = __import__("tarchg")
+    rst.write(chg.changes)
+    rst.close()
     # Move Current to Old
     exeCmd("mv %s/%s/%s_%s.%s.tgz %s/%s/" %
         (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
@@ -399,16 +419,16 @@ if publish:
     if windows:
         # Rename Windows exe's
         if "32" in bits:
-            exeCmd("cp -p %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
+            exeCmd("mv %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
         if "64" in bits:
-            exeCmd("cp -p %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
+            exeCmd("mv %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
         if "8" in bits:
-            exeCmd("cp -p %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
+            exeCmd("mv %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
         if "7" in bits:
-            exeCmd("cp -p %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
+            exeCmd("mv %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
                 (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
     print("Version Number is %s.%s" % tuple(cver))
     # Dropbox

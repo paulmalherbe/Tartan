@@ -3045,7 +3045,7 @@ tabdic = {
         "fld": [
             [0, "rpo_rnam", "NA", 10.0, "Report Name", "Name"],
             [1, "rpo_seq", "UI", 2.0, "Sequence", "Sq"],
-            [2, "rpo_column", "NA", 20.0, "Column Name", "Name"],
+            [2, "rpo_column", "TX", 50.0, "Column Name", "Name"],
             [3, "rpo_type", "NA", 1.0, "Ascending or Descending", "O"],
             [4, "rpo_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
@@ -3563,10 +3563,15 @@ tabdic = {
             [3, "stv_loc", "UA", 1.0, "Location", "L"],
             [4, "stv_bin", "UA", 8.0, "Bin Number", "Bin-Num"],
             [5, "stv_qty", "SD", 9.2, "Quantity", "Quantity"],
-            [6, "stv_ucost", "SD", 9.2, "Unit Cost Price", "Unit-Cost"]],
+            [6, "stv_ucost", "SD", 9.2, "Unit Cost Price", "Unit-Cost"],
+            [7, "stv_mrgdt", "d1", 10.0, "Merge Date", "Merge-Date"],
+            [8, "stv_qdif", "SD", 9.2, "Quantity Difference", "Qty-Diff"],
+            [9, "stv_vdif", "SD", 9.2, "Value Difference", "Val-Diff"],
+            [10, "stv_seq", "US", 10.0, "Sequence", "Sequence"]],
         "idx": [
-            ["Stock Take Variance", 1, "U", "stv_cono", "stv_group",
-                "stv_code", "stv_loc"]]},
+            ["Stock Take Variance", 1, "U", "stv_seq"],
+            ["", 2, "N", "stv_cono", "stv_group", "stv_code", "stv_loc",
+                "stv_mrgdt"]]},
     "telcon": {
         "fld": [
             [0, "tdc_name", "NA", 50.0, "Name", "Name"],
