@@ -219,10 +219,10 @@ class si3020(object):
             if "args" not in self.opts or "noprint" not in self.opts["args"]:
                 pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                     self.__class__.__name__, self.opts["conum"], ext="pdf")
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
-                    fromad=self.fromad, repeml=self.df.repeml)
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
+                        fromad=self.fromad, repeml=self.df.repeml)
 
     def getValues(self, data):
         self.grp = CCD(data[0], "UA", 3)

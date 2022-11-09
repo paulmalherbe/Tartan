@@ -141,7 +141,7 @@ class ml6010(object):
                         w.extend([("mlt_type", "=", tr[2]),
                             ("mlt_refno", "=", tr[1])])
                         self.sql.insRec("memage", data=[self.opts["conum"],
-                            self.memno, tr[2], tr[1], self.curdt, tr[2], tr[1],
+                            self.memno, tr[1], tr[0], self.curdt, tr[1], tr[0],
                             tr[6], 0])
             else:
                 self.key = "cancel"

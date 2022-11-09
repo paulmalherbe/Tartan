@@ -52,7 +52,7 @@ class gl3030(object):
             "Typ", "Batch", "Remarks", "Debit", "Credit", "Balance"]
         self.forms = [("UI", 3), ("UI", 7), ("NA", 30), ("D1", 10),
             ("Na", 9), ("NA", 3), ("Na", 7), ("NA", 30), ("SD", 13.2),
-            ("SD", 13.2), ("SD", 13.2)]
+            ("SD", 13.2), ("SD", 14.2)]
         self.s_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
         self.recs = None
@@ -240,22 +240,22 @@ class gl3030(object):
                 else:
                     self.newAccount()
             if acctot:
-                w1 = CCD(acctot, "SD", 13.2)
+                w1 = CCD(acctot, "SD", 14.2)
                 self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %-13s %-13s "\
-                    "%-13s" % (self.sdate.disp + "-01", "", "", "",
+                    "%-14s" % (self.sdate.disp + "-01", "", "", "",
                     "Opening Balance", "", "", w1.disp))
             for acc in trn:
                 trdt, refno, trtp, batch, amt, dbt, crt, detail, curdt, \
                     curmth = self.getTrnValues(acc)
                 if self.fpdf.newPage():
                     self.pageHeading()
-                    bf = CCD(acctot, "SD", 13.2)
+                    bf = CCD(acctot, "SD", 14.2)
                     if bf.work:
-                        self.fpdf.drawText("%32s %-30s %27s %13s" % ("",
+                        self.fpdf.drawText("%32s %-30s %27s %14s" % ("",
                             "Brought Forward", "", bf.disp))
                 acctot = float(ASD(acctot) + ASD(amt.work))
-                w1 = CCD(acctot, "SD", 13.2)
-                self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %13s %13s %13s"\
+                w1 = CCD(acctot, "SD", 14.2)
+                self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %13s %13s %14s"\
                     % (trdt.disp, refno.disp, gltrtp[(trtp.work - 1)][0],
                     batch.disp, detail.disp, dbt.disp, crt.disp, w1.disp))
             if self.pages == "Y" and (acctot or trn):
@@ -266,10 +266,10 @@ class gl3030(object):
         if "args" not in self.opts or "noprint" not in self.opts["args"]:
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, self.opts["conum"], ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
-                repeml=self.df.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
+                    repeml=self.df.repeml)
 
     def getAccValues(self, data):
         dic = self.sql.genmst_dic
@@ -279,18 +279,18 @@ class gl3030(object):
             where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
             acno.work), ("glo_trdt", "=", self.opts["period"][1][0])], limit=1)
         if o:
-            b = CCD(o[0], "SD", 13.2)
+            b = CCD(o[0], "SD", 14.2)
         else:
-            b = CCD(0, "SD", 13.2)
+            b = CCD(0, "SD", 14.2)
         ob = b.work
         o = self.sql.getRec("gentrn", cols=["round(sum(glt_tramt), 2)"],
             where=[("glt_cono", "=", self.opts["conum"]), ("glt_acno", "=",
             acno.work), ("glt_curdt", ">=", self.s_per), ("glt_curdt",
             "<", self.sdate.work)], limit=1)
         if o and o[0]:
-            b = CCD(o[0], "SD", 13.2)
+            b = CCD(o[0], "SD", 14.2)
         else:
-            b = CCD(0, "SD", 13.2)
+            b = CCD(0, "SD", 14.2)
         acctot = float(ASD(ob) + ASD(b.work))
         return (acno, desc, acctot)
 

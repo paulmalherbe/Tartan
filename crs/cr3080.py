@@ -470,10 +470,11 @@ If you decide to do this, you must remember to upload the BEST file to the Bank 
             key = "%s_all" % self.opts["conum"]
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, key, ext="pdf")
-        self.form.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header="%s Remittance Advice" % self.opts["conam"],
-            repprt=self.df.repprt, fromad=self.fromad, repeml=self.df.repeml)
+        if self.form.saveFile(pdfnam, self.opts["mf"].window):
+            head = "%s Remittance Advice" % self.opts["conam"]
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                pdfnam=pdfnam, header=head, repprt=self.df.repprt,
+                fromad=self.fromad, repeml=self.df.repeml)
         if self.df.repeml[1] == "Y":
             self.form = DrawForm(self.opts["mf"].dbm, self.tname,
                 wrkdir=self.opts["mf"].rcdic["wrkdir"])

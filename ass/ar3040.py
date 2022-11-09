@@ -250,10 +250,10 @@ class ar3040(object):
             if self.pglin > (self.fpdf.lpp - 2):
                 self.pageHeading(grp)
             self.grandTotal()
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
-                repeml=self.df.repeml, fromad=self.fromad)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
+                    repeml=self.df.repeml, fromad=self.fromad)
 
     def getValues(self, data):
         bals = Balances(self.opts["mf"], "ASS", self.opts["conum"], self.sper,

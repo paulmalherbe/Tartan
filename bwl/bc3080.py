@@ -144,9 +144,9 @@ Burnt Ends - Replay the end."""),
         self.drawFormat()
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
-        self.fpdf.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], pdfnam=pdfnam, header=hdr,
-            repprt=prt, fromad=self.fromad, repeml=eml)
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], pdfnam=pdfnam, header=hdr,
+                repprt=prt, fromad=self.fromad, repeml=eml)
         if "wait" not in self.opts:
             self.opts["mf"].closeLoop()
 
@@ -208,10 +208,14 @@ Burnt Ends - Replay the end."""),
             else:
                 if ldic["bct_drawn"] == 1:
                     txt = "The First Game will be a Random Draw and "\
-                        "thereafter Strength v Strength."
+                        "thereafter"
                 else:
                     txt = "The First %s Games will be Random Draws and "\
-                        "thereafter Strength v Strength." % ldic["bct_drawn"]
+                        "thereafter" % ldic["bct_drawn"]
+                if ldic["bct_strict"] == "Y":
+                    txt += " Strict Strength v Strength."
+                else:
+                    txt += " Strength v Strength."
             self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
             if ldic["bct_games"]:
                 self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_games"][4],

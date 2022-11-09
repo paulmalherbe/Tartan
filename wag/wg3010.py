@@ -140,10 +140,10 @@ class wg3010(object):
                             dic[c][2], dic[c][3]).disp)
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, self.opts["conum"], ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.head, repprt=self.df.repprt,
-                fromad=self.fromad, repeml=self.df.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.head, repprt=self.df.repprt,
+                    fromad=self.fromad, repeml=self.df.repeml)
         else:
             cols = [
                 ["wgm_empno",  "UI",  5, "EmpNo", "y"],

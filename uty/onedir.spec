@@ -1,10 +1,13 @@
 # -*- mode: python -*-
+import sys
 from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
 data = [
     ('doc/*', 'doc'),
     ('../pygal/css/*.css', 'pygal/css')]
+if sys.platform == "win32":
+    data.append(('c:/windows/system32/api-ms-win-crt-*.dll', '.'))
 data.extend(collect_data_files('tkinterhtml'))
 a = Analysis(['ms0000.py'],
         pathex=['.'],
@@ -15,7 +18,8 @@ a = Analysis(['ms0000.py'],
             'pyexcel_xls', 'pyexcel_xls.xlsr', 'pyexcel_xls.xlsw',
             'pyexcel_io.writers', 'pyexcel_io.writers.csvw',
             'pyexcel_io.writers.csvz', 'pyexcel_io.writers.tsv',
-            'pyexcel_io.writers.tsvz', 'PIL._tkinter_finder'],
+            'pyexcel_io.writers.tsvz', 'PIL._tkinter_finder',
+            'pywintypes'],
         hookspath=[],
         runtime_hooks=[],
         excludes=['PyQt4', 'PyQt5'],

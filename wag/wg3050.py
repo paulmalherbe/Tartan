@@ -862,10 +862,10 @@ Please Amend the Earnings or Deduction Codes containing It and then Try Again.""
         self.irp5fl.write(self.emprec)
 
     def doPrint(self):
-        self.fpdf.output(self.pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-            pdfnam=self.pdfnam, header=self.tit, repprt=self.df.repprt,
-            fromad=self.fromad, repeml=self.df.repeml)
+        if self.fpdf.saveFile(self.pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                pdfnam=self.pdfnam, header=self.tit, repprt=self.df.repprt,
+                fromad=self.fromad, repeml=self.df.repeml)
 
     def doExit(self):
         self.df.closeProcess()

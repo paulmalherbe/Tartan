@@ -79,7 +79,7 @@ class bc2060(object):
                 1,"N",self.doGame,None,None,("efld",)),
             (("T",0,1,0),"I@bcg_date",0,"Date","",
                 self.today,"N",self.doDate,None,None,("efld",)),
-            (("T",0,2,0),"IUA",30,"Greens","Greens (A,B,C)",
+            (("T",0,2,0),"IUA",35,"Greens","Greens (A,B,C)",
                 "","N",self.doGreens,None,None,("efld",),None,"Available "\
                 "Greens in the format A,B or A,B345 showing Green Code and "\
                 "Rinks. If the Rinks are Not Entered they will Default to 6."),

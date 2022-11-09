@@ -176,12 +176,11 @@ class msc110(object):
             aut = self.df.t_work[0][0][7]
             nam = self.df.t_work[0][0][9]
             pwd = self.df.t_work[0][0][10]
-            chk = sendMail([svr, prt, sec, aut, nam, pwd], "", "", "",
-                check=True, errwid=self.opts["mf"].body,
-                wrkdir=self.opts["mf"].rcdic["wrkdir"])
-            if not chk:
+            err = sendMail([svr, prt, sec, aut, nam, pwd], "", "", "",
+                check=True, wrkdir=self.opts["mf"].rcdic["wrkdir"])
+            if err:
                 showError(self.opts["mf"].body, "Error",
-                    "Invalid SMTP Server or Authentication.")
+                    "Invalid SMTP Server or Authentication.\n\n%s" % err)
                 self.df.focusField("T", 0, 6)
                 return
         tme = time.localtime()

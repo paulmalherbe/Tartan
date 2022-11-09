@@ -141,10 +141,10 @@ class tb3010(object):
         if self.fpdf.page and not p.quit:
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, 0, ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=1, pdfnam=pdfnam,
-                header="Table Fields and Indexes", repprt=self.df.repprt,
-                repeml=self.df.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=1, pdfnam=pdfnam,
+                    header="Table Fields and Indexes", repprt=self.df.repprt,
+                    repeml=self.df.repeml)
 
     def doHeading(self, htyp, table):
         self.fpdf.setFont(style="B")

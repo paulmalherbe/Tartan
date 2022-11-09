@@ -217,13 +217,13 @@ class bk3030(object):
                 self.fpdf.add_page()
             self.doHKeeping()
         if self.fpdf.page:
+            subj = "%s - %s" % (self.cdes, self.hdes)
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, self.opts["conum"], ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            subj = "%s - %s" % (self.cdes, self.hdes)
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=subj, repprt=self.df.repprt,
-                fromad=self.fromad, repeml=self.df.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=subj, repprt=self.df.repprt,
+                    fromad=self.fromad, repeml=self.df.repeml)
         if self.prtinv == "Y" and self.docs:
             # Print Invoice
             self.docs.sort()

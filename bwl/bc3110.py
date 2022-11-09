@@ -99,8 +99,9 @@ class bc3110(object):
                 fpdf.drawText()
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, self.opts["conum"], ext="pdf")
-            fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], pdfnam=pdfnam, repprt=self.df.repprt)
+            if fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], pdfnam=pdfnam,
+                    repprt=self.df.repprt)
         self.opts["mf"].closeLoop()
 
     def doExit(self):

@@ -287,10 +287,10 @@ class ml3060(object):
         if self.fpdf.page and not p.quit:
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, self.opts["conum"], ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=self.repprt,
-                fromad=self.fromad, repeml=self.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit, repprt=self.repprt,
+                    fromad=self.fromad, repeml=self.repeml)
 
     def getValues(self, data):
         key = data[self.sql.chglog_col.index("chg_key")]

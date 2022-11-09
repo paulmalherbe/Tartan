@@ -1733,10 +1733,10 @@ class bk1020(object):
                     wrkdir=self.opts["mf"].rcdic["wrkdir"])]
             else:
                 att = None
-            self.form.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=self.pr.repprt,
-                fromad=self.fromad, repeml=self.pr.repeml, attach=att)
+            if self.form.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit, repprt=self.pr.repprt,
+                    fromad=self.fromad, repeml=self.pr.repeml, attach=att)
 
     def doLoadStatic(self):
         cmc = self.sql.ctlmst_col

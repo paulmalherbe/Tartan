@@ -680,10 +680,11 @@ Captains (C) are responsible to distribute and return assessment forms, complete
 
 %s""" % (txt, self.pr.t_work[0][0][0], self.pr.t_work[0][0][1])
             fpdf.drawText(x=10.0*cw, y=(last+3)*ld, txt=txt, ctyp="M")
-        fpdf.output(pdfnam, "F")
         head = "Match Selections for %s" % self.disp
-        doPrinter(mf=self.opts["mf"], header=head, pdfnam=pdfnam,
-            repprt=self.pr.repprt, fromad=self.fromad, repeml=self.pr.repeml)
+        if fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], header=head, pdfnam=pdfnam,
+                repprt=self.pr.repprt, fromad=self.fromad,
+                repeml=self.pr.repeml)
 
     def getName(self, snam, fnam):
         if fnam:

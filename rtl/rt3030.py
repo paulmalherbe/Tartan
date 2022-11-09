@@ -239,10 +239,10 @@ class rt3030(object):
         if self.fpdf.page and not p.quit:
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, self.opts["conum"], ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
-                fromad=self.fromad, repeml=self.df.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
+                    fromad=self.fromad, repeml=self.df.repeml)
         self.closeProcess()
 
     def pageHeading(self):

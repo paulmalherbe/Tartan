@@ -268,10 +268,10 @@ class st3030(object):
             old_grp = grp.work
         p.closeProgress()
         if self.fpdf.page and not p.quit:
-            self.fpdf.output(self.pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=self.pdfnam, header=self.tit, repprt=self.df.repprt,
-                fromad=self.fromad, repeml=self.df.repeml)
+            if self.fpdf.saveFile(self.pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=self.pdfnam, header=self.tit, repprt=self.df.repprt,
+                    fromad=self.fromad, repeml=self.df.repeml)
 
     def printCost(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
@@ -297,10 +297,10 @@ class st3030(object):
             old_grp = grp.work
         p.closeProgress()
         if self.fpdf.page and not p.quit:
-            self.fpdf.output(self.pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=self.pdfnam, header=self.tit, repprt=self.df.repprt,
-                fromad=self.fromad, repeml=self.df.repeml)
+            if self.fpdf.saveFile(self.pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=self.pdfnam, header=self.tit, repprt=self.df.repprt,
+                    fromad=self.fromad, repeml=self.df.repeml)
 
     def getValues(self, data):
         grp = CCD(data[0], "UA", 3)

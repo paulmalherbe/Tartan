@@ -380,10 +380,11 @@ class rt3040(object):
             key = "%s_all_all" % self.opts["conum"]
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, key, ext="pdf")
-        self.form.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header="%s Statement at %s" % (self.opts["conam"], self.dated),
-            fromad=self.fromad, repprt=self.df.repprt, repeml=self.df.repeml)
+        if self.form.saveFile(pdfnam, self.opts["mf"].window):
+            head = "%s Statement at %s" % (self.opts["conam"], self.dated)
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                pdfnam=pdfnam, header=head, fromad=self.fromad,
+                repprt=self.df.repprt, repeml=self.df.repeml)
         if self.df.repeml[1] == "Y":
             self.form = DrawForm(self.opts["mf"].dbm, self.tname,
                 wrkdir=self.opts["mf"].rcdic["wrkdir"])

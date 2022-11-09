@@ -30,7 +30,7 @@ def doUpgrade():
         mods.append(mod[1])
     for mod in mods:
         try:
-            os.system("pip -q install %s --user "\
+            os.system("python -m pip -q install %s --user "\
                 "--no-warn-script-location --upgrade" % mod)
             print("Upgraded", mod)
         except Exception as err:
@@ -51,7 +51,7 @@ SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
 TMP = os.path.join("%s\\" % HOM, "Temp")        # Working Directory
 onefle = False                                  # Generate a single file
 UPG = False                                     # Upgrade python modules
-opts, args = getopt.getopt(sys.argv[1:], "a:d:e:fhs:t:u")
+opts, args = getopt.getopt(sys.argv[1:], "a:d:e:hos:t:u")
 for o, v in opts:
     if o == "-a":
         PFX = v
@@ -59,8 +59,6 @@ for o, v in opts:
         DPT = v
     elif o == "-e":
         EXE = v
-    elif o == "-f":
-        onefle = True
     elif o == "-h":
         print("""
 Usage: python mkwindows.py [options]
@@ -68,12 +66,15 @@ Usage: python mkwindows.py [options]
     -a Architecture as in 7, 8, 32 and 64
     -d The Installed Path e.g. c:\Tartan\prg
     -e The Destination Path e.g. x:\TartanExe
-    -f generate Onefile
+    -h Print this Usage
+    -o Generate Onefile
     -s The Source path e.g. x:\TartanSve
     -t Temporary Work Directory e.g. x:\Temp
     -u Upgrade python modules
 """)
         sys.exit()
+    elif o == "-o":
+        onefle = True
     elif o == "-s":
         SRC = v
     elif o == "-t":
@@ -130,14 +131,13 @@ if UPG:
 # Run pyinstaller
 os.chdir(os.path.join(TMP, "tartan"))
 if onefle:
-    os.rename("ms0000.fle", "ms0000.spec")
+    subprocess.call(["pyinstaller", "onefle.spec"], stdout=out, stderr=out)
 else:
-    os.rename("ms0000.dir", "ms0000.spec")
-subprocess.call(["pyinstaller", "ms0000.spec"], stdout=out, stderr=out)
+    subprocess.call(["pyinstaller", "onedir.spec"], stdout=out, stderr=out)
 # Copy files to DPT
 shutil.copy("tartan.ico", DPT)
 if onefle:
-    shutil.copy(os.path.join("dist", "ms0000"), DPT)
+    shutil.copy(os.path.join("dist", "ms0000.exe"), DPT)
 else:
     shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
 # Create installers and Copy installers to EXE

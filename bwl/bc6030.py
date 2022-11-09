@@ -121,9 +121,9 @@ class bc6030:
                     if self.mems > 1:
                         fpdf.drawText(x=0, y=60, align="C", txt=mems[z],
                             font=font)
-        fpdf.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-            pdfnam=pdfnam, header="Envelopes", repprt=self.df.repprt)
+        if fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                pdfnam=pdfnam, header="Envelopes", repprt=self.df.repprt)
         self.opts["mf"].closeLoop()
 
     def doExit(self):

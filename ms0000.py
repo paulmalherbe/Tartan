@@ -63,7 +63,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 10)
+    VERSION = (6, 11)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -215,11 +215,13 @@ Options:
 """)
             self.doExit(dbm=False)
         if self.script:
+            if getattr(sys, "frozen", False):
+                sys.path.append(getPrgPath()[1])
             try:
                 exec("import %s" % self.script)
-            except:
-                pass
-            self.doExit()
+            except Exception as err:
+                print(err)
+            self.doExit(dbm=False)
         if not self.version and not self.xdisplay:
             nodisp = ("tarBck", "tarUpd")
             if not self.query and self.program not in nodisp:
@@ -230,7 +232,7 @@ Options:
                 self.doExit(dbm=False)
         if self.imods:
             # Import/Upgrade All modules
-            if getattr(sys, 'frozen', False):
+            if getattr(sys, "frozen", False):
                 print("Tartan is frozen, Upgrades not Possible.")
                 sys.exit()
             try:
@@ -241,7 +243,7 @@ Options:
                     raise Exception("pip Not Found")
                 cmd = [sys.executable, "-m", "pip", "install", "-qU"]
                 chke(cmd + ["pip"])
-                # Install and or Install all modules
+                # Install and or Upgrade all modules
                 for mod in pymoda + pymodb:
                     if len(mod) == 4 and sys.platform != mod[3]:
                         continue
@@ -1661,11 +1663,14 @@ System --> Change Password""")
             self.mf.rcdic["vwr"] = ""
         man = MakeManual(fle, vwr=self.mf.rcdic["vwr"])
         pdf = os.path.join(self.rcdic["wrkdir"], "Manual.pdf")
-        if os.path.exists(pdf):
-            os.remove(pdf)
-        man.fpdf.output(pdf, "F")
-        if os.path.exists(pdf):
-            ViewPDF(self.mf, pdf)
+        try:
+            if os.path.exists(pdf):
+                os.remove(pdf)
+            man.fpdf.output(pdf, "F")
+            if os.path.exists(pdf):
+                ViewPDF(self.mf, pdf)
+        except Exception as err:
+            showError(None, "Error", err)
         if FITZ:
             # Restore the viewer
             self.mf.rcdic["vwr"] = vwr

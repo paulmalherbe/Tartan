@@ -1605,9 +1605,9 @@ Names:   %s
             form.doDrawDetail(l)
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.tnamef, ext="pdf")
-        form.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], pdfnam=pdfnam, splash=False,
-            repprt=self.pf.repprt)
+        if form.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], pdfnam=pdfnam, splash=False,
+                repprt=self.pf.repprt)
         if self.tnameb:
             doprint = False
             form = DrawForm(self.opts["mf"].dbm, self.tnameb,
@@ -1660,12 +1660,13 @@ Names:   %s
                     form.doDrawDetail(l)
                 pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                     self.__class__.__name__, self.tnameb, ext="pdf")
-                form.output(pdfnam, "F")
-                showWarning(self.opts["mf"].body, "Replace Card",
-                    "In Order to Print the Back of the Card, Please "\
-                    "Replace the Card, Reverse Side Up, in the Printer Tray.")
-                doPrinter(mf=self.opts["mf"], pdfnam=pdfnam, splash=False,
-                    repprt=self.pf.repprt)
+                if form.saveFile(pdfnam, self.opts["mf"].body):
+                    showWarning(self.opts["mf"].body, "Replace Card",
+                        "In Order to Print the Back of the Card, Please "\
+                        "Replace the Card, Reverse Side Up, in the "\
+                        "Printer Tray.")
+                    doPrinter(mf=self.opts["mf"], pdfnam=pdfnam, splash=False,
+                        repprt=self.pf.repprt)
 
     def doClear(self):
         if self.new or self.edit:

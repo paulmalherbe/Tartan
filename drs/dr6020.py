@@ -188,8 +188,8 @@ class dr6020(object):
                         w.extend([("drt_type", "=", tr[2]),
                             ("drt_ref1", "=", tr[1])])
                         self.sql.insRec("drsage", data=[self.opts["conum"],
-                            self.chain, self.acno, tr[2], tr[1], self.curdt,
-                            tr[2], tr[1], tr[6], 0])
+                            self.chain, self.acno, tr[1], tr[0], self.curdt,
+                            tr[1], tr[0], tr[6], 0])
             else:
                 self.key = "cancel"
         self.agevar.set(False)

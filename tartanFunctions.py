@@ -801,7 +801,7 @@ def findFile(start=".", name=None, ftyp="f", case="n"):
                     elif flenam.lower() == name.lower():
                         return os.path.join(root, flenam)
 
-def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False, timeout=30, local=None, lnkurl=None, errwid=False, wrkdir="."):
+def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False, timeout=30, local=None, lnkurl=None, wrkdir="."):
     """
     A routine to email a message, embed files and/or attach files.
 
@@ -817,7 +817,6 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
         timeout = The number of seconds before timing out defaulting to 30.
         local   = The local hostname as fqdn.
         lnkurl  = An http link to add to the embedded attachments
-        errwid  = The widget to display the exception, defaults to None
         wrkdir  = The work directory, defaults to "."
     """
     import mimetypes, os, smtplib
@@ -860,12 +859,13 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
             smtp.login(unam, upwd)
         if check:
             smtp.quit()
-            return True
+            return
     except Exception as err:
         if not check:
-            showException(errwid, wrkdir, "Mail Server (%s %s) "\
+            showException(None, wrkdir, "Mail Server (%s %s) "\
                 "Invalid or Unavailable\n\n%s" % (host, port, err))
-        return
+        else:
+            return err
     if type(to) == str:
         to = [to]
     if attach is None:
@@ -1918,6 +1918,8 @@ def getGreens(text, needed, keep=None):
                 greens[g].remove(num)
                 if rnk in endrks:
                     endrks.remove("%s%s" % (g, num))
+                    if num == 7:
+                        endrks.append("%s6" % g)
                 rem -= 1
             if not rem:
                 break
@@ -2433,9 +2435,9 @@ def roundup(number, places=0):
 
     if type(number) is float:
         number = str(number)
-    place = '1.'
+    place = "1."
     for i in range(places):
-        place = ''.join([place, '0'])
+        place = "".join([place, "0"])
     return float(dec(number).quantize(dec(place), rounding=ROUND_HALF_UP))
 
 def getColors(style, scheme):
@@ -2504,6 +2506,9 @@ def getColors(style, scheme):
     return color
 
 def chkMod(mod):
+    """
+    This function is used to check if a module is available.
+    """
     try:
         mod = __import__(mod)
         return mod
@@ -2511,6 +2516,9 @@ def chkMod(mod):
         return
 
 def doPublish(scrn, flenam):
+    """
+    This function is used to display a text, rst, md or html file.
+    """
     import io
     from TartanClasses import HTML, ScrollHtml, ScrollText
     try:
@@ -2796,7 +2804,11 @@ def doWriteExport(**args):
     if args["xtype"].upper() == "C":
         head = ""
         name = args["name"] + ".csv"
-        flenam = open(name, "w")
+        try:
+            flenam = open(name, "w")
+        except Exception as err:
+            showError(None, "Error", err)
+            return
         for valc in args["colsh"][-1]:
             if type(valc) in (list, tuple):
                 text = valc[0]
@@ -3063,9 +3075,12 @@ def doWriteExport(**args):
                 cellWrite(sheet, rowx+1, colx+1, valx, hxf)
         # Save the spreadsheet
         name = args["name"] + ".xlsx"
-        book.save(filename=name)
-        # View the spreadsheet
-        if view:
-            viewFile(exe, cmd, name, wait)
+        try:
+            book.save(filename=name)
+            # View the spreadsheet
+            if view:
+                viewFile(exe, cmd, name, wait)
+        except Exception as err:
+            showError(None, "Error", err)
 # END
 # vim:set ts=4 sw=4 sts=4 expandtab:

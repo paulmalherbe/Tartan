@@ -180,10 +180,10 @@ class bk3010(object):
         if self.fpdf.page:
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, self.opts["conum"], ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                header=self.head, pdfnam=pdfnam, repprt=self.df.repprt,
-                fromad=self.fromad, repeml=self.df.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    header=self.head, pdfnam=pdfnam, repprt=self.df.repprt,
+                    fromad=self.fromad, repeml=self.df.repeml)
         if "wait" not in self.opts:
             self.opts["mf"].closeLoop()
 

@@ -313,21 +313,24 @@ class rc4020(object):
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         if opt == "I":
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit,
+                    repprt=["N", "V", "view"])
         elif opt == "B":
             if not self.trn:
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
             else:
                 self.pageHeading()
                 self.pageHeadingTrans()
                 self.printTrans()
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
         elif opt == "D":
             recs = getDeposit(self.opts["mf"], self.opts["conum"], self.depdtw,
                 self.owner, self.code, self.acno)
@@ -335,17 +338,19 @@ class rc4020(object):
                 self.pageHeading(deposit=True)
                 self.pageHeadingDeposit()
                 self.printDeposit(recs)
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
         elif opt == "T":
             if self.trn:
                 self.pageHeading()
                 self.pageHeadingTrans()
                 self.printTrans()
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
 
     def printInfo(self):
         for x in range(0, len(self.df.topf[0])):

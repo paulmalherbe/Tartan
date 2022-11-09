@@ -100,10 +100,10 @@ class sc3010(object):
                 self.fpdf.drawText(txt=ph, w=cwth*16, h=5, ln=1)
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
                 self.__class__.__name__, self.opts["conum"], ext="pdf")
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], pdfnam=pdfnam,
-                repprt=self.df.repprt,
-                repeml=self.df.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], pdfnam=pdfnam,
+                    repprt=self.df.repprt,
+                    repeml=self.df.repeml)
         self.opts["mf"].closeLoop()
 
     def doHead(self):

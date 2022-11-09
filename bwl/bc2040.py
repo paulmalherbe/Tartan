@@ -134,8 +134,9 @@ class bc2040(object):
                     "This Sectional Competition Has Been Completed.")
                 return "rf"
             gme = self.sql.getRec("bwlgme", cols=["count(*)"],
-                where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
-                self.ccod), ("bcg_ocod", "<>", 0)], limit=1)
+                where=[("bcg_cono", "=", self.opts["conum"]),
+                ("bcg_ccod", "=", self.ccod), ("bcg_ocod", "<>", 0)],
+                limit=1)
             if gme[0]:
                 ok = askQuestion(self.opts["mf"].body, "Error",
                     """This Competition Has Already Been Drawn.
@@ -345,10 +346,6 @@ Do You Want to Erase All Draws and Results?""", default="no")
                             cols=["bce_scod"], where=[("bce_cono",
                             "=", self.opts["conum"]), ("bce_ccod",
                             "=", self.ccod)], order="bce_scod")
-                        skips = []
-                        for rec in recs:
-                            skips.append(rec[0])
-                        self.doPopulate(skips)
                 data.append(self.cmp[self.sql.bwlcmp_col.index("bcm_xflag")])
                 self.sql.updRec("bwlcmp", data=data, where=[("bcm_cono", "=",
                     self.opts["conum"]), ("bcm_code", "=", self.ccod)])
@@ -358,8 +355,6 @@ Do You Want to Erase All Draws and Results?""", default="no")
             if self.newent:
                 self.sql.insRec("bwlent", data=[self.opts["conum"], self.ccod,
                     self.scod, self.tcod, self.paid])
-                if self.cfmat in ("T", "X"):
-                    self.doPopulate([self.scod])
             else:
                 self.sql.updRec("bwlent", cols=["bce_tcod", "bce_paid"],
                     data=[self.tcod, self.paid], where=[("bce_cono", "=",
@@ -367,22 +362,6 @@ Do You Want to Erase All Draws and Results?""", default="no")
                     ("bce_scod", "=", self.scod)])
             self.loadButton()
             self.df.advanceLine(0)
-
-    def doPopulate(self, scods):
-        # Populate bwlgme records
-        num = self.typ[self.sql.bwltyp_col.index("bct_games")]
-        dgm = self.typ[self.sql.bwltyp_col.index("bct_drawn")]
-        for scod in scods:
-            data = [self.opts["conum"], self.ccod, scod, 0, "",
-                0, 0, "", 0, 0, 0, 0, 0, 0, 0, "", 0, 0]
-            for x in range(0, dgm):
-                data[3] = x + 1
-                data[4] = "D"
-                self.sql.insRec("bwlgme", data=data)
-            for x in range(dgm, num):
-                data[3] = x + 1
-                data[4] = "S"
-                self.sql.insRec("bwlgme", data=data)
 
     def loadButton(self):
         rec = self.sql.getRec("bwlent", cols=["count(*)"],

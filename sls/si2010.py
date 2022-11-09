@@ -391,7 +391,7 @@ class si2010(object):
         r1s = [
             ("New", "N"),
             ("Amend", "A")]
-        if self.typs == "Q":
+        if self.typs in ("Q", "W"):
             r1s.append(("Convert to Order", "X"))
         r1s.extend([
             ("Despatch", "D"),
@@ -1596,8 +1596,8 @@ class si2010(object):
                 where=whr)
         if self.typs in ("O", "W", "Q") and self.acttyp in ("A", "N"):
             return
-        if self.typs == "Q" and self.acttyp == "X":
-            # Convert quote to order
+        if self.typs in ("Q", "W") and self.acttyp == "X":
+            # Convert document to sales order
             actdoc = self.docno
             self.doGetDocno("O")
             self.sql.updRec("slsiv1", cols=["si1_rtn","si1_docno","si1_date",

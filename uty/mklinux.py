@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import getopt, glob, os, pathlib, shutil, subprocess, sys
+import getopt, glob, os, pathlib, platform, shutil, subprocess, sys
 from zipfile import ZipFile
 
 """
@@ -25,13 +25,13 @@ def doUpgrade():
             print(err)
 
 HOM = str(pathlib.Path.home())
-DPT = os.path.join(HOM, "Tartan", "prg")        # Directory for pyinstaller exe
+DPT = os.path.join(HOM, "Tartan")               # Directory for pyinstaller
 EXE = os.path.join(HOM, "TartanExe")            # Destination of installer
 SRC = os.path.join(HOM, "TartanSve")            # Repository of tartan.zip
 TMP = os.path.join(HOM, "Temp")                 # Working Directory
 onefle = False                                  # Generate a single file
 UPG = False                                     # Upgrade python modules
-opts, args = getopt.getopt(sys.argv[1:], "a:d:e:fhs:t:u")
+opts, args = getopt.getopt(sys.argv[1:], "a:d:e:fhos:t:u")
 for o, v in opts:
     if o == "-a":
         PFX = v
@@ -53,12 +53,17 @@ Usage: python mklinux.py [options]
     -u Upgrade python modules
 """)
         sys.exit()
+    elif o == "-o":
+        onefle = True
     elif o == "-s":
         SRC = v
     elif o == "-t":
         TMP = v
     elif o == "-u":
         UPG = True
+# Go to HOM
+os.chdir(HOM)
+os.chmod(HOM, 0o777)
 # Set default variables
 fle = open(os.path.join(EXE, "current"), "r")
 VER = fle.read().strip()
@@ -66,13 +71,14 @@ fle.close()
 # Open the log file
 out = open("%s/log" % HOM, "w")
 # Delete installation directories
-shutil.rmtree(DPT, ignore_errors=True)
+shutil.rmtree(os.path.join(HOM, "Tartan"), ignore_errors=True)
 shutil.rmtree(TMP, ignore_errors=True)
 # Create new installation directories
-os.makedirs(TMP)
-os.chmod(HOM, 0o777)
+prgdir = os.path.join(DPT, "prg")
+os.makedirs(prgdir)
 for pth in ("fnt", "thm", "uty"):
-    os.makedirs(os.path.join(DPT, pth))
+    os.makedirs(os.path.join(prgdir, pth))
+os.makedirs(TMP)
 # Enter source directory
 os.chdir(TMP)
 # Unzip sources
@@ -107,19 +113,21 @@ if UPG:
 # Run pyinstaller
 os.chdir(os.path.join(TMP, "tartan"))
 if onefle:
-    os.rename("ms0000.fle", "ms0000.spec")
+    subprocess.call(["pyinstaller", "onefle.spec"], stdout=out, stderr=out)
 else:
-    os.rename("ms0000.dir", "ms0000.spec")
-subprocess.call(["pyinstaller", "ms0000.spec"], stdout=out, stderr=out)
+    subprocess.call(["pyinstaller", "onedir.spec"], stdout=out, stderr=out)
 # Copy files to DPT
-shutil.copy("tartan.ico", DPT)
+shutil.copy("tartan.ico", prgdir)
 if onefle:
-    shutil.copy(os.path.join("dist", "ms0000"), DPT)
+    shutil.copy(os.path.join("dist", "ms0000"), prgdir)
 else:
-    shutil.copytree(os.path.join("dist", "ms0000"), DPT, dirs_exist_ok=True)
+    shutil.copytree(os.path.join("dist", "ms0000"), prgdir, dirs_exist_ok=True)
 os.chdir(HOM)
-# Create tar file
-subprocess.call(["zip", "-rq", os.path.join(EXE, "tartan-6-lnx.zip"), "Tartan"])
+# Create zip file
+zipfl = os.path.join(EXE, "tartan-6-%s.zip" % platform.machine())
+if os.path.isfile(zipfl):
+    os.remove(zipfl)
+subprocess.call(["zip", "-rq", zipfl, "Tartan"])
 shutil.rmtree(TMP)
 shutil.rmtree(DPT)
 out.close()

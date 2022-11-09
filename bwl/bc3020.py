@@ -250,12 +250,12 @@ class bc3020(object):
                     self.fpdf.cell(cwth*20, 8, right[x][1], 0, 1, "L")
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
-        self.fpdf.output(pdfnam, "F")
         head = "Tabs Draw Summary for the period %s to %s" % (self.start.disp,
             self.end.disp)
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header=head, repprt=self.df.repprt, fromad=self.fromad,
-            repeml=self.df.repeml)
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+                header=head, repprt=self.df.repprt, fromad=self.fromad,
+                repeml=self.df.repeml)
         self.opts["mf"].closeLoop()
 
     def getName(self, tab, cls=True):

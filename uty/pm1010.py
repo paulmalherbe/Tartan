@@ -258,9 +258,9 @@ This file will be treated as a Temporary File when Exiting Tartan.""" % fle)
                     ctyp = "S"
                 self.fpdf.drawText(text, w=51*self.fpdf.cwth, align="L",
                     border="TLRB", ctyp=ctyp, ln=num)
-        self.fpdf.output("secrets.pdf", "F")
-        doPrinter(mf=self.opts["mf"], pdfnam="secrets.pdf", splash=False,
-            repprt=["N", "V", "view"])
+        if self.fpdf.saveFile("secrets.pdf", self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], pdfnam="secrets.pdf", splash=False,
+                repprt=["N", "V", "view"])
         os.remove("secrets.pdf")
 
     def doHead(self):

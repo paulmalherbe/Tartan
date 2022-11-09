@@ -287,10 +287,10 @@ class rt3020(object):
             self.batchTotal()
             self.typeTotal()
             self.grandTotal()
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
-                fromad=self.fromad, repeml=self.df.repeml)
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
+                    fromad=self.fromad, repeml=self.df.repeml)
 
     def getValues(self, data):
         code = CCD(data[0], "NA", 7)

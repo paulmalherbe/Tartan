@@ -1,0 +1,152 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	renamed:    uty/ms0000.dir -> uty/onedir.spec
+	renamed:    uty/ms0000.fle -> uty/onefle.spec
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   TartanClasses.py
+	modified:   ass/ar3010.py
+	modified:   ass/ar3020.py
+	modified:   ass/ar3030.py
+	modified:   ass/ar3040.py
+	modified:   ass/ar4010.py
+	modified:   bkm/bk1020.py
+	modified:   bkm/bk3010.py
+	modified:   bkm/bk3020.py
+	modified:   bkm/bk3030.py
+	modified:   bkm/bk3040.py
+	modified:   bkm/bk3050.py
+	modified:   bkm/bk3070.py
+	modified:   bks/bs3010.py
+	modified:   bwl/bc2020.py
+	modified:   bwl/bc2040.py
+	modified:   bwl/bc2050.py
+	modified:   bwl/bc2060.py
+	modified:   bwl/bc2080.py
+	modified:   bwl/bc3020.py
+	modified:   bwl/bc3030.py
+	modified:   bwl/bc3040.py
+	modified:   bwl/bc3070.py
+	modified:   bwl/bc3080.py
+	modified:   bwl/bc3090.py
+	modified:   bwl/bc3100.py
+	modified:   bwl/bc3110.py
+	modified:   bwl/bc6030.py
+	modified:   crs/cr3010.py
+	modified:   crs/cr3020.py
+	modified:   crs/cr3030.py
+	modified:   crs/cr3040.py
+	modified:   crs/cr3050.py
+	modified:   crs/cr3070.py
+	modified:   crs/cr3080.py
+	modified:   crs/cr3090.py
+	modified:   crs/cr3110.py
+	modified:   crs/cr6020.py
+	modified:   csh/cs3010.py
+	modified:   doc/SYS.rst
+	modified:   drs/dr3010.py
+	modified:   drs/dr3020.py
+	modified:   drs/dr3030.py
+	modified:   drs/dr3040.py
+	modified:   drs/dr3050.py
+	modified:   drs/dr3060.py
+	modified:   drs/dr3080.py
+	modified:   drs/dr3090.py
+	modified:   drs/dr3110.py
+	modified:   drs/dr3120.py
+	modified:   drs/dr6020.py
+	modified:   drs/drc520.py
+	modified:   gen/gl3010.py
+	modified:   gen/gl3020.py
+	modified:   gen/gl3030.py
+	modified:   gen/gl3040.py
+	modified:   gen/gl3050.py
+	modified:   gen/gl3080.py
+	modified:   gen/gl4010.py
+	modified:   gen/gl6030.py
+	modified:   gen/gl6040.py
+	modified:   lon/ln3010.py
+	modified:   lon/ln3020.py
+	modified:   lon/ln3030.py
+	modified:   lon/ln3040.py
+	modified:   lon/ln4010.py
+	modified:   mem/ml1010.py
+	modified:   mem/ml3010.py
+	modified:   mem/ml3020.py
+	modified:   mem/ml3030.py
+	modified:   mem/ml3040.py
+	modified:   mem/ml3060.py
+	modified:   mem/ml3110.py
+	modified:   mem/ml6010.py
+	modified:   ms0000.py
+	modified:   mst/ms3010.py
+	modified:   mst/msc110.py
+	modified:   rca/rc3010.py
+	modified:   rca/rc3020.py
+	modified:   rca/rc3030.py
+	modified:   rca/rc3040.py
+	modified:   rca/rc3050.py
+	modified:   rca/rc3060.py
+	modified:   rca/rc3100.py
+	modified:   rca/rc4010.py
+	modified:   rca/rc4020.py
+	modified:   rca/rcc220.py
+	modified:   rtl/rt3010.py
+	modified:   rtl/rt3020.py
+	modified:   rtl/rt3030.py
+	modified:   rtl/rt3040.py
+	modified:   rtl/rt4010.py
+	modified:   scp/sc2020.py
+	modified:   scp/sc3010.py
+	modified:   sls/si2010.py
+	modified:   sls/si3010.py
+	modified:   sls/si3020.py
+	modified:   sls/si3030.py
+	modified:   sls/si3040.py
+	modified:   sls/si3050.py
+	modified:   sls/si3060.py
+	modified:   sls/si3070.py
+	modified:   str/st3010.py
+	modified:   str/st3020.py
+	modified:   str/st3030.py
+	modified:   str/st3040.py
+	modified:   str/st3050.py
+	modified:   str/st3060.py
+	modified:   str/st3070.py
+	modified:   str/st3080.py
+	modified:   str/st3090.py
+	modified:   str/st3110.py
+	modified:   str/st3120.py
+	modified:   str/st5010.py
+	modified:   tab/tb3010.py
+	modified:   tartanFunctions.py
+	modified:   uty/fc1010.py
+	modified:   uty/mklinux.py
+	modified:   uty/mkwindows.py
+	modified:   uty/onedir.spec
+	modified:   uty/onefle.spec
+	modified:   uty/pkgprg.py
+	modified:   uty/pm1010.py
+	modified:   uty/rp1020.py
+	modified:   wag/sl3010.py
+	modified:   wag/sl3020.py
+	modified:   wag/sl3030.py
+	modified:   wag/sl3040.py
+	modified:   wag/sl4010.py
+	modified:   wag/wg3010.py
+	modified:   wag/wg3020.py
+	modified:   wag/wg3030.py
+	modified:   wag/wg3050.py
+	modified:   wag/wg3080.py
+	modified:   wag/wg4010.py
+	modified:   wag/wgc420.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	ver/ver_6.11.status
+

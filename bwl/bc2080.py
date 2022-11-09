@@ -577,6 +577,7 @@ Try to Allocate Different Rinks""" % self.weeks),
                     break
         for gme in self.games:
             gme.insert(0, self.rinks1.pop())
+        self.games.sort()
         self.drawn = True
         txt = "Random 321 Draw"
         self.doShowDraw(txt, self.games)
@@ -732,9 +733,9 @@ Try to Allocate Different Rinks""" % self.weeks),
                     font=["Arial", "B", self.fsiz], border="TLRB", ln=ln)
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"], "draw",
             "%s_%s" % (self.opts["conum"], self.date), ext="pdf")
-        self.fpdf.output(pdfnam)
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            repprt=self.pd.repprt)
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+                repprt=self.pd.repprt)
 
     def doPHead(self, htyp="A", ww=None):
         hd1 = "321 Draw for the %s of %s (History %s)" % (self.timed,

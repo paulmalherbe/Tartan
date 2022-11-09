@@ -498,6 +498,8 @@ try:
     class MyMessageBox(object):
         def __init__(self, parent, dtype, title, mess, butt=None, dflt=None):
             self.parent = parent
+            if self.parent is None:
+                self.parent = tk._default_root
             if self.parent:
                 if self.parent.winfo_toplevel().state() == "withdrawn":
                     self.parent.winfo_toplevel().deiconify()
@@ -2810,6 +2812,8 @@ Table %s in Program %s""" % (err, table, self.prog))
 
 class CCD(object):
     """
+    This class is used for checking data based on the type and size.
+
     Data Types
     ============================================================================
     CB = CheckButton Box
@@ -3865,13 +3869,13 @@ class TartanDialog(object):
                     server = [ctlsys["sys_msvr"], ctlsys["sys_mprt"],
                         ctlsys["sys_msec"], ctlsys["sys_maut"],
                         ctlsys["sys_mnam"], ctlsys["sys_mpwd"]]
-                    if sendMail(server, "", "", "", check=True,
-                            errwid=self.mf.body,
-                            wrkdir=self.mf.rcdic["wrkdir"]):
-                        self.repeml = ["Y", "", "", "", "Y"]
-                    else:
+                    err = sendMail(server, "", "", "", check=True,
+                        wrkdir=self.mf.rcdic["wrkdir"])
+                    if err:
                         showError(self.mf.body, "Error",
-                            "Mail Server Invalid or Unavailable")
+                            "Mail Server Invalid or Unavailable.\n\n%s" % err)
+                    else:
+                        self.repeml = ["Y", "", "", "", "Y"]
             except:
                 pass
         if self.view or self.mail:
@@ -8889,6 +8893,10 @@ class Balances(object):
             "A" = returns all transactions
         """
         ages = [0,0,0,0,0]
+        if trans == "Y":
+            cdt = self.curdt
+        else:
+            cdt = None
         if self.system == "CRS":
             whr = [("crt_cono", "=", self.conum), ("crt_acno", "=", self.acno)]
             w = copyList(whr)
@@ -8900,7 +8908,7 @@ class Balances(object):
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=self.curdt,
+            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=cdt,
                 whr=whr, zer=trans)
         elif self.system == "DRS":
             whr = [("drt_cono", "=", self.conum), ("drt_chain", "=",
@@ -8914,7 +8922,7 @@ class Balances(object):
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=self.curdt,
+            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=cdt,
                 whr=whr, zer=trans)
         elif self.system == "MEM":
             whr = [("mlt_cono","=",self.conum), ("mlt_memno","=",self.memno)]
@@ -8927,7 +8935,7 @@ class Balances(object):
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=self.curdt,
+            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=cdt,
                 whr=whr, zer=trans)
         else:
             return
@@ -13325,9 +13333,9 @@ class PrintDraw(object):
                                 fill=1, border="TLB", ln=0)
         key = "%s_%s" % (self.conum, self.date)
         pdfnam = getModName(self.mf.rcdic["wrkdir"], "draw", key, ext="pdf")
-        self.fpdf.output(pdfnam, "F")
-        doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam,
-            repprt=self.repprt)
+        if self.fpdf.saveFile(pdfnam):
+            doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam,
+                repprt=self.repprt)
 
     def pageHeading(self, htyp="A", grn="A"):
         if not self.cdes:
@@ -14435,10 +14443,10 @@ class RepPrt(object):
                     self.fpdf.setFont(style="B")
                     for tail in self.tails:
                         self.fpdf.drawText(txt=tail)
-                self.fpdf.output(self.pdfnam)
-                doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
-                    header=self.heads[-1], fromad=self.fromad,
-                    repprt=self.repprt, repeml=self.repeml)
+                if self.fpdf.saveFile(self.pdfnam):
+                    doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
+                        header=self.heads[-1], fromad=self.fromad,
+                        repprt=self.repprt, repeml=self.repeml)
         except:
             pass
 
@@ -15187,7 +15195,7 @@ class TarBckRes(object):
         self.smtp = False
         if csys:
             self.budays = csys[0]
-            if csys[1] and sendMail(csys[1:], "", "", "", check=True,
+            if csys[1] and not sendMail(csys[1:], "", "", "", check=True,
                     wrkdir=self.mf.rcdic["wrkdir"]):
                 self.smtp = csys[1:]
         self.ver = ver
@@ -15202,6 +15210,8 @@ class TarBckRes(object):
             else:
                 self.startRes()
                 self.mf.startLoop()
+            if os.path.isdir(self.tmpdir):
+                shutil.rmtree(self.tmpdir)
 
     def setVariables(self):
         t = time.localtime()
@@ -15308,8 +15318,8 @@ class TarBckRes(object):
     def startRes(self):
         dat = []
         dat = glob.glob(os.path.join(self.archdir, "*.tar"))
-        dat.sort()
-        fst = os.path.join(self.archdir, dat[-1])
+        dat.sort(reverse=True)
+        fst = os.path.join(self.archdir, dat[0])
         arc = {
             "stype": "F",
             "types": "fle",
@@ -15371,16 +15381,11 @@ class TarBckRes(object):
         cwd = os.getcwd()
         os.chdir(self.tmpdir)
         tarfle = tarfile.open(os.path.join(self.archdir, arcfle), "r")
-        try:
-            # Only available since 2.5
-            tarfle.extractall()
-        except:
-            for member in tarfle.getmembers():
-                tarfle.extract(member)
+        tarfle.extractall()
         tarfle.close()
         os.chdir(cwd)
         if not os.path.isfile(os.path.join(self.tmpdir, "verupd_0.dat")):
-            return
+            return "Invalid Restore Archive"
         zipfle = gzip.open(os.path.join(self.tmpdir, "verupd_0.dat"), mode="rb")
         data = zipfle.readlines()
         data = data[0].decode("utf-8").replace("[[", "").replace("]]", "")
@@ -15481,7 +15486,7 @@ class TarBckRes(object):
                 self.mf.closeLoop()
             return
         self.bu.closeProcess()
-        ok = askQuestion(self.mf.body, "Restore", "Are You Certain this is "\
+        ok = askQuestion(self.mf.body, "Restore", "Are You Sure this is "\
             "what you want to do?\n\nExisting Data in the Database Will be "\
             "Replaced and will Not be Recoverable.", default="no")
         if ok == "no":
@@ -15607,7 +15612,7 @@ class TarBckRes(object):
                     continue
                 else:
                     whr = None
-                flenam = "%s_%s.dat" % (tab, coy[0])
+                flenam = "%s_%03i.dat" % (tab, coy[0])
                 names.append(flenam)
                 zipfle = gzip.open(os.path.join(self.tmpdir, flenam),
                     mode="wb", compresslevel=5)
@@ -16787,6 +16792,13 @@ class MyFpdf(fpdf.FPDF):
             m = math.ceil(float(ASD(y) + ASD(h)))
         if not self.page or m >= pd:
             return True
+
+    def saveFile(self, pdfnam, scrn=None):
+        try:
+            self.output(pdfnam, "F")
+            return True
+        except Exception as err:
+            showError(scrn, "Error", err)
 
 class TartanLabel(MyFpdf):
     def __init__(self, label, unit="mm", posY=1, posX=1):
@@ -18579,8 +18591,7 @@ class ViewPDF(object):
                     self.server = [ctlsys["sys_msvr"], ctlsys["sys_mprt"],
                         ctlsys["sys_msec"], ctlsys["sys_maut"],
                         ctlsys["sys_mnam"], ctlsys["sys_mpwd"]]
-                    if sendMail(self.server, "", "", "", check=True,
-                            errwid=self.mf.window,
+                    if not sendMail(self.server, "", "", "", check=True,
                             wrkdir=self.mf.rcdic["wrkdir"]):
                         mods.insert(0, ("Email", self.doEmail))
             except:

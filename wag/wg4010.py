@@ -303,31 +303,35 @@ class wg4010(object):
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         if opt == "I":
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit,
+                    repprt=["N", "V", "view"])
         elif opt == "B":
             self.wagtrn = self.doGetTrans()
             if not self.wagtrn:
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
             else:
                 self.pageHeading()
                 self.pageHeadingTrans()
                 self.printTrans()
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
         elif opt == "T":
             self.wagtrn = self.doGetTrans()
             if self.wagtrn:
                 self.pageHeading()
                 self.pageHeadingTrans()
                 self.printTrans()
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
 
     def printInfo(self):
         self.fpdf.drawText("%15s %-25s %s" % \

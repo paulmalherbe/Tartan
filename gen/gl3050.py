@@ -1278,10 +1278,10 @@ Custom  - Customised Report"""),
             self.counter = dat[6]
         p.closeProgress()
         if "args" not in self.opts and self.fpdf.page:
-            self.fpdf.output(self.pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=self.pdfnam, header=self.emlhead,
-                repprt=self.repprt, repeml=self.repeml)
+            if self.fpdf.saveFile(self.pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=self.pdfnam, header=self.emlhead,
+                    repprt=self.repprt, repeml=self.repeml)
 
     def doLoadLine(self, col):
         text = self.titles[col[0]]

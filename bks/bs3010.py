@@ -192,10 +192,10 @@ Thanks and Regards.
             sp.closeSplash()
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
-        self.fpdf.output(pdfnam, "F")
         head = "Book List as at %s" % (self.curdt)
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header=head, repprt=self.df.repprt, repeml=self.df.repeml)
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+                header=head, repprt=self.df.repprt, repeml=self.df.repeml)
         self.opts["mf"].closeLoop()
 
     def pageHeading(self, new=False):

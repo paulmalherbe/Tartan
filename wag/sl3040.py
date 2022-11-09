@@ -237,10 +237,10 @@ class sl3040(object):
     def doPrint(self):
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
-        self.fpdf.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header="%s Loan Statement at %s" % (self.opts["conam"], self.dated),
-            fromad=self.fromad, repprt=self.df.repprt, repeml=self.df.repeml)
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+                header="%s Loan Statement at %s" % (self.opts["conam"], self.dated),
+                fromad=self.fromad, repprt=self.df.repprt, repeml=self.df.repeml)
 
     def doExit(self):
         self.df.closeProcess()

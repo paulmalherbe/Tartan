@@ -301,7 +301,6 @@ class bc3100(object):
             self.doMatchWin()
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, "report", ext="pdf")
-        self.fpdf.output(pdfnam, "F")
         if self.df.repeml[1] == "Y":
             if not self.df.repeml[2]:
                 col = ["btb_mail"]
@@ -317,9 +316,10 @@ class bc3100(object):
                 for rec in recs:
                     self.df.repeml[2].append(rec[0])
         head = "%s - Results after game %s" % (self.cdes, self.pgame)
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header=head, repprt=self.df.repprt, fromad=self.fromad,
-            repeml=self.df.repeml)
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+                header=head, repprt=self.df.repprt, fromad=self.fromad,
+                repeml=self.df.repeml)
         if self.pgame == self.lgame and self.cfmat == "R" and \
                 groups == "Y" and not self.poff:
             ok = askQuestion(self.opts["mf"].body, "Play-Offs",
@@ -368,7 +368,12 @@ class bc3100(object):
         self.groupHeading(rtyp, grp)
         if self.cfmat == "X":
             tms = {"H": [0, 0, 0, 0], "V": [0, 0, 0, 0]}
+        pgno = 1
         for num, (scod,snam,fnam,sfor,sagt,agg,pts) in enumerate(recs):
+            if pgno == 1 and num > 41:
+                pgno = 2
+                self.pageHeading()
+                self.groupHeading(rtyp, grp)
             if fnam:
                 nam = "%s, %s" % (snam.upper(), fnam.split()[0].upper())
             else:

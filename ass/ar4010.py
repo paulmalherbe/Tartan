@@ -277,31 +277,35 @@ class ar4010(object):
             self.pageHeading()
             self.printInfo()
         if opt == "B":
-            self.fpdf.output(pdfnam, "F")
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+            if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                    pdfnam=pdfnam, header=self.tit,
+                    repprt=["N", "V", "view"])
         elif opt == "A":
             dat, atc, col = self.getTrans()
             if not dat:
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
             else:
                 self.pageHeading()
                 self.pageHeadingTrans()
                 self.printTrans(dat, atc)
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
         elif opt == "T":
             dat, atc, col = self.getTrans()
             if dat:
                 self.pageHeading()
                 self.pageHeadingTrans()
                 self.printTrans(dat, atc)
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=["N", "V", "view"])
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit,
+                        repprt=["N", "V", "view"])
 
     def printInfo(self):
         for x in range(0, len(self.df.topf[0])):

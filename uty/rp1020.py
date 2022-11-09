@@ -281,7 +281,7 @@ Therefore No Emailing will be Possible.""")
                 if var:
                     nam = os.path.join(self.tmp, "report%s.pdf" % self.count)
                     self.fles.append(nam)
-                    var["fpdf"].output(nam)
+                    var["fpdf"].saveFile(nam)
                     self.mess = "%s\n%2s) %s - %s" % (self.mess, self.count,
                         mod[2], mod[3])
                     self.sql.insRec("rptstr", data=[self.opts["conum"],
@@ -390,7 +390,7 @@ Therefore No Emailing will be Possible.""")
             if var:
                 nam = os.path.join(self.tmp, "report%s.pdf" % self.count)
                 self.fles.append(nam)
-                var["fpdf"].output(nam)
+                var["fpdf"].saveFile(nam)
                 des = var["emlhead"].lower()
                 des = " ".join(w.capitalize() for w in des.split())
                 self.mess = "%s\n%2s) %s - %s" % (self.mess, self.count,

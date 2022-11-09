@@ -228,10 +228,11 @@ class bc3040(object):
                 "to this match")
             fpdf.drawText(x=10*cw, y=63*ld, txt="CAPTAIN:   _________________")
             fpdf.drawText(x=26*cw, y=64*ld, txt="(Signature)")
-        fpdf.output(pdfnam, "F")
         head = "Match Declaration Forms for %s" % self.disp
-        doPrinter(mf=self.opts["mf"], header=head, pdfnam=pdfnam,
-            repprt=self.df.repprt, fromad=self.fromad, repeml=self.df.repeml)
+        if fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], header=head, pdfnam=pdfnam,
+                repprt=self.df.repprt, fromad=self.fromad,
+                repeml=self.df.repeml)
         self.closeProcess()
 
     def doExit(self):

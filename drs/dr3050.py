@@ -274,10 +274,10 @@ Curdt: Produce a report based on Financial Period"""),
         if self.fpdf.page:
             self.grandTotal()
             if "args" not in self.opts or "noprint" not in self.opts["args"]:
-                self.fpdf.output(pdfnam, "F")
-                doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
-                    pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
-                    fromad=self.fromad, repeml=self.df.repeml)
+                if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+                    doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                        pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
+                        fromad=self.fromad, repeml=self.df.repeml)
 
     def getValues(self, data):
         chn = CCD(data[0], "UI", 3)

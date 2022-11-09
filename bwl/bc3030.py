@@ -303,10 +303,11 @@ class bc3030(object):
                     else:
                         posy = fpdf.get_y() + 30.25
                     fpdf.drawText(x=posx, y=posy, txt="XXXXXXX")
-        fpdf.output(pdfnam, "F")
         head = "Match Assessment Forms for %s" % self.disp
-        doPrinter(mf=self.opts["mf"], header=head, pdfnam=pdfnam,
-            repprt=self.df.repprt, fromad=self.fromad, repeml=self.df.repeml)
+        if fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], header=head, pdfnam=pdfnam,
+                repprt=self.df.repprt, fromad=self.fromad,
+                repeml=self.df.repeml)
         self.opts["mf"].closeLoop()
 
     def doExit(self):

@@ -420,11 +420,12 @@ class dr3080(object):
             key = "%s_all_all" % self.opts["conum"]
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, key, ext="pdf")
-        self.form.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header="%s Statement for %s as at %s" % (self.opts["conam"],
-            self.acc, self.dated), repprt=self.df.repprt, fromad=self.fromad,
-            repeml=self.df.repeml)
+        if self.form.saveFile(pdfnam, self.opts["mf"].window):
+            head = "%s Statement for %s as at %s" % (self.opts["conam"],
+                self.acc, self.dated)
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                pdfnam=pdfnam, header=head, repprt=self.df.repprt,
+                fromad=self.fromad, repeml=self.df.repeml)
         if self.df.repeml[1] == "Y":
             self.form = DrawForm(self.opts["mf"].dbm, self.tname,
                 wrkdir=self.opts["mf"].rcdic["wrkdir"])

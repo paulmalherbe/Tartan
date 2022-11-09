@@ -770,9 +770,9 @@ class sc2020(object):
                 self.printPlayOffs()
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
-        self.fpdf.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=1, pdfnam=pdfnam,
-            repprt=self.df.repprt)
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=1, pdfnam=pdfnam,
+                repprt=self.df.repprt)
         if not self.reprint:
             if "test" in self.opts:
                 self.opts["mf"].dbm.commitDbase()

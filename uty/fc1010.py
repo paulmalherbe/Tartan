@@ -40,7 +40,7 @@ class fc1010(object):
         tit = ("Loans and Leases",)
         fld = (
             (("T",0,0,0),"IUD",13.2,"Capital Amount","",
-                "","Y",None,None,None,("notzero",)),
+                "","Y",self.doCap,None,None,("efld",)),
             (("T",0,1,0),"IUD",13.2,"Residual Value","",
                 "","N",None,None,None,("efld",)),
             (("T",0,2,0),"IUI",13.2,"Number of Months","",
@@ -57,19 +57,22 @@ class fc1010(object):
         self.df = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=fld, tend=tnd, txit=txt, butt=but)
 
+    def doCap(self, frt, pag, r, c, p, i, w):
+        self.cap = w
+
     def doRep(self, frt, pag, r, c, p, i, w):
-        if w != 0:
+        if self.cap and w != 0:
             return "nd"
 
     def doInt(self, frt, pag, r, c, p, i, w):
-        if w != 0:
-            return "nd"
-        else:
+        if not self.cap and not w:
             return "Invalid Rate"
 
     def doEnd(self):
         cap, res, mth, rep, rte = self.df.t_work[0][0]
-        if rep:
+        if not cap and mth and rep and rte:
+            self.doCapital(res, mth, rep, rte)
+        elif rep:
             self.doRate(cap, res, mth, rep)
         else:
             self.doRepay(cap, res, mth, rte)
@@ -83,6 +86,16 @@ class fc1010(object):
     def doExit(self):
         self.df.closeProcess()
         self.opts["mf"].closeLoop()
+
+    def doCapital(self, res, mth, rep, rte):
+        cap = 100.0
+        rate = (rte / 1200.0)
+        while round((((cap * rate) * ((1 + rate) ** mth)) - (res * rate)) /
+                (((1 + rate) ** mth) - 1), 2) < rep:
+            cap += 100
+        self.df.loadEntry("T", 0, 0, data=round(cap, 2))
+        self.df.setWidget(self.df.topEntry[0][0], state="normal")
+        self.df.setWidget(self.df.topEntry[0][0], state="disabled")
 
     def doRepay(self, cap, res, mth, rte):
         rate = (rte / 1200.0)

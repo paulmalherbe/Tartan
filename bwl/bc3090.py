@@ -93,6 +93,7 @@ class bc3090(object):
         bwltyp = self.sql.getRec("bwltyp", where=[("bct_cono", "=",
             self.opts["conum"]), ("bct_code", "=", ctyp)], limit=1)
         self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
+        self.games = bwltyp[self.sql.bwltyp_col.index("bct_games")]
         if self.cfmat in ("D", "K"):
             return "Knockout Competitions has No Summary"
         if self.cfmat == "R":
@@ -100,13 +101,18 @@ class bc3090(object):
                 where=[("bcg_cono", "=", self.opts["conum"]),
                 ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", 1)],
                 group="bcg_group")
-            self.games = 0
+            self.game = 0
             for gme in games:
                 if gme[0] > self.games:
                     self.games = gme[0]
-            self.games -= 1
+            self.game -= 1
         else:
-            self.games = bwltyp[self.sql.bwltyp_col.index("bct_games")]
+            games = self.sql.getRec("bwlgme", cols=["max(bcg_game)"],
+                where=[("bcg_cono", "=", self.opts["conum"]),
+                ("bcg_ccod", "=", self.ccod)], limit=1)
+            if games[0] is None:
+                return "No Drawn Games"
+            self.game = games[0]
         self.grgame = bwltyp[self.sql.bwltyp_col.index("bct_grgame")]
 
     def doExcFin(self, frt, pag, r, c, p, i, w):
@@ -115,9 +121,9 @@ class bc3090(object):
     def doEnd(self):
         if "args" not in self.opts:
             self.df.closeProcess()
-        lst = self.sql.getRec("bwlgme", cols=["bcg_game",
-            "sum(bcg_points)"], where=[("bcg_cono", "=", self.opts["conum"]),
-            ("bcg_ccod", "=", self.ccod)], group="bcg_game", order="bcg_game")
+        lst = self.sql.getRec("bwlgme", cols=["bcg_game", "sum(bcg_points)"],
+            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+            self.ccod)], group="bcg_game", order="bcg_game")
         lgame = 0
         for l in lst:
             if l[1]:
@@ -154,6 +160,7 @@ class bc3090(object):
         for rnk in rinks:
             if rnk[0] and rnk[0][1] == "7":
                 endrk.remove("%s6" % rnk[0][0])
+                endrk.append(rnk[0])
             elif rnk[0] and rnk[0][1] in ("1", "6"):
                 endrk.append(rnk[0])
         data = []
@@ -167,9 +174,10 @@ class bc3090(object):
             eds = 0
             dup = ["-", "-"]
             games = self.sql.getRec("bwlgme", where=[("bcg_cono", "=",
-                self.opts["conum"]), ("bcg_ccod", "=", self.ccod), ("bcg_scod",
-                "=", skip[0])], order="bcg_group, bcg_game")
+                self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
+                ("bcg_scod", "=", skip[0])], order="bcg_group, bcg_game")
             for game in games:
+                gme = game[self.sql.bwlgme_col.index("bcg_game")]
                 grp = game[self.sql.bwlgme_col.index("bcg_group")]
                 opp = game[self.sql.bwlgme_col.index("bcg_ocod")]
                 if opp > 900000:
@@ -177,19 +185,19 @@ class bc3090(object):
                     rnk = ""
                 else:
                     rnk = game[self.sql.bwlgme_col.index("bcg_rink")]
-                    if self.excfin == "Y" and game == games[-1]:
+                    if self.excfin == "Y" and gme == self.games:
                         pass
                     elif rnk and rnk in endrk:
                         eds += 1
                 dat.extend([opp, rnk])
                 if opp:
-                    if self.excfin == "Y" and game == games[-1]:
+                    if self.excfin == "Y" and gme == self.games:
                         pass
                     elif opp in ops:
                         dup[0] = "X"
                     ops.append(opp)
                 if rnk:
-                    if self.excfin == "Y" and game == games[-1]:
+                    if self.excfin == "Y" and gme == self.games:
                         pass
                     elif rnk in rks:
                         dup[1] = "X"
@@ -211,7 +219,7 @@ class bc3090(object):
             cols.append(["c", "UA",  1, "S",    "y"])
         else:
             cols.append(["c", "UA",  1, "G",    "y"])
-        for x in range(self.games):
+        for x in range(self.game):
             cols.extend([
                 ["d%s" % x, "UI", 6, "Opp", "y"],
                 ["e%s" % x, "UA", 2, "Rk",  "y"]])

@@ -177,10 +177,10 @@ class wg3030(object):
             t = CCD(emp[k][0], "SD", 13.2)
             s = CCD((int(emp[k][1]) / 100.0), "SD", 13.2)
             self.fpdf.drawText("%2s %-54s %13s %13s" % (k, n, t.disp, s.disp))
-        self.fpdf.output(pdfnam, "F")
-        doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-            header=self.tit, repprt=self.df.repprt, fromad=self.fromad,
-            repeml=self.df.repeml)
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
+                header=self.tit, repprt=self.df.repprt, fromad=self.fromad,
+                repeml=self.df.repeml)
         self.opts["mf"].closeLoop()
 
     def doExit(self):

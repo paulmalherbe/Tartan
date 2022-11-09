@@ -79,7 +79,7 @@ linux = False
 onefle = False
 tmpfle = None
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "b:cefghilpt:uv:w:")
+    opts, args = getopt.getopt(sys.argv[1:], "b:ceghilopt:uv:w:")
 except:
     print("Required arguments missing", sys.argv[1:])
     sys.exit()
@@ -95,9 +95,9 @@ Usage: python pkgprg.py [options]
     -b Base Directory
     -c Create a cd
     -e Email changes
-    -f Onefile
     -g Exclude Uncommitted
     -h This Help
+    -o Generate Onefile
     -i Increment Version
     -l Linux Executable
     -p Publish Version
@@ -113,14 +113,14 @@ Usage: python pkgprg.py [options]
         mkcd = True
     elif o == "-e":
         email = True
-    elif o == "-f":
-        onefle = True
     elif o == "-g":
         incunc = False
     elif o == "-i":
         verinc = True
     elif o == "-l":
         linux = True
+    elif o == "-o":
+        onefle = True
     elif o == "-p":
         publish = True
         windows = True
@@ -317,8 +317,16 @@ if os.path.exists("%s/%s" % (bd, sn)):
 os.mkdir(os.path.join(bd, sn))
 # Change directory to system directory
 os.chdir("%s/%s" % (bd, sn))
-# Copy files
-for fle in ("tartan.iss","ucrtbase.7","ucrtbase.8","ms0000.dir","ms0000.fle"):
+# Copy file
+if windows:
+    fles = ["tartan.iss","ucrtbase.7","ucrtbase.8"]
+else:
+    fles = []
+if onefle:
+    fles.append("onefle.spec")
+else:
+    fles.append("onedir.spec")
+for fle in fles:
     shutil.copy(os.path.join(vd, "uty", fle), ".")
 # Unzip the repository into the system directory
 exeCmd("unzip -qq %s/tarzip" % bd)
@@ -352,7 +360,7 @@ if windows:
                     bits.remove(bit)
                 cmd = "%s\\\\mkwindows.py -a%s" % (url, bit)
                 if onefle:
-                    cmd += " -f"
+                    cmd += " -o"
                 if upgpip:
                     # Update dependancies
                     cmd += " -u"
@@ -368,6 +376,8 @@ if windows:
         if not os.path.exists(xpth):
             os.symlink(home, xpth)
         cmd = "%s cmd /c python %s/uty/mkwindows.py -a%s" % (cmd, bv, bit)
+        if onefle:
+            cmd += " -o"
         if upgpip:
             cmd += " -u"
         if tmpfle:
@@ -376,7 +386,7 @@ if windows:
 if linux:
     cmd = "python %s/uty/mklinux.py" % bv
     if onefle:
-        cmd += " -f"
+        cmd += " -o"
     exeCmd(cmd)
 if publish:
     # Publish

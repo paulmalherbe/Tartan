@@ -146,10 +146,10 @@ class cr6020(object):
                 for tr in age.data:
                     if tr[6]:
                         w = copyList(whr)
-                        w.extend([("crt_type", "=", tr[2]),
-                            ("crt_ref1", "=", tr[1])])
+                        w.extend([("crt_type", "=", tr[1]),
+                            ("crt_ref1", "=", tr[0])])
                         self.sql.insRec("crsage", data=[self.opts["conum"],
-                            self.acno, tr[2], tr[1], self.curdt, tr[2], tr[1],
+                            self.acno, tr[1], tr[0], self.curdt, tr[1], tr[0],
                             tr[6], 0])
             else:
                 self.key = "cancel"

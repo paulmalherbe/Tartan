@@ -1,4 +1,18 @@
-changes = """ver_6.10 2022-08-25
+changes = """ver_6.11 2022-11-09
+===================
+ 1) Improved the sales invoicing execution speed when loading a document.
+ 2) Changed the bowls competition modules to cater for more entries.
+ 3) Added a check for read only folders in all reporting modules.
+ 4) Made improvements to the bowls competition draw module.
+ 5) Updated some items in the reference manual.
+ 6) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.10 2022-08-27
 ===================
  1) Impoved the stock revaluation tool.
  2) Improved the report generator utility.
