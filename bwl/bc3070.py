@@ -109,7 +109,7 @@ class bc3070(object):
             ("btb_cono=bce_cono",),
             ("btb_tab=bce_scod",)]
         if self.enttyp == "P":
-            whr.insert(2, ("bce_paid", "=", "Y"))
+            whr.insert(2, ("bce_paid", "in", ("Y", "W")))
         elif self.enttyp == "U":
             whr.insert(2, ("bce_paid", "=", "N"))
         if self.cord == "A":

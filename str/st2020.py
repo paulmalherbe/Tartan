@@ -459,7 +459,7 @@ class st2020(object):
         col = [
             ["stt_group", "UA", 3, "Grp", "y"],
             ["stt_code", "NA", 20, "Product-Code", "y"],
-            ["stt_desc", "NA", 40, "Description", "y"],
+            ["st1_desc", "NA", 40, "Description", "y"],
             ["stt_loc", "UA", 1, "L", "y"],
             ["stt_qty", "SD", 11.2, "Quantity", "y"],
             ["stt_cost", "SD", 11.2, "Price", "y"]]
@@ -470,9 +470,9 @@ class st2020(object):
         self.df.setWidget(self.df.mstFrame, state="hide")
         RepPrt(self.opts["mf"], conum=self.opts["conum"],
             conam=self.opts["conam"], name=self.__class__.__name__,
-                tables=["strtrn"],
-            heads=hds, cols=col, gtots=gtt, where=whr, order=odr,
-            repprt=repprt, repeml=repeml, fromad=self.fromad)
+            tables=["strtrn", "strmf1"], heads=hds, cols=col, gtots=gtt,
+            where=whr, order=odr, repprt=repprt, repeml=repeml,
+            fromad=self.fromad)
         self.df.setWidget(self.df.mstFrame, state="show")
 
     def doQuery(self):

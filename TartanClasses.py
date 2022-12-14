@@ -2669,8 +2669,8 @@ Table %s in Program %s""" % (err, table, self.prog))
                 dat = CCD(data[num], dic[col][2], dic[col][3])
                 if dat.err:
                     showError(None, "updRec Error",
-                        "Invalid Data for %s in table %s\n\n%s" %
-                        (dic[col][4], table, dat.err))
+                        "Invalid Data for %s in table %s\n\n%s\n\n%s" %
+                        (dic[col][4], table, data, dat.err))
                     sys.exit()
                 data[num] = dat.work
         dat = copyList(data)
@@ -13869,6 +13869,7 @@ class RepPrt(object):
                     Table  : Table to join
                     Conditions: String statement of columns to use for the join
                 e.g. ["L", "gentrn", "glt_cono=glm_cono and glt_acno=glm_acno"]
+    image   :   An image to be shown e.g. (image.jpg, x, y, w, h)
     heads   :   A list of up to 3 Headings, if heading is a list or tuple then
                 it comprises text, alignment and a font size but only for
                 heads[0] if no page numbering.
@@ -13955,9 +13956,8 @@ class RepPrt(object):
             "conum": None,
             "fromad": None,
             "group": None,
-            "gtots": [],
+            "image": None,
             "heads": [],
-            "joins": [],
             "lines": None,
             "margin": 5,
             "name": "report",
@@ -13970,6 +13970,7 @@ class RepPrt(object):
             "refmt": True,
             "repeml": None,
             "repprt": None,
+            "gtots": [],
             "stots": [],
             "summ": True,
             "tables": [],
@@ -13977,6 +13978,7 @@ class RepPrt(object):
             "trtp": None,
             "ttype": "T",
             "where": [],
+            "joins": [],
             "wrkdir": self.mf.rcdic["wrkdir"]}
         for nam in args:
             defaults[nam] = args[nam]
@@ -14455,6 +14457,9 @@ class RepPrt(object):
             return
         self.pglin = 0
         self.fpdf.add_page()
+        if self.image:
+            self.fpdf.image(self.image[0], self.image[1], self.image[2],
+                self.image[3], self.image[4])
         self.fpdf.setFont(style="B")
         if self.head0:
             self.fpdf.drawText(txt=self.head0)
@@ -18996,8 +19001,6 @@ class ViewPDF(object):
                     if siz and txt:
                         addText(txt, ts, bbx)
             return txts
-        sp = SplashScreen(self.win, "Generating Table of Contents\n\n"\
-            "Please Wait...")
         # Try to use embedded toc
         toc = self.doc.get_toc()
         if toc:
@@ -19019,6 +19022,8 @@ class ViewPDF(object):
                         continue
                     if rec.y0 == xxx.y0:
                         xxx.x1 = rec.x1
+                if not xxx:
+                    continue
                 text = "%s%s" % ("    " * (item[0] - 1), text)
                 if len(text) > mxss:
                     mxss = len(text)
@@ -19027,6 +19032,8 @@ class ViewPDF(object):
                 indx += 1
         else:
             # Try to Generate own toc
+            sp = SplashScreen(self.win, "Generating Table of Contents\n\n"\
+                "Please Wait...")
             sizs = {}
             for page in self.doc:
                 blocks = page.get_text("dict")["blocks"]
@@ -19070,29 +19077,30 @@ class ViewPDF(object):
                 sp.closeSplash()
                 self.cv.focus_force()
                 return
-        sp.closeSplash()
-        # Display toc
-        cols = (
-            (0, "Description", mxss, "NA", "Y"),
-            (1, "Page", 4, "UI", None))
-        self.doUnbind()
-        sc = SelectChoice(self.cv, titl="Table of Contents", deco=False,
-            modal=True, cols=cols, data=tabs, font="Courier", sort=False)
-        self.doUnbind(False)
-        if sc.selection:
-            for page in self.doc:
-                annot = page.first_annot
-                while annot:
-                    annot = page.delete_annot(annot)
-            bbox = cdata[sc.selection[0]]
-            rect = fitz.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
-            self.pgno = int(sc.selection[2])
-            page = self.doc[self.pgno - 1]
-            self.prec[self.pgno] = rect
-            page.add_highlight_annot(rect)
-            self.cont = True
-            self.showPage()
-        self.cv.focus_force()
+            sp.closeSplash()
+        if tabs:
+            # Display toc
+            cols = (
+                (0, "Description", mxss, "NA", "Y"),
+                (1, "Page", 4, "UI", None))
+            self.doUnbind()
+            sc = SelectChoice(self.cv, titl="Table of Contents", deco=False,
+                modal=True, cols=cols, data=tabs, font="Courier", sort=False)
+            self.doUnbind(False)
+            if sc.selection:
+                for page in self.doc:
+                    annot = page.first_annot
+                    while annot:
+                        annot = page.delete_annot(annot)
+                bbox = cdata[sc.selection[0]]
+                rect = fitz.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
+                self.pgno = int(sc.selection[2])
+                page = self.doc[self.pgno - 1]
+                self.prec[self.pgno] = rect
+                page.add_highlight_annot(rect)
+                self.cont = True
+                self.showPage()
+            self.cv.focus_force()
 
     def doSave(self):
         if self.mf:

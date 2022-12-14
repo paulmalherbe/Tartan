@@ -1,0 +1,456 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index 1c9394f..e90c0ca 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -2669,8 +2669,8 @@ Table %s in Program %s""" % (err, table, self.prog))
+                 dat = CCD(data[num], dic[col][2], dic[col][3])
+                 if dat.err:
+                     showError(None, "updRec Error",
+-                        "Invalid Data for %s in table %s\n\n%s" %
+-                        (dic[col][4], table, dat.err))
++                        "Invalid Data for %s in table %s\n\n%s\n\n%s" %
++                        (dic[col][4], table, data, dat.err))
+                     sys.exit()
+                 data[num] = dat.work
+         dat = copyList(data)
+@@ -13869,6 +13869,7 @@ class RepPrt(object):
+                     Table  : Table to join
+                     Conditions: String statement of columns to use for the join
+                 e.g. ["L", "gentrn", "glt_cono=glm_cono and glt_acno=glm_acno"]
++    image   :   An image to be shown e.g. (image.jpg, x, y, w, h)
+     heads   :   A list of up to 3 Headings, if heading is a list or tuple then
+                 it comprises text, alignment and a font size but only for
+                 heads[0] if no page numbering.
+@@ -13955,9 +13956,8 @@ class RepPrt(object):
+             "conum": None,
+             "fromad": None,
+             "group": None,
+-            "gtots": [],
++            "image": None,
+             "heads": [],
+-            "joins": [],
+             "lines": None,
+             "margin": 5,
+             "name": "report",
+@@ -13970,6 +13970,7 @@ class RepPrt(object):
+             "refmt": True,
+             "repeml": None,
+             "repprt": None,
++            "gtots": [],
+             "stots": [],
+             "summ": True,
+             "tables": [],
+@@ -13977,6 +13978,7 @@ class RepPrt(object):
+             "trtp": None,
+             "ttype": "T",
+             "where": [],
++            "joins": [],
+             "wrkdir": self.mf.rcdic["wrkdir"]}
+         for nam in args:
+             defaults[nam] = args[nam]
+@@ -14455,6 +14457,9 @@ class RepPrt(object):
+             return
+         self.pglin = 0
+         self.fpdf.add_page()
++        if self.image:
++            self.fpdf.image(self.image[0], self.image[1], self.image[2],
++                self.image[3], self.image[4])
+         self.fpdf.setFont(style="B")
+         if self.head0:
+             self.fpdf.drawText(txt=self.head0)
+@@ -18996,8 +19001,6 @@ class ViewPDF(object):
+                     if siz and txt:
+                         addText(txt, ts, bbx)
+             return txts
+-        sp = SplashScreen(self.win, "Generating Table of Contents\n\n"\
+-            "Please Wait...")
+         # Try to use embedded toc
+         toc = self.doc.get_toc()
+         if toc:
+@@ -19019,6 +19022,8 @@ class ViewPDF(object):
+                         continue
+                     if rec.y0 == xxx.y0:
+                         xxx.x1 = rec.x1
++                if not xxx:
++                    continue
+                 text = "%s%s" % ("    " * (item[0] - 1), text)
+                 if len(text) > mxss:
+                     mxss = len(text)
+@@ -19027,6 +19032,8 @@ class ViewPDF(object):
+                 indx += 1
+         else:
+             # Try to Generate own toc
++            sp = SplashScreen(self.win, "Generating Table of Contents\n\n"\
++                "Please Wait...")
+             sizs = {}
+             for page in self.doc:
+                 blocks = page.get_text("dict")["blocks"]
+@@ -19070,29 +19077,30 @@ class ViewPDF(object):
+                 sp.closeSplash()
+                 self.cv.focus_force()
+                 return
+-        sp.closeSplash()
+-        # Display toc
+-        cols = (
+-            (0, "Description", mxss, "NA", "Y"),
+-            (1, "Page", 4, "UI", None))
+-        self.doUnbind()
+-        sc = SelectChoice(self.cv, titl="Table of Contents", deco=False,
+-            modal=True, cols=cols, data=tabs, font="Courier", sort=False)
+-        self.doUnbind(False)
+-        if sc.selection:
+-            for page in self.doc:
+-                annot = page.first_annot
+-                while annot:
+-                    annot = page.delete_annot(annot)
+-            bbox = cdata[sc.selection[0]]
+-            rect = fitz.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
+-            self.pgno = int(sc.selection[2])
+-            page = self.doc[self.pgno - 1]
+-            self.prec[self.pgno] = rect
+-            page.add_highlight_annot(rect)
+-            self.cont = True
+-            self.showPage()
+-        self.cv.focus_force()
++            sp.closeSplash()
++        if tabs:
++            # Display toc
++            cols = (
++                (0, "Description", mxss, "NA", "Y"),
++                (1, "Page", 4, "UI", None))
++            self.doUnbind()
++            sc = SelectChoice(self.cv, titl="Table of Contents", deco=False,
++                modal=True, cols=cols, data=tabs, font="Courier", sort=False)
++            self.doUnbind(False)
++            if sc.selection:
++                for page in self.doc:
++                    annot = page.first_annot
++                    while annot:
++                        annot = page.delete_annot(annot)
++                bbox = cdata[sc.selection[0]]
++                rect = fitz.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
++                self.pgno = int(sc.selection[2])
++                page = self.doc[self.pgno - 1]
++                self.prec[self.pgno] = rect
++                page.add_highlight_annot(rect)
++                self.cont = True
++                self.showPage()
++            self.cv.focus_force()
+ 
+     def doSave(self):
+         if self.mf:
+diff --git a/bwl/bc1010.py b/bwl/bc1010.py
+index befd918..5d375d2 100644
+--- a/bwl/bc1010.py
++++ b/bwl/bc1010.py
+@@ -312,7 +312,7 @@ class bc1010(object):
+                 self.df.loadEntry(frt, pag, p+1, data="F")
+             elif self.fstart < self.mstart and self.tab < self.mstart:
+                 self.df.loadEntry(frt, pag, p+1, data="F")
+-            return
++            return "Name Already Exists"
+         if self.sname != self.snam or w != self.fnam:
+             but = [("Amendment", "A"), ("Re-Issue", "R"), ("Neither", "N")]
+             ok = askChoice(self.opts["mf"].body, "Name Change",
+@@ -768,6 +768,9 @@ class bc1010(object):
+         err = None
+         for num, line in enumerate(fi.impdat):
+             sp.displayProgress(num)
++            if not line[0]:
++                err = "%s Is Zero" % fi.impcol[0][0]
++                break
+             if self.mixed == "N":
+                 line.extend([0, ""])
+             chk = self.sql.getRec("bwltab", where=[("btb_cono", "=",
+diff --git a/bwl/bc2040.py b/bwl/bc2040.py
+index 9e11287..74701f3 100644
+--- a/bwl/bc2040.py
++++ b/bwl/bc2040.py
+@@ -102,7 +102,7 @@ class bc2040(object):
+             (("C",0,0,2),"I@bce_tcod",0,"T","Team Code (H or V)",
+                 "H","n",self.doTeam,None,None,("in", ("H","V"))),
+             (("C",0,0,4),"I@bce_paid",0,"","Paid Flag (Y or N)",
+-                "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N"))))
++                "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N","W"))))
+         but = (("Entered Players",sk2,None,0,("C",0,1),("T",0,1)),)
+         tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+diff --git a/bwl/bc3070.py b/bwl/bc3070.py
+index 3a07e52..091bf3a 100644
+--- a/bwl/bc3070.py
++++ b/bwl/bc3070.py
+@@ -109,7 +109,7 @@ class bc3070(object):
+             ("btb_cono=bce_cono",),
+             ("btb_tab=bce_scod",)]
+         if self.enttyp == "P":
+-            whr.insert(2, ("bce_paid", "=", "Y"))
++            whr.insert(2, ("bce_paid", "in", ("Y", "W")))
+         elif self.enttyp == "U":
+             whr.insert(2, ("bce_paid", "=", "N"))
+         if self.cord == "A":
+diff --git a/bwl/bc3110.py b/bwl/bc3110.py
+index b417310..d65acf4 100644
+--- a/bwl/bc3110.py
++++ b/bwl/bc3110.py
+@@ -72,8 +72,7 @@ class bc3110(object):
+             ("bce_cono", "=", self.opts["conum"]),
+             ("bce_ccod", "=", self.ccod),
+             ("btb_cono=bce_cono",),
+-            ("btb_tab=bce_scod",),
+-            ("(", "btb_mail", "=", "", "or", "btb_cell", "=", "", ")")]
++            ("btb_tab=bce_scod",)]
+         recs = self.sql.getRec(tables=["bwlent", "bwltab"], cols=col,
+             where=whr, order="btb_surname")
+         if recs:
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index bc20ab1..1bc93aa 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.11
++:Version:   6.12
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/gen/gl3050.py b/gen/gl3050.py
+index f886238..4662ed2 100644
+--- a/gen/gl3050.py
++++ b/gen/gl3050.py
+@@ -82,18 +82,19 @@ class gl3050(object):
+         self.i_per = int(self.opts["period"][1][0] / 100)
+         self.e_per = int(self.opts["period"][2][0] / 100)
+         df = self.e_per - self.i_per - 87
++        if df > 15:
++            df -= 88
+         if df > 12:
+-            self.d_per = df - 12
++            d_per = df - 12
+             yr = int(self.i_per / 100)
+             mt = self.i_per % 100
+-            for _ in range(self.d_per):
++            for _ in range(d_per):
+                 mt += 1
+                 if mt > 12:
+                     mt -= 12
+                     yr += 1
+             self.s_per = (yr * 100) + mt
+         else:
+-            self.d_per = 0
+             self.s_per = self.i_per
+         self.titles = {
+             1: ["Acc-Num", "UI", 7, False, False, True],
+diff --git a/gen/gl4010.py b/gen/gl4010.py
+index de387fa..264c570 100644
+--- a/gen/gl4010.py
++++ b/gen/gl4010.py
+@@ -47,6 +47,8 @@ class gl4010(object):
+         self.i_per = int(self.opts["period"][1][0] / 100)
+         self.e_per = int(self.opts["period"][2][0] / 100)
+         df = self.e_per - self.i_per - 87
++        if df > 15:
++            df -= 88
+         if df > 12:
+             self.d_per = df - 12
+             yr = int(self.i_per / 100)
+@@ -70,6 +72,8 @@ class gl4010(object):
+             self.i_pyr = int(s.work / 100)
+             self.e_pyr = int(e.work / 100)
+             df = self.e_pyr - self.i_pyr - 87
++            if df > 15:
++                df -= 88
+             if df > 12:
+                 self.d_pyr = df - 12
+                 yr = int(self.i_pyr / 100)
+diff --git a/ms0000.py b/ms0000.py
+index 5a953c5..7a42b6a 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -63,7 +63,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 11)
++    VERSION = (6, 12)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+diff --git a/mst/ms1010.py b/mst/ms1010.py
+index a624d2d..6eb8a55 100644
+--- a/mst/ms1010.py
++++ b/mst/ms1010.py
+@@ -26,8 +26,8 @@ COPYING
+ 
+ import time
+ from TartanClasses import TartanDialog, ShowImage, Sql, TabPrt
+-from tartanFunctions import askQuestion, callModule, getFileName, mthendDate
+-from tartanFunctions import showError
++from tartanFunctions import askQuestion, callModule, dateDiff, getFileName
++from tartanFunctions import mthendDate, showError
+ from tartanWork import allsys, tabdic
+ 
+ class ms1010(object):
+@@ -371,6 +371,8 @@ class ms1010(object):
+     def doEndPer(self, frt, pag, r, c, p, i, w):
+         if w <= self.s1:
+             return "Invalid End Period"
++        if dateDiff(self.s1, w, "months") > 14:
++            return "Invalid Date, More than 15 Months"
+         y = int(w / 10000) - 1
+         m = int((w % 10000) / 100)
+         if m == 2:
+diff --git a/mst/msy020.py b/mst/msy020.py
+index 662e244..3c18f04 100644
+--- a/mst/msy020.py
++++ b/mst/msy020.py
+@@ -25,7 +25,8 @@ COPYING
+ """
+ 
+ from TartanClasses import SplashScreen, Sql, TartanDialog
+-from tartanFunctions import callModule, getPeriods, mthendDate, showError
++from tartanFunctions import callModule, dateDiff, getPeriods, mthendDate
++from tartanFunctions import showError
+ 
+ class msy020(object):
+     def __init__(self, **opts):
+@@ -108,7 +109,7 @@ class msy020(object):
+     def doEndPer(self, frt, pag, r, c, p, i, w):
+         if w <= self.s_per:
+             return "Invalid Date, Before Start"
+-        if int(w / 100) - int(self.s_per / 100) - 87 > 15:
++        if dateDiff(self.s_per, w, "months") > 14:
+             return "Invalid Date, More than 15 Months"
+         y = int(w / 10000) - 1
+         m = int((w % 10000) / 100)
+@@ -119,7 +120,7 @@ class msy020(object):
+                 d = 28
+         else:
+             d = w % 100
+-        self.e0 = (y*10000) + (m*100) + d
++        self.e0 = (y * 10000) + (m * 100) + d
+         self.e_per = w
+ 
+     def doEnd(self):
+diff --git a/str/st2020.py b/str/st2020.py
+index fd1b856..a089c03 100644
+--- a/str/st2020.py
++++ b/str/st2020.py
+@@ -459,7 +459,7 @@ class st2020(object):
+         col = [
+             ["stt_group", "UA", 3, "Grp", "y"],
+             ["stt_code", "NA", 20, "Product-Code", "y"],
+-            ["stt_desc", "NA", 40, "Description", "y"],
++            ["st1_desc", "NA", 40, "Description", "y"],
+             ["stt_loc", "UA", 1, "L", "y"],
+             ["stt_qty", "SD", 11.2, "Quantity", "y"],
+             ["stt_cost", "SD", 11.2, "Price", "y"]]
+@@ -470,9 +470,9 @@ class st2020(object):
+         self.df.setWidget(self.df.mstFrame, state="hide")
+         RepPrt(self.opts["mf"], conum=self.opts["conum"],
+             conam=self.opts["conam"], name=self.__class__.__name__,
+-                tables=["strtrn"],
+-            heads=hds, cols=col, gtots=gtt, where=whr, order=odr,
+-            repprt=repprt, repeml=repeml, fromad=self.fromad)
++            tables=["strtrn", "strmf1"], heads=hds, cols=col, gtots=gtt,
++            where=whr, order=odr, repprt=repprt, repeml=repeml,
++            fromad=self.fromad)
+         self.df.setWidget(self.df.mstFrame, state="show")
+ 
+     def doQuery(self):
+diff --git a/str/st5020.py b/str/st5020.py
+index e5536c9..2e1a55c 100644
+--- a/str/st5020.py
++++ b/str/st5020.py
+@@ -253,11 +253,11 @@ class st5020(object):
+             (("C",0,0,3),"ONA",10,"U.O.I"),
+             (("C",0,0,4),"OUA",8,"Bin")])
+         if self.costs == "N":
+-            fld.append((("C",0,0,5),"OSD",9.2,"Unit-Cost"))
++            fld.append((("C",0,0,5),"OSD",11.2,"Unit-Cost"))
+         else:
+-            fld.append((("C",0,0,5),"ISD",9.2,"Unit-Cost","",
++            fld.append((("C",0,0,5),"ISD",11.2,"Unit-Cost","",
+                 "","N",self.doUcost,None,None,("efld",)))
+-        fld.append((("C",0,0,6),"ISD",9.2,"Quantity","",
++        fld.append((("C",0,0,6),"ISD",11.2,"Quantity","",
+                 "","N",self.doQty,None,None,("efld",)))
+         if self.auto == "Y":
+             but = None
+diff --git a/str/st6010.py b/str/st6010.py
+index 60208dd..31766ce 100644
+--- a/str/st6010.py
++++ b/str/st6010.py
+@@ -168,8 +168,8 @@ class st6010(object):
+ 
+     def doOldCod(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec("strmf1", where=[("st1_cono", "=",
+-            self.opts["conum"]), ("st1_group", "=", self.oldgrp), ("st1_code",
+-            "=", w)], limit=1)
++            self.opts["conum"]), ("st1_group", "=", self.oldgrp),
++            ("st1_code", "=", w)], limit=1)
+         if not acc:
+             return "Invalid Code, Does Not exist"
+         self.oldcod = w
+@@ -179,8 +179,8 @@ class st6010(object):
+ 
+     def doNewCod(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec("strmf1", where=[("st1_cono", "=",
+-            self.opts["conum"]), ("st1_group", "=", self.newgrp), ("st1_code",
+-            "=", w)], limit=1)
++            self.opts["conum"]), ("st1_group", "=", self.newgrp),
++            ("st1_code", "=", w)], limit=1)
+         if acc:
+             return "Invalid Code, Already Exists"
+         self.newcod = w
+diff --git a/tartanWork.py b/tartanWork.py
+index ec5ab84..60d8622 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -3562,11 +3562,11 @@ tabdic = {
+             [2, "stv_code", "NA", 20.0, "Product Code", "Product-Code"],
+             [3, "stv_loc", "UA", 1.0, "Location", "L"],
+             [4, "stv_bin", "UA", 8.0, "Bin Number", "Bin-Num"],
+-            [5, "stv_qty", "SD", 9.2, "Quantity", "Quantity"],
+-            [6, "stv_ucost", "SD", 9.2, "Unit Cost Price", "Unit-Cost"],
++            [5, "stv_qty", "SD", 11.2, "Quantity", "Quantity"],
++            [6, "stv_ucost", "SD", 11.2, "Unit Cost Price", "Unit-Cost"],
+             [7, "stv_mrgdt", "d1", 10.0, "Merge Date", "Merge-Date"],
+-            [8, "stv_qdif", "SD", 9.2, "Quantity Difference", "Qty-Diff"],
+-            [9, "stv_vdif", "SD", 9.2, "Value Difference", "Val-Diff"],
++            [8, "stv_qdif", "SD", 11.2, "Quantity Difference", "Qty-Diff"],
++            [9, "stv_vdif", "SD", 11.2, "Value Difference", "Val-Diff"],
+             [10, "stv_seq", "US", 10.0, "Sequence", "Sequence"]],
+         "idx": [
+             ["Stock Take Variance", 1, "U", "stv_seq"],
+diff --git a/uty/bm1010.py b/uty/bm1010.py
+index d1014b0..479c532 100644
+--- a/uty/bm1010.py
++++ b/uty/bm1010.py
+@@ -575,12 +575,12 @@ Dear John Smith ...""")])
+     def doImpTD(self, obj, w):
+         if w == "Y":
+             self.titdet = True
+-        if w == "N":
+-            obj.topf[0][7][1] = "OUA"
++            obj.topf[0][7][1] = "IUA"
++        else:
+             self.titdet = False
++            obj.topf[0][7][1] = "OUA"
++        if self.personal == "N":
+             return "sk1"
+-        else:
+-            obj.topf[0][7][1] = "IUA"
+ 
+     def doImpND(self, obj, w):
+         self.namdet = w
+@@ -925,7 +925,7 @@ xbm   X Bitmap Files""")
+                 whr = [
+                     ("scm_cono", "=", self.opts["conum"]),
+                     ("btb_mail", "<>", "")]
+-                col = ["scm_surname", "scm_names", "scm_phone"]
++                col = ["scm_surname", "scm_names", "scm_email"]
+                 odr = "scm_surname, scm_names"
+                 sel = "scm_surname"
+             recs = self.doGetRecs(tab, col, whr, odr, sel)

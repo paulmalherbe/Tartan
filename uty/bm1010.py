@@ -575,12 +575,12 @@ Dear John Smith ...""")])
     def doImpTD(self, obj, w):
         if w == "Y":
             self.titdet = True
-        if w == "N":
-            obj.topf[0][7][1] = "OUA"
-            self.titdet = False
-            return "sk1"
-        else:
             obj.topf[0][7][1] = "IUA"
+        else:
+            self.titdet = False
+            obj.topf[0][7][1] = "OUA"
+        if self.personal == "N":
+            return "sk1"
 
     def doImpND(self, obj, w):
         self.namdet = w
@@ -925,7 +925,7 @@ xbm   X Bitmap Files""")
                 whr = [
                     ("scm_cono", "=", self.opts["conum"]),
                     ("btb_mail", "<>", "")]
-                col = ["scm_surname", "scm_names", "scm_phone"]
+                col = ["scm_surname", "scm_names", "scm_email"]
                 odr = "scm_surname, scm_names"
                 sel = "scm_surname"
             recs = self.doGetRecs(tab, col, whr, odr, sel)

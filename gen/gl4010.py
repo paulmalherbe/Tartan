@@ -47,6 +47,8 @@ class gl4010(object):
         self.i_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
         df = self.e_per - self.i_per - 87
+        if df > 15:
+            df -= 88
         if df > 12:
             self.d_per = df - 12
             yr = int(self.i_per / 100)
@@ -70,6 +72,8 @@ class gl4010(object):
             self.i_pyr = int(s.work / 100)
             self.e_pyr = int(e.work / 100)
             df = self.e_pyr - self.i_pyr - 87
+            if df > 15:
+                df -= 88
             if df > 12:
                 self.d_pyr = df - 12
                 yr = int(self.i_pyr / 100)

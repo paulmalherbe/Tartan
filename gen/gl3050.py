@@ -82,18 +82,19 @@ class gl3050(object):
         self.i_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
         df = self.e_per - self.i_per - 87
+        if df > 15:
+            df -= 88
         if df > 12:
-            self.d_per = df - 12
+            d_per = df - 12
             yr = int(self.i_per / 100)
             mt = self.i_per % 100
-            for _ in range(self.d_per):
+            for _ in range(d_per):
                 mt += 1
                 if mt > 12:
                     mt -= 12
                     yr += 1
             self.s_per = (yr * 100) + mt
         else:
-            self.d_per = 0
             self.s_per = self.i_per
         self.titles = {
             1: ["Acc-Num", "UI", 7, False, False, True],

@@ -102,7 +102,7 @@ class bc2040(object):
             (("C",0,0,2),"I@bce_tcod",0,"T","Team Code (H or V)",
                 "H","n",self.doTeam,None,None,("in", ("H","V"))),
             (("C",0,0,4),"I@bce_paid",0,"","Paid Flag (Y or N)",
-                "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N"))))
+                "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N","W"))))
         but = (("Entered Players",sk2,None,0,("C",0,1),("T",0,1)),)
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)

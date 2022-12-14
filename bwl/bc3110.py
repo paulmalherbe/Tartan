@@ -72,8 +72,7 @@ class bc3110(object):
             ("bce_cono", "=", self.opts["conum"]),
             ("bce_ccod", "=", self.ccod),
             ("btb_cono=bce_cono",),
-            ("btb_tab=bce_scod",),
-            ("(", "btb_mail", "=", "", "or", "btb_cell", "=", "", ")")]
+            ("btb_tab=bce_scod",)]
         recs = self.sql.getRec(tables=["bwlent", "bwltab"], cols=col,
             where=whr, order="btb_surname")
         if recs:

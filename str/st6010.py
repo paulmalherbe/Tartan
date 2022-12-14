@@ -168,8 +168,8 @@ class st6010(object):
 
     def doOldCod(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("strmf1", where=[("st1_cono", "=",
-            self.opts["conum"]), ("st1_group", "=", self.oldgrp), ("st1_code",
-            "=", w)], limit=1)
+            self.opts["conum"]), ("st1_group", "=", self.oldgrp),
+            ("st1_code", "=", w)], limit=1)
         if not acc:
             return "Invalid Code, Does Not exist"
         self.oldcod = w
@@ -179,8 +179,8 @@ class st6010(object):
 
     def doNewCod(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("strmf1", where=[("st1_cono", "=",
-            self.opts["conum"]), ("st1_group", "=", self.newgrp), ("st1_code",
-            "=", w)], limit=1)
+            self.opts["conum"]), ("st1_group", "=", self.newgrp),
+            ("st1_code", "=", w)], limit=1)
         if acc:
             return "Invalid Code, Already Exists"
         self.newcod = w

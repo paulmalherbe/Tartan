@@ -25,7 +25,8 @@ COPYING
 """
 
 from TartanClasses import SplashScreen, Sql, TartanDialog
-from tartanFunctions import callModule, getPeriods, mthendDate, showError
+from tartanFunctions import callModule, dateDiff, getPeriods, mthendDate
+from tartanFunctions import showError
 
 class msy020(object):
     def __init__(self, **opts):
@@ -108,7 +109,7 @@ class msy020(object):
     def doEndPer(self, frt, pag, r, c, p, i, w):
         if w <= self.s_per:
             return "Invalid Date, Before Start"
-        if int(w / 100) - int(self.s_per / 100) - 87 > 15:
+        if dateDiff(self.s_per, w, "months") > 14:
             return "Invalid Date, More than 15 Months"
         y = int(w / 10000) - 1
         m = int((w % 10000) / 100)
@@ -119,7 +120,7 @@ class msy020(object):
                 d = 28
         else:
             d = w % 100
-        self.e0 = (y*10000) + (m*100) + d
+        self.e0 = (y * 10000) + (m * 100) + d
         self.e_per = w
 
     def doEnd(self):

@@ -312,7 +312,7 @@ class bc1010(object):
                 self.df.loadEntry(frt, pag, p+1, data="F")
             elif self.fstart < self.mstart and self.tab < self.mstart:
                 self.df.loadEntry(frt, pag, p+1, data="F")
-            return
+            return "Name Already Exists"
         if self.sname != self.snam or w != self.fnam:
             but = [("Amendment", "A"), ("Re-Issue", "R"), ("Neither", "N")]
             ok = askChoice(self.opts["mf"].body, "Name Change",
@@ -768,6 +768,9 @@ class bc1010(object):
         err = None
         for num, line in enumerate(fi.impdat):
             sp.displayProgress(num)
+            if not line[0]:
+                err = "%s Is Zero" % fi.impcol[0][0]
+                break
             if self.mixed == "N":
                 line.extend([0, ""])
             chk = self.sql.getRec("bwltab", where=[("btb_cono", "=",

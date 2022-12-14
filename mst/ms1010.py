@@ -26,8 +26,8 @@ COPYING
 
 import time
 from TartanClasses import TartanDialog, ShowImage, Sql, TabPrt
-from tartanFunctions import askQuestion, callModule, getFileName, mthendDate
-from tartanFunctions import showError
+from tartanFunctions import askQuestion, callModule, dateDiff, getFileName
+from tartanFunctions import mthendDate, showError
 from tartanWork import allsys, tabdic
 
 class ms1010(object):
@@ -371,6 +371,8 @@ class ms1010(object):
     def doEndPer(self, frt, pag, r, c, p, i, w):
         if w <= self.s1:
             return "Invalid End Period"
+        if dateDiff(self.s1, w, "months") > 14:
+            return "Invalid Date, More than 15 Months"
         y = int(w / 10000) - 1
         m = int((w % 10000) / 100)
         if m == 2:

@@ -1,4 +1,16 @@
-changes = """ver_6.11 2022-11-09
+changes = """ver_6.12 2022-12-14
+===================
+ 1) Fixed a general ledger error with 15 month financial periods.
+ 2) Fixed a stores ledger error with stock take variances.
+ 3) Updated some items in the reference manual.
+ 4) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.11 2022-11-09
 ===================
  1) Improved the sales invoicing execution speed when loading a document.
  2) Changed the bowls competition modules to cater for more entries.
@@ -12,7 +24,7 @@ NB:
 You can only upgrade to this version if your current version is 5.5 or later.
 If you have an older version than 5.5 please contact me for assistance.
 
-ver_6.10 2022-08-27
+ver_6.10 2022-08-28
 ===================
  1) Impoved the stock revaluation tool.
  2) Improved the report generator utility.
