@@ -1,0 +1,14 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Fixed a database restore error.
+ 2) Fixed a notes completion error.
+ 3) Added the ^ facility in interrogation name searches i.e.
+        sm normally will display any name with sm in it
+        ^sm will display all names beginning with sm
+ 4) Updated some items in the reference manual.
+ 5) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.

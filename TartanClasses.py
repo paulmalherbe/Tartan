@@ -6777,11 +6777,8 @@ class SelectChoice(object):
     rowc   - Alternate the colours of every x rows e.g.
              rowc = (2, "black", "white", "black", "grey") or
              rowc = 2
-    spos   - When doing a search the following applies:
-                 A - Search anywhere in the string.
-                 B - Search from the beginning of the string.
     """
-    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, wait=True, cmnd=None, butt=None, neww=True, deco=True, modal=True, live=True, posn=None, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", spos="B", escape=True, colr=None, rowc=1):
+    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, wait=True, cmnd=None, butt=None, neww=True, deco=True, modal=True, live=True, posn=None, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", escape=True, colr=None, rowc=1):
         self.scrn = scrn
         self.ocol = cols
         if titl:
@@ -6861,7 +6858,6 @@ class SelectChoice(object):
             self.rowc = (rowc, "black", "white", "black", "gray92")
         elif rowc:
             self.rowc = rowc
-        self.spos = spos
         self.escape = escape
         self.selection = None
         if not lines:
@@ -7205,6 +7201,11 @@ class SelectChoice(object):
             direction=event.keysym)
 
     def executeSearch(self, pattern, start=None, direction=None):
+        if pattern.startswith("^"):
+            pattern = pattern.replace("^", "")
+            spos = "B"
+        else:
+            spos = "A"
         children = list(self.tree.get_children())
         if direction and direction == "Up":
             children.reverse()
@@ -7212,8 +7213,13 @@ class SelectChoice(object):
             if start and child != start:
                 continue
             start = None
+            found = False
             text = self.tree.item(child, "values")[self.srch]
-            if text.lower().count(pattern.lower()):
+            if spos == "B" and text.lower().startswith(pattern.lower()):
+                found = True
+            elif text.lower().count(pattern.lower()):
+                found = True
+            if found:
                 self.tree.selection_set(child)
                 self.tree.update_idletasks()
                 self.tree.focus(child)
@@ -15389,9 +15395,10 @@ class TarBckRes(object):
         tarfle.extractall()
         tarfle.close()
         os.chdir(cwd)
-        if not os.path.isfile(os.path.join(self.tmpdir, "verupd_0.dat")):
+        if not os.path.isfile(os.path.join(self.tmpdir, "verupd_000.dat")):
             return "Invalid Restore Archive"
-        zipfle = gzip.open(os.path.join(self.tmpdir, "verupd_0.dat"), mode="rb")
+        zipfle = gzip.open(os.path.join(self.tmpdir, "verupd_000.dat"),
+            mode="rb")
         data = zipfle.readlines()
         data = data[0].decode("utf-8").replace("[[", "").replace("]]", "")
         data = data.split("], [")
@@ -16001,7 +16008,7 @@ class NotesCreate(object):
         self.chgflag = w[2]
         self.chgdate = w[3]
         self.chguser = w[4]
-        self.nseq = w[-1:][0]
+        self.nseq = w[6]
         tit = ("Notes Editing",)
         r1s = (("Normal","N"),("Urgent","U"),("Completed","C"))
         fld = (
@@ -19128,7 +19135,6 @@ class ViewPDF(object):
                     infle.close()
             except Exception as err:
                 showError(None, "Error", err)
-        self.doClose()
 
     def doSend(self):
         if sys.platform == "win32":

@@ -312,7 +312,7 @@ class bc1010(object):
                 self.df.loadEntry(frt, pag, p+1, data="F")
             elif self.fstart < self.mstart and self.tab < self.mstart:
                 self.df.loadEntry(frt, pag, p+1, data="F")
-            return "Name Already Exists"
+            return
         if self.sname != self.snam or w != self.fnam:
             but = [("Amendment", "A"), ("Re-Issue", "R"), ("Neither", "N")]
             ok = askChoice(self.opts["mf"].body, "Name Change",
@@ -763,8 +763,11 @@ class bc1010(object):
             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
             return
         fi = FileImport(self.opts["mf"], imptab="bwltab", impskp=self.impskp)
-        sp = ProgressBar(self.opts["mf"].body, typ="Importing Ratings",
-            mxs=len(fi.impdat))
+        if self.impdet == "R":
+            txt = "Importing Ratings"
+        else:
+            txt = "Importing Details"
+        sp = ProgressBar(self.opts["mf"].body, typ=txt, mxs=len(fi.impdat))
         err = None
         for num, line in enumerate(fi.impdat):
             sp.displayProgress(num)

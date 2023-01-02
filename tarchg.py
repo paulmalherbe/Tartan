@@ -1,4 +1,19 @@
-changes = """ver_6.12 2022-12-14
+changes = """ver_6.13 2023-01-02
+===================
+ 1) Fixed a database restore error.
+ 2) Fixed a notes completion error.
+ 3) Added the ^ facility in interrogation name searches i.e.
+        sm normally will display any name with sm in it
+        ^sm will display all names beginning with sm
+ 4) Updated some items in the reference manual.
+ 5) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.12 2022-12-14
 ===================
  1) Fixed a general ledger error with 15 month financial periods.
  2) Fixed a stores ledger error with stock take variances.

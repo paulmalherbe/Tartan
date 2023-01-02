@@ -1,0 +1,178 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index e90c0ca..9511a15 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -6777,11 +6777,8 @@ class SelectChoice(object):
+     rowc   - Alternate the colours of every x rows e.g.
+              rowc = (2, "black", "white", "black", "grey") or
+              rowc = 2
+-    spos   - When doing a search the following applies:
+-                 A - Search anywhere in the string.
+-                 B - Search from the beginning of the string.
+     """
+-    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, wait=True, cmnd=None, butt=None, neww=True, deco=True, modal=True, live=True, posn=None, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", spos="B", escape=True, colr=None, rowc=1):
++    def __init__(self, scrn, titl, cols, data, lines=0, sort=True, wait=True, cmnd=None, butt=None, neww=True, deco=True, modal=True, live=True, posn=None, fltr=False, scrl=True, styl="Treeview", font="TkHeadingFont", escape=True, colr=None, rowc=1):
+         self.scrn = scrn
+         self.ocol = cols
+         if titl:
+@@ -6861,7 +6858,6 @@ class SelectChoice(object):
+             self.rowc = (rowc, "black", "white", "black", "gray92")
+         elif rowc:
+             self.rowc = rowc
+-        self.spos = spos
+         self.escape = escape
+         self.selection = None
+         if not lines:
+@@ -7205,6 +7201,11 @@ class SelectChoice(object):
+             direction=event.keysym)
+ 
+     def executeSearch(self, pattern, start=None, direction=None):
++        if pattern.startswith("^"):
++            pattern = pattern.replace("^", "")
++            spos = "B"
++        else:
++            spos = "A"
+         children = list(self.tree.get_children())
+         if direction and direction == "Up":
+             children.reverse()
+@@ -7212,8 +7213,13 @@ class SelectChoice(object):
+             if start and child != start:
+                 continue
+             start = None
++            found = False
+             text = self.tree.item(child, "values")[self.srch]
+-            if text.lower().count(pattern.lower()):
++            if spos == "B" and text.lower().startswith(pattern.lower()):
++                found = True
++            elif text.lower().count(pattern.lower()):
++                found = True
++            if found:
+                 self.tree.selection_set(child)
+                 self.tree.update_idletasks()
+                 self.tree.focus(child)
+@@ -15389,9 +15395,10 @@ class TarBckRes(object):
+         tarfle.extractall()
+         tarfle.close()
+         os.chdir(cwd)
+-        if not os.path.isfile(os.path.join(self.tmpdir, "verupd_0.dat")):
++        if not os.path.isfile(os.path.join(self.tmpdir, "verupd_000.dat")):
+             return "Invalid Restore Archive"
+-        zipfle = gzip.open(os.path.join(self.tmpdir, "verupd_0.dat"), mode="rb")
++        zipfle = gzip.open(os.path.join(self.tmpdir, "verupd_000.dat"),
++            mode="rb")
+         data = zipfle.readlines()
+         data = data[0].decode("utf-8").replace("[[", "").replace("]]", "")
+         data = data.split("], [")
+@@ -16001,7 +16008,7 @@ class NotesCreate(object):
+         self.chgflag = w[2]
+         self.chgdate = w[3]
+         self.chguser = w[4]
+-        self.nseq = w[-1:][0]
++        self.nseq = w[6]
+         tit = ("Notes Editing",)
+         r1s = (("Normal","N"),("Urgent","U"),("Completed","C"))
+         fld = (
+@@ -19128,7 +19135,6 @@ class ViewPDF(object):
+                     infle.close()
+             except Exception as err:
+                 showError(None, "Error", err)
+-        self.doClose()
+ 
+     def doSend(self):
+         if sys.platform == "win32":
+diff --git a/bwl/bc1010.py b/bwl/bc1010.py
+index 5d375d2..ece432f 100644
+--- a/bwl/bc1010.py
++++ b/bwl/bc1010.py
+@@ -312,7 +312,7 @@ class bc1010(object):
+                 self.df.loadEntry(frt, pag, p+1, data="F")
+             elif self.fstart < self.mstart and self.tab < self.mstart:
+                 self.df.loadEntry(frt, pag, p+1, data="F")
+-            return "Name Already Exists"
++            return
+         if self.sname != self.snam or w != self.fnam:
+             but = [("Amendment", "A"), ("Re-Issue", "R"), ("Neither", "N")]
+             ok = askChoice(self.opts["mf"].body, "Name Change",
+@@ -763,8 +763,11 @@ class bc1010(object):
+             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+             return
+         fi = FileImport(self.opts["mf"], imptab="bwltab", impskp=self.impskp)
+-        sp = ProgressBar(self.opts["mf"].body, typ="Importing Ratings",
+-            mxs=len(fi.impdat))
++        if self.impdet == "R":
++            txt = "Importing Ratings"
++        else:
++            txt = "Importing Details"
++        sp = ProgressBar(self.opts["mf"].body, typ=txt, mxs=len(fi.impdat))
+         err = None
+         for num, line in enumerate(fi.impdat):
+             sp.displayProgress(num)
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 1bc93aa..141d08e 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.12
++:Version:   6.13
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/ms0000.py b/ms0000.py
+index 7a42b6a..bc87322 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -63,7 +63,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 12)
++    VERSION = (6, 13)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -1191,7 +1191,7 @@ System --> Change Password""")
+             nte.append(note[7])
+             nte.append(note[8])
+             nte.append(note[5])
+-            nte.append(note[9])
++            nte.append(note[10])
+             data.append(nte)
+         tits = "Today's Notes"
+         cols = [
+@@ -1213,7 +1213,7 @@ System --> Change Password""")
+         self.chgflag = note[5]
+         self.chgdate = note[6]
+         self.chguser = note[7]
+-        self.nseq = note[-1:][0]
++        self.nseq = note[9]
+         tit = ("Notes Editing",)
+         r1s = (("Normal","N"),("Urgent","U"),("Completed","C"))
+         fld = (
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index a6dcc72..db91ebb 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -138,12 +138,15 @@ def showDialog(screen, dtype, title, mess, butt=None, dflt=None):
+             else:
+                 print(mess)
+         else:
+-            from TartanClasses import MyMessageBox
+-            mb = MyMessageBox(screen, dtype, title=title, mess=mess,
+-                butt=butt, dflt=dflt)
+-            return mb.answer
++            try:
++                from TartanClasses import MyMessageBox
++                mb = MyMessageBox(screen, dtype, title=title, mess=mess,
++                    butt=butt, dflt=dflt)
++                return mb.answer
++            except:
++                raise Exception
+     except Exception as err:
+-        print("\n%s\n%s\n" % (mess, err))
++        print("%s\n%s" % (mess, err))
+ 
+ def askChoice(screen=None, head="", mess="", butt=None, default=""):
+     return showDialog(screen, "choice", head, mess, butt, default)

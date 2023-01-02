@@ -138,12 +138,15 @@ def showDialog(screen, dtype, title, mess, butt=None, dflt=None):
             else:
                 print(mess)
         else:
-            from TartanClasses import MyMessageBox
-            mb = MyMessageBox(screen, dtype, title=title, mess=mess,
-                butt=butt, dflt=dflt)
-            return mb.answer
+            try:
+                from TartanClasses import MyMessageBox
+                mb = MyMessageBox(screen, dtype, title=title, mess=mess,
+                    butt=butt, dflt=dflt)
+                return mb.answer
+            except:
+                raise Exception
     except Exception as err:
-        print("\n%s\n%s\n" % (mess, err))
+        print("%s\n%s" % (mess, err))
 
 def askChoice(screen=None, head="", mess="", butt=None, default=""):
     return showDialog(screen, "choice", head, mess, butt, default)

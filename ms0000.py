@@ -63,7 +63,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 12)
+    VERSION = (6, 13)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -1191,7 +1191,7 @@ System --> Change Password""")
             nte.append(note[7])
             nte.append(note[8])
             nte.append(note[5])
-            nte.append(note[9])
+            nte.append(note[10])
             data.append(nte)
         tits = "Today's Notes"
         cols = [
@@ -1213,7 +1213,7 @@ System --> Change Password""")
         self.chgflag = note[5]
         self.chgdate = note[6]
         self.chguser = note[7]
-        self.nseq = note[-1:][0]
+        self.nseq = note[9]
         tit = ("Notes Editing",)
         r1s = (("Normal","N"),("Urgent","U"),("Completed","C"))
         fld = (
