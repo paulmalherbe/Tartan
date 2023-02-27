@@ -96,7 +96,7 @@ The following *Buttons* are available:
     + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
 + **Entered** - Use this button to display all entered players.
 + **Modify** - Use this button to change the player's position/ratings for this draw only.
-+ **Draw** - Use this button to make the draw once all tabs/teams and bounce games have been entered. In the case of *Teams* if there are any tabs that have been entered and have not been allocated to teams you will be prompted to either *Generate*, *Delete* or *Exit*. If *Generate* is selected the program will try to allocate the unallocated tabs into teams.
++ **Draw** - Use this button to make the draw once all tabs/teams and bounce games have been entered. In the case of *Teams* if there are any tabs that have been entered and have not been allocated to teams they will be displayed and you will be prompted to either *Generate*, *Delete* or *Exit*. If *Generate* is selected the program will try to allocate the unallocated tabs into teams. If *Delete* is selected All Unallocated tabs will be deleted.
     + **Draw Type** - The type of draw i.e. Random or Strength v Strength.
     + **Apply Percentages** - This is only available if the basis of the draw is Combined. Select whether to apply percentages to position changes e.g. A player moving up in position would lose 10% of their rating and a player moving down in position would gain 10% of their rating.
     + **Apply History** - Whether or not to take previous draws into consideration when making the current draw.
@@ -363,7 +363,8 @@ Use this routine to print the competition format.
 
 Competition Draw (BC)
 +++++++++++++++++++++
-Use this routine to create a draw and, if relevant, print match cards as follows:
+If the first draw of a competition is a Manual Draw use `Change Draw` otherwise
+use this routine to create a draw and, if relevant, print match cards as follows:
 
 + **Tournament, Teams and Round Robin**
     + **Competition Code** - The relevant competition code. If the competition is a new competition and is a Round Robin competition you will have the facility to sectionalise it.
@@ -397,7 +398,7 @@ Use this routine to print a summary of all draws, excluding knockout, to date.
 
 Change Draw (BC)
 ++++++++++++++++
-Use this routine to change individual draws, excluding knockout, in a competition. After changing the draws you must reprint them as per `Competition Draw (BC)`_. Please note that to only reprint certain cards you must select `All Cards No`.
+Use this routine to make a manual draw or Change an existing draw, excluding knockout , round robin and team draws.
 
 + **Competition Code** - The relevant competition code.
 + **Game Number** - The relevant game number.
@@ -428,6 +429,7 @@ Use this routine to print the match results as follows:
 + **Competition Code** - The relevant competition code.
 + **Last Game** - The last game to take into account.
 + **Game Report** - Print the last game's results.
++ **Match Report** - Print the match results up to the *Last Game*.
 
 If the last game of the competition is being printed, enter the following:
     + **Session Prizes** - Whether session prizes are to be awarded.

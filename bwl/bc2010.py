@@ -108,7 +108,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -126,7 +126,7 @@ COPYING
 
 import random, time
 from operator import itemgetter
-from TartanClasses import CCD, GetCtl, PrintCards, PrintDraw, PwdConfirm
+from TartanClasses import CCD, GetCtl, PrintCards, PrintTabDraw, PwdConfirm
 from TartanClasses import SplashScreen, SelectChoice, Sql, TartanDialog
 from tartanFunctions import askChoice, askQuestion, callModule, getGreens
 from tartanFunctions import getNextCode, copyList, projectDate, showError
@@ -1162,8 +1162,9 @@ First Change the Bounce Game and then Delete It.""")
                     ("c", "Pos", 1, "UI", "N"),
                     ("d", "Rte", 2, "UI", "N")]
                 but = [
-                    ("Generate", self.doGenTeams),
-                    ("Delete", self.doDelTabs)]
+                    ("Generate", self.doGenTeams,
+                        "Randomly Generate Teams for All the Unallocated Tabs"),
+                    ("Delete", self.doDelTabs, "Delete All Unallocated Tabs")]
                 SelectChoice(self.opts["mf"].window,
                     "These Tabs Are Not In Teams",
                     cols, self.tdata, butt=but, sort=False, live=False)
@@ -1502,49 +1503,62 @@ Try to Allocate Different Rinks""" % self.weeks),
                             three = tmm
                     temp.remove(three)
                     temp.remove(four)
-                    temp = sorted(temp, key=itemgetter(0, 1))
+                    temp = sorted(temp, key=itemgetter(0, 1), reverse=True)
                     temp.extend([three, four])
                 else:
-                    temp = sorted(temp, key=itemgetter(0, 1))
+                    temp = sorted(temp, key=itemgetter(0, 1), reverse=True)
             else:
                 random.shuffle(temp)
                 temp = sorted(temp, key=itemgetter(0))
             while temp:
                 ok = False
                 rk1 = None
-                sk1 = temp.pop(0)       # Next skip
+                sk1 = temp.pop(0)                # Next skip
+                qty = sk1[0]
+                tab = sk1[2][0]
+                # Get last two team games this skip has played
                 col = ["bdt_rink", "bdt_date", "bdt_time"]
                 whr = [
                     ("bdt_cono", "=", self.opts["conum"]),
-                    ("bdt_tab", "=", sk1[2][0]),
+                    ("bdt_tab", "=", tab),
+                    ("bdt_date", "<", self.date, "or", "(", "bdt_date", "=",
+                        self.date, "and", "bdt_time", "<>", self.time, ")"),
                     ("bdt_pos", "=", 4),
                     ("bdt_flag", "=", "C")]
-                chk = self.sql.getRec("bwldrt", cols=col, where=whr,
-                    order="bdt_date desc, bdt_time asc", limit=1)
-                if chk:
-                    rk1 = chk[0]        # Rink of last game
+                chks = self.sql.getRec("bwldrt", cols=col, where=whr,
+                    order="bdt_date desc, bdt_time asc", limit=2)
+                ok = False
+                opps = []
+                # Get opposition skips for last two team games
+                for chk in chks:
+                    rk1, dte, tim = chk          # Rink, Date and Time
                     whr = [
                         ("bdt_cono", "=", self.opts["conum"]),
-                        ("bdt_tab", "<>", sk1[2][0]),
-                        ("bdt_date", "=", chk[1]),
-                        ("bdt_time", "=", chk[2]),
+                        ("bdt_tab", "<>", tab),
+                        ("bdt_date", "=", dte),
+                        ("bdt_time", "=", tim),
                         ("bdt_rink", "=", rk1),
                         ("bdt_pos", "=", 4),
                         ("bdt_flag", "=", "C")]
-                    opp = self.sql.getRec("bwldrt", where=whr, limit=1)
-                    if opp:             # Opposition skip of last game
-                        for skp in temp:
-                            if skp[0] == sk1[0] and skp[2][0] is not opp[1]:
-                                ok = True
-                                sk2 = skp
-                                temp.remove(skp)
-                                break
-                if not ok:              # Next skip
+                    opp = self.sql.getRec("bwldrt", cols=["bdt_tab"],
+                        where=whr, limit=1)
+                    if opp:
+                        opps.append(opp[0])
+                # Get unique opposition
+                if opps:
+                    for tmp in temp:
+                        if tmp[0] == qty and tmp[2][0] not in opps:
+                            ok = True
+                            sk2 = tmp
+                            temp.remove(tmp)
+                            break
+                if not ok:                       # Next skip
+                    # Unique opposition not possible
                     sk2 = temp.pop(0)
                 ok = False
                 if rk1:
                     for rink in self.rinks1:
-                        if rk1 and rink == rk1:
+                        if rink == rk1:
                             continue
                         self.rinks1.remove(rink)
                         ok = True
@@ -1616,7 +1630,7 @@ Try to Allocate Different Rinks""" % self.weeks),
                 alldraw = []
                 self.doPositions(grp)
                 if self.dhist == "Y":
-                    self.doHistory(self.weeks * -7)
+                    self.doHistory()
                 else:
                     self.hist = {}
                     self.broken = []
@@ -2035,9 +2049,10 @@ Combination Number %10s"""
                 tab[5] = int(round(tab[5] * 1.1, 0))
             self.lead1.append(tab)
 
-    def doHistory(self, days):
+    def doHistory(self):
         self.hist = {}
         self.broken = []
+        days = self.weeks * -7
         ldate = projectDate(self.date, days)
         # Get records for past x days excluding bounce, team games and svs
         recs = self.sql.getRec("bwldrt", where=[("bdt_cono", "=",
@@ -2383,7 +2398,7 @@ Combination Number %10s"""
     def doPEnd(self):
         self.pd.closeProcess()
         if self.cards != "O":
-            PrintDraw(self.opts["mf"], self.opts["conum"], self.date,
+            PrintTabDraw(self.opts["mf"], self.opts["conum"], self.date,
                 self.time, cdes=self.cdes, takings=self.takings,
                 listing=self.listing, board=self.board, empty=self.empty,
                 repprt=self.pd.repprt, name=self.__class__.__name__)

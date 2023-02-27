@@ -4,11 +4,17 @@ SYNOPSIS
 
     This file is part of Tartan Systems (TARTAN).
 
+    Score variables:
+
+    totpts = total points excluding bonus
+    maxpts = total plus bonus point
+    mpts   = total points +- bonus point depending on scores
+
 AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,8 +31,7 @@ COPYING
 """
 
 from TartanClasses import ASD, TartanDialog, Sql
-from tartanFunctions import askChoice, askQuestion, callModule, copyList
-from tartanFunctions import showError
+from tartanFunctions import askChoice, askQuestion, copyList, showError
 
 class bc2070(object):
     def __init__(self, **opts):
@@ -303,10 +308,10 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
 
     def doSkpCod(self, frt, pag, r, c, p, i, w):
         chk = self.sql.getRec(tables=["bwlgme", "bwltab"], cols=["btb_surname",
-            "btb_names", "bcg_ocod", "bcg_sfor", "bcg_sagt",
-            "bcg_points"], where=[("bcg_cono", "=", self.opts["conum"]),
-            ("bcg_ccod", "=", self.ccod), ("bcg_scod", "=", w), ("bcg_game",
-            "=", self.gcod), ("btb_tab=bcg_scod",)], limit=1)
+            "btb_names", "bcg_ocod", "bcg_sfor", "bcg_sagt", "bcg_points"],
+            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
+            self.ccod), ("bcg_scod", "=", w), ("bcg_game", "=", self.gcod),
+            ("btb_tab=bcg_scod",)], limit=1)
         if not chk:
             return "Invalid Skip Code"
         if chk[3] or chk[4] or chk[5]:
@@ -324,7 +329,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
             self.reenter = False
         self.skp = w
         self.opp = chk[2]
-        if self.opp > 900000:
+        if self.skp > 900000 or self.opp > 900000:
             return "This Skip Had a Bye"
         if chk[1]:
             name = "%s, %s" % tuple(chk[:2])
@@ -407,12 +412,12 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
         if w and w % 1 not in (0.0, 0.5):
             return "Invalid Decimal in Points"
         if w > self.maxpts:
-            return "Invalid Points, Exceed Maximum"
+            return "Points Exceed Maximum (%s)" % self.maxpts
         if i == 3:
             self.p_for = w
             self.df.loadEntry(frt, pag, p + 1, data=self.opp)
-            chk = self.sql.getRec("bwltab", cols=["btb_surname",
-                "btb_names"], where=[("btb_cono", "=", self.opts["conum"]),
+            chk = self.sql.getRec("bwltab", cols=["btb_surname", "btb_names"],
+                where=[("btb_cono", "=", self.opts["conum"]),
                 ("btb_tab", "=", self.opp)], limit=1)
             if chk[1]:
                 name = "%s, %s" % tuple(chk[:2])
@@ -432,8 +437,16 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
         if self.ponly == "Y":
             self.s_agt = self.p_agt
         tot = float(ASD(self.p_for) + ASD(self.p_agt))
-        if tot != self.mpts:
-            return "Invalid Total Points (%s s/b %s)" % (tot, self.mpts)
+        if tot == self.mpts:
+            return
+        if tot > self.mpts:
+            return "Points Exceed Maximum (%s)" % self.mpts
+        elif tot < self.mpts:
+            ok = askQuestion(self.opts["mf"].body, "Error",
+                "Invalid Total Points (%s s/b %s)\n\n"\
+                "Must This Score be Accepted?" % (tot, self.mpts))
+            if ok == "no":
+                return "rf"
 
     def doEnd(self):
         if self.df.frt == "T":
@@ -534,6 +547,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
 
     def doExit(self):
         if self.df.frt == "C" and self.df.col != 1:
+            msc = []
             chk = self.sql.getRec("bwlgme", where=[("bcg_cono", "=",
                 self.opts["conum"]), ("bcg_ccod", "=", self.ccod), ("bcg_game",
                 "=", self.gcod), ("bcg_aflag", "in", ("", "D"))])
@@ -553,10 +567,14 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                     fors = c[self.sql.bwlgme_col.index("bcg_sfor")]
                     agts = c[self.sql.bwlgme_col.index("bcg_sagt")]
                 if not fors and not agts:
-                    self.df.focusField(self.df.frt, self.df.pag, self.df.col,
-                        err="Missing Score Card for Skips %s and %s" % (scod,
-                        ocod))
-                    return
+                    msc.append(c[self.sql.bwlgme_col.index("bcg_rink")])
+            if msc:
+                txt = ""
+                msc = sorted(set(msc))
+                txt = ", ".join(msc)
+                showError(self.opts["mf"].body, "Error", "The Following "\
+                    "Rinks Still Need to be Captured.\n\n%s" % txt)
+                return
             if self.cfmat in ("D", "K") and self.gcod != self.games:
                 # Delete Next Round's Records
                 whr = [
@@ -611,10 +629,6 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                     if len(recs) == 1:
                         break
                 self.opts["mf"].dbm.commitDbase()
-            if self.cfmat in ("D", "K"):
-                callModule(self.opts["mf"], self.df, "bc2050",
-                    coy=[self.opts["conum"], self.opts["conam"]],
-                    args=self.ccod)
         self.df.closeProcess()
         self.opts["mf"].closeLoop()
 

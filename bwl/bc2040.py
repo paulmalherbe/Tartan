@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,8 +35,9 @@ class bc2040(object):
             self.opts["mf"].startLoop()
 
     def setVariables(self):
-        self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwltab",
-            "bwlent", "bwltyp", "bwlgme"], prog=self.__class__.__name__)
+        self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwltab", "bwlent",
+            "bwltyp", "bwlgme", "bwltms", "bwlrnd"],
+            prog=self.__class__.__name__)
         if self.sql.error:
             return
         gc = GetCtl(self.opts["mf"])
@@ -341,11 +342,6 @@ Do You Want to Erase All Draws and Results?""", default="no")
                             self.opts["conum"]), ("btd_ccod", "=", self.ccod)])
                         self.sql.delRec("bwlrnd", where=[("bcr_cono", "=",
                             self.opts["conum"]), ("bcr_ccod", "=", self.ccod)])
-                    if self.cfmat in ("T", "X"):
-                        recs = self.sql.getRec("bwlent",
-                            cols=["bce_scod"], where=[("bce_cono",
-                            "=", self.opts["conum"]), ("bce_ccod",
-                            "=", self.ccod)], order="bce_scod")
                 data.append(self.cmp[self.sql.bwlcmp_col.index("bcm_xflag")])
                 self.sql.updRec("bwlcmp", data=data, where=[("bcm_cono", "=",
                     self.opts["conum"]), ("bcm_code", "=", self.ccod)])

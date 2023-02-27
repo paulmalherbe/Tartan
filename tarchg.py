@@ -1,4 +1,19 @@
-changes = """ver_6.13 2023-01-02
+changes = """ver_6.14 2023-02-27
+===================
+ 1) Updated the P.A.Y.E. rates for 2023/2024 tax year.
+ 2) Fixed a problem with Debtor's Recurring Charges.
+ 3) Fixed an error in the bowling club's competition draw.
+ 4) Improved the  situation with repetetive tabs-in team draws.
+ 5) Added a print option to the bowling club's competition change draw.
+ 6) Updated some items in the reference manual.
+ 7) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.13 2023-02-11
 ===================
  1) Fixed a database restore error.
  2) Fixed a notes completion error.
@@ -13,7 +28,7 @@ NB:
 You can only upgrade to this version if your current version is 5.5 or later.
 If you have an older version than 5.5 please contact me for assistance.
 
-ver_6.12 2022-12-14
+ver_6.12 2022-12-15
 ===================
  1) Fixed a general ledger error with 15 month financial periods.
  2) Fixed a stores ledger error with stock take variances.

@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ COPYING
 """
 
 import time
-from TartanClasses import CCD, PrintCards, PrintDraw, Sql, TartanDialog
+from TartanClasses import CCD, PrintCards, PrintTabDraw, Sql, TartanDialog
 
 class bc3010(object):
     def __init__(self, **opts):
@@ -144,7 +144,7 @@ class bc3010(object):
     def doEnd(self):
         self.df.closeProcess()
         if self.cards != "O":
-            PrintDraw(self.opts["mf"], self.opts["conum"], self.date,
+            PrintTabDraw(self.opts["mf"], self.opts["conum"], self.date,
                 self.time, cdes=self.cdes, takings=self.takings,
                 listing=self.listing, board=self.board, empty=self.empty,
                 repprt=self.df.repprt, name=self.__class__.__name__)

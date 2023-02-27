@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,10 +40,10 @@ class st1010(object):
 
     def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["ctlvmf", "ctlrep", "drschn",
-            "drsmst", "genmst", "slsiv1", "slsiv2", "strgrp", "strloc",
-            "strmf1", "strmf2", "strgmu", "strcmu", "strprc", "strrcp",
-            "struoi", "strtrn", "strpot", "strvar", "slsiv3", "chglog"],
-            prog=self.__class__.__name__)
+            "drsmst", "genmst", "slsiv1", "slsiv2", "strcst", "strgrp",
+            "strloc", "strmf1", "strmf2", "strgmu", "strcmu", "strprc",
+            "strrcp", "struoi", "strtrn", "strpot", "strvar", "slsiv3",
+            "chglog"], prog=self.__class__.__name__)
         if self.sql.error:
             return
         gc = GetCtl(self.opts["mf"])

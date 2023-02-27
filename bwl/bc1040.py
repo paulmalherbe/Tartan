@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -250,20 +250,15 @@ Are you Sure this is what you Want to Do?""", default="no")
             self.sql.updRec("bwltyp", data=data, where=[("bct_cono", "=",
                 self.opts["conum"]), ("bct_code", "=", self.ctype)])
         self.perr = False
-        if self.cfmat in ("D", "K", "R"):
-            if self.newtyp:
-                self.sql.insRec("bwlpts", data=[self.opts["conum"],
-                    self.ctype, "D", "N", 0, "N", 0, 0, 1, "N", 0, 0])
-        else:
-            self.df.setWidget(self.df.mstFrame, state="hide")
+        self.df.setWidget(self.df.mstFrame, state="hide")
+        if self.pdiff == "Y":
+            self.doPtsFmt("D")
+        if not self.perr:
             if self.pdiff == "Y":
-                self.doPtsFmt("D")
-            if not self.perr:
-                if self.pdiff == "Y":
-                    self.doPtsFmt("S")
-                else:
-                    self.doPtsFmt("B")
-            self.df.setWidget(self.df.mstFrame, state="show")
+                self.doPtsFmt("S")
+            else:
+                self.doPtsFmt("B")
+        self.df.setWidget(self.df.mstFrame, state="show")
         if self.perr:
             self.opts["mf"].dbm.rollbackDbase()
             self.df.focusField(self.df.frt, self.df.pag, self.df.col)

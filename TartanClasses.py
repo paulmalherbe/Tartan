@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1173,7 +1173,7 @@ class MainFrame(object):
                     print("Missing Tkinter and/or ttk modules")
                     sys.exit()
                 if not title:
-                    title = "Tartan Systems - Copyright %s 2004-2022 "\
+                    title = "Tartan Systems - Copyright %s 2004-2023 "\
                         "Paul Malherbe" % chr(0xa9)
                 self.window = MkWindow(title=title, icon="tartan",
                     size=self.geo, resiz=False).newwin
@@ -6194,7 +6194,7 @@ Export - The report in the selected format will be opened
             if dflt == "d":
                 self.mf.status.bind("<Return>", self.checkYesNo)
                 self.mf.status.bind("<KP_Enter>", self.checkYesNo)
-            self.mf.status.focus_set()
+            self.mf.status.focus_force()
             self.mf.status.wait_variable(self.answer)
             if dflt == "d" and self.answer.get() in ("return", "kp_enter"):
                 self.answer.set("y")
@@ -6759,6 +6759,7 @@ class SelectChoice(object):
     butt   - A list of tuples of buttons, in addition to Exit, to draw,
                 with their respective commands and if a selection must
                 be returned. An Exit button will override the default one.
+                (("Exit", self.doExit, Tooltip), ("Quit", self.doQuit))
     neww   - Whether to create a new window, defaults to True
     deco   - Whether or not the window must be decorated, default True.
     modal  - Whether or not the window is modal.
@@ -6961,6 +6962,8 @@ class SelectChoice(object):
             for num, but in enumerate(butt):
                 b = self.bbox.addButton(but[0], (self.doButton, but))
                 self.buttons.append(b)
+                if len(but) == 3:
+                    ToolTip(b, but[2])
 
     def doButton(self, button):
         self.button = None
@@ -8727,7 +8730,7 @@ class AgeTrans(object):
         self.lb = SelectChoice(self.mf.window, "Available Transactions",
             self.cols, self.work, sort=False, wait=False, cmnd=self.enterAll,
             posn=self.posn, escape=False)
-        # Allocation Fields
+        # Allocation Fields and Buttons
         hbox = MyFrame(self.lb.window)
         hbox.pack(fill="x", expand="yes")
         hbox.columnconfigure(0, weight=1)
@@ -8744,14 +8747,12 @@ class AgeTrans(object):
         self.allBal.grid(row=0, column=3, sticky="ew")
         bbox = MyButtonBox(self.lb.window)
         self.allBut = bbox.addButton(text="Apply", cmd=self.enterAmt)
+        ToolTip(self.allBut, "Apply this Allocation")
         self.allBut.configure(state="disabled")
         if self.xits:
             xitBut = bbox.addButton(text="Exit", cmd=self.exitAge)
-        canBut = bbox.addButton(text="Cancel", cmd=self.cancelAll)
-        # Button Tooltips
-        ToolTip(self.allBut, "Apply this Allocation")
-        if self.xits:
             ToolTip(xitBut, "Leave the Balance as Unallocated")
+        canBut = bbox.addButton(text="Cancel", cmd=self.cancelAll)
         ToolTip(canBut, "Cancel All Allocations")
         # Main Loop
         placeWindow(self.lb.window, self.mf.window)
@@ -8898,11 +8899,7 @@ class Balances(object):
             "N" = does not return transactions
             "A" = returns all transactions
         """
-        ages = [0,0,0,0,0]
-        if trans == "Y":
-            cdt = self.curdt
-        else:
-            cdt = None
+        ages = [0, 0, 0, 0, 0]
         if self.system == "CRS":
             whr = [("crt_cono", "=", self.conum), ("crt_acno", "=", self.acno)]
             w = copyList(whr)
@@ -8914,8 +8911,8 @@ class Balances(object):
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=cdt,
-                whr=whr, zer=trans)
+            col, trns = getTrn(self.mf.dbm, self.system.lower(),
+                cdt=self.curdt, whr=whr, zer=trans)
         elif self.system == "DRS":
             whr = [("drt_cono", "=", self.conum), ("drt_chain", "=",
                 self.chain), ("drt_acno", "=", self.acno)]
@@ -8928,8 +8925,8 @@ class Balances(object):
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=cdt,
-                whr=whr, zer=trans)
+            col, trns = getTrn(self.mf.dbm, self.system.lower(),
+                cdt=self.curdt, whr=whr, zer=trans)
         elif self.system == "MEM":
             whr = [("mlt_cono","=",self.conum), ("mlt_memno","=",self.memno)]
             w = copyList(whr)
@@ -8941,8 +8938,8 @@ class Balances(object):
             else:
                 obal = obal[0]
             cbal = 0.0
-            col, trns = getTrn(self.mf.dbm, self.system.lower(), cdt=cdt,
-                whr=whr, zer=trans)
+            col, trns = getTrn(self.mf.dbm, self.system.lower(),
+                cdt=self.curdt, whr=whr, zer=trans)
         else:
             return
         if trns:
@@ -13104,7 +13101,7 @@ class PrintCards(object):
         else:
             return "* Bye *"
 
-class PrintDraw(object):
+class PrintTabDraw(object):
     def __init__(self, mf, conum, date, dtim, **args):
         self.mf = mf
         self.conum = conum
@@ -15490,10 +15487,10 @@ class TarBckRes(object):
             self.doBackup()
             if self.mf.window and self.smtp and self.smtp[0]:
                 if self.bu.repeml[2]:
-                    dated = CCD(self.sysdtw, "D1", 10).disp
+                    txt = "Tartan Backup for %s at %s" % (self.coys[0][1],
+                        CCD(self.sysdtw, "D1", 10).disp)
                     sendMail(self.smtp, self.coys[0][2], self.bu.repeml[2],
-                        "Tartan Backup for %s at %s" % (self.coys[0][1],
-                        dated), self.bu.repeml[3], attach=self.arcfle,
+                        txt, self.bu.repeml[3], attach=self.arcfle,
                         wrkdir=self.mf.rcdic["wrkdir"], err=self.mf.body)
                 self.mf.closeLoop()
             return
@@ -19189,16 +19186,16 @@ class ViewPDF(object):
             while not ok:
                 sp = SplashScreen(self.mf.window.focus_displayof(),
                     "E-Mailing the Report to:\n\n%s\n\nPlease Wait....." % add)
-                ok = sendMail(self.server, fromad, add, subj, mess=body,
+                err = sendMail(self.server, fromad, add, subj, mess=body,
                     attach=att, wrkdir=self.mf.rcdic["wrkdir"])
                 sp.closeSplash()
-                if not ok:
+                if err:
                     ok = askQuestion(self.mf.window.focus_displayof(),
                         "E-Mail Error", "Problem Delivering This "\
-                        "Message.\n\nTo: %s\nSubject: %s\n\nWould "\
-                        "You Like to Retry?" % (add, subj))
+                        "Message.\n\nTo: %s\nSubject: %s\n\n%s\n\nWould "\
+                        "You Like to Retry?" % (add, subj, err))
                     if ok == "yes":
-                        ok = None
+                        ok = False
                     else:
                         ok = "Failed"
                 else:

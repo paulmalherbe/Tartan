@@ -136,6 +136,9 @@ Age Analysis (CR)
 +++++++++++++++++
 Use this routine to produce a creditor's age analysis.
 
++ **Base** - The basis to use for the report.
+    + **Agedt** - Produce a report based on Ageing Period, this will not necessarily balance with the control account.
+    + **Curdt** - Produce a report based on Financial Period, this will always balance with the control account.
 + **Cut-Off Period** - The financial period.
 + **Totals Only** - Select totals only or all individual accounts.
 + **First Account Number** - The first account to include on the report, if applicable.

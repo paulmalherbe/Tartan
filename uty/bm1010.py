@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1131,18 +1131,18 @@ xbm   X Bitmap Files""")
                     url = (self.lnktxt, self.lnkurl)
                 else:
                     url = None
-                ok = sendMail(self.smtp, self.fadd, mail, self.subj,
+                err = sendMail(self.smtp, self.fadd, mail, self.subj,
                     mess=(mess, html), attach=self.attach, embed=self.embed,
                     lnkurl=url, wrkdir=self.opts["mf"].rcdic["wrkdir"])
                 sp.closeSplash()
-                if not ok:
+                if err:
                     if self.skip == "Y":
                         ok = "SKIPPED"
                     else:
                         ok = askQuestion(self.opts["mf"].body, "E-Mail Error",
                             "Problem Delivering This Message.\n\nTo: "\
-                            "%s\nSubject: %s\n\nWould You Like to Retry?" \
-                            % (mail, self.subj))
+                            "%s\nSubject: %s\n\n%s\n\nWould You Like to "\
+                            "Retry?" % (mail, self.subj, err))
                     if ok == "yes":
                         ok = False
                     else:

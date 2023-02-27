@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -223,11 +223,11 @@ With Thanks
 
 Membership Secretary
 %s""" % (text, self.opts["conam"])
-            ok = sendMail(self.smtp, self.fadd, mail, "Member's Details",
+            err = sendMail(self.smtp, self.fadd, mail, "Member's Details",
                 mess=text, wrkdir=self.opts["mf"].rcdic["wrkdir"])
-            if not ok and self.ignore == "N":
+            if err and self.ignore == "N":
                 ok = askChoice(self.opts["mf"].body, "SMTP Server Error",
-                    "Mail to %s Could Not be Sent" % mail,
+                    "Mail to %s Could Not be Sent\n\n%s" % (mail, err),
                     butt=(("Continue","C"), ("Quit","Q")),
                     default="Continue")
                 if ok == "Q":

@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -72,10 +72,12 @@ class bc3100(object):
             (("T",0,1,0),"IUI",2,"Last Game","",
                 0,"N",self.doLstGam,gme,None,("efld",)),
             (("T",0,2,0),("IRB",r1s),0,"Game Report","",
-                "N","N",self.doGamRep,None,None,None),
-            (("T",0,3,0),("IRB",r1s),0,"Session Prizes","",
+                "Y","N",self.doGamRep,None,None,None),
+            (("T",0,3,0),("IRB",r1s),0,"Match Report","",
+                "Y","N",self.doMatRep,None,None,None),
+            (("T",0,4,0),("IRB",r1s),0,"Session Prizes","",
                 "N","N",self.doSesPrz,None,None,None),
-            (("T",0,4,0),("IRB",r1s),0,"Session Prizes by Group","",
+            (("T",0,5,0),("IRB",r1s),0,"Session Prizes by Group","",
                 "N","N",self.doSesGrp,None,None,None))
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)
@@ -106,10 +108,8 @@ class bc3100(object):
                     self.games = gme[0]
             self.games -= 1
         elif self.cfmat in ("D", "K"):
-            self.games = self.sql.getRec("bwlgme", cols=["count(*)"],
-                where=[("bcg_cono", "=", self.opts["conum"]),
-                ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", 1)],
-                limit=1)[0] - 1
+            self.df.loadEntry(frt, pag, p+1, data=self.cdes)
+            return "sk6"
         else:
             self.games = chk[self.sql.bwltyp_col.index("bct_games")]
         self.groups = chk[self.sql.bwltyp_col.index("bct_groups")]
@@ -125,7 +125,7 @@ class bc3100(object):
                 break
             self.lgame = g[0]
         if not self.lgame:
-            return "Knockout or No Completed Games"
+            return "No Completed Games"
         self.df.loadEntry(frt, pag, p+1, data=self.cdes)
         self.df.loadEntry(frt, pag, p+2, data=self.lgame)
 
@@ -188,11 +188,13 @@ class bc3100(object):
             self.gamrep = "N"
             self.df.loadEntry(frt, pag, p+1, data=self.gamrep)
             if self.pgame < self.games:
+                self.matrep = "Y"
                 self.sesp = "N"
                 self.sesg = "N"
-                self.df.loadEntry(frt, pag, p+1, data=self.sesp)
-                self.df.loadEntry(frt, pag, p+2, data=self.sesg)
-                return "sk3"
+                self.df.loadEntry(frt, pag, p+2, data=self.matrep)
+                self.df.loadEntry(frt, pag, p+3, data=self.sesp)
+                self.df.loadEntry(frt, pag, p+4, data=self.sesg)
+                return "sk4"
             return "sk1"
         if self.cfmat in ("D", "K", "R") or self.pgame < self.lgame:
             self.df.topf[0][3][5] = "N"
@@ -201,7 +203,13 @@ class bc3100(object):
 
     def doGamRep(self, frt, pag, r, c, p, i, w):
         self.gamrep = w
-        if self.cfmat in ("D", "K", "R") or self.pgame < self.lgame:
+
+    def doMatRep(self, frt, pag, r, c, p, i, w):
+        if w == "N" and self.gamrep == "N":
+            return "ff4|No Game or Match Report Selected"
+        self.matrep = w
+        if self.matrep == "N" or self.cfmat in ("D", "K", "R") or \
+                self.pgame < self.games:
             self.sesp = "N"
             self.sesg = "N"
             self.df.loadEntry(frt, pag, p+1, data=self.sesp)
@@ -220,6 +228,243 @@ class bc3100(object):
 
     def doEnd(self):
         self.df.closeProcess()
+        if self.cfmat in ("D", "K"):
+            self.printKnockout()
+        else:
+            self.printCompetition()
+
+    def printKnockout(self):
+        pwrs = 2
+        self.rnds = 1
+        self.totskp = self.sql.getRec("bwlent", cols=["count(*)"],
+            where=[("bce_cono", "=", self.opts["conum"]),
+            ("bce_ccod", "=", self.ccod)], limit=1)[0]
+        while pwrs < self.totskp:
+            self.rnds += 1
+            pwrs = pwrs * 2
+        head = (self.rnds * 19) + 19
+        if head > 120:
+            head = 170
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=head)
+        self.pageHeading("K")
+        self.two = 0
+        for grp in range(1, 3):
+            skips = self.sql.getRec("bwlgme", cols=["bcg_scod",
+                "bcg_ocod", "bcg_seed", "bcg_pair"], where=[("bcg_cono",
+                "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
+                ("bcg_game", "=", 1), ("bcg_group", "=", grp)],
+                order="bcg_pair, bcg_scod")
+            self.printBracket(grp, skips)
+        pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
+            self.__class__.__name__, self.opts["conum"], ext="pdf")
+        head = "%s Draw" % self.cdes
+        if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                header=head, pdfnam=pdfnam, repprt=self.df.repprt,
+                fromad=self.fromad, repeml=self.df.repeml)
+        self.opts["mf"].closeLoop()
+
+    def printBracket(self, grp, skips):
+        siz, cwth, chgt = self.setBracketFont()
+        ohgt = self.fpdf.font[2]
+        self.fpdf.font[2] = chgt
+        if grp == 2 and self.rnds == 2:
+            last = "down"
+        else:
+            last = ""
+        rnds = []
+        nm = 18
+        l1 = 0
+        l2 = 1
+        rd = 1
+        n1 = nm + l1
+        n2 = nm + l1 + l2
+        nx = (nm * 2) + l1 + l2
+
+        def drawField(txt, x, y, w):
+            nsiz = siz
+            chek = w * .95
+            nwth = self.fpdf.get_string_width(txt)
+            while nwth >= chek:
+                nsiz -= .1
+                self.fpdf.setFont(style="B", size=nsiz)
+                nwth = self.fpdf.get_string_width(txt)
+            self.fpdf.drawText(txt, x=x, y=y, w=w, font=("B", nsiz),
+                border="TLRB")
+
+        for num, skip in enumerate(skips):
+            x = self.fpdf.get_x()
+            y = self.fpdf.get_y()
+            if skip[1] > 900000:
+                self.fpdf.drawText("", w=(cwth * nm))
+            else:
+                drawField(self.getSkip(skip[0], skip[2]), x, y, w=(cwth * nm))
+                self.drawLink(cwth, l1, l2, x + (cwth * nm), y + int(chgt / 2),
+                    y + (chgt * 1.5))
+            x = self.fpdf.get_x()
+            y = self.fpdf.get_y()
+            if skip[1] > 900000:
+                drawField(self.getSkip(skip[0], skip[2]),
+                    x + (cwth * n2), y, w=(cwth * nm))
+            else:
+                drawField(self.getWinner(rd, grp, skip), x + (cwth * n2),
+                    y, w=(cwth * nm))
+            if not last or last == "up":
+                self.drawLink(cwth, l1, l2, x + (cwth * nx), y + int(chgt / 2),
+                    y + (chgt * 2.5))
+                rnds.append([x+(cwth * nx), y + (chgt * 2)])
+                last = "down"
+            else:
+                self.drawLink(cwth, l1, l2, x + (cwth * nx), y + int(chgt / 2),
+                    y - (chgt * 1.5))
+                if self.rnds == 2:
+                    rnds.append([x + (cwth * nx), y + (chgt * 2)])
+                last = "up"
+            x = self.fpdf.get_x()
+            y = self.fpdf.get_y()
+            if skip[1] > 900000:
+                self.fpdf.drawText("", w=(cwth * nm))
+            else:
+                drawField(self.getSkip(skip[1], 0), x, y, w=(cwth * nm))
+                self.fpdf.line(x + (cwth * nm), y + int(chgt / 2),
+                    x + (cwth * n1), y + int(chgt / 2))
+                self.fpdf.line(x + (cwth * n1), y + int(chgt / 2),
+                    x + (cwth * n1), y - int(chgt / 2))
+            self.fpdf.drawText("")
+            lasty = self.fpdf.get_y()
+        inc = 4
+        for aa in range(self.rnds - 3):
+            rd += 1
+            bb = []
+            for rnd in range(0, len(rnds), 2):
+                x = rnds[rnd][0]
+                y = rnds[rnd][1]
+                drawField(self.getWinner(rd, grp, 0, rnd + 1),
+                    x + (cwth * (l1 + l2)), y, w=(cwth * nm))
+                inc1 = inc + .5
+                self.drawLink(cwth, l1, l2, x + (cwth * n2), y + int(chgt / 2),
+                    y + (chgt * inc1))
+                bb.append([x + (cwth * n2), y + (chgt * (4 * (aa + 1)))])
+                x = rnds[rnd + 1][0]
+                y = rnds[rnd + 1][1]
+                drawField(self.getWinner(rd, grp, 0, rnd + 2),
+                    x + (cwth * (l1 + l2)), y, w=(cwth * nm))
+                inc1 -= 1
+                self.drawLink(cwth, l1, l2, x + (cwth * n2), y + int(chgt / 2),
+                    y-(chgt * inc1))
+            inc = inc * 2
+            rnds = bb
+        x = rnds[0][0]
+        y = rnds[0][1]
+        if self.rnds == 2:
+            rd += 1
+            if grp == 1:
+                drawField(self.getWinner(rd, 2, 0, 1),
+                    x + (cwth * (l1 + l2)), y, w=(cwth * nm))
+        else:
+            rd += 1
+            if self.rnds > 5:
+                y += (chgt * 4)
+            drawField(self.getWinner(rd, grp, 0, 1),
+                x + (cwth * (l1 + l2)), y, w=(cwth * nm))
+            if grp == 1:
+                inc += .5
+                self.drawLink(cwth, l1, l2, x + (cwth * n2), y + int(chgt / 2),
+                    y + (chgt * inc))
+            else:
+                rd += 1
+                x1 = x + (cwth * (l1 + l2 + nm))
+                y1 = y - (chgt * inc)
+                drawField(self.getWinner(rd, grp, 0, 1),
+                    x1 + (cwth * (l1 + l2)), y1, w=(cwth * nm))
+                inc = 0 - inc + .5
+                self.drawLink(cwth, l1, l2, x + (cwth * n2), y + int(chgt / 2),
+                    y + (chgt * inc))
+        if grp == 1 and self.totskp > 32:
+            self.fpdf.add_page()
+            self.fpdf.drawText()
+            self.fpdf.drawText()
+        else:
+            self.fpdf.set_y(lasty)
+        self.fpdf.font[2] = ohgt
+
+    def setBracketFont(self):
+        if self.rnds == 2:
+            siz = 14.1
+            chgt = 12
+        elif self.rnds == 3:
+            siz = 10.6
+            chgt = 12
+        elif self.rnds == 4:
+            siz = 8.4
+            chgt = 6
+        elif self.rnds == 5:
+            siz = 7
+            chgt = 3
+        else:
+            siz = 10
+            chgt = 2.6
+        self.fpdf.setFont(style="B", size=siz)
+        cwth = self.fpdf.get_string_width("X")
+        return siz, cwth, chgt
+
+    def getWinner(self, rnd, grp, skip, num=0):
+        if skip:
+            whr = [
+                ("bcg_cono", "=", self.opts["conum"]),
+                ("bcg_ccod", "=", self.ccod),
+                ("bcg_game", "=", rnd),
+                ("bcg_group", "=", grp),
+                ("bcg_scod", "=", skip[0])]
+            wins = self.sql.getRec("bwlgme", cols=["bcg_sfor",
+                "bcg_sagt"], where=whr, limit=1)
+            if not wins[0] and not wins[1]:
+                return ""
+            elif wins[0] > wins[1]:
+                return self.getSkip(skip[0], skip[2])
+            else:
+                return self.getSkip(skip[1], skip[2])
+        col = [
+            "bcg_scod",
+            "bcg_ocod",
+            "bcg_sfor",
+            "bcg_sagt",
+            "bcg_seed"]
+        whr = [
+            ("bcg_cono", "=", self.opts["conum"]),
+            ("bcg_ccod", "=", self.ccod),
+            ("bcg_game", "=", rnd),
+            ("bcg_group", "=", grp),
+            ("bcg_pair", "=", num)]
+        skip = self.sql.getRec("bwlgme", cols=col, where=whr, limit=1)
+        if not skip:
+            return ""
+        if not skip or (not skip[2] and not skip[3]):
+            return ""
+        elif skip[2] > skip[3]:
+            return self.getSkip(skip[0], skip[4])
+        else:
+            return self.getSkip(skip[1], skip[4])
+
+    def getSkip(self, skip, seed):
+        if skip > 900000:
+            return "Bye"
+        skp = self.sql.getRec("bwltab", cols=["btb_surname",
+            "btb_names"], where=[("btb_cono", "=", self.opts["conum"]),
+            ("btb_tab", "=", skip)], limit=1)
+        name = skp[0].strip()
+        if skp[1]:
+            name = "%s, %s" % (name, skp[1][0])
+        if seed:
+            name = "%s (%s)" % (name, seed)
+        return name
+
+    def drawLink(self, cwth, l1, l2, x, y, inc):
+        self.fpdf.line(x, y, x + (cwth * l1), y)
+        self.fpdf.line(x + (cwth * l1), y, x + (cwth * l1), inc)
+        self.fpdf.line(x + (cwth * l1), inc, x + (cwth * (l1 + l2)), inc)
+
+    def printCompetition(self):
         chk = self.sql.getRec("bwlgme", cols=["bcg_group", "bcg_scod"],
             where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
             self.ccod), ("bcg_game", "=", self.pgame)], order="bcg_group")
@@ -229,6 +474,8 @@ class bc3100(object):
             groups = self.groups
         self.grps = {}
         for rec in chk:
+            if self.cfmat in ("T", "X") and self.pgame <= self.grgame:
+                rec[0] = 0
             if rec[0] not in self.grps:
                 self.grps[rec[0]] = [[rec[1]], [], []]
             else:
@@ -243,7 +490,8 @@ class bc3100(object):
                 self.doReport("G", g)
                 if g == 0 and len(chk) > 20:
                     self.pageHeading()
-            self.doReport("M", g)
+            if self.matrep == "Y":
+                self.doReport("M", g)
         if self.pgame == self.games:
             # Enter Prizes
             for key in self.keys:
@@ -287,7 +535,7 @@ class bc3100(object):
                         nam = "%s, %s" % (recs[x][1], recs[x][2].split()[0])
                     else:
                         nam = recs[x][1]
-                    self.wins[gcod].append(nam)
+                    self.wins[gcod].append([nam] + recs[x][3:])
                 if self.cfmat == "R" and groups == "Y":
                     self.swin.append(self.grps[gcod][0][0])
             if self.sesp == "Y":
@@ -317,9 +565,9 @@ class bc3100(object):
                     self.df.repeml[2].append(rec[0])
         head = "%s - Results after game %s" % (self.cdes, self.pgame)
         if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
-            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"], pdfnam=pdfnam,
-                header=head, repprt=self.df.repprt, fromad=self.fromad,
-                repeml=self.df.repeml)
+            doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                pdfnam=pdfnam, header=head, repprt=self.df.repprt,
+                fromad=self.fromad, repeml=self.df.repeml)
         if self.pgame == self.lgame and self.cfmat == "R" and \
                 groups == "Y" and not self.poff:
             ok = askQuestion(self.opts["mf"].body, "Play-Offs",
@@ -439,10 +687,10 @@ class bc3100(object):
         for gme in range(1, self.games + 1):
             col = [
                 "bcg_scod", "btb_surname", "btb_names",
-                "sum(bcg_sfor) as sfor",
-                "sum(bcg_sagt) as sagt",
-                "sum(bcg_sfor - bcg_sagt) as agg",
-                "sum(bcg_points) as pts"]
+                "bcg_sfor as sfor",
+                "bcg_sagt as sagt",
+                "bcg_sfor - bcg_sagt as agg",
+                "bcg_points as pts"]
             whr = copyList(self.where)
             whr.append(("bcg_game", "=", gme))
             grp = "bcg_scod, btb_surname, btb_names"
@@ -459,8 +707,6 @@ class bc3100(object):
                     gpc = 0
                 else:
                     gpc = rec[7]
-                if gpc == done:
-                    continue
                 ign = False
                 if self.ponly == "Y" and not rec[6]:
                     break
@@ -471,23 +717,29 @@ class bc3100(object):
                         ign = True
                         break
                 if not ign:
+                    if gpc == done and rec[3:] != sess[gme][gpc][0][1:]:
+                        continue
                     self.allp.append(rec[0])
                     if gme not in sess:
                         sess[gme] = {}
+                    if gpc not in sess[gme]:
+                        sess[gme][gpc] = []
                     if rec[2]:
                         nam = "%s, %s" % (rec[1], rec[2].split()[0])
                     else:
                         nam = rec[1]
-                    sess[gme][gpc] = nam
+                    sess[gme][gpc].append([nam] + rec[3:])
                     done = gpc
         mess = "Session Winners"
         self.fpdf.setFont(style="B", size=14)
         self.fpdf.drawText(mess, align="C", border="TLRB", fill=1)
-        self.fpdf.drawText("Ses", w=12, border="TLRB", fill=1, ln=0)
         if self.sesg == "Y":
-            self.fpdf.drawText("Grp", w=12, border="TLRB", fill=1, ln=0)
-        self.fpdf.drawText("Name", border="TLRB", fill=1)
-        self.fpdf.setFont()
+            self.printLine("Ses", "Grp", "%-27s" % "Name", "   Pts ",
+                "  =Dif ", "  -Agt ", "  +For ", fill=1, last=False)
+        else:
+            self.printLine("Ses", "%-30s" % "Name", "   Pts ",
+                "  =Dif ", "  -Agt ", "  +For ", fill=1, last=False)
+        self.fpdf.setFont(size=14)
         for gme in range(1, self.games + 1):
             stxt = str("%3s" % gme)
             if gme not in sess:
@@ -500,11 +752,23 @@ class bc3100(object):
             grps = list(sess[gme].keys())
             grps.sort()
             for grp in grps:
-                gtxt = "%3s" % chr(64 + grp)
-                self.fpdf.drawText(stxt, w=12, border="TLRB", ln=0)
-                if self.sesg == "Y":
-                    self.fpdf.drawText(gtxt, w=12, border="TLRB", ln=0)
-                self.fpdf.drawText(sess[gme][grp], border="TLRB")
+                if grp:
+                    gtxt = " %s " % chr(64 + grp)
+                else:
+                    gtxt = "   "
+                for per in sess[gme][grp]:
+                    if self.sesg == "Y":
+                        a = CCD(per[0], "NA", 27).disp
+                    else:
+                        a = CCD(per[0], "NA", 30).disp
+                    b = CCD(per[4], "SD", 7.1).disp
+                    c = CCD(per[3], "SD", 7.1).disp
+                    d = CCD(per[2], "SD", 7.1).disp
+                    e = CCD(per[1], "SD", 7.1).disp
+                    if self.sesg == "Y":
+                        self.printLine(stxt, gtxt, a, b, c, d, e, last=False)
+                    else:
+                        self.printLine(stxt, a, b, c, d, e, last=False)
         self.fpdf.drawText()
 
     def doMatchWin(self):
@@ -519,14 +783,17 @@ class bc3100(object):
                     mess = "Match Winners"
                 self.fpdf.setFont(style="B", size=14)
                 self.fpdf.drawText(mess, align="C", border="TLRB", fill=1)
-                self.fpdf.drawText("Pos", w=12, border="TLRB", fill=1,
-                    ln=0)
-                self.fpdf.drawText("Name", border="TLRB", fill=1)
-                self.fpdf.setFont()
+                self.printLine("Pos", "%-30s" % "Name", "   Pts ", "  =Dif ",
+                    "  -Agt ", "  +For ", fill=1, last=False)
+                self.fpdf.setFont(size=14)
                 for n, s in enumerate(self.wins[gcod]):
-                    ptxt = "%3s" % (n + 1)
-                    self.fpdf.drawText(ptxt, w=12, border="TLRB", ln=0)
-                    self.fpdf.drawText(s, border="TLRB")
+                    a = CCD(n+1, "UI", 3).disp
+                    b = CCD(s[0], "NA", 30).disp
+                    c = CCD(s[4], "SD", 7.1).disp
+                    d = CCD(s[3], "SD", 7.1).disp
+                    e = CCD(s[2], "SD", 7.1).disp
+                    f = CCD(s[1], "SD", 7.1).disp
+                    self.printLine(a, b, c, d, e, f, last=False)
             if not num % 2:
                 ly = self.fpdf.get_y()
             if num % 2 and self.fpdf.get_y() > ly:
@@ -555,7 +822,7 @@ class bc3100(object):
                         h=10, align="C")
                     self.fpdf.drawText()
                 self.fpdf.drawText("%s Prize R%s - %s" % (place[num],
-                    self.grps[gcod][2][num], skp), h=10, align="C")
+                    self.grps[gcod][2][num], skp[0]), h=10, align="C")
                 self.fpdf.setFont(style="B", size=16)
                 for pos in ppos:
                     self.fpdf.drawText()
@@ -590,6 +857,39 @@ class bc3100(object):
                 align="C")
             self.fpdf.drawText()
             self.pglin = 4
+        elif htyp == "K":
+            dates = self.sql.getRec("bwlrnd", cols=["bcr_date", "bcr_time"],
+                where=[("bcr_cono", "=", self.opts["conum"]), ("bcr_ccod",
+                "=", self.ccod)], order="bcr_rcod")
+            if dates[0][1]:
+                self.comtyp = "F"
+            else:
+                self.comtyp = "V"
+            siz, cwth, chgt = self.setBracketFont()
+            self.fpdf.drawText()
+            text = []
+            for x in range(self.rnds):
+                date = CCD(dates[x][0], "D1", 10).disp
+                time = CCD(dates[x][1], "TM", 5).disp
+                if self.comtyp == "V":
+                    text.append("Complete By\n%s" % date)
+                elif date == "9999-12-31":
+                    text.append("To Be\nAnnounced")
+                else:
+                    if time <= "12:00":
+                        txt = "%s AM" % time
+                    else:
+                        txt = "%s PM" % time
+                    text.append("%s\n%s" % (date, txt))
+            text.append("Competition\nWinner")
+            x = self.fpdf.get_x()
+            y = self.fpdf.get_y()
+            for txt in text:
+                self.fpdf.drawText(txt, x=x, y=y, w=(cwth * 18), border="TLRB",
+                    ln=0, fill=1, align="C", ctyp="M")
+                x += (cwth * 19)
+            self.fpdf.drawText()
+            self.fpdf.drawText()
         else:
             self.pglin = 1
 
@@ -612,7 +912,7 @@ class bc3100(object):
         self.fpdf.setFont()
         self.pglin += 4
 
-    def printLine(self, a, b, c, d, e, f, fill=0):
+    def printLine(self, a, b, c, d, e, f, g=None, fill=0, last=True):
         x = 10
         w = self.fpdf.get_string_width("X"*len(a)) + 1
         self.fpdf.drawText(a, x=x, w=w, border="TLB", fill=fill, ln=0)
@@ -629,8 +929,16 @@ class bc3100(object):
         w = self.fpdf.get_string_width("X"*len(e)) + 1
         self.fpdf.drawText(e, x=x, w=w, border="TLB", fill=fill, ln=0)
         x += w
-        w = self.fpdf.get_string_width("X"*len(f)) + 1
-        self.fpdf.drawText(f, x=x, w=w, border="TLRB", fill=fill)
+        if g is not None:
+            w = self.fpdf.get_string_width("X"*len(f)) + 1
+            self.fpdf.drawText(f, x=x, w=w, border="TLB", fill=fill, ln=0)
+            x += w
+            f = g
+        if last:
+            w = self.fpdf.get_string_width("X"*len(f)) + 1
+            self.fpdf.drawText(f, x=x, w=w, border="TLRB", fill=fill)
+        else:
+            self.fpdf.drawText(f, x=x, border="TLRB", fill=fill)
 
     def doPrizes(self, grp):
         self.przgrp = grp
@@ -712,19 +1020,28 @@ class bc3100(object):
     def doSecEnd(self):
         ccod = getNextCode(self.sql, "bwlcmp", "bcm_code",
             where=[("bcm_cono", "=", self.opts["conum"])], last=999)
+        tcod = self.sql.getRec("bwltyp", where=[("bct_cono", "=",
+            self.opts["conum"]), ("bct_cfmat", "=", "K")], limit=1)
+        if not tcod:
+            tcod = getNextCode(self.sql, "bwltyp", "bct_code",
+                where=[("bct_cono", "=", self.opts["conum"])], last=999)
+            self.sql.insRec("bwltyp", data=[self.opts["conum"], tcod,
+                "Knockout", "K", 1, 0, 21, "N", 0, "N", "", 0, 0, "N", "N"])
+        else:
+            tcod = tcod[1]
         self.sql.updRec("bwlcmp", cols=["bcm_poff"], data=[ccod],
             where=[("bcm_cono", "=", self.opts["conum"]),
             ("bcm_code", "=", self.ccod)])
         cdes = self.cdes + " Play-Off"
         t = time.localtime()
         cdte = ((t[0] * 10000) + (t[1] * 100) + t[2])
-        self.sql.insRec("bwlcmp", data=[self.opts["conum"],
-            ccod, cdes, cdte, 0, ""])
+        self.sql.insRec("bwlcmp", data=[self.opts["conum"], ccod,
+            cdes, cdte, tcod, 0])
         for skp in self.swin:
             self.sql.insRec("bwlent", data=[self.opts["conum"],
                 ccod, skp, 0, "Y", ""])
         callModule(self.opts["mf"], self.df, "bc2050", coy=[self.opts["conum"],
-            self.opts["conam"]], args=ccod)
+            self.opts["conam"]], args=[ccod, 1])
 
     def doExit(self):
         self.df.closeProcess()

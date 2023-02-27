@@ -7,7 +7,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ COPYING
     You should have received a copy of the GNU General Public License
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+import sys
 
-import getpass, gc, glob, io, os, platform, shutil, sys, time
 try:
     # Check that required modules are installed
     from tartanWork import pymoda
@@ -42,6 +42,8 @@ if errs:
     for err in errs:
         print("%-16s: Not Installed" % err)
     sys.exit(0)
+
+import getpass, gc, glob, io, os, platform, shutil, time
 from TartanClasses import Dbase, ViewPDF, FileDialog, FITZ, GUI, GetCtl
 from TartanClasses import MainFrame, MakeManual, MkWindow, PwdConfirm
 from TartanClasses import ScrollText, SelectChoice, SplashScreen, Sql
@@ -63,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 13)
+    VERSION = (6, 14)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -324,7 +326,7 @@ Options:
         self.mf = None
         self.loop = False
         self.rcdic = None
-        main = "Tartan Systems - Copyright %s 2004-2022 Paul Malherbe" % \
+        main = "Tartan Systems - Copyright %s 2004-2023 Paul Malherbe" % \
             chr(0xa9)
         while not self.rcdic:
             self.rcdic = loadRcFile(self.rcfile, default=True)

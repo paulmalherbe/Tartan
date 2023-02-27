@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -85,8 +85,8 @@ class cr3050(object):
         fld = (
             (("T",0,0,0),("IRB",r1s),0,"Base","",
                 var[0],"Y",self.doBase,None,None,None,None,
-                """Agedt: Produce a report based on Ageing Period
-Curdt: Produce a report based on Financial Period"""),
+                """Agedt: Produce a report based on Ageing Period, this will not necessarily balance with the control account.
+Curdt: Produce a report based on Financial Period, this will always balance with the control account."""),
             (("T",0,1,0),"Id2",7,"Cut-Off Period","",
                 int(self.sysdtw / 100),"N",self.doCutOff,None,None,None),
             (("T",0,2,0),("IRB",r2s),0,"Totals Only","",

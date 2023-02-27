@@ -230,6 +230,9 @@ Age Analysis (DR)
 +++++++++++++++++
 Use this routine to produce a debtor's age analysis.
 
++ **Base** - The basis to use for the report.
+    + **Agedt** - Produce a report based on Ageing Period, this will not necessarily balance with the control account.
+    + **Curdt** - Produce a report based on Financial Period, this will always balance with the control account.
 + **Cut-Off Period** - The financial period.
 + **Totals Only** - Select totals only or all individual accounts.
 + **Business Activity** - Enter the business activity, if applicable.

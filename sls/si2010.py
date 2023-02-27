@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1795,8 +1795,8 @@ class si2010(object):
                     else:
                         data = (self.opts["conum"], acc[1], self.curdt,
                             self.trdt, 1, self.othno, self.batch, cst, 0,
-                        self.name, "", "", 0, self.opts["capnm"], self.sysdtw,
-                        0)
+                        self.name, "", "", 0, self.opts["capnm"],
+                        self.sysdtw, 0)
                         self.sql.insRec("gentrn", data=data)
             # Create VAT Transaction (ctlvtf)
             if self.typs in ("I", "C"):

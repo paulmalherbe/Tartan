@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -431,7 +431,7 @@ def showException(scrn, path, mess, maxTB=None, xits=None, dbm=None):
                 smtp = dbm.cu.fetchone()
                 if not smtp or not smtp[1]:
                     raise Exception
-                if sendMail(smtp[1:7], smtp[7], ["errors@tartan.co.za"],
+                if not sendMail(smtp[1:7], smtp[7], ["errors@tartan.co.za"],
                         "Version: %s Company: %s Host: %s User: %s" %
                         (smtp[8], smtp[0], host, user), attach=[fnam],
                         wrkdir=path):
@@ -668,29 +668,34 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
                         sp = SplashScreen(mf.window.focus_displayof(),
                             "E-Mailing the Report to:\n\n%s\n\nPlease Wait.." %
                             eml)
-                    ok = sendMail(smtp[0:6], fromad, eml, subj, mess,
+                    err = sendMail(smtp[0:6], fromad, eml, subj, mess,
                         attach=att, wrkdir=mf.rcdic["wrkdir"])
                     if splash:
                         sp.closeSplash()
-                    if not ok:
+                    if err:
                         if skip:
                             ok = "SKIPPED"
+                            break
                         else:
                             ok = askQuestion(mf.window.focus_displayof(),
                                 "E-Mail Error", "Problem Delivering This "\
-                                "Message.\n\nTo: %s\nSubject: %s\n\nWould "\
-                                "You Like to Retry?" % (toad[0], subj))
+                                "Message.\n\nTo: %s\nSubject: %s\n\n%s\n\n"\
+                                "Would You Like to Retry?" % (toad[0],
+                                subj,err))
                             if ok == "yes":
                                 ok = False
                             else:
                                 ok = "FAILED"
                     else:
                         ok = "OK"
-                try:
-                    sql.insRec("emllog", data=[fromad.strip(), eml, subj,
-                        "%04i-%02i-%02i %02i:%02i" % time.localtime()[0:5], ok])
-                except:
-                    pass
+                    if ok:
+                        try:
+                            sql.insRec("emllog", data=[fromad.strip(), eml,
+                            subj, "%04i-%02i-%02i %02i:%02i" %
+                            time.localtime()[0:5], ok])
+                        except:
+                            pass
+                        break
         except Exception as err:
             showException(mf.window.focus_displayof(), mf.rcdic["wrkdir"],
                 "E-Mail Error\n\n%s" % err)
@@ -952,12 +957,13 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
     try:
         smtp.sendmail(ex, to, msgRoot.as_string())
         smtp.quit()
-        return True
-    except:
+        return
+    except Exception as err:
         try:
             smtp.quit()
         except:
             pass
+        return err
 
 def mthendDate(date):
     """
@@ -1502,7 +1508,7 @@ def chkAggregate(fld):
         if fld.lower().count(typ):
             return True
 
-def callModule(mf, df, mod, coy=None, period=None, user=None, args=None, ret=None):
+def callModule(mf, df, mod, coy=None, period=None, user=None, args=None, wait=True, ret=None):
     """
     Use this funtion to call another module and pass arguments to it.
 
@@ -1510,12 +1516,13 @@ def callModule(mf, df, mod, coy=None, period=None, user=None, args=None, ret=Non
     period - The financial period tuple.
     user   - The user name.
     args   - Any arguments to send to the called module.
+    wait   - Wait for window to be destroyed.
     ret    - A variable to return to the calling module.
     """
     if df:
         state = df.disableButtonsTags()
         df.setWidget(df.mstFrame, state="hide")
-    opts = {"mf": mf, "wait": True}
+    opts = {"mf": mf}
     if coy is not None:
         opts["conum"] = coy[0]
         opts["conam"] = coy[1]
@@ -1525,6 +1532,8 @@ def callModule(mf, df, mod, coy=None, period=None, user=None, args=None, ret=Non
         opts["capnm"] = user
     if args is not None:
         opts["args"] = args
+    if wait:
+        opts["wait"] = True
     obj = runModule(mod, **opts)
     if df:
         df.setWidget(df.mstFrame, state="show")
@@ -2981,7 +2990,7 @@ def doWriteExport(**args):
         fnt = tkfont.nametofont("TkTextFont")
         fmt = {"font": fnt.configure()["family"]}
         alpha = ("HA", "LA", "La", "NA", "Na", "TX", "UA", "Ua")
-        cash = ("CD", "CI", "SD", "SI")
+        numer = ("CD", "CI", "SD", "SI", "UI", "UD")
         xf_map = {
             "D1": "yyyy-mm-dd",
             "d1": "yyyy-mm-dd",
@@ -3055,16 +3064,16 @@ def doWriteExport(**args):
                     hxf["bold"] = True
                 # Underline & Border
                 ccd = list(args["forms"][colx][:])
-                if ccd[0] in cash and type(valx) == str:
+                if ccd[0] in numer and type(valx) == str:
                     ccd[0] = "NA"
-                if unl == "s" and ccd[0] in cash:
+                if unl == "s" and ccd[0] in numer:
                     hxf["border"] = ["B", "thin"]
-                elif unl == "d" and ccd[0] in cash:
+                elif unl == "d" and ccd[0] in numer:
                     hxf["border"] = ["B", "double"]
                 elif bord:
                     hxf["border"] = [bord, "thin"]
                 # CCD Format
-                if ccd[0] not in cash and not valx:
+                if ccd[0] not in numer and not valx:
                     ccd[0] = "NA"
                     valx = ""
                 hxf["ccd"] = ccd

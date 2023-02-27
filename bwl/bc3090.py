@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -103,8 +103,8 @@ class bc3090(object):
                 group="bcg_group")
             self.game = 0
             for gme in games:
-                if gme[0] > self.games:
-                    self.games = gme[0]
+                if gme[0] > self.game:
+                    self.game = gme[0]
             self.game -= 1
         else:
             games = self.sql.getRec("bwlgme", cols=["max(bcg_game)"],
@@ -121,13 +121,14 @@ class bc3090(object):
     def doEnd(self):
         if "args" not in self.opts:
             self.df.closeProcess()
-        lst = self.sql.getRec("bwlgme", cols=["bcg_game", "sum(bcg_points)"],
-            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
-            self.ccod)], group="bcg_game", order="bcg_game")
-        lgame = 0
-        for l in lst:
-            if l[1]:
-                lgame = l[0]
+        lgame = self.sql.getRec("bwlgme", cols=["max(bcg_game)"],
+            where=[("bcg_cono", "=", self.opts["conum"]),
+            ("bcg_ccod", "=", self.ccod), ("bcg_rink", "<>", "")],
+            limit=1)[0]
+        #lgame = 0
+        #for l in lst:
+        #    if l[1]:
+        #        lgame = l[0]
         col = ["bce_scod", "btb_surname", "btb_names"]
         if lgame <= self.grgame:
             col.extend([
@@ -149,10 +150,10 @@ class bc3090(object):
             ("bcg_cono=bce_cono",),
             ("bcg_ccod=bce_ccod",),
             ("bcg_scod=bce_scod",)]
-        grp = "bce_scod, btb_surname, btb_names, bcg_group"
-        odr = "bcg_group, pts desc, agg desc, sagt asc, btb_surname"
+        gby = "bce_scod, btb_surname, btb_names, bcg_group"
+        oby = "bcg_group, pts desc, agg desc, sagt asc, btb_surname"
         skips = self.sql.getRec(tables=["bwlent", "bwltab", "bwlgme"],
-            cols=col, where=whr, group=grp, order=odr)
+            cols=col, where=whr, group=gby, order=oby)
         rinks = self.sql.getRec("bwlgme", cols=["bcg_rink"],
             where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod",
             "=", self.ccod)], group="bcg_rink", order="bcg_rink")
@@ -175,11 +176,15 @@ class bc3090(object):
             dup = ["-", "-"]
             games = self.sql.getRec("bwlgme", where=[("bcg_cono", "=",
                 self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
-                ("bcg_scod", "=", skip[0])], order="bcg_group, bcg_game")
+                ("bcg_scod", "=", skip[0]), ("bcg_game", "<=", lgame)],
+                order="bcg_group, bcg_game")
             for game in games:
                 gme = game[self.sql.bwlgme_col.index("bcg_game")]
                 grp = game[self.sql.bwlgme_col.index("bcg_group")]
                 opp = game[self.sql.bwlgme_col.index("bcg_ocod")]
+                sfo = game[self.sql.bwlgme_col.index("bcg_sfor")]
+                sag = game[self.sql.bwlgme_col.index("bcg_sagt")]
+                pts = game[self.sql.bwlgme_col.index("bcg_points")]
                 if opp > 900000:
                     opp = 0
                     rnk = ""
@@ -189,7 +194,7 @@ class bc3090(object):
                         pass
                     elif rnk and rnk in endrk:
                         eds += 1
-                dat.extend([opp, rnk])
+                dat.extend([opp, rnk, sfo, sag, pts])
                 if opp:
                     if self.excfin == "Y" and gme == self.games:
                         pass
@@ -205,8 +210,6 @@ class bc3090(object):
             dup.append("%s" % eds)
             if grp:
                 dat.insert(2, chr(64 + grp))
-            else:
-                dat.insert(2, "")
             dat.append("%1s%1s%1s" % tuple(dup))
             data.append(dat)
         head = [
@@ -215,15 +218,19 @@ class bc3090(object):
         cols = [
             ["a", "UI",  6, "Skp",  "y"],
             ["b", "NA", 29, "Name", "y"]]
-        if self.cfmat == "R":
-            cols.append(["c", "UA",  1, "S",    "y"])
-        else:
-            cols.append(["c", "UA",  1, "G",    "y"])
-        for x in range(self.game):
+        if grp:
+            if self.cfmat == "R":
+                cols.append(["c", "UA",  1, "S",    "y"])
+            else:
+                cols.append(["c", "UA",  1, "G",    "y"])
+        for x in range(lgame):
             cols.extend([
                 ["d%s" % x, "UI", 6, "Opp", "y"],
-                ["e%s" % x, "UA", 2, "Rk",  "y"]])
-        cols.append(["f", "UA",  3, "ORE",  "y"])
+                ["e%s" % x, "UA", 2, "Rk",  "y"],
+                ["f%s" % x, "UI", 2.0, "S+", "y"],
+                ["g%s" % x, "UI", 2.0, "S-", "y"],
+                ["h%s" % x, "UD", 4.1, "Pts", "y"]])
+        cols.append(["i", "UA",  3, "ORE",  "y"])
         if "args" in self.opts:
             repprt = self.opts["args"][2]
             repeml = self.opts["args"][3]

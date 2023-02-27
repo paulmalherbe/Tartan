@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -413,17 +413,17 @@ Therefore No Emailing will be Possible.""")
             for eml in emls:
                 sp = SplashScreen(self.opts["mf"].body, "E-Mailing the "\
                     "Message to\n\n%s\n\nPlease Wait........" % eml)
-                ok = sendMail(self.smtp, self.fadd, eml, subj, mess=self.mess,
+                err = sendMail(self.smtp, self.fadd, eml, subj, mess=self.mess,
                     attach=self.fles, wrkdir=self.opts["mf"].rcdic["wrkdir"])
                 sp.closeSplash()
-                if not ok:
+                if err:
                     if self.skip == "Y":
                         ok = "SKIPPED"
                     else:
                         ok = askQuestion(self.opts["mf"].body, "E-Mail Error",
                             "Problem Delivering This Message.\n\nTo: "\
-                            "%s\nSubject: %s\n\nWould You Like to Retry?" \
-                            % (eml, subj))
+                            "%s\nSubject: %s\n\n%s\n\nWould You Like to "\
+                            "Retry?" % (eml, subj, err))
                     if ok == "yes":
                         ok = False
                     else:

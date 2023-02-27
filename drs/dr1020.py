@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2022 Paul Malherbe.
+    Copyright (C) 2004-2023 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -268,7 +268,7 @@ class dr1020(object):
 
     def endTop(self):
         data = [self.opts["conum"], self.num, self.desc, self.freq, self.day,
-            self.vcod, self.glac]
+            self.vcod, self.glac, 0]
         if self.new_num == "y":
             self.sql.insRec("drsrcm", data=data)
             self.df.loadEntry("C", 0, 0, data=1)
