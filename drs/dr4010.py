@@ -278,7 +278,7 @@ class dr4010(object):
         bals = Balances(self.opts["mf"], "DRS", self.opts["conum"],
             int(self.sysdtw / 100), (self.chain, self.acno))
         obal, tbal, ages = bals.doAllBals()
-        this, hist = bals.doCrsDrsHist()
+        hist = bals.doCrsDrsHist()
         self.sale = hist[0]
         self.pays = hist[1]
         last = self.sql.getRec("drstrn", cols=["max(drt_trdt)"],

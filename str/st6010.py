@@ -38,6 +38,8 @@ class st6010(object):
             ("ctlnot", "not_key"),
             ("slsiv2", "si2_cono", "si2_group", "si2_code"),
             ("slsiv3", "si3_cono", "si3_rgroup", "si3_rcode"),
+            ("strcmu", "smc_cono", "smc_group", "smc_code"),
+            ("strcst", "stc_cono", "stc_group", "stc_code"),
             ("strmf1", "st1_cono", "st1_group", "st1_code"),
             ("strmf2", "st2_cono", "st2_group", "st2_code"),
             ("strpot", "pot_cono", "pot_group", "pot_code"),

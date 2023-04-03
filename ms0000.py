@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 14)
+    VERSION = (6, 15)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -1748,7 +1748,7 @@ System --> Change Password""")
                         font = ("Courier", 12)
                     else:
                         scrn = self.mf.body
-                        font = (self.mf.dft, self.mf.dfs)
+                        font = (self.mf.rcdic["dft"], self.mf.rcdic["dfs"])
                     if self.debug:
                         titl = "Trace Output"
                     else:
@@ -1767,8 +1767,8 @@ System --> Change Password""")
                         os.remove(os.path.join(getPrgPath()[0], name))
                     except:
                         pass
-            except:
-                pass
+            except Exception as err:
+                print(err)
         sys.exit()
 
     def doCheckSys(self):

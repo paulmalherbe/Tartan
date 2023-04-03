@@ -114,7 +114,7 @@ class bc3020(object):
         dat = []
         tps = []
         if self.drawn == "Y":
-            tps.extend(["B", "D"])
+            tps.extend(["B", "D", "P"])
         if self.bounce == "Y":
             tps.append("A")
         if self.teams == "Y":

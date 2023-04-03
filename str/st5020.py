@@ -77,7 +77,8 @@ class st5020(object):
                 ("st1_desc", "", 0, "Description", "Y")),
             "where": [
                 ("st1_cono", "=", self.opts["conum"]),
-                ("st1_type", "not", "in", ("R", "X"))],
+                ("st1_type", "not", "in", ("R", "X")),
+                ("st1_value_ind", "in", ("A", "S"))],
             "whera": [],
             "order": "st1_group, st1_code",
             "index": 1}
@@ -174,8 +175,9 @@ class st5020(object):
     def doFcode(self, frt, pag, r, c, p, i, w):
         if w:
             acc = self.sql.getRec("strmf1", cols=["st1_type"],
-                where=[("st1_cono", "=", self.opts["conum"]), ("st1_group",
-                "=", self.fgrp), ("st1_code", "=", w)], limit=1)
+                where=[("st1_cono", "=", self.opts["conum"]),
+                ("st1_group", "=", self.fgrp), ("st1_code", "=", w)],
+                limit=1)
             if not acc:
                 return "Invalid Code"
             if acc[0] == "R":
@@ -201,7 +203,9 @@ class st5020(object):
             else:
                 whr.append(("st2_bin", "=", self.fbin))
                 odr = "st2_bin, st2_group, st2_code"
-            whr.extend([("st1_type", "not", "in", ("R","X")),
+            whr.extend([
+                ("st1_type", "not", "in", ("R","X")),
+                ("st1_value_ind", "in", ("A", "S")),
                 ("st2_cono=st1_cono",), ("st2_group=st1_group",),
                 ("st2_code=st1_code",), ("st2_loc", "=", self.loc)])
             self.codes = self.sql.getRec(tables=["strmf1", "strmf2"],
@@ -237,6 +241,7 @@ class st5020(object):
                 ("st1_cono", "=", self.opts["conum"]),
                 ("st1_type", "not", "in", ("R", "X"))],
             "whera": [["C", "st1_group", 0, 0]],
+            "order": "st1_code",
             "index": 1}
         if self.auto == "Y":
             fld = [

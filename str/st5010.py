@@ -25,8 +25,7 @@ COPYING
 """
 
 import time
-from TartanClasses import Balances, CCD, GetCtl, MyFpdf, ProgressBar, Sql
-from TartanClasses import TartanDialog
+from TartanClasses import CCD, GetCtl, MyFpdf, ProgressBar, Sql, TartanDialog
 from tartanFunctions import getModName, doPrinter, showError
 
 class st5010(object):
@@ -38,7 +37,7 @@ class st5010(object):
 
     def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["strloc", "strgrp", "strmf1",
-            "strmf2"], prog=self.__class__.__name__)
+            "strmf2", "strtrn"], prog=self.__class__.__name__)
         if self.sql.error:
             return
         gc = GetCtl(self.opts["mf"])
@@ -50,6 +49,7 @@ class st5010(object):
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
+        self.curdt = int(self.sysdtw / 100)
         return True
 
     def mainProcess(self):
@@ -166,14 +166,15 @@ class st5010(object):
             sortby = "st2_loc, st2_group, st2_code"
         else:
             sortby = "st2_loc, st2_bin, st2_group, st2_code"
-        recs = self.sql.getRec(tables=["strmf1", "strmf2"], cols=["st2_group",
+        recs = self.sql.getRec(tables=["strmf2", "strmf1"], cols=["st2_group",
             "st2_code", "st2_loc", "st2_bin", "st1_desc", "st1_uoi"],
-            where=[("st1_cono=st2_cono",), ("st1_group=st2_group",),
+            where=[("st2_cono", "=", self.opts["conum"]),
+            ("st2_group", ">=", self.sgrp), ("st2_group", "<=", self.egrp),
+            ("st2_loc", ">=", self.sloc), ("st2_loc", "<=", self.eloc),
+            ("st2_bin", ">=", self.fbin), ("st2_bin", "<=", self.lbin),
+            ("st1_cono=st2_cono",), ("st1_group=st2_group",),
             ("st1_code=st2_code",), ("st1_type", "not", "in", ("R", "X")),
-            ("st2_cono", "=", self.opts["conum"]), ("st2_group", ">=",
-            self.sgrp), ("st2_group", "<=", self.egrp), ("st2_loc", ">=",
-            self.sloc), ("st2_loc", "<=", self.eloc), ("st2_bin", ">=",
-            self.fbin), ("st2_bin", "<=", self.lbin)], order=sortby)
+            ("st1_value_ind", "in", ("A", "S"))], order=sortby)
         if not recs:
             showError(self.opts["mf"].body, "Processing Error",
             "No Records Selected")
@@ -199,12 +200,15 @@ class st5010(object):
             sbin = CCD(dat[3], "UA", 8)
             desc = CCD(dat[4], "UA", 30)
             uoi = CCD(dat[5], "NA", 10)
-            bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
-                int(self.sysdtw / 100), keys=(grp.work, code.work, loc.work,
-                ("P", self.opts["period"][0])))
-            m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
-            if self.zero == "Y" and not y_cb[0]:
-                continue
+            cdt = int(self.sysdtw / 100)
+            if self.zero == "Y":
+                cbal = self.sql.getRec("strtrn", cols=["sum(stt_qty)"],
+                    where=[("stt_cono", "=", self.opts["conum"]),
+                    ("stt_group", "=", grp.work), ("stt_code", "=", code.work),
+                    ("stt_loc", "=", loc.work), ("stt_curdt", "<=", cdt)],
+                    limit=1)
+                if not cbal[0]:
+                    continue
             if old_grp and old_grp != grp.work:
                 self.pglin = 999
             if self.pglin > self.fpdf.lpp:

@@ -185,8 +185,8 @@ class cr3110(object):
         name = CCD(data[1], "NA", 30)
         bals = Balances(self.opts["mf"], "CRS", self.opts["conum"], self.coffw,
             (acc.work,))
-        this, hist = bals.doCrsDrsHist()
-        if not this:
+        hist = bals.doCrsDrsHist()
+        if not hist[0][12] and not hist[1][12]:
             return
         purchd = ""
         purchw = []

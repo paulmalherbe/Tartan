@@ -108,7 +108,7 @@ Therefore No Emailing will be Possible.""")
                 "si3020": [
                     ["", "", ""], []],
                 "si3030": [
-                    ["", "", ""], []],
+                    ["", "", "", "N", "Y", "N"], []],
                 "si3040": [
                     ["", "V", "", "", 0, "Y"], []],
                 "si3050": [
@@ -159,16 +159,18 @@ Therefore No Emailing will be Possible.""")
         fld = [
             (("T",0,0,0),"INA",30,"Report Group", "",
                 "","Y",self.doGrp,grp,None,("notblank",)),
-            (("T",0,1,0),("IRB",r1s),0,"Output","",
-                "E","N",self.doTyp,None,self.doDel,None),
-            (("T",0,2,0),"INA",(30,50),"Printer Name","",
-                "Default","N",self.doPrt,prt,None,("in", prts)),
+            [("T",0,1,0),("IRB",r1s),0,"Output","",
+                "E","N",self.doTyp,None,self.doDel,None],
+            [("T",0,2,0),"INA",(30,50),"Printer Name","",
+                "Default","N",self.doPrt,prt,self.doDel,("in", prts)],
             (("T",0,3,0),"ITX",50,"From Address","",
                 self.fadd,"N",self.doFad,None,None,("email", False),None,
                 "From E-Mail Address"),
             (("T",0,4,0),"ITX",50,"To   Address","",
                 "","N",self.doTad,None,None,("email", False),None,
                 "To E-Mail Address")]
+        if self.smtp:
+            fld[2][9] = None
         tnd = ((self.doEnd, "y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], tops=True, title=self.tit,

@@ -94,14 +94,15 @@ SYNOPSIS
     ----------
     self.alltabs: {"tab": [surname, names, gender, position, rating, paid]}
     self.adraw1: [[rink, rate, [tab, nam, rte] x 4], []]
-    self.dtype: Draw Type S - Strength, R - Randon
+    self.dtype: Draw Type S - Strength, R - Randon, N - Not Yet Drawn
     self.hist: Dictionary of all tabs for the past x weeks as follows:
         {tab: [[team members], [opponents]], ...}
-    self.tsize = Team Size: Three or Four
+    self.tsize = Team Size: One, Two, Three or Four
     self.dbase: Draw Basis P - Position, R - Rating, C - Combination
     self.broken: list of tabs that have been in a broken rink
                  or in the case of teams True or False
-    bdt_flag: A - Arranged, B - Broken Rinks, C - Teams, D - Drawn
+    self.pairs: list of tabs that heve played pairs in a draw of trips
+    bdt_flag: A - Arranged, B - Broken Rinks, C - Teams, D - Drawn, P - Pairs
     self.dofix: In single gender draws fix broken teams by moving 1 player
 
 AUTHOR
@@ -252,23 +253,7 @@ class bc2010(object):
             self.mf.enableButtonsTags(state=state)
             if ok == "N":
                 return "ff1"
-            elif ok == "V":
-                self.viewer = True
-                self.doLoadMst(self.drm)
-                self.doLoadTabs()
-                self.drawn = True
-                return "nc"
-            elif ok == "R":
-                self.reprint = True
-                self.doLoadMst(self.drm)
-                self.doLoadTabs()
-                self.drawn = True
-                return "nc"
-            elif ok == "A":
-                self.alter = True
-                self.doLoadMst(self.drm)
-                self.doLoadTabs()
-            elif ok == "X":
+            if ok == "X":
                 self.sql.delRec("bwldrm", where=[("bdm_cono", "=",
                     self.opts["conum"]), ("bdm_date", "=", self.date),
                     ("bdm_time", "=", self.time)])
@@ -277,6 +262,15 @@ class bc2010(object):
                     ("bdt_time", "=", self.time)])
                 self.opts["mf"].dbm.commitDbase()
                 return "ff1"
+            self.doLoadMst(self.drm)
+            self.doLoadTabs()
+            if ok == "V":
+                self.viewer = True
+                return "nc"
+            if ok == "R":
+                self.reprint = True
+                return "nc"
+            self.alter = True
 
     def doLoadMst(self, drm):
         self.mixgd = drm[self.sql.bwldrm_col.index("bdm_mixed")]
@@ -289,21 +283,21 @@ class bc2010(object):
         self.dhist = drm[self.sql.bwldrm_col.index("bdm_dhist")]
         self.tsize = drm[self.sql.bwldrm_col.index("bdm_tsize")]
         self.mrate = CCD(drm[self.sql.bwldrm_col.index("bdm_mrate")], "UD", 6.2)
-        self.mf.loadEntry("T", 0, 6, data=self.mrate)
+        self.mf.loadEntry("T", 0, 6, data=self.mrate.work)
         self.vrate = CCD(drm[self.sql.bwldrm_col.index("bdm_vrate")], "UD", 6.2)
-        self.mf.loadEntry("T", 0, 7, data=self.vrate)
+        self.mf.loadEntry("T", 0, 7, data=self.vrate.work)
 
     def doLoadTabs(self):
-        draws = self.sql.getRec("bwldrt", cols=["bdt_tab",
-            "bdt_name", "bdt_rink", "bdt_side", "bdt_pos", "bdt_rate",
-            "bdt_pos1", "bdt_team1", "bdt_flag"], where=[("bdt_cono",
-            "=", self.opts["conum"]), ("bdt_date", "=", self.date),
+        draws = self.sql.getRec("bwldrt", cols=["bdt_tab", "bdt_name",
+            "bdt_rink", "bdt_side", "bdt_pos", "bdt_rate", "bdt_pos1",
+            "bdt_team1", "bdt_flag"], where=[("bdt_cono", "=",
+            self.opts["conum"]), ("bdt_date", "=", self.date),
             ("bdt_time", "=", self.time)], order="bdt_rink, bdt_side")
         rnk = {}
         self.teams = {}
         self.bounce = {}
         self.adraw1 = []
-        if draws[0][8] == "D":
+        if draws[0][8] in ("B", "D", "P"):
             self.drawn = True
         pos = [0, 3, 2, 1, 0]
         for draw in draws:
@@ -313,14 +307,8 @@ class bc2010(object):
                 self.opts["conum"]), ("btb_tab", "=", draw[0])],
                 limit=1)
             if tab:
-                if self.alter:
-                    if self.mixrt == "N":
-                        p, r = tab[3:5]
-                    else:
-                        p, r = tab[5:]
-                else:
-                    p, r = draw[4:6]
-                self.alltabs[draw[0]] = [tab[0], tab[1], tab[2], p, r, "Y"]
+                self.alltabs[draw[0]] = [tab[0], tab[1], tab[2],
+                    draw[4], draw[5], "Y"]
                 if not draw[2]:
                     continue
             else:
@@ -332,7 +320,8 @@ class bc2010(object):
             if draw[3] not in rnk[draw[2]]:
                 rnk[draw[2]][draw[3]] = [0, [0,""], [0,""], [0,""], [0,""]]
             rnk[draw[2]][draw[3]][0] += draw[5]
-            rnk[draw[2]][draw[3]][pos[draw[4]] + 1] = [draw[0], draw[1], r]
+            rnk[draw[2]][draw[3]][pos[draw[4]] + 1] = [draw[0], draw[1],
+                draw[5]]
             if draw[8] == "A":
                 # Bounce games
                 if draw[2] not in self.bounce:
@@ -757,7 +746,7 @@ First Change the Bounce Game and then Delete It.""")
             "order": "btb_surname, btb_names"}
         fld = (
             (("C",0,0,0),"IUA",2,"RK","Rink",
-                "","N",self.doBRnk,None,None,("notblank",)),
+                "","Y",self.doBRnk,None,None,("notblank",)),
             (("C",0,0,1),"OUA",1,"T"),
             (("C",0,0,2),"IUI",3,"Skp","Skip",
                 "","N",self.doBTab,mem,None,None),
@@ -1202,7 +1191,7 @@ Do you still want to continue?""" % np, default="no")
             r1s = (("Strength", "S"), ("Random", "R"))
             fld = [
                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
-                    "S","N",self.doType,None,None,None,None,
+                    "S","Y",self.doType,None,None,None,None,
                     """Strength: The Draw will Try and Pair the teams by Strength.
 Random: The teams will be Randomly Paired.""")]
             x = 1
@@ -1211,7 +1200,7 @@ Random: The teams will be Randomly Paired.""")]
             r1s = (("Random", "R"), ("Strength", "S"))
             fld = [
                 (("T",0,0,0),("IRB",r1s),0,"Draw Type","",
-                    "R","N",self.doType,None,None,None,None,
+                    "R","Y",self.doType,None,None,None,None,
                     """Strength: The Draw will Try and Draw the teams by Strength.
 Random: The teams will be Randomly Drawn.""")]
             x = 1
@@ -1628,12 +1617,12 @@ Try to Allocate Different Rinks""" % self.weeks),
             for num, grp in enumerate(grps):
                 # Gender or Mixed
                 alldraw = []
+                self.hist = {}
+                self.broken = []
+                self.pairs = []
                 self.doPositions(grp)
                 if self.dhist == "Y":
                     self.doHistory()
-                else:
-                    self.hist = {}
-                    self.broken = []
                 if self.mixgd == "Y":
                     self.count = 0
                     text = "Selecting the Best Mixed Combination"
@@ -1676,6 +1665,9 @@ Combination Number %10s"""
                                 ops.append(opp[0])
                         for plr in pls:
                             if len(pls) == 7 and plr in self.broken:
+                                bcl += 1
+                            elif self.tsize == 3 and len(pls) == 4 \
+                                    and plr in self.pairs:
                                 bcl += 1
                         for plr in tms:
                             if plr in self.hist:
@@ -1741,19 +1733,27 @@ Combination Number %10s"""
                 txt = "Best Strength v Strength Draw, "\
                     "Largest Team Difference is %s" % self.tot
             elif self.dtype == "S":
+                if self.tsize == 3:
+                    bcl = "Pairs"
+                else:
+                    bcl = "Broken"
                 txt = "Best S v S Draw After Trying %s Different "\
                     "Combinations, Largest Team Difference is %s, "\
-                    "Skips Clash %s, Players Clash %s, Broken %s" % \
-                    (self.count, self.tot, self.scl, self.pcl, self.bcl)
+                    "Skips Clash %s, Players Clash %s, %s %s" % \
+                    (self.count, self.tot, self.scl, self.pcl, bcl, self.bcl)
             elif self.dhist == "N":
                 txt = "Best Random Draw After Trying %s Different "\
                     "Combinations, Largest Team Difference is %s" % \
                     (self.count, self.tot)
             else:
+                if self.tsize == 3:
+                    bcl = "Pairs"
+                else:
+                    bcl = "Broken"
                 txt = "Best Random Draw After Trying %s Different "\
                     "Combinations, Largest Team Difference is %s, "\
-                    "Skips Clash %s, Players Clash %s, Broken %s" % \
-                    (self.count, self.tot, self.scl, self.pcl, self.bcl)
+                    "Skips Clash %s, Players Clash %s, %s %s" % \
+                    (self.count, self.tot, self.scl, self.pcl, bcl, self.bcl)
             self.doShowDraw(txt, self.adraw1)
             self.dedit = "N"
             self.doSave()
@@ -2050,14 +2050,12 @@ Combination Number %10s"""
             self.lead1.append(tab)
 
     def doHistory(self):
-        self.hist = {}
-        self.broken = []
         days = self.weeks * -7
         ldate = projectDate(self.date, days)
         # Get records for past x days excluding bounce, team games and svs
         recs = self.sql.getRec("bwldrt", where=[("bdt_cono", "=",
             self.opts["conum"]), ("bdt_date", ">=", ldate),
-            ("bdt_flag", "in", ("B", "D"))])
+            ("bdt_flag", "in", ("B", "D", "P"))])
         for rec in recs:
             dte = rec[self.sql.bwldrt_col.index("bdt_date")]
             tim = rec[self.sql.bwldrt_col.index("bdt_time")]
@@ -2075,6 +2073,8 @@ Combination Number %10s"""
             tab = rec[self.sql.bwldrt_col.index("bdt_tab")]
             if rec[self.sql.bwldrt_col.index("bdt_flag")] == "B":
                 self.broken.append(tab)
+            elif rec[self.sql.bwldrt_col.index("bdt_flag")] == "P":
+                self.pairs.append(tab)
             if tab not in self.hist:
                 self.hist[tab] = [[], []]
             team = []
@@ -2313,6 +2313,8 @@ Combination Number %10s"""
                         rec.append("C")
                     elif broken:
                         rec.append("B")
+                    elif self.tsize == 3 and not rec[11]:
+                        rec.append("P")
                     else:
                         rec.append("D")
                     self.sql.insRec("bwldrt", data=rec)
@@ -2335,9 +2337,9 @@ Combination Number %10s"""
             (("T",0,0,0),("IRB",r1s),0,"Print Cards","",
                 "N","Y",self.doCards,None,None,None),
             (("T",0,1,0),"INA",30,"Heading","",
-                "","Y",self.doHead,None,None,("notblank",)),
+                "","N",self.doHead,None,None,("notblank",)),
             (("T",0,2,0),"IUI",2,"Number of Ends","",
-                0,"Y",self.doEnds,None,None,("notzero",))]
+                0,"N",self.doEnds,None,None,("notzero",))]
         if self.mrate.work or self.vrate.work:
             fld.append(
                 (("T",0,3,0),("IRB",r2s),0,"Cash Takings Sheet","",
@@ -2765,8 +2767,10 @@ Combination Number %10s"""
                 self.tsize = 0
                 self.doSave()
                 for tab in self.alltabs:
+                    pos = self.alltabs[tab][3]
+                    rte = self.alltabs[tab][4]
                     data = [self.opts["conum"], tab, self.date, self.time,
-                        "", "", "", 0, 0, 0, 0, 0, 0, 0, 0, "", ""]
+                        "", "", "", pos, rte, 0, 0, 0, 0, 0, 0, "", ""]
                     self.sql.insRec("bwldrt", data=data)
                 self.opts["mf"].dbm.commitDbase()
         self.df.closeProcess()

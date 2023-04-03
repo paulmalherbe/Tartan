@@ -180,7 +180,7 @@ class cr4010(object):
         bals = Balances(self.opts["mf"], "CRS", self.opts["conum"],
             int(self.sysdtw / 100), (self.acno,))
         obal, tbal, ages = bals.doAllBals()
-        this, hist = bals.doCrsDrsHist()
+        hist = bals.doCrsDrsHist()
         self.purch = hist[0]
         self.pays = hist[1]
         last = self.sql.getRec("crstrn", cols=["max(crt_trdt)"],

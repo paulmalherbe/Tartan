@@ -24,10 +24,10 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
-from TartanClasses import ASD, Balances, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+import datetime, time
+from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, RepPrt, Sql
 from TartanClasses import TartanDialog
-from tartanFunctions import getModName, doPrinter, showError
+from tartanFunctions import doPrinter, getModName, mthendDate, showError
 
 class si3030(object):
     def __init__(self, **opts):
@@ -40,8 +40,8 @@ class si3030(object):
                 self.opts["mf"].startLoop()
 
     def setVariables(self):
-        self.sql = Sql(self.opts["mf"].dbm, ["strgrp", "strloc", "strmf1"],
-            prog=self.__class__.__name__)
+        self.sql = Sql(self.opts["mf"].dbm, ["strgrp", "strloc", "strmf1",
+            "strtrn"], prog=self.__class__.__name__)
         if self.sql.error:
             return
         gc = GetCtl(self.opts["mf"])
@@ -55,6 +55,7 @@ class si3030(object):
         self.fromad = slsctl["ctv_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+        self.head = "%03u %-108s" % (self.opts["conum"], self.opts["conam"])
         return True
 
     def mainProcess(self):
@@ -67,26 +68,34 @@ class si3030(object):
                 ("srl_desc", "", 0, "Description", "Y")),
             "where": [("srl_cono", "=", self.opts["conum"])]}
         grp = {
-            "stype": "R",
+            "stype": "S",
             "tables": ("strgrp",),
-            "cols": (("gpm_group", "", 0, "Grp"),
-                ("gpm_desc", "", 0, "Description", "Y")),
-            "where": [("gpm_cono", "=", self.opts["conum"])]}
+            "cols": ("gpm_group", "gpm_desc"),
+            "where": [("gpm_cono", "=", self.opts["conum"])],
+            "order": "gpm_group"}
         if "args" in self.opts and "noprint" in self.opts["args"]:
             var = self.opts["args"]["work"][0]
             view = None
             mail = None
         else:
-            var = ["", "", ""]
+            var = ["", "", "", "N", "Y", "N"]
             view = ("N","V")
             mail = ("Y","N")
+        r1s = (("No", "N"), ("Yes", "Y"))
         fld = (
             (("T",0,0,0),"ID2",7,"Period","",
                 int(self.sysdtw / 100),"Y",self.doPer,None,None,("efld",)),
             (("T",0,1,0),"IUA",1,"Location","",
                 var[1],"N",self.doLoc,loc,None,("efld",)),
-            (("T",0,2,0),"IUA",3,"Product Group","",
-                var[2],"N",self.doGroup,grp,None,None))
+            (("T",0,2,0),"ITX",30,"Product Groups","",
+                var[2],"N",self.doGrps,grp,None,None,None,
+                "Enter group codes separated by commas e.g. LAZ,LCO"),
+            (("T",0,3,0),("IRB",r1s),0,"Weekly","",
+                var[3],"N",self.doType,None,None,None),
+            (("T",0,4,0),("IRB",r1s),0,"Include Quantity","",
+                var[4],"N",self.doValue,None,None,None),
+            (("T",0,5,0),("IRB",r1s),0,"Include Profit","",
+                var[5],"N",self.doValue,None,None,None))
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
@@ -97,6 +106,7 @@ class si3030(object):
                 w > int(self.opts["period"][2][0] / 100):
             return "Invalid Period"
         self.per = w
+        self.perd = CCD(self.per, "D2", 7).disp
         if self.locs == "N":
             self.loc = ""
             self.locd = "ALL"
@@ -114,36 +124,62 @@ class si3030(object):
             self.locd = "%s %s" % (w, acc[0])
         self.loc = w
 
-    def doGroup(self, frt, pag, r, c, p, i, w):
-        if w:
-            acc = self.getGroup(w)
+    def doGrps(self, frt, pag, r, c, p, i, w):
+        try:
+            grp = eval(w)
+            self.grps = ""
+            for g in grp:
+                if not self.grps:
+                    self.grps = g[1]
+                else:
+                    self.grps = "%s,%s" % (self.grps, g[1])
+        except:
+            self.grps = w
+        self.df.loadEntry(frt, pag, p, data=self.grps)
+        if not self.grps:
+            return
+        check = self.grps.split(",")
+        err = None
+        for chk in check:
+            acc = self.sql.getRec("strgrp", cols=["gpm_desc"],
+                where=[("gpm_cono", "=", self.opts["conum"]),
+                ("gpm_group", "=", chk)], limit=1)
             if not acc:
-                return "Invalid Group"
-        self.grp = w
+                err = "Invalid Group %s" % chk
+                break
+        return err
+
+    def doType(self, frt, pag, r, c, p, i, w):
+        self.weekly = w
+        if self.weekly == "N":
+            return "sk2"
+
+    def doValue(self, frt, pag, r, c, p, i, w):
+        if p == 4:
+            self.quant = w
+        else:
+            self.profit = w
 
     def doEnd(self):
         self.df.closeProcess()
-        if not self.grp:
-            sgrp = ""
-            egrp = "zzz"
-        else:
-            sgrp = egrp = self.grp
+        whr = [("st1_cono", "=", self.opts["conum"])]
+        if self.grps:
+            whr.append(("st1_group", "in", self.grps.split(",")))
         recs = self.sql.getRec("strmf1", cols=["st1_group", "st1_code",
-            "st1_desc", "st1_uoi"], where=[("st1_cono", "=",
-            self.opts["conum"]), ("st1_group", ">=", sgrp), ("st1_group", "<=",
-            egrp)], order="st1_group, st1_code")
+            "st1_desc", "st1_uoi"], where=whr, order="st1_group, st1_code")
         if not recs:
             showError(self.opts["mf"].body, "Processing Error",
             "No Records Selected")
+        elif self.weekly == "N":
+            self.printPeriod(recs)
         else:
-            self.printReport(recs)
+            self.printWeekly(recs)
         if "args" in self.opts and "noprint" in self.opts["args"]:
             self.t_work = [self.df.t_work[0][0]]
         self.closeProcess()
 
-    def printReport(self, recs):
+    def printPeriod(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = "%03u %-108s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         self.stot = [0] * 3
         self.gtot = [0] * 3
@@ -157,22 +193,21 @@ class si3030(object):
             code = CCD(rec[1], "NA", 20)
             desc = CCD(rec[2], "NA", 30)
             uoi = CCD(rec[3], "NA", 10)
-            bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
-                self.per, keys=(self.grp.work, code.work, self.loc,
-                ("P", self.opts["period"][0])))
-            m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
-            m_qty = 0
-            m_cst = 0
-            m_sls = 0
-            for t, q, c, s in m_mv:
-                if t == 7:
-                    m_qty = q
-                    m_cst = c
-                    m_sls = s
-                    break
-            mq = CCD(float(ASD(0) - ASD(m_qty)), "SD", 13.2)
-            mc = CCD(float(ASD(0) - ASD(m_cst)), "SD", 13.2)
-            ms = CCD(float(ASD(0) - ASD(m_sls)), "SD", 13.2)
+            whr = [
+                ("stt_cono", "=", self.opts["conum"]),
+                ("stt_group", "=", self.grp.work),
+                ("stt_code", "=", code.work),
+                ("stt_curdt", "=", self.per),
+                ("stt_type", "=", 7)]
+            if self.loc:
+                whr.append(("stt_loc", "=", self.loc))
+            bals = self.sql.getRec("strtrn", cols=["sum(stt_qty)",
+                "sum(stt_cost)", "sum(stt_sell)"], where=whr, limit=1)
+            if not bals[0] and not bals[1] and not bals[2]:
+                continue
+            mq = CCD(float(ASD(0) - ASD(bals[0])), "SD", 13.2)
+            mc = CCD(float(ASD(0) - ASD(bals[1])), "SD", 13.2)
+            ms = CCD(float(ASD(0) - ASD(bals[2])), "SD", 13.2)
             mp = float(ASD(ms.work) - ASD(mc.work))
             mp = CCD(mp, "SD", 13.2)
             if ms.work == 0:
@@ -180,8 +215,6 @@ class si3030(object):
             else:
                 mn = round((mp.work * 100.0 / ms.work), 2)
             mn = CCD(mn, "SD", 7.2)
-            if mq.work == 0 and mc.work == 0 and ms.work == 0:
-                continue
             if lstgrp and lstgrp != self.grp.work:
                 self.groupTotal()
                 self.pglin = 999
@@ -214,9 +247,7 @@ class si3030(object):
         self.fpdf.setFont(style="B")
         self.fpdf.drawText(self.head)
         self.fpdf.drawText()
-        per = CCD(self.per, "D2", 7)
-        self.fpdf.drawText("%-27s %-7s" % \
-            ("Period Sales By Product for", per.disp))
+        self.fpdf.drawText("Period Sales By Product for %s" % self.perd)
         self.fpdf.drawText()
         acc = self.getGroup(self.grp.work)
         if acc:
@@ -265,6 +296,129 @@ class si3030(object):
         mn = CCD(mn, "SD", 7.2)
         self.fpdf.drawText("%-20s %-41s %s %s %s %s" % \
             ("", "Grand Totals", mq.disp, ms.disp, mp.disp, mn.disp))
+
+    def printWeekly(self, recs):
+        y = int(self.per / 100)
+        m = int(self.per % 100)
+        start = datetime.date(y, m, 1)
+        end = mthendDate(int(start.strftime("%Y%m%d")) )
+        end = datetime.date((end // 10000), (end // 100 % 100), end % 100)
+        days = start.weekday()
+        if days < 5:
+            start += datetime.timedelta(days=0-days)
+        else:
+            start += datetime.timedelta(days=7-days)
+        days = end.weekday()
+        end += datetime.timedelta(days=6-days)
+        weeks = []
+        while start < end:
+            new = start
+            new += datetime.timedelta(days=6)
+            weeks.append([int(start.strftime("%Y%m%d")),
+                int(new.strftime("%Y%m%d")), start])
+            new += datetime.timedelta(days=1)
+            start = new
+        sql = Sql(self.opts["mf"].dbm, ["strmf1", "strtrn"])
+        whr = [("st1_cono", "=", 1)]
+        if self.grps:
+            whr.append(("st1_group", "in", self.grps.split(",")))
+        st1 = sql.getRec("strmf1", cols=["st1_group", "st1_code", "st1_desc"],
+            where=whr, order="st1_group, st1_code")
+        grp = None
+        data = []
+        tq = ts = tp = None
+        pb = ProgressBar(self.opts["mf"].body, mxs=len(st1), esc=True)
+        for seq, rec in enumerate(st1):
+            pb.displayProgress(seq)
+            if pb.quit:
+                break
+            val = [[0, 0, 0]] * len(weeks)
+            if grp is None or rec[0] != grp:
+                tq = ts = tp = [0] * len(weeks)
+                grp = rec[0]
+            for num, week in enumerate(weeks):
+                whr = [
+                    ("stt_group", "=", rec[0]),
+                    ("stt_code", "=", rec[1]),
+                    ("stt_trdt", "between", week[0], week[1]),
+                    ("stt_type", "=", 7)]
+                if self.loc:
+                    whr.append(("stt_loc", "=", self.loc))
+                sls = sql.getRec("strtrn", cols=["sum(stt_qty)",
+                    "sum(stt_cost)", "sum(stt_sell)"], where=whr, limit=1)
+                if sls[0]:
+                    qty = CCD(float(ASD(0) - ASD(sls[0])), "SD", 13.2)
+                else:
+                    qty = CCD(0, "SD", 13.2)
+                if sls[1]:
+                    cst = CCD(float(ASD(0) - ASD(sls[1])), "SD", 13.2)
+                else:
+                    cst = CCD(0, "SD", 13.2)
+                if sls[2]:
+                    sel = CCD(float(ASD(0) - ASD(sls[2])), "SD", 13.2)
+                else:
+                    sel = CCD(0, "SD", 13.2)
+                pft = CCD(float(ASD(sel.work) - ASD(cst.work)), "SD", 13.2)
+                val[num] = [qty.work, sel.work, pft.work]
+                tq[num] = float(ASD(tq[num]) + ASD(qty.work))
+                ts[num] = float(ASD(ts[num]) + ASD(sel.work))
+                tp[num] = float(ASD(tp[num]) + ASD(pft.work))
+            ign = True
+            for v in val:
+                if v != [0.0, 0.0, 0.0]:
+                    ign = False
+                    break
+            if not ign:
+                dat = [rec[0], rec[1], rec[2]]
+                for v in val:
+                    if self.quant == "Y":
+                        dat.append(v[0])
+                    dat.append(v[1])
+                    if self.profit == "Y":
+                        dat.append(v[2])
+                data.append(dat)
+        pb.closeProgress()
+        if data and not pb.quit:
+            txt = "%3s %20s %30s" % ("", "", "")
+            for week in weeks:
+                if self.quant == "Y" or self.profit == "Y":
+                    wk1 = CCD(week[0], "D1", 10).disp
+                    wk2 = CCD(week[1], "D1", 10).disp
+                    wks = "    %s - %s" % (wk1, wk2)
+                    if self.quant == "Y" and self.profit == "Y":
+                        txt += '{:^42}'.format(wks)
+                    else:
+                        txt += '{:^28}'.format(wks)
+                else:
+                    wn = week[2].strftime("%V")
+                    txt += '{:>14}'.format("Week %s " % wn)
+            heds = [self.head, "Weekly Sales By Product for "\
+                    "Location: %s Period: %s" % (self.locd, self.perd), txt]
+            cols = [
+                ["a", "NA",  3, "Grp",         "y"],
+                ["b", "NA", 20, "Cod-Num",     "y"],
+                ["c", "NA", 30, "Description", "y"]]
+            gtots = []
+            for no in range(len(weeks)):
+                if self.quant == "Y":
+                    cols.append(["d%s" % no, "SD", 13.2, "    Quantity", "y"])
+                    gtots.append("d%s" % no)
+                cols.append(["e%s" % no, "SD", 13.2, "   Sales-Val", "y"])
+                gtots.append("e%s" % no)
+                if self.profit == "Y":
+                    cols.append(["f%s" % no, "SD", 13.2, "      Profit", "y"])
+                    gtots.append("f%s" % no)
+            if "args" not in self.opts or "noprint" not in self.opts["args"]:
+                sveprt = True
+            else:
+                sveprt = False
+            rp = RepPrt(self.opts["mf"], name=self.__class__.__name__,
+                tables=data, ttype="D", heads=heds, cols=cols,
+                stots=[["a", "Group Total", "Y"]], gtots=gtots,
+                repprt=self.df.repprt, repeml=self.df.repeml,
+                sveprt=sveprt)
+            self.fpdf = rp.fpdf
+        self.opts["mf"].closeLoop()
 
     def doExit(self):
         self.df.closeProcess()

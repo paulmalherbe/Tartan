@@ -9,7 +9,7 @@ This routine is used to create or amend general ledger account records. For a ne
 + **Acc-Num** - The account number of the record. This is a numeric field and can have up to 7 digits. There is nothing special about this number it is only used to access the record.
 + **Description** - The account's description up to 30 characters in length.
 + **T/B Account Type** - Select the applicable Trial Balance account type for the record.
-+ **F/S Account Type** - Select the applicable Financial Statement account type for the record. These types are used when generating a financial report.
++ **F/S Account Type** - Select the applicable Financial Statement account type for the record. These types are used when generating a financial report. Select *Skip* if you do not want to use this feature.
 + **F/S Account Group** - Enter the Financial Statement group for the record, if applicable, e.g. Grouping Motor Vehicles Capital Account with the Accumulated Depreciation Account. The group description would default to the first account in the group but this can be changed using the Report Generator.
 + **Allow Postings** - Whether or not direct postings are allowed to this account. Normally direct postings are not allowed to control accounts of subsidiary ledgers, e.g. Debtor's as they should be generated in the subsidiary ledger.
 + **Tax Default** - The V.A.T. code normally associated with postings to this account.

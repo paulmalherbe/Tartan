@@ -49,6 +49,7 @@ pymodb = [
     ("send2trash", "send2trash", None),
     ("smb", "pysmb", None),
     ("svglib", "svglib", ("svglib", "__version__")),
+    ("tkcalendar", "tkcalendar", "__version__"),
     ("tkcolorpicker", "tkcolorpicker", None),
     ("tkinterhtml", "tkinterhtml", None)]
 #--------
@@ -4184,7 +4185,7 @@ tarmen = {
         ["PYYY","st_dc","st2020",2,"Goods Received Notes"],
         ["PYYY","st_dc","st2030",2,"Goods Issued Notes"],
         ["PYYY","st_dc","st2040",2,"Location Transfers"],
-        ["PYYN","st_st","st5010",1,"Stock Take Report"],
+        ["PYNN","st_st","st5010",1,"Stock Take Report"],
         ["PYNN","st_st","st5020",2,"Stock Take Returns"],
         ["PYYN","st_st","st5030",2,"Stock Take Variance Report"],
         ["PYYY","st_st","st5040",2,"Stock Take Merge"],

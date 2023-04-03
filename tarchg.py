@@ -1,4 +1,20 @@
-changes = """ver_6.14 2023-02-27
+changes = """ver_6.15 2023-04-03
+===================
+ 1) Fixed a bug with interrogation history totals.
+ 2) Fixed a bug with loans capitalization of interest.
+ 3) Fixed a bug with debtors recurring charges maintenance.
+ 4) Added a weekly option to period sales report.
+ 5) Improved the record and item selection routine.
+ 6) Improved the bowls club tabs-inn draw module.
+ 7) Updated some items in the reference manual.
+ 8) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.14 2023-02-27
 ===================
  1) Updated the P.A.Y.E. rates for 2023/2024 tax year.
  2) Fixed a problem with Debtor's Recurring Charges.

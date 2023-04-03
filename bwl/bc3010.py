@@ -99,11 +99,13 @@ class bc3010(object):
         else:
             self.timed = "Morning"
         chk = self.sql.getRec("bwldrm", cols=["bdm_mixed",
-            "bdm_rating", "bdm_dbase"], where=[("bdm_cono", "=",
-            self.opts["conum"]), ("bdm_date", "=", self.date),
+            "bdm_rating", "bdm_dbase", "bdm_dtype"], where=[("bdm_cono",
+            "=", self.opts["conum"]), ("bdm_date", "=", self.date),
             ("bdm_time", "=", self.time)], limit=1)
         if not chk:
             return "A Draw for this Date and Time Does Not Exist"
+        if chk[3] == "N":
+            return "This Draw has Not Yet been Done."
         self.df.loadEntry(frt, pag, p+1, data=chk[0])
         self.df.loadEntry(frt, pag, p+2, data=chk[1])
         self.df.loadEntry(frt, pag, p+3, data=chk[2])

@@ -71,8 +71,17 @@ def placeWindow(window, parent=None, place="C", size=None, expose=False):
         ww = window.winfo_reqwidth()
         wh = window.winfo_reqheight()
     if parent:
-        wx = int(parent.winfo_x() + (parent.winfo_width() / 2) - (ww / 2))
-        wy = int(parent.winfo_y() + (parent.winfo_height() / 2) - (wh / 2))
+        try:
+            import tkinter as tk
+            w = tk.Toplevel()
+            w.geometry("1x1+0+0")
+            w.update()
+            bar = w.winfo_y()
+            w.destroy()
+        except:
+            bar = 24
+        wx = int(parent.winfo_x() + ((parent.winfo_width() - ww) / 2))
+        wy = int(parent.winfo_y() + ((parent.winfo_height() - wh) / 2)) - bar
     else:
         if place == "L":
             wx = 0
@@ -724,7 +733,7 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
             return
         # Print Document
         if splash:
-            sp = SplashScreen(mf.window.focus_displayof(),
+            sp = SplashScreen(mf.window,
                 "Printing the Report\n\nPlease Wait....")
         if repprt[2] == "Default":
             prt = getPrinters(donly=True)
@@ -752,7 +761,7 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
             elif exe.lower().count("foxit") and len(cmd) == 1:
                 cmd.extend(["/t", pdfnam, prt])
             elif cmd[0].endswith("lp") and len(cmd) == 1:
-                cmd.extend(["-d", prt, pdfnam])
+                cmd.extend(["-d", prt, "-o", "media=A4", pdfnam])
             elif cmd[0].endswith("lpr") and len(cmd) == 1:
                 cmd.extend(["-P", prt, pdfnam])
             elif not fle:
@@ -2728,11 +2737,12 @@ def printPDF(prt, fle, cpy=1):
         try:
             import cups
             conn = cups.Connection()
-            conn.printFile(prt, fle, fle, options={"copies": str(cpy)})
+            conn.printFile(prt, fle, fle, options={"copies": str(cpy),
+                "media": "A4"})
         except:
             import subprocess
-            subprocess.Popen(["/usr/bin/lp", "-d%s" % prt, "-n%s" % cpy, fle],
-                stdout=subprocess.PIPE)
+            subprocess.Popen(["/usr/bin/lp", "-d%s" % prt, "-n%s" % cpy,
+                "-o", "media=A4", fle], stdout=subprocess.PIPE)
 
 def doWriteExport(**args):
     """

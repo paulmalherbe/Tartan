@@ -272,8 +272,8 @@ class dr3110(object):
                     self.pageHeading()
         bals = Balances(self.opts["mf"], "DRS", self.opts["conum"], self.coffw,
             (chn.work, acc.work))
-        this, hist = bals.doCrsDrsHist()
-        if not this:
+        hist = bals.doCrsDrsHist()
+        if not hist[0][12] and not hist[1][12]:
             return
         salesd = ""
         salesw = []

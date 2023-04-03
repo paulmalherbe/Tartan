@@ -268,8 +268,9 @@ class dr1020(object):
 
     def endTop(self):
         data = [self.opts["conum"], self.num, self.desc, self.freq, self.day,
-            self.vcod, self.glac, 0]
+            self.vcod, self.glac]
         if self.new_num == "y":
+            data.append(0)
             self.sql.insRec("drsrcm", data=data)
             self.df.loadEntry("C", 0, 0, data=1)
             self.df.focusField("C", 0, self.nxt)

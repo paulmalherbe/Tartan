@@ -58,7 +58,9 @@ class ln1010(object):
             "cols": (
                 ("lm1_acno", "", 0, "Code"),
                 ("lm1_name", "", 0, "Surname", "Y"),
-                ("lm1_email", "", 0, "Email Address"))}
+                ("lm1_email", "", 0, "Email Address")),
+            "where": (
+                ("lm1_cono", "=", self.opts["conum"]),)}
         if "args" in self.opts:
             fld = [
                 (("T",0,0,0),"OUA",7,"Account Code"),

@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
 =================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.14
+:Version:   6.15
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -79,6 +79,7 @@ Additionally, the following dependencies should also be installed using pip or, 
 + requests              # Web Scraping
 + send2trash            # Move Files to Recycle Bin
 + svglib                # SVG to PDF File Converter
++ tkcalendar            # Calendar for date picker
 + tkcolorpicker         # Alternative to colorchooser for Tkinter
 + tkinterhtml           # HTML Viewer
 
@@ -374,9 +375,9 @@ Use this routine to configure Tartan, however, depending on your security level,
     + **Backup Path** - This is the path where backups of the database will be stored.
     + **Work Path** - This is the path of the work directory. All temporary files will be created in this directory.
     + **Upgrade Path** - This is the path where any upgrades will be stored.
-    + **PDF Viewer** - This is the full path of an External program used to display pdf files. The default is `Blank` for the built-in pdf viewer. Suggested programmer for LINUX is **evince** and for Windows **SumatraPDF** or **Foxit Reader**.
-    + **Print Command** - This is the full path of an External print program used to print pdf files. The default is `Blank` for the built-in pdf printer. Suggested LINUX default is **lpr** and Windows is **SumatraPDF**. Another recommended program for windows is **Foxit Reader**. If necessary use %p% for the printer name and %f% for the file name e.g. the print command for Sumatra could be `the-path-to\SumatraPDF.exe -print-to %p% %f%`.
-    + **Spreadsheet Reader** - This is the full path of the program used to read xlsx, xls and csv files.
+    + **PDF Viewer** - This is the full path of an External program used to display pdf files. The default is `Blank` for the built-in pdf viewer. Suggested programme for LINUX is **evince** and for Windows **SumatraPDF** or **Foxit Reader**.
+    + **Print Command** - This is the full path of an External print program used to print pdf files. The default is `Blank` for the built-in pdf printer. Suggested LINUX default is **lp** and for Windows **SumatraPDF** or **Foxit Reader**.
+    + **Spreadsheet Reader** - This is the full path of the program used to read xlsx, xls and csv files. If left blank the default application will be used.
     + **Screen Geometry** - This defaults to the suggested geometry for your screen. Entering a zero will achieve the same result.
     + **Screen Placement** - Where the Tartan Window must be placed on the monitor i.e. Left, Centre or Right.
     + **Show Tartan Image** - Whether to display the Tartan image on the Main Menu screen.

@@ -72,7 +72,7 @@ class ln3040(object):
                 ("tpm_type", "=", "S"),
                 ("tpm_system", "=", "LON")],
             "order": "tpm_tname"}
-        r1s = (("Yes","Y"),("No","N"))
+        r1s = (("No","N"),("Yes","Y"))
         r2s = (("Number","A"),("Name","N"))
         fld = (
             (("T",0,0,0),"INA",20,"Template Name","",
@@ -90,7 +90,8 @@ class ln3040(object):
             (("T",0,6,0),("IRB",r1s),0,"Include Pending Interest","",
                 "N","N",self.doPend,None,None,None),
             (("T",0,7,0),("IRB",r1s),0,"Interest Totals Only","",
-                "Y","N",self.doITots,None,None,None))
+                "N","N",self.doITots,None,None,None,None,
+                "Show Interest as Period Totals or by Individual Periods"))
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], eflds=fld,
@@ -223,10 +224,12 @@ class ln3040(object):
             trns = self.sql.getRec("lontrn", where=w, order=odr)
             if self.capb == "A":                        # Anniversary
                 fcap = [lm2[l2c.index("lm2_start")], 0]
+                fcap[0] = (int(fcap[0] / 100) * 100) + 1
                 if self.capf == "A":
-                    fcap[1] = projectDate(fcap[0], 1, typ="years")
+                    fcap[1] = projectDate(fcap[0], 11, typ="months")
                 else:
-                    fcap[1] = projectDate(fcap[0], 6, typ="months")
+                    fcap[1] = projectDate(fcap[0], 5, typ="months")
+                fcap[1] = mthendDate(fcap[1])
             else:                                       # Financial
                 periods = self.sql.getRec("ctlynd",
                     cols=["cye_period", "cye_start", "cye_end"],
@@ -243,8 +246,9 @@ class ln3040(object):
                 else:
                     fcap[0] = projectDate(fcap[0], 6, typ="months")
                     fcap[1] = projectDate(fcap[1], 6, typ="months")
-                if fcap[1] <= self.date.work:
-                    capdt.append(copyList(fcap))
+                if fcap[1] > self.date.work:
+                    fcap[1] = self.date.work
+                capdt.append(copyList(fcap))
             for capd in capdt:
                 w = whr[:]
                 w.append(("lnt_type", "=", 4))
@@ -325,7 +329,7 @@ class ln3040(object):
             key = "%s_all_all" % self.opts["conum"]
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, key, ext="pdf")
-        if self.form.saveFile(pdfnam, self.opus["mf"].window):
+        if self.form.saveFile(pdfnam, self.opts["mf"].window):
             head = "%s Statement at %s" % (self.opts["conam"], self.date.disp)
             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
                 pdfnam=pdfnam, header=head, repprt=self.df.repprt,

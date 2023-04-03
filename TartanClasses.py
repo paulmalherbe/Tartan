@@ -141,6 +141,11 @@ try:
     except:
         import tkinter.colorchooser as tkcolor
         CPICK = False
+    try:
+        from tkcalendar import Calendar
+        TKCAL = True
+    except:
+        TKCAL = False
     from PIL import Image, ImageTk
 
     # Stock images and icons and others
@@ -1142,6 +1147,58 @@ except Exception as err:
     print(err)
     GUI = False
 
+if GUI and TKCAL:
+    class MyCal(tk.Toplevel, object):
+        def __init__(self, widget=None, **kw):
+            super().__init__(relief="raised", pady=2)
+            self.wm_overrideredirect(True)
+            self.withdraw()
+            cw = {
+                "selectmode": "day",
+                "date_pattern": "ymmdd",
+                "showweeknumbers": False,
+                "showothermonthdays": False}
+            self.mycal = Calendar(self, **cw)
+            self.mycal.pack(side="bottom")
+            x = widget.winfo_rootx()
+            y = widget.winfo_rooty() + widget.winfo_height()
+            self.wm_geometry("+%d+%d" % (x, y))
+            self.bind("<Up>", self._daysel)
+            self.bind("<Down>", self._daysel)
+            self.bind("<Left>", self._daysel)
+            self.bind("<Right>", self._daysel)
+            self.bind("<Return>", self._pressed)
+            self.bind("<KP_Enter>", self._pressed)
+            self.mycal.bind("<<CalendarSelected>>", self._pressed)
+            self.bind("<Escape>", self._escape)
+            self.deiconify()
+            self.grab_set()
+            self.focus_force()
+            self.wait_window()
+
+        def _daysel(self, event):
+            date = int(self.mycal.get_date())
+            yy = date // 10000
+            mm = date // 100 % 100
+            dd = date % 100
+            date = datetime.datetime(yy, mm, dd)
+            if event.keysym == "Down":
+                date += datetime.timedelta(days=7)
+            elif event.keysym == "Up":
+                date += datetime.timedelta(days=-7)
+            elif event.keysym == "Right":
+                date += datetime.timedelta(days=1)
+            else:
+                date += datetime.timedelta(days=-1)
+            self.mycal.selection_set(date)
+
+        def _escape(self, *args):
+            self.date = None
+            self.destroy()
+
+        def _pressed(self, *args):
+            self.date = self.mycal.get_date()
+            self.destroy()
 # =========================================================
 def rgb(col):
     # RGB color tuple
@@ -2362,8 +2419,6 @@ class Sql(object):
             unique = "drt_ref1"
         elif table == "memtrn":
             unique = "mlt_refno"
-        else:
-            unique = False
         dic = getattr(self, "%s_dic" % table)
         col = getattr(self, "%s_col" % table)
         xfl = None
@@ -2896,6 +2951,8 @@ class CCD(object):
         elif types[1].lower() in ("a", "v", "x"):
             if type(data) is str:
                 self.data = data.rstrip().replace("\\", "/")
+                for x in range(31):
+                    self.data = self.data.replace(chr(x), "")
             else:
                 self.data = str(data)
         else:
@@ -4079,6 +4136,10 @@ Export - The report in the selected format will be opened
                     self.tsiz.append([0,0,0])
                     self.topv.append([])
                     self.colv.append([])
+            if TKCAL and len(col) > 4 and not col[8] and \
+                    col[1][1:] in ("D1", "d1"):
+                # Enable date selection
+                col[8] = {"stype": "D"}
             if col[0][0] == "T":
                 if col[0][1] == 0:
                     self.topz = True
@@ -4771,7 +4832,6 @@ Export - The report in the selected format will be opened
         rs = self.selectItem(self.pag, opts)
         self.focusField(self.frt, self.pag, self.col)
         if rs is not None:
-            self.loadEntry(self.frt, self.pag, self.pos, data=rs)
             self.doInvoke(None, rs)
 
     def selectBut(self, num):
@@ -4786,6 +4846,19 @@ Export - The report in the selected format will be opened
     def selectItem(self, pag, opts):
         if opts["stype"] == "C":
             self.rs = self.selChoice(opts)
+        elif opts["stype"] == "D":
+            if self.frt == "T":
+                fwid = self.topEntry[pag][self.pos]
+            else:
+                fwid = self.colEntry[pag][self.pos]
+            grb = fwid.grab_current()
+            fwid.configure(state="disabled")
+            cal = MyCal(fwid)
+            if grb:
+                grb.grab_set()
+            fwid.configure(state="normal")
+            fwid.focus_force()
+            return cal.date
         elif opts["stype"] == "F":
             return self.selFile(opts)
         elif opts["stype"] == "M" and "func" in opts:
@@ -6862,12 +6935,9 @@ class SelectChoice(object):
         self.escape = escape
         self.selection = None
         if not lines:
-            if len(self.data) < 20:
+            self.lines = len(self.data)
+            if self.lines < 20:
                 self.lines = 20
-            elif len(self.data) > 30:
-                self.lines = 30
-            else:
-                self.lines = len(self.data)
         else:
             self.lines = lines
         self.setupWidgets()
@@ -6907,11 +6977,11 @@ class SelectChoice(object):
         self.mstFrame.rowconfigure(0, weight=1)
         chgt = self.font.metrics("linespace")
         if self.scrn:
-            tlin = int((self.scrn.winfo_reqheight() / chgt) * .8)
+            tlin = int((self.scrn.winfo_toplevel().winfo_height() / chgt) * .7)
         else:
-            tlin = int((self.window.winfo_screenheight() / chgt) * .8)
-            if self.lines > tlin:
-                self.lines = tlin
+            tlin = int((self.window.winfo_screenheight() / chgt) * .7)
+        if not self.lines or self.lines > tlin:
+            self.lines = tlin
         if self.headings:
             show = ["headings"]
         else:
@@ -8977,9 +9047,10 @@ class Balances(object):
             return obal, cbal, ages, [col, trns, cmth[0]]
 
     def doCrsDrsHist(self):
-        this = [0,0]
-        hist = [[0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0]]
-        start = self.curdt - 199
+        hist = [
+            [0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0]]
+        start = self.curdt - 99
         if (start % 100) == 13:
             start = start + 100 - 12
         if self.system == "CRS":
@@ -9006,14 +9077,12 @@ class Balances(object):
                 x = 1
             else:
                 continue
-            this[x] = float(ASD(this[x]) + ASD(bal[2]) - ASD(bal[3]))
             mth = self.curdt - bal[0]
             while mth > 88:
                 mth = mth - 88
-            if mth > 11:
-                mth = 12
             hist[x][mth] = float(ASD(hist[x][mth]) + ASD(bal[2]) - ASD(bal[3]))
-        return this, hist
+            hist[x][12] = float(ASD(hist[x][12]) + ASD(bal[2]) - ASD(bal[3]))
+        return hist
 
     def doStrBals(self, start=None, trans="N"):
         if not start:
@@ -10976,6 +11045,8 @@ class LoanInterest(object):
             self.pmths = self.lonrec[self.sql.lonmf2_col.index("lm2_pmths")]
             self.repay = self.lonrec[self.sql.lonmf2_col.index("lm2_repay")]
             self.lcap = self.lonrec[self.sql.lonmf2_col.index("lm2_lcap")]
+            if self.lcap == self.start:
+                self.lcap = 0
             self.inttp = 4
         else:
             self.cono = self.lonrec[self.sql.waglmf_col.index("wlm_cono")]
@@ -11011,11 +11082,11 @@ class LoanInterest(object):
                 self.lint = self.start
             if not self.lcap:
                 if self.capb == "A":                        # Anniversary
-                    nxtd = self.start
+                    nxtd = mthendDate(projectDate(self.start, -1, typ="months"))
                     tmpd = nxtd
                     while tmpd < self.lint:
                         nxtd = tmpd
-                        if self.capf == "A":
+                        if self.capf == "A":                # Annual
                             tmpd = projectDate(tmpd, 1, typ="years")
                         else:
                             tmpd = projectDate(tmpd, 6, typ="months")
@@ -11229,7 +11300,7 @@ class LoanInterest(object):
             rates = [[self.start, self.srate, 0]]
         # Extract Capitalisation Dates
         capdt = []
-        lcap = self.lcap
+        lcap = mthendDate(self.lcap)
         while lcap < self.tdate:
             if self.capf == "A":
                 lcap = projectDate(lcap, 1, typ="years")
@@ -13949,6 +14020,7 @@ class RepPrt(object):
     pages   :   Whether to number pages, defaults to True
     tails   :   List of text to print at the end of the report
     wrkdir  :   The directory to use for temporary files
+    sveprt  :   Whether or not to save and print the report
     """
     def __init__(self, mf, **args):
         self.mf = mf
@@ -13982,6 +14054,7 @@ class RepPrt(object):
             "ttype": "T",
             "where": [],
             "joins": [],
+            "sveprt": True,
             "wrkdir": self.mf.rcdic["wrkdir"]}
         for nam in args:
             defaults[nam] = args[nam]
@@ -14448,7 +14521,7 @@ class RepPrt(object):
                     self.fpdf.setFont(style="B")
                     for tail in self.tails:
                         self.fpdf.drawText(txt=tail)
-                if self.fpdf.saveFile(self.pdfnam):
+                if self.sveprt and self.fpdf.saveFile(self.pdfnam):
                     doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
                         header=self.heads[-1], fromad=self.fromad,
                         repprt=self.repprt, repeml=self.repeml)

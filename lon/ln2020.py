@@ -64,6 +64,10 @@ class ln2020(object):
         yr = int(self.sysdtw / 10000)
         mt = (int(self.sysdtw / 100) % 100) - 1
         self.lme = mthendDate((yr * 10000) + (mt * 100) + 1)
+        if self.lme < self.opts["period"][1][0]:
+            self.lme = self.opts["period"][1][0]
+        elif self.lme > self.opts["period"][2][0]:
+            self.lme = self.opts["period"][2][0]
         return True
 
     def dataHeader(self):
