@@ -68,7 +68,7 @@ class gl3040(object):
         self.tit = ("%03i %s" % (self.opts["conum"], self.opts["conam"]),
             "General Ledger Trial Balance (%s)" % self.__class__.__name__)
         r1s = (("Yes","Y"), ("No","N"))
-        r2s = (("Single", "S"), ("Multiple", "M"))
+        r2s = (("Single", "S"), ("Monthly", "M"))
         if "args" in self.opts and "noprint" in self.opts["args"]:
             var = self.opts["args"]["work"][0]
             view = None
@@ -78,7 +78,7 @@ class gl3040(object):
             view = ("Y","V")
             mail = ("Y","N")
         fld = (
-            (("T",0,0,0),("IRB",r2s),0,"Report Type","",
+            (("T",0,0,0),("IRB",r2s),0,"Report Columns","",
                 var[0],"N",self.doRType,None,None,None),
             (("T",0,1,0),("IRB",r1s),0,"Opening Balances Only","",
                 var[1],"Y",self.doOpeBal1,None,None,None),

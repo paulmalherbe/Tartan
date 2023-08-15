@@ -147,7 +147,7 @@ class sl4010(object):
         self.df.loadEntry("T", 1, 3, data=rec[lmc.index("wlm_repay")])
         # Raise Interest
         LoanInterest("S", self.opts["mf"].dbm, rec, update="Y",
-            curdt=int(self.sysdtw / 100), tdate=self.sysdtw, refno="Pending")
+            tdate=self.sysdtw, refno="Pending")
         # Get Balances
         self.lon = 0.0
         self.imt = 0.0

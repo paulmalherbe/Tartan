@@ -1,6 +1,6 @@
 """
 SYNOPSIS
-    Delete Visitor's Tabs, without History and Re-number Tabs with History,
+    Delete Visitor's Tabs without History and Re-number Tabs with History,
     where the last time they visited exceeds the numer of months entered.
 
     This file is part of Tartan Systems (TARTAN).

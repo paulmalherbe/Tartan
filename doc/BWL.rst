@@ -12,7 +12,7 @@ Use this routine to create the bowls control record.
 + **Female Start Seq** - The number range for female bowler's tab numbers.
 + **Non-member Start Seq** - The number range for non-member's player codes. This number must be greater than the male and female numbers.
 + **Draw Base** - By pre-allocated Position, Rating or a Combination of both.
-+ **Rating Order** - Whether the rating system is ascending or descending, like golf handicaps.
++ **Rating Order** - Whether the rating system is ascending, where the best players have the highest ratings, or descending, where the best players have the lowest ratings, like golf handicaps.
 + **Mixed Ratings** - Whether to use different ratings for mixed gender draws.
 + **Default Team Size** - When doing a tabs-in draw use this as the default team size.
 + **Replace Fours** - When doing a trips tabs-in draw use pairs instead of fours for eight players.
@@ -103,7 +103,7 @@ The following *Buttons* are available:
     + **Team Size** - The preferred number of players per team.
     + **Prefer Pairs** - Whether or not to replace fours with pairs. This only applies when the team size is three.
     + **Greens** - The greens to be used. This is in the format A,B or A,B234 showing green code and rinks. If the rinks are not entered they will default to 6. If 7 rinks are available this must be entered as A1234567,B etc. If there are more rinks available than needed, end rinks will be removed.
-+ **View/Edit Draw** - Use this button to view the draw and/or manually change it i.e. move players between teams, replace players with new players or delete players from the draw.
++ **View/Edit Draw** - Use this button to view the draw and/or manually change it i.e. move players between teams, add new players or delete players from the draw.
 + **Print** - Use this button to print a draw.
     + **Print Cards** - Select whether to print score cards.
         + **Heading** - Enter the heading to be printed on the score cards.
@@ -471,8 +471,10 @@ Use this routine to print envelopes for competition prizes.
 
 + **Competition Code** - The relevant competition code.
 + **Groups** - The number of groups, if applicable.
-+ **Prizes** - The number of prizes per group.
-+ **Members** - The number of players per team.
++ **Prizes Group 1** - The number of prizes for group 1.
++ **Prizes Group 2** - The number of prizes for group 2.
++ **Prizes Group 3** - The number of prizes for group 3.
++ **Envelopes** - Select whether to print envelopes per *Team Member* or per *Team*.
 
 Clear History (BC)
 ++++++++++++++++++

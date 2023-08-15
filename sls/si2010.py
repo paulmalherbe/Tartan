@@ -1448,8 +1448,8 @@ class si2010(object):
 
     def doChkItems(self):
         trn = self.sql.getRec("slsiv2", where=[("si2_cono", "=",
-            self.opts["conum"]), ("si2_rtn", "=", self.typs), ("si2_docno",
-            "=", self.docno)])
+            self.opts["conum"]), ("si2_rtn", "=", self.typs),
+            ("si2_docno", "=", self.docno)])
         needpwd = False
         for line in trn:
             # Check for quantity on hand

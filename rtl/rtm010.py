@@ -212,8 +212,8 @@ class rtm010(object):
         tot = float(ASD(amt) + ASD(vat))
         data = self.rec[:4]
         data.extend([1, ref, self.batch, self.nxtdt, tot, vat, self.nxtcd,
-            "Rental Raised", self.rec[9], "", self.opts["capnm"], self.sysdtw,
-            0])
+            "Rental Raised", self.rec[9], "", self.opts["capnm"],
+            self.sysdtw, 0])
         self.sql.insRec("rtltrn", data=data)
         if self.rec[9]:
             # VAT Transaction (ctlvtf)

@@ -403,6 +403,8 @@ class tb1020(object):
                         new = old[olddic["bcg_a_shots_agt"][0]]
                     elif self.table == "crsmst" and nam == "crm_stat":
                         new = "N"
+                    elif self.table == "drsctl" and nam == "ctd_chgtpl":
+                        new = "recurring_charges"
                     elif self.table == "drsmst" and nam == "drm_stat":
                         new = "N"
                     elif self.table == "genmst" and nam == "glm_fstp":

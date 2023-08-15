@@ -164,7 +164,7 @@ class ln4010(object):
         self.df.loadEntry("T", 1, 5, data=crte)
         # Raise Interest
         LoanInterest("L", self.opts["mf"].dbm, lonmf2, update="Y",
-            tdate=self.sysdtw, batch="Pending", curdt=int(self.sysdtw / 100))
+            tdate=self.sysdtw, batch="Pending")
         # Get Balances
         self.lon = 0.0
         self.imt = 0.0

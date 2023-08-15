@@ -6,7 +6,7 @@ block_cipher = None
 data = [
     ('doc/*', 'doc'),
     ('../pygal/css/*.css', 'pygal/css')]
-if sys.platform == "win32":
+if sys.version_info[:2][0] == "2":
     data.append(('c:/windows/system32/api-ms-win-crt-*.dll', '.'))
 data.extend(collect_data_files('tkinterhtml'))
 a = Analysis(['ms0000.py'],
@@ -14,6 +14,7 @@ a = Analysis(['ms0000.py'],
         binaries=[],
         datas=data,
         hiddenimports=['tkinter', 'tarimp',
+            'babel.dates', 'babel.numbers',
             'pyexcel_ods', 'pyexcel_ods.odsr', 'pyexcel_ods.odsw',
             'pyexcel_xls', 'pyexcel_xls.xlsr', 'pyexcel_xls.xlsw',
             'pyexcel_io.writers', 'pyexcel_io.writers.csvw',

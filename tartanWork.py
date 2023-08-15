@@ -30,12 +30,12 @@ COPYING
 pymoda = [
     ("fpdf", "fpdf", "__version__"),
     ("PIL", "pillow", "__version__"),
-    ("fitz", "pymupdf", "version"),
     ("win32api", "pywin32", None, "win32")]
 pymodb = [
-    ("beepy", "beepy", "None"),
+    ("beepy", "beepy", None, "linux"),
     ("Crypto", "pycryptodome", "__version__"),
     ("cups", "pycups", None, "linux"),
+    ("fitz", "pymupdf", "version"),
     ("markdown", "markdown", "__version__"),
     ("ofxtools", "ofxtools", "__version__"),
     ("openpyxl", "openpyxl", "__version__"),
@@ -4501,10 +4501,10 @@ tarmen = {
     "csmen": [],
     "csmod": [
         ["PYNY","mm_cs","csc110",5,"Control Record"],
-        ["PYNY","mm_cs","cs1010",3,"Cash Records"],
-        ["PYNY","mm_cs","cs2010",0,"Cash Takings"],
-        ["PYYY","mm_cs","cs2020",0,"Cash Merge"],
-        ["PYNY","mm_cs","cs3010",0,"Cash Report"],
+        ["PYNY","mm_cs","cs1010",3,"Income and Expenditure Records"],
+        ["PYNY","mm_cs","cs2010",0,"Income and Enpenditure Capture"],
+        ["PYYY","mm_cs","cs2020",0,"General Ledger Merge"],
+        ["PYNY","mm_cs","cs3010",0,"Income and Expenditure Report"],
         ["F","mm_cs","doManual CSH",0,"Help"]],
 
     # Telephone Directory

@@ -125,10 +125,12 @@ class bcc110(object):
             (("T",0,seq + 4,0),("IRB",r3s),0,"Rating Order","",
                 self.acc[8],"N",None,None,None,None,None,
                 "With Ratings select whether Ratings are Ascending "\
-                "or Descending in strength."),
+                "or Descending in strength. Ascending means the Higher the "\
+                "Rating the Better the player. Descending is like Golf "\
+                "Handicaps i.e. the Best players have the Lowest ratings."),
             (("T",0,seq + 5,0),("IRB",r1s),0,"Mixed Ratings","",
                 self.acc[9],"N",None,None,None,None,None,
-                "Select if Different Ratings are Used for Mixed "\
+                "Select if Different Ladies Ratings are Used for Mixed "\
                 "Gender Draws."),
             (("T",0,seq + 6,0),"IUI",1,"Default Team Size","",
                 self.acc[10],"N",None,None,None,None,None,

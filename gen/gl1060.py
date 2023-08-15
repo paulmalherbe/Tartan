@@ -576,7 +576,7 @@ Please Correct your Import File and then Try Again.""" % err)
             return acc[0]
 
     def getCrsName(self):
-        acc = self.sql.getRec("crsmst", cols=["crm_name", "ctm_stat"],
+        acc = self.sql.getRec("crsmst", cols=["crm_name", "crm_stat"],
             where=[("crm_cono", "=", self.acoy), ("crm_acno", "=", self.acrs)],
             limit=1)
         if acc:

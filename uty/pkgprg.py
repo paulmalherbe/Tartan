@@ -12,23 +12,6 @@ import subprocess
 import sys
 import time
 
-sn = "tartan"
-cs = sn.capitalize()
-bd = os.path.expanduser("~")  # Base directory
-sv = "root@mail"              # http login@server
-vv = 6                        # Version number
-bv = "Tartan-%s" % vv         # Version base name
-bx = "TartanExe"              # Executable directory
-bo = "TartanOld"              # Old directory
-bs = "TartanSve"              # Save directory
-vd = os.path.join(bd, bv)     # Source directory
-if not os.path.isdir(vd):
-    print("Invalid Source Directory: %s" % vd)
-    sys.exit()
-sys.path.append(vd)
-
-from tartanFunctions import findFile, sendMail
-from ms0000 import VERSION
 
 def exeCmd(cmd):
     try:
@@ -65,6 +48,23 @@ def getName(nam, x, y, z=None):
             break
     return nam
 
+dist = "tartan"                                 # Distribition
+cs = dist.capitalize()                          # Tartan
+bd = os.path.expanduser("~")                    # Base directory
+sv = "root@mail"                                # http login@server
+vv = 6                                          # Version number
+bv = "%s-%s" % (cs, vv)                         # Version base name
+bx = "TartanExe"                                # Executable directory
+bo = "TartanOld"                                # Old directory
+bs = "TartanSve"                                # Save directory
+vd = os.path.join(bd, bv)                       # Source directory
+if not os.path.isdir(vd):
+    print("Invalid Source Directory: %s" % vd)
+    sys.exit()
+sys.path.append(vd)
+from tartanFunctions import findFile, sendMail
+from ms0000 import VERSION
+
 bits = ["7", "8", "32", "64"]
 home = str(pathlib.Path.home())
 email = False
@@ -92,19 +92,19 @@ for o, v in opts:
         print("""
 Usage: python pkgprg.py [options]
 
-    -b Base Directory
-    -c Create a cd
-    -e Email changes
-    -g Exclude Uncommitted
+    -b Base Directory (%s)
+    -c Create a cd (%s)
+    -e Email changes (%s)
+    -g Include Uncommitted (%s)
     -h This Help
-    -o Generate Onefile
-    -i Increment Version
-    -l Linux Executable
-    -p Publish Version
-    -t Temporary Work Directory
-    -u Upgrade python modules
+    -o Generate Onefile (%s)
+    -i Increment Version (%s)
+    -l Linux Executable (%s)
+    -p Publish Version (%s)
+    -t Temporary Work Directory (%s)
+    -u Upgrade python modules (%s)
     -v New Version Number
-    -w Windows Installer for Architecture 0=all, 7, 8, 32 and 64""")
+    -w Windows Installer for Architecture 0=all, 7, 8, 32 and 64 (False)""" % (bd, mkcd, email, incunc, verinc, linux, onefle, publish, tmpfle, upgpip))
         exeCmd("python uty/mkwindows.py -h")
         sys.exit()
     elif o == "-b":
@@ -134,6 +134,7 @@ Usage: python pkgprg.py [options]
         windows = True
         if v != "0":
             bits = v.split(",")
+
 if windows:
     names = []
     # Check if wine or windows
@@ -142,7 +143,7 @@ if windows:
         stdout=subprocess.PIPE, close_fds=True)
     for l in proc.stdout:
         name = l.strip().decode("utf-8")
-        if name and name != "NewMail":
+        if name and name != "Server":
             names.append(name)
     if names:
         vcheck = input("Use Virtual Machines (y/n): ")
@@ -312,14 +313,18 @@ if incunc:
         "tab/*0.py ms0000.py TartanClasses.py tartanFunctions.py "\
         "tartanImages.py tartanWork.py uty/*0.py wag/*0.py" % bd)
 # Create a new system directory
-if os.path.exists("%s/%s" % (bd, sn)):
-    shutil.rmtree("%s/%s" % (bd, sn))
-os.mkdir(os.path.join(bd, sn))
+if os.path.exists("%s/%s" % (bd, dist)):
+    shutil.rmtree("%s/%s" % (bd, dist))
+os.mkdir(os.path.join(bd, dist))
 # Change directory to system directory
-os.chdir("%s/%s" % (bd, sn))
+os.chdir("%s/%s" % (bd, dist))
 # Copy file
 if windows:
-    fles = ["tartan.iss","ucrtbase.7","ucrtbase.8"]
+    fles = ["%s.iss" % dist]
+    if "7" in bits:
+        fles.append("ucrtbase.7")
+    if "8" in bits:
+        fles.append("ucrtbase.8")
 else:
     fles = []
 if onefle:
@@ -337,10 +342,10 @@ if os.path.isdir("ver"):
 # Change to Base Directory
 os.chdir(bd)
 # Create zip file for pyinstaller
-zipfle = "%s-%s" % (sn, vv)
+zipfle = "%s-%s" % (dist, vv)
 if os.path.exists("%s/%s/%s.zip" % (bd, bs, zipfle)):
     os.remove("%s/%s/%s.zip" % (bd, bs, zipfle))
-exeCmd("zip -qr %s/%s/%s %s --exclude \.git\*" % (bd, bs, zipfle, sn))
+exeCmd("zip -qr %s/%s/%s %s --exclude \.git\*" % (bd, bs, zipfle, dist))
 if windows:
     # Python windows executable
     if names:
@@ -422,24 +427,24 @@ if publish:
     # Create Source tgz and zip
     os.chdir(bd)
     exeCmd("tar -czf %s/%s/%s_%s.%s.tgz %s" %
-        (bd, bx, cs, cver[0], cver[1], sn))
+        (bd, bx, cs, cver[0], cver[1], dist))
     os.chdir(pypath)
     exeCmd("cp -p %s/%s/%s-%s.zip %s/%s/%s_%s.%s.zip" %
-        (bd, bs, sn, vv, bd, bs, cs, cver[0], cver[1]))
+        (bd, bs, dist, vv, bd, bs, cs, cver[0], cver[1]))
     if windows:
         # Rename Windows exe's
         if "32" in bits:
             exeCmd("mv %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
-                (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+                (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "64" in bits:
             exeCmd("mv %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
-                (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+                (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "8" in bits:
             exeCmd("mv %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
-                (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+                (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "7" in bits:
             exeCmd("mv %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
-                (bd, bx, sn, vv, bd, bx, cs, cver[0], cver[1]))
+                (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
     print("Version Number is %s.%s" % tuple(cver))
     # Dropbox
     exeCmd("rm %s/Dropbox/Apps/%s/%s_%s*" % (home, cs, cs, vv))
@@ -521,6 +526,6 @@ if email:
         mess = (text, html)
         for addr in addrs:
             sendMail(serv, mfrm, addr, subj, mess=(text, html))
-shutil.rmtree("%s/%s" % (bd, sn))
+shutil.rmtree("%s/%s" % (bd, dist))
 print("DONE")
 # END

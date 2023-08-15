@@ -28,7 +28,6 @@ COPYING
 # ========================================================
 import copy, csv, datetime, functools, glob, gzip, math, os, re, shutil
 import subprocess, sys, tarfile, tempfile, textwrap, threading, time
-import webbrowser
 # ========================================================
 # TARTAN Standard Functions and Variables e.g. showError
 # ========================================================
@@ -113,8 +112,7 @@ try:
 except:
     PYGAL = False
 try:
-    from svglib.svglib import svg2rlg
-    from reportlab.graphics import renderPDF
+    import cairosvg
     CVTSVG = True
 except:
     CVTSVG = False
@@ -2468,12 +2466,16 @@ class Sql(object):
             try:
                 tdat = list(odat)
                 if xfl and len(tdat) > idx:
+                    # Clear/Add the export field
                     dat = tdat[:idx] + [""]
                 elif xfl:
+                    # Clear/Add the export field
                     dat = tdat + [""]
                 elif seq and len(tdat) > idx:
+                    # Clear/Add the sequence field
                     dat = tdat[:idx]
                 else:
+                    # Ensure the data does not have mode fields than col
                     dat = tdat[:len(col)]
                 if dofmt:
                     for n, c in enumerate(fld):
@@ -2877,7 +2879,8 @@ class CCD(object):
     D1 = Date (CCYYMMDD)
     D2 = Current Period Date (CCYYMM)
     DT = Date and Time (DD-MMM-YYYY-HH:MM)
-    FF = File or Directory Format
+    FD = Directory Format
+    FF = File Format
     HA = Normal Alphanumeric Hidden as for Passwords
     ID = Identity Number
     LA = Lower Case Alphanumeric (Must also have 'size' set)
@@ -3029,7 +3032,7 @@ class CCD(object):
             self.unsignedDecimal()
         elif self.types in ("CD", "SD", "Sd"):
             self.signedDecimal()
-        elif self.types == "FF":
+        elif self.types in ("FD", "FF"):
             self.pathFormat()
         elif self.types in ("TV", "Tv", "TX"):
             self.work = self.data.strip()
@@ -3280,40 +3283,14 @@ class CCD(object):
             self.err = "Invalid Signed Decimal (%s)" % self.types
 
     def pathFormat(self):
-        if not self.data:
-            self.work = self.disp = self.data
-            return
-        try:
-            if self.data.count("/"):
-                data = self.data.split("/")
+        if self.data:
+            data = getFileName(self.data, self.types, check=True)
+            if not data:
+                self.err = "Invalid Path (%s)" % self.types
             else:
-                data = [self.data]
-            work = []
-            for dat in data:
-                if dat.count("\\"):
-                    work.extend(dat.split("\\"))
-                else:
-                    work.append(dat)
-            if sys.platform == "win32":
-                if work[0].count(":"):
-                    drive = work.pop(0).upper()
-                else:
-                    drive = os.path.splitdrive(os.getcwd())[0].upper()
-            else:
-                if not work[0]:
-                    del work[0]
-                    drive = os.sep
-                else:
-                    drive = os.getcwd()
-            if sys.platform == "win32":
-                data = os.path.join(drive, os.sep, *work)
-            else:
-                data = os.path.join(drive, *work)
-            self.work = self.disp = os.path.normpath(data)
-            if not os.path.isabs(self.work):
-                raise Exception
-        except:
-            self.err = "Invalid Path (%s)" % self.types
+                self.work = self.disp = data
+        else:
+            self.work = self.disp = ""
 
 class ASD(object):
     """
@@ -3871,6 +3848,12 @@ class TartanDialog(object):
             if self.focus and self.first:
                 self.focusField(self.first[0], self.first[1], 1)
         self.master.update_idletasks()
+        #efldquit = True
+        #if efldquit:
+        #    for fld in self.eflds:
+        #        if type(fld[1]) == str:
+        #            print(fld[1][1:])
+        #    sys.exit()
 
     def setVariables(self):
         self.first = []             # the first field details
@@ -5268,14 +5251,14 @@ Export - The report in the selected format will be opened
         if err and err != "ok":
             if self.mf.rcdic["errs"] == "Y":
                 try:
-                    import beepy
-                    beepy.beep(1)
-                except:
-                    try:
+                    if sys.platform == "win32":
                         import winsound
-                        winsound.Beep(2500, 1000)
-                    except:
-                        self.mf.window.bell()
+                        winsound.Beep(2500, 500)
+                    else:
+                        import beepy
+                        beepy.beep(1)
+                except:
+                    self.mf.window.bell()
             self.mf.updateStatus("%s, Retry%s" % (err, sufx), "white", "red")
         else:
             self.mf.updateStatus("%s%s" % (text.lstrip(), sufx))
@@ -5323,6 +5306,9 @@ Export - The report in the selected format will be opened
             else:
                 ok = "Invalid or Missing Deletion Command"
             if ok == "nf":
+                return
+            if ok == "rf":
+                self.focusField(self.frt, self.pag, self.col)
                 return
             if type(ok) in (list, tuple):
                 if len(ok) == 4:
@@ -6065,10 +6051,10 @@ Export - The report in the selected format will be opened
             else:
                 return("ok")
         elif val[0] == "path":
-            if os.path.exists(wrk):
-                return ("ok", )
-            else:
+            if not getFileName(wrk, "FD", check=True):
                 return ("no", "Invalid %s, Not Found" % des)
+            else:
+                return ("ok", )
         elif val[0] == "email":
             if wrk:
                 eml = wrk.split(",")
@@ -7961,7 +7947,7 @@ class TartanConfig(object):
             ("General",None,("T",1,1),("T",3,0)),
             ("Dialog",None,("T",1,1),("T",3,0)))
         fld = (
-            (("T",0,0,0),"IFF",65,"Configuration File","",
+            (("T",0,0,0),"ITX",65,"Configuration File","",
                 self.rcfile,"N",self.doRcFile,None,None,("notblank",),None,
                 "This is the main configuration file for a Tartan "\
                 "Installation. There can be as many of these as you "\
@@ -7978,7 +7964,7 @@ class TartanConfig(object):
                 "the database at any time."),
             (("T",1,1,0),"ILA",30,"Database Name","",
                 self.rcdic["dbname"],"N",self.doName,None,None,("notblank",)),
-            (("T",1,2,0),"IFF",50,"Files Directory","",
+            (("T",1,2,0),"ITX",50,"Files Directory","",
                 "","N",self.doDir,pth,None,("notblank",),None,
                 "The Directory where the Database will be located."),
             (("T",1,3,0),"INA",30,"Host Name","",
@@ -7991,13 +7977,13 @@ class TartanConfig(object):
             (("T",1,6,0),"IHA",30,"Password","",
                 self.rcdic["dbpwd"],"N",self.doPwd,None,None,None,None,
                 "The Database Administrator's Password."),
-            (("T",2,0,0),"IFF",50,"Backup Path","",
+            (("T",2,0,0),"ITX",50,"Backup Path","",
                 "","N",self.doDir,pth,None,("notblank",),None,
                 "The Directory where all Backup Archives are stored."),
-            (("T",2,1,0),"IFF",50,"Work Path","",
+            (("T",2,1,0),"ITX",50,"Work Path","",
                 "","N",self.doDir,pth,None,("notblank",),None,
                 "The Directory where all Work Files are stored."),
-            (("T",2,2,0),"IFF",50,"Upgrade Path","",
+            (("T",2,2,0),"ITX",50,"Upgrade Path","",
                 "","N",self.doDir,pth,None,("notblank",),None,
                 "The Directory where System Upgrades are stored."),
             (("T",2,3,0),"IFF",50,"PDF Viewer","",
@@ -10996,7 +10982,7 @@ class LoanInterest(object):
     Used to calculate interest on a loan:
 
     sys    - The system, L for loans and S for staff loans
-    dbm    - The Sql class
+    dbm    - The Database class
     lonrec - The loans record
     update - Update tables, Y or N
     batch  - Batch number
@@ -11006,13 +10992,12 @@ class LoanInterest(object):
     glctl  - G/L control accounts, [control, dr_interest, cr_interest]
     capnm  - The name of the data capturer
     """
-    def __init__(self, sys, dbm, lonrec, update="N", batch="", curdt=0, tdate=0, refno=False, glctl=None, capnm=""):
+    def __init__(self, sys, dbm, lonrec, update="N", batch="", tdate=0, refno=False, glctl=None, capnm=""):
         self.sys = sys
         self.dbm = dbm
         self.lonrec = lonrec
         self.update = update
         self.batch = batch
-        self.curdt = curdt
         self.tdate = tdate
         if not refno:
             self.refno = "Pending"
@@ -15976,7 +15961,7 @@ class CreateChart(object):
         if CVTSVG and self.vwr == "P":
             # Convert to PDF
             self.pdfnam = flenam.replace("svg", "pdf")
-            renderPDF.drawToFile(svg2rlg(flenam), self.pdfnam)
+            cairosvg.svg2pdf(file_obj=open(flenam, "rb"), write_to=self.pdfnam)
         else:
             self.pdfnam = flenam
         # Print or Display the Chart
@@ -17524,6 +17509,7 @@ Mobile:            27-82-9005260
 
     def linkMail(self, *args):
         try:
+            self.mf.window.withdraw()
             web = "mailto:paul@tartan.co.za"
             if sys.platform == "win32":
                 os.startfile(web)
@@ -17531,15 +17517,19 @@ Mobile:            27-82-9005260
                 subprocess.call(["xdg-open", web])
             self.exitAbout()
         except:
+            self.mf.window.deiconify()
             showError(self.mf.window, "Browser Error",
                 "Cannot Load Browser or URL")
 
     def linkWeb(self, *args):
         try:
+            import webbrowser
+            self.mf.window.withdraw()
             web = "https://www.tartan.co.za"
-            webbrowser.open_new(web)
+            webbrowser.open(web, new=1)
             self.exitAbout()
         except:
+            self.mf.window.deiconify()
             showError(self.mf.window, "Browser Error",
                 "Cannot Load Browser or URL")
 
@@ -17581,6 +17571,7 @@ Mobile:            27-82-9005260
 
     def exitAbout(self, *args):
         self.about.destroy()
+        self.mf.window.deiconify()
         self.mf.createChildren()
         self.mf.closeLoop()
 
@@ -18549,11 +18540,13 @@ class ViewPDF(object):
                 else:
                     vwr = ""
                 self.pdfnam = pdfnam
-                if vwr and os.path.exists(vwr):
+                if vwr:
                     # default to the selected viewer from the rcfile
-                    exe, cmd = parsePrg(vwr)
-                    cmd.append(pdfnam)
-                    subprocess.call(cmd)
+                    nam = getFileName(vwr)
+                    if nam:
+                        exe, cmd = parsePrg(nam)
+                        cmd.append(pdfnam)
+                        subprocess.call(cmd)
                 elif not FITZ:
                     # Try and use the default pdf viewer
                     if sys.platform == "win32":

@@ -85,8 +85,8 @@ class sl2030(object):
             curdt = int(self.trdate / 100)
             batch = "L%s" % curdt
             LoanInterest("S", self.opts["mf"].dbm, rec, update="Y",
-                batch=batch, curdt=curdt, tdate=self.trdate,
-                glctl=self.glctl, capnm=self.opts["capnm"])
+                batch=batch, tdate=self.trdate, glctl=self.glctl,
+                capnm=self.opts["capnm"])
         p.closeProgress()
         self.sql.updRec("wagctl", cols=["ctw_i_date"], data=[self.trdate],
             where=[("ctw_cono", "=", self.opts["conum"])])

@@ -138,9 +138,9 @@ class ln3030(object):
                 ltot = float(ASD(ltot) + ASD(lbal.work))
                 if self.pend == "Y":
                     LoanInterest("L", self.opts["mf"].dbm, dat, update="Y",
-                        tdate=self.date, batch="Pending", curdt=self.curdt)
-                    nbal = self.sql.getRec("lontrn", cols=col,
-                        where=whr, limit=1)
+                        tdate=self.date, batch="Pending")
+                    nbal = self.sql.getRec("lontrn", cols=col, where=whr,
+                        limit=1)
                     nbal = CCD(nbal[0], "SD", 13.2)
                     ntot = float(ASD(ntot) + ASD(nbal.work))
                     ibal = CCD(nbal.work - lbal.work, "SD", 13.2)

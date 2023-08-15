@@ -86,7 +86,7 @@ class cs3010(object):
             (("T",0,1,0),"Id1",10,"To   Date","To Date",
                 "","Y",self.doTo,dte,None,("efld",)),
             (("T",0,2,0),"ISD",13.2,"Float","Cash Float",
-                2000,"Y",self.doFloat,None,None,("notzero",)))
+                0,"Y",self.doFloat,None,None,("efld",)))
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
@@ -104,10 +104,11 @@ class cs3010(object):
             return "Invalid To Date"
         self.to = w
         self.tod = CCD(w, "D1", 10).disp
-        csh = self.sql.getRec("cshcnt", where=[("cct_cono", "=",
-            self.opts["conum"]), ("cct_type", "=", "T"), ("cct_date",
-            "between", self.fm, self.to)])
-        if not csh:
+        ana = self.sql.getRec("cshana", where=[("can_cono", "=",
+            self.opts["conum"]), ("can_trdt", "between", self.fm, self.to)])
+        self.csh = self.sql.getRec("cshcnt", where=[("cct_cono", "=",
+            self.opts["conum"]), ("cct_date", "between", self.fm, self.to)])
+        if not ana and not self.csh:
             return "ff1|Invalid Cash Capture Dates"
 
     def doFloat(self, frt, pag, r, c, p, i, w):
@@ -145,9 +146,9 @@ class cs3010(object):
     def printExpTak(self, recs, ptyp=None):
         self.fpdf.setFont(style="B")
         if ptyp == 1:
-            self.fpdf.drawText("Cash Expenditure")
+            self.fpdf.drawText("Expenditure")
         else:
-            self.fpdf.drawText("Cash Takings")
+            self.fpdf.drawText("Income")
         self.fpdf.drawText()
         self.fpdf.drawText("%-10s %-36s %7s %13s %13s" % ("  Date",
             "Description", "Code", "Vat-Amount ", "Inc-Amount "))
@@ -187,7 +188,7 @@ class cs3010(object):
                 "Total Expenses", vat.disp, tot.disp))
         else:
             self.fpdf.drawText("%10s %-36s         %13s %13s" % ("",
-                "Total Takings", vat.disp, tot.disp))
+                "Total Income", vat.disp, tot.disp))
         self.fpdf.drawText()
 
     def doSummary(self):
@@ -226,7 +227,7 @@ class cs3010(object):
         if ptyp == 1:
             self.fpdf.drawText("Expenses Summary")
         else:
-            self.fpdf.drawText("Takings Summary")
+            self.fpdf.drawText("Income Summary")
         self.fpdf.drawText()
         self.fpdf.drawText("%7s %-61s %13s" % ("Code", "Description",
             "Amount "))
@@ -257,7 +258,7 @@ class cs3010(object):
         self.fpdf.drawText()
         self.fpdf.drawText()
         self.pglin += 5
-        if ptyp == 1:
+        if not self.csh or ptyp == 1:
             return
         if (self.pglin + 30) > self.fpdf.lpp:
             self.pageHeading()
@@ -299,7 +300,7 @@ class cs3010(object):
         self.fpdf.drawText("Cash Reconciliation")
         self.fpdf.setFont()
         self.fpdf.drawText()
-        self.fpdf.drawText("%-26s %42s %s" % ("Total Takings", "",
+        self.fpdf.drawText("%-26s %42s %s" % ("Total Income", "",
             self.tak.disp))
         self.fpdf.drawText("%-26s %42s %s" % ("Total Expended", "",
             self.exp.disp))

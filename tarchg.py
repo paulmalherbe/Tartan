@@ -1,4 +1,23 @@
-changes = """ver_6.15 2023-04-03
+changes = """ver_6.16 2023-08-15
+===================
+ 1) Dropped Support for Windows 7 and 8.
+ 2) Fixed an error in general ledger account statements.
+ 3) Fixed an error in loans ledger interest raising.
+ 4) Updated embedded python to version  3.11
+ 5) Improved NETBIOS file and path resolution.
+ 6) Improved bowls tabs draw history routine.
+ 7) Improved bowls tabs draw edit facility.
+ 8) Improved bowls tabs draw summary report.
+ 9) Fixed a bug with bowls tabs draw by strength.
+10) Updated some items in the reference manual.
+11) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.15 2023-04-20
 ===================
  1) Fixed a bug with interrogation history totals.
  2) Fixed a bug with loans capitalization of interest.

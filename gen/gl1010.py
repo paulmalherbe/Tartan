@@ -404,7 +404,7 @@ Please Correct your Import File and then Try Again.""" % err)
                 where=[("ctd_cono", "=", self.opts["conum"])])
             if not chk:
                 self.sql.insRec("drsctl", data=[self.opts["conum"], self.igdrs,
-                    "E", "N", "statement_normal", "Y", ""])
+                    "E", "N", "recurring_charges", "statement_normal", "Y", ""])
             else:
                 self.sql.updRec("drsctl", cols=["ctd_glint"], data=[self.igdrs],
                     where=[("ctd_cono", "=", self.opts["conum"])])

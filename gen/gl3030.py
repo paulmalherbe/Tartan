@@ -340,7 +340,7 @@ class gl3030(object):
             self.fpdf.drawText("%-7s %-7s %-30s" % ("Account", self.acno.disp,
                 self.desc.disp))
             self.fpdf.drawText()
-            self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %-13s %-13s %-13s" \
+            self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %-13s %-13s %-14s" \
                 % ("   Date", "Reference", "Typ", "Batch", "Remarks",
                 "       Debit", "      Credit", "     Balance"))
             self.fpdf.underLine(self.head)

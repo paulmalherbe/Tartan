@@ -253,8 +253,8 @@ class ms1010(object):
             if self.img:
                 self.img.destroyImage()
         else:
-            chk = getFileName(w, wrkdir=self.opts["mf"].rcdic["wrkdir"])
-            if self.displayLogo(chk):
+            nam = getFileName(w, wrkdir=self.opts["mf"].rcdic["wrkdir"])
+            if self.displayLogo(nam):
                 return "Invalid Logo Image"
 
     def displayLogo(self, logo):

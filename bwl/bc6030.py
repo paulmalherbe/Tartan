@@ -1,6 +1,6 @@
 """
 SYNOPSIS
-    Bowls Competition Orize Envelopes.
+    Bowls Competition Prize Envelopes.
 
     This file is part of Tartan Systems (TARTAN).
 
@@ -38,6 +38,7 @@ class bc6030:
         self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwltyp"], prog=__name__)
         if self.sql.error:
             return
+        self.przs = [0,0,0]
         return True
 
     def mainProcess(self):
@@ -51,16 +52,21 @@ class bc6030:
                 ("bcm_name", "", 0, "Name")),
             "where": [("bcm_cono", "=", self.opts["conum"])],
             "order": "bcm_code"}
+        r1s = (("Per Team", "T"), ("Per Member", "M"))
         fld = (
             (("T",0,0,0),"I@bcm_code",0,"","",
                 "","N",self.doComp,cde,None,("notzero",)),
             (("T",0,0,0),"ONA",30,""),
             (("T",0,1,0),"IUI",1,"Groups","Number of Groups",
-                0,"N",self.doGrps,None,None,("notzero",)),
-            (("T",0,2,0),"IUI",1,"Prizes","Prizes per Group",
+                1,"N",self.doGrps,None,None,("notzero",)),
+            (("T",0,2,0),"IUI",1,"Prizes Group 1","",
                 3,"N",self.doPrzs,None,None,("notzero",)),
-            (("T",0,3,0),"IUI",1,"Members","Team Members",
-                0,"N",self.doMems,None,None,("notzero",)))
+            (("T",0,3,0),"IUI",1,"Prizes Group 2","",
+                3,"N",self.doPrzs,None,None,("notzero",)),
+            (("T",0,4,0),"IUI",1,"Prizes Group 3","",
+                3,"N",self.doPrzs,None,None,("notzero",)),
+            (("T",0,5,0),("IRB",r1s),0,"Envelopes","",
+                "T","N",self.doEnvs,None,None,None))
         but = (("Exit", None, self.doExit, 0, ("T",0,1), ("T",0,0)),)
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)
@@ -89,21 +95,26 @@ class bc6030:
         self.grps = w
 
     def doPrzs(self, frt, pag, r, c, p, i, w):
-        self.przs = w
-        self.df.loadEntry(frt, pag, p+1, data=self.tsiz)
+        self.przs[p - 3] = w
+        if self.grps == 1:
+            return "sk2"
+        elif self.grps == 2 and p == 4:
+            return "sk1"
 
-    def doMems(self, frt, pag, r, c, p, i, w):
-        self.mems = w
+    def doEnvs(self, frt, pag, r, c, p, i, w):
+        self.envs = w
 
     def doEnd(self):
         self.df.closeProcess()
         grps = ("A", "B", "C")
         poss = ("First Place", "Second Place", "Third Place")
-        if self.mems == 2:
+        if self.tsiz == 1 or self.envs == "T":
+            mems = ("",)
+        elif self.tsiz == 2:
             mems = ("Skip", "Lead")
-        elif self.mems == 3:
+        elif self.tsiz == 3:
             mems = ("Skip", "Second", "Lead")
-        elif self.mems == 4:
+        elif self.tsiz == 4:
             mems = ("Skip", "Third", "Second", "Lead")
         font=("Courier", "B", 24)
         fpdf = MyFpdf(name=__name__, orientation="P", fmat="A4", head=80,
@@ -111,14 +122,14 @@ class bc6030:
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
         for x in range(self.grps):
-            for y in range(self.przs):
-                for z in range(self.mems):
+            for y in range(self.przs[x]):
+                for z in range(len(mems)):
                     fpdf.add_page()
                     fpdf.drawText(x=0, y=30, align="C", txt=self.name,
                         font=font)
                     fpdf.drawText(x=0, y=45, align="C", txt="Group %s - %s" %
                         (grps[x], poss[y]), font=font)
-                    if self.mems > 1:
+                    if len(mems) > 1:
                         fpdf.drawText(x=0, y=60, align="C", txt=mems[z],
                             font=font)
         if fpdf.saveFile(pdfnam, self.opts["mf"].window):

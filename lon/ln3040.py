@@ -209,8 +209,7 @@ class ln3040(object):
         if self.pend == "Y":
             # Raise Pending Interest
             LoanInterest("L", self.opts["mf"].dbm, lm2, update="Y",
-                tdate=self.date.work, batch="Pending", curdt=self.curdt,
-                capnm="")
+                tdate=self.date.work, batch="Pending", capnm="")
         # Get Transactions
         whr = [
             ("lnt_cono", "=", self.opts["conum"]),

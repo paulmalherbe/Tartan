@@ -1213,9 +1213,9 @@ class sc2020(object):
             return self.getSkip(win[0], 0, rnd+1)
 
     def drawLink(self, cwth, l1, l2, x, y, inc):
-        self.fpdf.line(x, y, x+(cwth*l1), y)
-        self.fpdf.line(x+(cwth*l1), y, x+(cwth*l1), inc)
-        self.fpdf.line(x+(cwth*l1), inc, x+(cwth*(l1+l2)), inc)
+        self.fpdf.line(x, y, x + (cwth * l1), y)
+        self.fpdf.line(x + (cwth * l1), y, x + (cwth * l1), inc)
+        self.fpdf.line(x + (cwth * l1), inc, x + (cwth * (l1 + l2)), inc)
 
     def printClosed(self, skips):
         self.fpdf.drawText()

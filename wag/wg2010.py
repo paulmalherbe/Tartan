@@ -117,7 +117,8 @@ class wg2010(object):
             return "Invalid Code"
         chk = self.sql.getRec("wagcap", where=[("wcp_cono", "=",
             self.opts["conum"]), ("wcp_empno", "=", self.empno),
-            ("wcp_type", "=", self.rtyp), ("wcp_code", "=", self.code)])
+            ("wcp_type", "=", self.rtyp), ("wcp_code", "=", self.code),
+            ("wcp_paid", "=", "N")])
         if chk:
             if self.rtyp == "E":
                 txt = "Earnings"

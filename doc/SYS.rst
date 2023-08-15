@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
 =================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.15
+:Version:   6.16
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -317,12 +317,12 @@ Export Database
 Select this routine to export data to an external database in a chosen directory and name. The database name will default to *tartan001.db*. The word tartan will be replaced by the name of the source database name and the *001* will be replaced by the first company's number.
 
 + **Company(s)** - Select *Single* for a single company or *Multi* for multiple companies.
-+ **Company Number** - Enter the single company number to export.
++ **Company Number** - Enter the single company number or select the multiple companies to export.
 
 .. NOTE::
     If the selected company or companies is/are linked to other companies you will be asked if all linked companies should be exported.
 
-+ **Directory** - Enter the directory where the exported file must be placed.
++ **Directory** - Enter the directory where the exported file must be placed or accept the default.
 + **Database Name** - Enter the name of the exported file or accept the default.
 
 In order to use this exported database perform the following steps on the computer you will be using:
@@ -331,7 +331,10 @@ In order to use this exported database perform the following steps on the comput
 + Install Tartan on the target computer if it is not already installed
 + Execute Tartan with the following command:
 
-    + c:\\Tartan\\prg\\ms0000.exe -r c:\\Tartan\\tartan001
+    + Windows
+        + c:\\Tartan\\prg\\ms0000.exe -r c:\\Tartan\\tartan001
+    + Linux
+        + python <Path to Tartan>/ms0000.py -r tartan001
 
 + You will now be in the Tartan Preferences Routine
 

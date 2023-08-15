@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 15)
+    VERSION = (6, 16)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -120,27 +120,6 @@ class ms0000(object):
                 self.output = True
             elif o in ("-p", "--program"):
                 self.program = v
-            elif o in ("-q", "--query"):
-                if not args:
-                    if len(v.split()) == 1:
-                        # Execute sql commands in a file
-                        self.query = v
-                    else:
-                        self.query = [v.replace("\\", "")]
-                else:
-                    self.query = []
-                    for a in args:
-                        if a.count(";"):
-                            b = a.split(";")
-                            v = "%s %s" % (v, b[0].replace("\\", ""))
-                            self.query.append(v)
-                            v = b[1]
-                            continue
-                        if not v:
-                            v = a
-                        else:
-                            v = "%s %s" % (v, a.replace("\\", ""))
-                    self.query.append(v)
             elif o in ("-R", "--rcfdir"):
                 self.rcfdir = v
             elif o in ("-r", "--rcfile"):
@@ -205,7 +184,6 @@ Options:
             -o, --output            Toggle stdout redirection to stdout.txt
             -P, --pdf=              View a pdf file using built in viewer
             -p, --program=          Execute program directly bypassing the menu
-            -q, --query=            Execute a sql query
             -R, --rcfdir=           Directory of Available Tartan RC Files
             -r, --rcfile=           Path of Tartan RC File to use
             -s, --script=           Python script in the program directory
@@ -226,7 +204,7 @@ Options:
             self.doExit(dbm=False)
         if not self.version and not self.xdisplay:
             nodisp = ("tarBck", "tarUpd")
-            if not self.query and self.program not in nodisp:
+            if self.program not in nodisp:
                 print("xdisplay False but module not in %s" % str(nodisp))
                 self.doExit(dbm=False)
             elif not self.user:
@@ -275,8 +253,11 @@ Options:
                 py = "python 32bit"
             print("%-16s: %s" % (py, sys.version.split()[0]))
             from TartanClasses import tk
-            print("%-16s: %s" % ("tcl/tk",
-                tk.Tcl().eval("info patchlevel")))
+            if tk:
+                print("%-16s: %s" % ("tcl/tk",
+                    tk.Tcl().eval("info patchlevel")))
+            else:
+                print("%-16s: %s" % ("tcl/tk", "Not Installed"))
             for mod in pymoda + pymodb:
                 if len(mod) == 4 and sys.platform != mod[3]:
                     continue
@@ -412,19 +393,6 @@ Options:
             self.userLogin()
         if not self.user:
             # Exit if not valid user
-            self.doExit()
-        if self.query:
-            # Excecute sql query
-            if self.user["lvl"] > 6:
-                err = self.doSqlCmd()
-            else:
-                err = "Invalid Security Level"
-            if err:
-                if self.xdisplay:
-                    showError(self.mf.window, "Data Base Error",
-                        "\nDbCommand Error: %s\n" % err)
-                else:
-                    print("Data Base Error", "DbCommand Error: %s\n" % err)
             self.doExit()
         if self.program:
             # Excecute module without the menu
@@ -1851,66 +1819,6 @@ System --> Change Password""")
                 sss.append(None)
             return sss
 
-    def doSqlCmd(self):
-        if type(self.query) is list:
-            flenam = self.query
-        else:
-            name = os.path.abspath(self.query)
-            if os.path.isfile(name):
-                flenam = open(name, "r")
-            else:
-                return "Invalid Query File (%s)" % name
-        self.dbm.openDbase()
-        for line in flenam:
-            line = line.rstrip()
-            if not line or line[0] == "#":
-                continue
-            comm = line.split()
-            sel = False
-            qty = None
-            if comm and comm[0].lower() == "select":
-                sel = True
-                if comm[1][:3].lower() in ("avg", "max", "min", "sum"):
-                    qty = 1
-                elif comm[1].lower() == "count(*)":
-                    qty = 1
-                for num, cmd in enumerate(comm):
-                    if num < 2:
-                        continue
-                    if cmd == "limit":
-                        qty = int(comm[num + 1])
-                        break
-            try:
-                if comm[0] == "commit":
-                    self.dbm.commitDbase()
-                else:
-                    sq = Sql(self.dbm)
-                    if sel:
-                        ret = sq.sqlRec(line, limit=qty)
-                        self.mess = ""
-                        for r in ret:
-                            if type(r) is list:
-                                r = str(r)[1:-1]
-                            else:
-                                r = str(r)
-                            if not self.mess:
-                                self.mess = r
-                            else:
-                                self.mess = self.mess + "\n" + r
-                        if self.xdisplay and self.output:
-                            self.mf.head.configure(text="SQL Query")
-                            but = ([("Save", self.doSave)])
-                            ScrollText(scrn=self.mf.body, mess=self.mess,
-                                butt=but)
-                        else:
-                            print(self.mess)
-                    else:
-                        sq.sqlRec(line)
-            except:
-                self.dbm.closeDbase()
-                return "Error in SQL Statement\n\n%s" % line
-        self.dbm.closeDbase()
-
     def doSave(self):
         fle = open(os.path.join(self.rcdic["wrkdir"], "query.txt"), "w")
         fle.write(self.mess + "\n")
@@ -1936,11 +1844,11 @@ if __name__ == "__main__":
     # Load options
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-            "ab:c:de:f:hiklmnoP:p:q:R:r:s:t:u:vxz", [
+            "ab:c:de:f:hiklmnoP:p:R:r:s:t:u:vxz", [
             "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
             "help", "image", "loader", "imods", "output", "pdf=", "program=",
-            "query=", "rcfdir=", "rcfile=", "script=", "tcode=",
-            "user=", "version", "xdisplay", "zerobar"])
+            "rcfdir=", "rcfile=", "script=", "tcode=", "user=", "version",
+            "xdisplay", "zerobar"])
     except:
         opts, args = [("-h", "")], []
     ms0000(opts, args)

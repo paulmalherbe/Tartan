@@ -1665,7 +1665,7 @@ class bc2050(object):
 
     def doSeedNum(self, frt, pag, r, c, p, i, w):
         if w > (self.prs * 2):
-            return "Invalid Number of Seeds"
+            return "Too Many Seeds (>%s)" % (self.prs * 2)
         self.seednum = w
         if not w:
             return "nd"
@@ -1755,10 +1755,14 @@ class bc2050(object):
                 nsiz -= 1
                 self.fpdf.setFont(style="B", size=nsiz)
                 nwth = self.fpdf.get_string_width(txt)
-            self.fpdf.drawText(txt, x=x, y=y, w=w, font=("B", nsiz),
-                border="TLRB")
+            if txt:
+                bdr = "TLRB"
+            else:
+                bdr = "LRB"
+            self.fpdf.drawText(txt, x=x, y=y, w=w, font=("B", nsiz), border=bdr)
 
         for num, skip in enumerate(skips):
+            # Print Round 1 and Round 2 if more than 2 Rounds
             x = self.fpdf.get_x()
             y = self.fpdf.get_y()
             if skip[1] > 900000:
@@ -1800,6 +1804,7 @@ class bc2050(object):
             lasty = self.fpdf.get_y()
         inc = 4
         for aa in range(self.rnds - 3):
+            # Rounds 3 and 4
             rd += 1
             bb = []
             for rnd in range(0, len(rnds), 2):
@@ -1823,11 +1828,13 @@ class bc2050(object):
         x = rnds[0][0]
         y = rnds[0][1]
         if self.rnds == 2:
+            # Winner
             rd += 1
             if grp == 1:
                 drawField(self.getWinner(rd, 2, 0, 1),
                     x + (cwth * (l1 + l2)), y, w=(cwth * nm))
         else:
+            # Rest of Rounds and Winner
             rd += 1
             if self.rnds > 5:
                 y += (chgt * 4)

@@ -87,7 +87,7 @@ def placeWindow(window, parent=None, place="C", size=None, expose=False):
             wx = 0
         elif place == "R":
             wx = window.winfo_screenwidth() - ww
-        elif place in ("C", "M"):
+        else:
             wx = int((window.winfo_screenwidth() - ww) / 2)
         if place == "M":
             wy = int((window.winfo_screenheight() - wh) / 2)
@@ -440,10 +440,10 @@ def showException(scrn, path, mess, maxTB=None, xits=None, dbm=None):
                 smtp = dbm.cu.fetchone()
                 if not smtp or not smtp[1]:
                     raise Exception
-                if not sendMail(smtp[1:7], smtp[7], ["errors@tartan.co.za"],
-                        "Version: %s Company: %s Host: %s User: %s" %
-                        (smtp[8], smtp[0], host, user), attach=[fnam],
-                        wrkdir=path):
+                err = sendMail(smtp[1:7], smtp[7], ["errors@tartan.co.za"],
+                    "Version: %s Company: %s Host: %s User: %s" % (smtp[8],
+                    smtp[0], host, user), attach=[fnam], wrkdir=path)
+                if not err:
                     os.remove(fnam)
             except:
                 pass
@@ -881,8 +881,7 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
         if not check:
             showException(None, wrkdir, "Mail Server (%s %s) "\
                 "Invalid or Unavailable\n\n%s" % (host, port, err))
-        else:
-            return err
+        return err
     if type(to) == str:
         to = [to]
     if attach is None:
@@ -2322,54 +2321,66 @@ def getMarkup(sql, cono, group, code, loc, level):
         mkp = st2[0]
     return mkp
 
-def getFileName(path, wrkdir=None, check=False):
+def getFileName(path, ptyp="FF", wrkdir=None, check=False):
     import os, sys
     if sys.platform == "win32" or path[:2] not in ("\\\\", "\\", "//"):
         # Normal path
-        if os.path.isfile(path):
-            if check:
-                return True
-            else:
-                return path
+        if os.path.exists(path):
+            return os.path.normpath(path)
         else:
             return
     # UNC path
     con = None
     fle = None
-    pth = None
+    svr = ""
+    shr = ""
+    pth = ""
+    usr = ""
+    pwd = ""
     try:
-        import socket
+        import socket, stat
         from smb.SMBConnection import SMBConnection
         socket.setdefaulttimeout(5)
-        svr = path.replace("/", "|").replace("\\", "|")
-        svr = svr.split("|")
-        con = SMBConnection("", "", "", svr[2])
-        con.connect(svr[2])
-        for p in svr[4:]:
+        obj = path.replace("/", "|").replace("\\", "|")
+        obj = obj.split("|")
+        obj[:] = (value for value in obj if value != "")
+        svr = obj[0]
+        shr = obj[1]
+        for p in obj[2:]:
             if not pth:
                 pth = p
             else:
                 pth = os.path.join(pth, p)
-        con.getAttributes(svr[3], pth)
-        if check:
+        try:
+            con = SMBConnection(usr, pwd, usr, svr, is_direct_tcp=False)
+        except:
+            con = SMBConnection(usr, pwd, svr, is_direct_tcp=True)
+        con.connect(svr)
+        att = con.getAttributes(shr, pth)
+        if ptyp == "FD" and not att.isDirectory:
+            raise Exception("Invalid Directory")
+        elif ptyp == "FF" and not att.isNormal:
+            raise Exception("Invalid File")
+        if check or ptyp == "FD":
             con.close()
-            return True
+            return path
+        # Download File
         if wrkdir:
             nam = os.path.join(wrkdir, os.path.basename(pth))
         else:
             nam = os.path.join(os.getcwd(), os.path.basename(pth))
         if not os.path.exists(nam):
             fle = open(nam, "wb")
-            con.retrieveFile(svr[3], pth, fle)
+            con.retrieveFile(shr, pth, fle)
             fle.close()
+            os.chmod(nam, stat.S_IRWXU)
         con.close()
         return nam
     except:
-        pass
-    if fle:
-        fle.close()
-    if con:
-        con.close()
+        if con:
+            con.close()
+        if fle:
+            fle.close()
 
 def b64Convert(typ, txt):
     import base64

@@ -103,6 +103,7 @@ SYNOPSIS
                  or in the case of teams True or False
     self.pairs: list of tabs that heve played pairs in a draw of trips
     bdt_flag: A - Arranged, B - Broken Rinks, C - Teams, D - Drawn, P - Pairs
+                i.e. pairs in a trips draw.
     self.dofix: In single gender draws fix broken teams by moving 1 player
 
 AUTHOR
@@ -1614,15 +1615,14 @@ Try to Allocate Different Rinks""" % self.weeks),
             else:
                 for tab in ntabs:
                     grps[0].append(tab)
+            if self.dhist == "Y":
+                self.doHistory()
+            else:
+                self.hist = {}
             for num, grp in enumerate(grps):
                 # Gender or Mixed
                 alldraw = []
-                self.hist = {}
-                self.broken = []
-                self.pairs = []
                 self.doPositions(grp)
-                if self.dhist == "Y":
-                    self.doHistory()
                 if self.mixgd == "Y":
                     self.count = 0
                     text = "Selecting the Best Mixed Combination"
@@ -2050,15 +2050,21 @@ Combination Number %10s"""
             self.lead1.append(tab)
 
     def doHistory(self):
+        self.hist = {}
+        self.pairs = []
+        self.broken = []
         days = self.weeks * -7
         ldate = projectDate(self.date, days)
-        # Get records for past x days excluding bounce, team games and svs
+        # Get records for past x days excluding bounce, team games and pairs
         recs = self.sql.getRec("bwldrt", where=[("bdt_cono", "=",
             self.opts["conum"]), ("bdt_date", ">=", ldate),
             ("bdt_flag", "in", ("B", "D", "P"))])
         for rec in recs:
             dte = rec[self.sql.bwldrt_col.index("bdt_date")]
             tim = rec[self.sql.bwldrt_col.index("bdt_time")]
+            if dte == self.date and tim == self.time:
+                # Current draw
+                continue
             rnk = rec[self.sql.bwldrt_col.index("bdt_rink")]
             his = self.sql.getRec("bwldrm", cols=["bdm_dhist"],
                 where=[("bdm_cono", "=", self.opts["conum"]),
@@ -2066,9 +2072,6 @@ Combination Number %10s"""
                 limit=1)
             if his[0] == "N":
                 # History not applied on draw
-                continue
-            if dte == self.date and tim == self.time:
-                # Current draw
                 continue
             tab = rec[self.sql.bwldrt_col.index("bdt_tab")]
             if rec[self.sql.bwldrt_col.index("bdt_flag")] == "B":
@@ -2438,13 +2441,11 @@ Combination Number %10s"""
         self.df.setWidget(self.df.mstFrame, state="hide")
         self.adraw3 = copyList(self.adraw1)
         self.deltabs = []
-        self.reptabs = []
+        self.newtabs = []
         while True:
             draw = self.doShowDraw("View/Edit the Draw", self.adraw3, True)
             if draw:
                 self.doChange(draw)
-                if not self.adraw3:
-                    break
             else:
                 error = False
                 chk = []
@@ -2460,15 +2461,24 @@ Combination Number %10s"""
                                 break
                             chk.append(t[0])
                 if not error:
+                    dels = []
                     for d in self.alltabs:
                         if d not in chk:
-                            showError(self.opts["mf"].body,
+                            ok = askQuestion(self.opts["mf"].body,
                                 "Missing Tab",
-                                "Tab %s - %s, %s\n\nIs Not in the Draw" % \
-                                (d, self.alltabs[d][0], self.alltabs[d][1]))
-                            error = True
-                            break
-                if not error:
+                                "Tab %s - %s, %s\n\nIs Not in the Draw\n\n"\
+                                "Must it be Deleted?" % (d, self.alltabs[d][0],
+                                self.alltabs[d][1]), default="no")
+                            if ok == "yes":
+                                dels.append(d)
+                            else:
+                                error = True
+                                break
+                    for d in dels:
+                        dat = self.alltabs[d]
+                        self.deltabs.append((d, dat))
+                        del self.alltabs[d]
+                if not error and not dels:
                     break
         if self.adraw3 != self.adraw1:
             yn = askQuestion(self.opts["mf"].body, "Keep Changes",
@@ -2486,13 +2496,11 @@ Combination Number %10s"""
                     for tab, dat in reversed(self.deltabs):
                         if tab not in self.alltabs:
                             self.alltabs[tab] = dat
-                if self.reptabs:
-                    # Restore replaced tabs
-                    for tab, dat, new in reversed(self.reptabs):
-                        if new in self.alltabs:
-                            del self.alltabs[new]
-                        if tab not in self.alltabs:
-                            self.alltabs[tab] = dat
+                if self.newtabs:
+                    # Remove added tabs
+                    for tab in reversed(self.newtabs):
+                        if tab in self.alltabs:
+                            del self.alltabs[tab]
         self.df.enableButtonsTags(state)
         self.df.setWidget(self.df.mstFrame, state="show")
         self.doShowQuantity()
@@ -2539,6 +2547,7 @@ Combination Number %10s"""
             return sel.selection
 
     def doChange(self, draw):
+        self.addtab = self.reptab = False
         for self.seq in range(0, len(self.adraw3), 2):
             if self.adraw3[self.seq][0] == draw[1]:
                 seq = self.seq + 1
@@ -2559,38 +2568,32 @@ Combination Number %10s"""
         fld = (
             (("T",0,0,0),"OUA",2,"RK"),
             (("T",0,1,0),"IUI",6,"Skip","",
-                0,"N",self.doChgTab,mem,None,("efld",)),
+                0,"N",self.doChgTab,mem,self.doDelTab,("efld",)),
             (("T",0,1,0),"OUA",20,""),
             (("T",0,2,0),"IUI",6,"Third","",
-                0,"N",self.doChgTab,mem,None,("efld",)),
+                0,"N",self.doChgTab,mem,self.doDelTab,("efld",)),
             (("T",0,2,0),"OUA",20,""),
             (("T",0,3,0),"IUI",6,"Second","",
-                0,"N",self.doChgTab,mem,None,("efld",)),
+                0,"N",self.doChgTab,mem,self.doDelTab,("efld",)),
             (("T",0,3,0),"OUA",20,""),
             (("T",0,4,0),"IUI",6,"Lead","",
-                0,"N",self.doChgTab,mem,None,("efld",)),
+                0,"N",self.doChgTab,mem,self.doDelTab,("efld",)),
             (("T",0,4,0),"OUA",20,""),
             (("T",0,5,0),"IUI",6,"Skip","",
-                0,"N",self.doChgTab,mem,None,("efld",)),
+                0,"N",self.doChgTab,mem,self.doDelTab,("efld",)),
             (("T",0,5,0),"OUA",20,""),
             (("T",0,6,0),"IUI",6,"Third","",
-                0,"N",self.doChgTab,mem,None,("efld",)),
+                0,"N",self.doChgTab,mem,self.doDelTab,("efld",)),
             (("T",0,6,0),"OUA",20,""),
             (("T",0,7,0),"IUI",6,"Second","",
-                0,"N",self.doChgTab,mem,None,("efld",)),
+                0,"N",self.doChgTab,mem,self.doDelTab,("efld",)),
             (("T",0,7,0),"OUA",20,""),
             (("T",0,8,0),"IUI",6,"Lead","",
-                0,"N",self.doChgTab,mem,None,("efld",)),
+                0,"N",self.doChgTab,mem,self.doDelTab,("efld",)),
             (("T",0,8,0),"OUA",20,""))
-        but = (
-            ("Delete Tab",None,self.doDelTab,1,None,None,
-                "This will Delate the Existing Tab."),
-            ("Replace Tab",None,self.doRepTab,1,None,None,
-                "This will Remove the Existing Tab and Replace "\
-                "it with a New Uncaptured Tab."))
         self.cg = TartanDialog(self.opts["mf"], title=tit, tops=True,
             eflds=fld, tend=((self.doChgEnd,"n"),), txit=(self.doChgExit,),
-            butt=but, focus=False)
+            focus=False)
         self.cg.loadEntry("T", 0, 0, data=self.cdraw[0])
         for n, d in enumerate(self.cdraw[2:]):
             self.cg.loadEntry("T", 0, 1 + (2 * n), data=d[0])
@@ -2601,7 +2604,7 @@ Combination Number %10s"""
     def doDelTab(self):
         oldtab = self.cg.getEntry("T", 0, self.cg.pos, False)
         if not oldtab:
-            return
+            return "rf"
         oldtab = int(oldtab)
         olddat = self.alltabs[oldtab]
         del self.alltabs[oldtab]
@@ -2619,95 +2622,53 @@ Combination Number %10s"""
                     break
             if fini:
                 break
-
-    def doRepTab(self):
-        oldtab = self.cg.getEntry("T", 0, self.cg.pos, False)
-        oldnam = self.cg.getEntry("T", 0, self.cg.pos + 1, False)
-        if not self.oldtab:
-            return
-        self.oldtab = int(oldtab)
-        state = self.cg.disableButtonsTags()
-        self.cg.setWidget(self.cg.mstFrame, state="hide")
-        tit = ("Replace Tab",)
-        mem = {
-            "stype": "R",
-            "tables": ("bwltab",),
-            "cols": (
-                ("btb_tab", "", 0, "Tab"),
-                ("btb_surname", "", 0, "Surname","Y"),
-                ("btb_names", "", 0, "Names"),
-                ("btb_pos1", "", 0, "P"),
-                ("btb_rate1", "", 0, "RP")),
-            "where": [("btb_cono", "=", self.opts["conum"])],
-            "order": "btb_surname, btb_names"}
-        fld = (
-            (("T",0,0,0),"OUI",6,"Old Tab"),
-            (("T",0,0,0),"OUA",20,""),
-            (("T",0,1,0),"IUI",6,"New Tab","",
-                0,"N",self.doNewTab,mem,None,("notzero",)),
-            (("T",0,1,0),"OUA",20,""))
-        self.nt = TartanDialog(self.opts["mf"], title=tit, tops=True,
-            eflds=fld, tend=((self.doRepEnd,"y"),), txit=(self.doRepExit,))
-        self.nt.loadEntry("T", 0, 0, data=self.oldtab)
-        self.nt.loadEntry("T", 0, 1, data=oldnam)
-        self.nt.mstFrame.wait_window()
-        self.cg.setWidget(self.cg.mstFrame, state="show")
-        self.cg.enableButtonsTags(state=state)
-        self.cg.focusField("T", 0, self.cg.col, clr=False)
-
-    def doNewTab(self, frt, pag, r, c, p, i, w):
-        if w in self.alltabs:
-            return "Invalid Tab, Already Entered"
-        self.newtab = self.sql.getRec("bwltab", where=[("btb_cono", "=",
-            self.opts["conum"]), ("btb_tab", "=", w)], limit=1)
-        if not self.newtab:
-            return "Invalid Tab Number"
-        a = self.newtab[self.sql.bwltab_col.index("btb_surname")]
-        b = self.newtab[self.sql.bwltab_col.index("btb_names")]
-        self.nam = a.upper()
-        if b:
-            self.nam = "%s, %s" % (self.nam, b[0].upper())
-        self.nt.loadEntry(frt, pag, p+1, data=self.nam)
-
-    def doRepEnd(self):
-        olddat = self.alltabs[self.oldtab]
-        del self.alltabs[self.oldtab]
-        tab = self.newtab[self.sql.bwltab_col.index("btb_tab")]
-        a = self.newtab[self.sql.bwltab_col.index("btb_surname")]
-        b = self.newtab[self.sql.bwltab_col.index("btb_names")]
-        c = self.newtab[self.sql.bwltab_col.index("btb_gender")]
-        d = self.newtab[self.sql.bwltab_col.index("btb_pos1")]
-        e = self.newtab[self.sql.bwltab_col.index("btb_rate1")]
-        self.alltabs[tab] = [a, b, c, d, e, "Y"]
-        self.reptabs.append((self.oldtab, olddat, tab))
-        self.cg.loadEntry("T", 0, self.cg.pos, data=tab)
-        self.cg.loadEntry("T", 0, self.cg.pos + 1, data=self.nam)
-        fini = False
-        for x, d in enumerate(self.adraw3):
-            for y, t in enumerate(d[2:]):
-                if t[0] == self.oldtab:
-                    self.adraw3[x][2+y][0] = tab
-                    self.adraw3[x][2+y][1] = self.nam
-                    self.adraw3[x][2+y][2] = e
-                    fini = True
-                    break
-            if fini:
-                break
-        self.nt.closeProcess()
-
-    def doRepExit(self):
-        self.cg.loadEntry("T", 0, self.cg.pos, data=self.oldtab)
-        self.nt.closeProcess()
+        return "rf"
 
     def doChgTab(self, frt, pag, r, c, p, i, w):
         if w and w not in self.alltabs:
             if p < 9:
-                tab = self.adraw3[self.seq][2+(p//2)][0]
+                oldtab = self.adraw3[self.seq][2+(p//2)][0]
             else:
-                tab = self.adraw3[self.seq+1][2+((p-8)//2)][0]
-            self.cg.loadEntry(frt, pag, p, data=tab)
-            return "Invalid Tab (%s), Not Entered" % w
-        if not w:
+                oldtab = self.adraw3[self.seq+1][2+((p-8)//2)][0]
+            newtab = self.sql.getRec("bwltab", where=[("btb_cono", "=",
+                self.opts["conum"]), ("btb_tab", "=", w)], limit=1)
+            if not newtab:
+                showError(self.opts["mf"].body, "Error", "Invalid Tab Number.")
+                self.cg.loadEntry(frt, pag, p, data=oldtab)
+                return "rf"
+            a = newtab[self.sql.bwltab_col.index("btb_surname")]
+            b = newtab[self.sql.bwltab_col.index("btb_names")]
+            nam = a.upper()
+            if b:
+                nam = "%s, %s" % (nam, b[0].upper())
+            txt = "Tab %s, %s\n\nIs Not Entered, Must it be Entered?" % (w, nam)
+            ok = askQuestion(self.opts["mf"].body, "New Tab", txt, default="no")
+            if ok == "no":
+                self.cg.loadEntry(frt, pag, p, data=oldtab)
+                return "rf"
+            c = newtab[self.sql.bwltab_col.index("btb_gender")]
+            d = newtab[self.sql.bwltab_col.index("btb_pos1")]
+            e = newtab[self.sql.bwltab_col.index("btb_rate1")]
+            self.alltabs[w] = [a, b, c, d, e, "Y"]
+            self.newtabs.append(w)
+            seqs = []
+            for seq, dat in enumerate(self.adraw3):
+                if dat[0] == self.cg.getEntry("T", 0, 0, False):
+                    seqs.append(seq)
+            if self.cg.pos < 9:
+                seq = seqs[0]
+            else:
+                seq = seqs[1]
+            if self.cg.pos in (1, 9):
+                pos = 0
+            elif self.cg.pos in (3, 11):
+                pos = 1
+            elif self.cg.pos in (5, 13):
+                pos = 2
+            else:
+                pos = 3
+            self.adraw3[seq][2+pos] = [w, nam, e]
+        elif not w:
             nam = ""
         else:
             nam = self.alltabs[w][0].upper()
@@ -2716,8 +2677,6 @@ Combination Number %10s"""
         self.cg.loadEntry(frt, pag, p + 1, data=nam)
 
     def doChgEnd(self):
-        q = 0
-        a = 0
         z = 0
         for x in range(1, 17, 2):
             if x == 9:
@@ -2735,15 +2694,13 @@ Combination Number %10s"""
                     for t in d[2:]:
                         if t[0] == self.cg.t_work[0][0][x]:
                             self.adraw3[self.seq + z][y] = copyList(t)
-                            q += 1
-                            a += t[2]
                             fini = True
                             break
                     if fini:
                         break
         for x in range(0, len(self.adraw3), 2):
             self.doAverage(self.adraw3[x], self.adraw3[x + 1])
-        self.doChgExit()
+        self.cg.closeProcess()
 
     def doChgExit(self):
         self.cg.closeProcess()

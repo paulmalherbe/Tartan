@@ -96,8 +96,8 @@ class ln2020(object):
             p.displayProgress(num)
             batch = "L%s" % int(self.trdate / 100)
             LoanInterest("L", self.opts["mf"].dbm, lonmf2, update="Y",
-                tdate=self.trdate, batch=batch, curdt=int(self.trdate / 100),
-                refno=True, glctl=self.glctl, capnm=self.opts["capnm"])
+                tdate=self.trdate, batch=batch, refno=True,
+                glctl=self.glctl, capnm=self.opts["capnm"])
         p.closeProgress()
         self.sql.updRec("lonctl", cols=["cln_last"], data=[self.trdate],
             where=[("cln_cono", "=", self.opts["conum"])])

@@ -231,7 +231,7 @@ class rt1010(object):
                             str(datm[num]), "", 0])
             if datc != self.oldc[-1:][0][:len(datc)]:
                 col = self.sql.rtlcon_col
-                datc.append(self.oldc[col.index("rtc_xflag")])
+                datc.append(self.oldc[-1:][0][col.index("rtc_xflag")])
                 self.sql.updRec("rtlcon", data=datc, where=[("rtc_cono", "=",
                     self.opts["conum"]), ("rtc_code", "=", self.code),
                     ("rtc_acno", "=", self.acno), ("rtc_cnum", "=",
