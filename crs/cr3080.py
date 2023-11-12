@@ -518,7 +518,8 @@ If you decide to do this, you must remember to upload the BEST file to the Bank 
                 ref1 = trans[ctc.index("crt_ref1")]
                 # Create Ageing Transaction
                 self.sql.insRec("crsage", data=[self.opts["conum"], self.acno,
-                    trtp, ref1, self.curdt, 5, self.refno, payamt, 0])
+                    trtp, ref1, self.curdt, 5, self.refno, payamt, 0],
+                    dofmt=False)
             count += 1
         for x in range(count, self.form.maxlines):
             for cod in self.form.body:

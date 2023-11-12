@@ -2475,7 +2475,7 @@ class Sql(object):
                     # Clear/Add the sequence field
                     dat = tdat[:idx]
                 else:
-                    # Ensure the data does not have mode fields than col
+                    # Ensure the data does not have more fields than col
                     dat = tdat[:len(col)]
                 if dofmt:
                     for n, c in enumerate(fld):
@@ -3848,12 +3848,6 @@ class TartanDialog(object):
             if self.focus and self.first:
                 self.focusField(self.first[0], self.first[1], 1)
         self.master.update_idletasks()
-        #efldquit = True
-        #if efldquit:
-        #    for fld in self.eflds:
-        #        if type(fld[1]) == str:
-        #            print(fld[1][1:])
-        #    sys.exit()
 
     def setVariables(self):
         self.first = []             # the first field details
@@ -18742,9 +18736,9 @@ class ViewPDF(object):
         self.prec = {}
         self.search = ""
         self.wsiz = []
+        self.maxi = False
         # Display 1st page
         self.showPage()
-        self.maxi = False
         self.win.wait_window()
 
     def doPassword(self):
@@ -18958,6 +18952,18 @@ class ViewPDF(object):
         self.ltime = 0
         self.cv.delete("all")
         page = self.doc[self.pgno - 1]
+        # Extract url links from page
+        self.links = {}
+        for link in page.get_links():
+            if "uri" in link:
+                self.links[link["from"]] = link["uri"]
+        if not self.maxi and self.links:
+            self.win.bind("<Button-1>", self.showLinks)
+            self.win.bind("<Motion>", self.changeCursor)
+        else:
+            self.win.unbind("<Button-1>")
+            self.win.unbind("<Motion>")
+        # Create image
         self.pgd.configure(state="normal")
         self.pgd.delete(0, "end")
         self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
@@ -19171,6 +19177,27 @@ class ViewPDF(object):
                 self.cont = True
                 self.showPage()
             self.cv.focus_force()
+
+    def showLinks(self, event=None):
+        if not self.maxi:
+            x = event.x/self.zoom
+            y = event.y/self.zoom
+            for lk in self.links:
+                if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
+                    try:
+                        import webbrowser
+                        webbrowser.open(self.links[lk], new=1)
+                    except:
+                        showError(self.win, "Browser Error",
+                            "Cannot Load Browser or URL")
+    def changeCursor(self, event=None):
+        x = event.x/self.zoom
+        y = event.y/self.zoom
+        for lk in self.links:
+            if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
+                self.win.config(cursor="hand2")
+            else:
+                self.win.config(cursor="arrow")
 
     def doSave(self):
         if self.mf:

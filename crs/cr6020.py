@@ -150,7 +150,7 @@ class cr6020(object):
                             ("crt_ref1", "=", tr[0])])
                         self.sql.insRec("crsage", data=[self.opts["conum"],
                             self.acno, tr[1], tr[0], self.curdt, tr[1], tr[0],
-                            tr[6], 0])
+                            tr[6], 0], dofmt=False)
             else:
                 self.key = "cancel"
         self.agevar.set(False)

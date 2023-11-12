@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 16)
+    VERSION = (6, 17)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):

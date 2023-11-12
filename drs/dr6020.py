@@ -189,7 +189,7 @@ class dr6020(object):
                             ("drt_ref1", "=", tr[1])])
                         self.sql.insRec("drsage", data=[self.opts["conum"],
                             self.chain, self.acno, tr[1], tr[0], self.curdt,
-                            tr[1], tr[0], tr[6], 0])
+                            tr[1], tr[0], tr[6], 0], dofmt=False)
             else:
                 self.key = "cancel"
         self.agevar.set(False)

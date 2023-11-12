@@ -51,7 +51,7 @@ def getName(nam, x, y, z=None):
 dist = "tartan"                                 # Distribition
 cs = dist.capitalize()                          # Tartan
 bd = os.path.expanduser("~")                    # Base directory
-sv = "root@mail"                                # http login@server
+sv = "root@server"                              # http login@server
 vv = 6                                          # Version number
 bv = "%s-%s" % (cs, vv)                         # Version base name
 bx = "TartanExe"                                # Executable directory
@@ -509,7 +509,8 @@ if email:
     from emladd import addrs
     chgfle = "%s/ver/ver_%s.%s.changes" % (pypath, cver[0], cver[1])
     if os.path.isfile(chgfle):
-        serv = ["mail", 465, 2, 1, "paul", "jHlzgrWZDdw4DrS9sFo="]
+        serv = ["tartan-co-za-smtp.dynu.com", 465, 2, 1,
+                        "paul@tartan.co.za", "Pakati1@"]
         mfrm = "paul@tartan.co.za"
         subj = "Tartan Update %s.%s is Available" % tuple(cver)
         info = open(chgfle, "r")

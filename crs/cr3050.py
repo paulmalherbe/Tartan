@@ -118,7 +118,8 @@ Curdt: Produce a report based on Financial Period, this will always balance with
         if self.totsonly == "Y":
             if "args" not in self.opts or "noprint" not in self.opts["args"]:
                 self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
-                self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+                if len(self.df.topEntry[0][8]) > 4:
+                    self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
             self.acc1 = ""
             self.fm = "First"
             self.acc2 = "zzzzzzz"
@@ -136,7 +137,8 @@ Curdt: Produce a report based on Financial Period, this will always balance with
             pass
         else:
             self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+            if len(self.df.topEntry[0][8]) > 4:
+                self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
 
     def doAcc1(self, frt, pag, r, c, p, i, w):
         self.acc1 = w

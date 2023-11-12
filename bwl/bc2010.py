@@ -168,6 +168,7 @@ class bc2010(object):
         else:
             self.stime = "M"
         self.alltabs = {}
+        self.stats = []
         random.seed()
         return True
 
@@ -286,6 +287,7 @@ class bc2010(object):
         self.mrate = CCD(drm[self.sql.bwldrm_col.index("bdm_mrate")], "UD", 6.2)
         self.mf.loadEntry("T", 0, 6, data=self.mrate.work)
         self.vrate = CCD(drm[self.sql.bwldrm_col.index("bdm_vrate")], "UD", 6.2)
+        self.stats = drm[self.sql.bwldrm_col.index("bdm_stats")]
         self.mf.loadEntry("T", 0, 7, data=self.vrate.work)
 
     def doLoadTabs(self):
@@ -413,7 +415,37 @@ class bc2010(object):
 
     def doMEnd(self):
         if self.viewer:
-            self.doShowDraw("Current Draw", self.adraw1)
+            stats = self.stats.split()
+            if stats:
+                if self.teams:
+                    txt = "Arranged Teams"
+                elif self.dtype == "S" and self.dhist == "N":
+                    txt = "Best Strength v Strength Draw, "\
+                        "Largest Team Difference is %s" % stats[0]
+                elif self.dtype == "S":
+                    if self.tsize == 3:
+                        bcl = "Pairs"
+                    else:
+                        bcl = "Broken"
+                    txt = "Best S v S Draw After Trying %s Different "\
+                        "Combinations, Largest Team Difference is %s, "\
+                        "Skips Clash %s, Players Clash %s, %s %s" % \
+                        (5000, stats[0], stats[1], stats[2], bcl, stats[3])
+                elif self.dhist == "N":
+                    txt = "Best Random Draw After Trying 5000 Different "\
+                        "Combinations, Largest Team Difference is %s" % stats[0]
+                else:
+                    if self.tsize == 3:
+                        bcl = "Pairs"
+                    else:
+                        bcl = "Broken"
+                    txt = "Best Random Draw After Trying %s Different "\
+                        "Combinations, Largest Team Difference is %s, "\
+                        "Skips Clash %s, Players Clash %s, %s %s" % \
+                        (5000, stats[0], stats[1], stats[2], bcl, stats[3])
+            else:
+                txt = "Current Draw"
+            self.doShowDraw(txt, self.adraw1)
             self.mf.focusField("T", 0, 1)
         elif self.reprint:
             self.doPrint(self.mf)
@@ -980,7 +1012,7 @@ First Change the Bounce Game and then Delete It.""")
             self.at.loadEntry(frt, pag, p + 1, data="")
             if i == 0:
                 return "Missing Skip Number"
-        if w and not self.doLoadTab(w, "A"):
+        if w and not self.doLoadTab(w, "A", err=False):
             return "Invalid Tab"
         if i == 0:
             if w in self.teams:
@@ -2265,10 +2297,14 @@ Combination Number %10s"""
         self.sql.delRec("bwldrt", where=[("bdt_cono", "=", self.opts["conum"]),
             ("bdt_date", "=", self.date), ("bdt_time", "=", self.time)])
         # Insert bwldrm
+        if self.stats:
+            stat = self.stats
+        else:
+            stat = "%s %s %s %s" % (self.tot, self.scl, self.pcl, self.bcl)
         self.sql.insRec("bwldrm", data=[self.opts["conum"], self.date,
             self.time, self.mixgd, self.mixrt, self.nbase, self.dtype,
             self.dhist, self.dedit, self.tsize, self.mrate.work,
-            self.vrate.work])
+            self.vrate.work, stat])
         if not self.drawn:
             return
         # Insert bwldrt
@@ -2514,7 +2550,7 @@ Combination Number %10s"""
             return
         state = self.df.disableButtonsTags()
         self.df.setWidget(self.df.mstFrame, state="hide")
-        self.doShowDraw("View of Draw", self.adraw1)
+        self.doShowDraw("View Draw", self.adraw1)
         self.df.enableButtonsTags(state)
         self.df.setWidget(self.df.mstFrame, state="show")
         self.doShowQuantity()

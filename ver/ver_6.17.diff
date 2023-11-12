@@ -1,0 +1,564 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index 130c4f8..6d32c71 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -2475,7 +2475,7 @@ class Sql(object):
+                     # Clear/Add the sequence field
+                     dat = tdat[:idx]
+                 else:
+-                    # Ensure the data does not have mode fields than col
++                    # Ensure the data does not have more fields than col
+                     dat = tdat[:len(col)]
+                 if dofmt:
+                     for n, c in enumerate(fld):
+@@ -3848,12 +3848,6 @@ class TartanDialog(object):
+             if self.focus and self.first:
+                 self.focusField(self.first[0], self.first[1], 1)
+         self.master.update_idletasks()
+-        #efldquit = True
+-        #if efldquit:
+-        #    for fld in self.eflds:
+-        #        if type(fld[1]) == str:
+-        #            print(fld[1][1:])
+-        #    sys.exit()
+ 
+     def setVariables(self):
+         self.first = []             # the first field details
+@@ -18742,9 +18736,9 @@ class ViewPDF(object):
+         self.prec = {}
+         self.search = ""
+         self.wsiz = []
++        self.maxi = False
+         # Display 1st page
+         self.showPage()
+-        self.maxi = False
+         self.win.wait_window()
+ 
+     def doPassword(self):
+@@ -18958,6 +18952,18 @@ class ViewPDF(object):
+         self.ltime = 0
+         self.cv.delete("all")
+         page = self.doc[self.pgno - 1]
++        # Extract url links from page
++        self.links = {}
++        for link in page.get_links():
++            if "uri" in link:
++                self.links[link["from"]] = link["uri"]
++        if not self.maxi and self.links:
++            self.win.bind("<Button-1>", self.showLinks)
++            self.win.bind("<Motion>", self.changeCursor)
++        else:
++            self.win.unbind("<Button-1>")
++            self.win.unbind("<Motion>")
++        # Create image
+         self.pgd.configure(state="normal")
+         self.pgd.delete(0, "end")
+         self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
+@@ -19172,6 +19178,27 @@ class ViewPDF(object):
+                 self.showPage()
+             self.cv.focus_force()
+ 
++    def showLinks(self, event=None):
++        if not self.maxi:
++            x = event.x/self.zoom
++            y = event.y/self.zoom
++            for lk in self.links:
++                if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
++                    try:
++                        import webbrowser
++                        webbrowser.open(self.links[lk], new=1)
++                    except:
++                        showError(self.win, "Browser Error",
++                            "Cannot Load Browser or URL")
++    def changeCursor(self, event=None):
++        x = event.x/self.zoom
++        y = event.y/self.zoom
++        for lk in self.links:
++            if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
++                self.win.config(cursor="hand2")
++            else:
++                self.win.config(cursor="arrow")
++
+     def doSave(self):
+         if self.mf:
+             if sys.platform == "win32":
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index c2c7ccc..39f328b 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -168,6 +168,7 @@ class bc2010(object):
+         else:
+             self.stime = "M"
+         self.alltabs = {}
++        self.stats = []
+         random.seed()
+         return True
+ 
+@@ -286,6 +287,7 @@ class bc2010(object):
+         self.mrate = CCD(drm[self.sql.bwldrm_col.index("bdm_mrate")], "UD", 6.2)
+         self.mf.loadEntry("T", 0, 6, data=self.mrate.work)
+         self.vrate = CCD(drm[self.sql.bwldrm_col.index("bdm_vrate")], "UD", 6.2)
++        self.stats = drm[self.sql.bwldrm_col.index("bdm_stats")]
+         self.mf.loadEntry("T", 0, 7, data=self.vrate.work)
+ 
+     def doLoadTabs(self):
+@@ -413,7 +415,37 @@ class bc2010(object):
+ 
+     def doMEnd(self):
+         if self.viewer:
+-            self.doShowDraw("Current Draw", self.adraw1)
++            stats = self.stats.split()
++            if stats:
++                if self.teams:
++                    txt = "Arranged Teams"
++                elif self.dtype == "S" and self.dhist == "N":
++                    txt = "Best Strength v Strength Draw, "\
++                        "Largest Team Difference is %s" % stats[0]
++                elif self.dtype == "S":
++                    if self.tsize == 3:
++                        bcl = "Pairs"
++                    else:
++                        bcl = "Broken"
++                    txt = "Best S v S Draw After Trying %s Different "\
++                        "Combinations, Largest Team Difference is %s, "\
++                        "Skips Clash %s, Players Clash %s, %s %s" % \
++                        (5000, stats[0], stats[1], stats[2], bcl, stats[3])
++                elif self.dhist == "N":
++                    txt = "Best Random Draw After Trying 5000 Different "\
++                        "Combinations, Largest Team Difference is %s" % stats[0]
++                else:
++                    if self.tsize == 3:
++                        bcl = "Pairs"
++                    else:
++                        bcl = "Broken"
++                    txt = "Best Random Draw After Trying %s Different "\
++                        "Combinations, Largest Team Difference is %s, "\
++                        "Skips Clash %s, Players Clash %s, %s %s" % \
++                        (5000, stats[0], stats[1], stats[2], bcl, stats[3])
++            else:
++                txt = "Current Draw"
++            self.doShowDraw(txt, self.adraw1)
+             self.mf.focusField("T", 0, 1)
+         elif self.reprint:
+             self.doPrint(self.mf)
+@@ -980,7 +1012,7 @@ First Change the Bounce Game and then Delete It.""")
+             self.at.loadEntry(frt, pag, p + 1, data="")
+             if i == 0:
+                 return "Missing Skip Number"
+-        if w and not self.doLoadTab(w, "A"):
++        if w and not self.doLoadTab(w, "A", err=False):
+             return "Invalid Tab"
+         if i == 0:
+             if w in self.teams:
+@@ -2265,10 +2297,14 @@ Combination Number %10s"""
+         self.sql.delRec("bwldrt", where=[("bdt_cono", "=", self.opts["conum"]),
+             ("bdt_date", "=", self.date), ("bdt_time", "=", self.time)])
+         # Insert bwldrm
++        if self.stats:
++            stat = self.stats
++        else:
++            stat = "%s %s %s %s" % (self.tot, self.scl, self.pcl, self.bcl)
+         self.sql.insRec("bwldrm", data=[self.opts["conum"], self.date,
+             self.time, self.mixgd, self.mixrt, self.nbase, self.dtype,
+             self.dhist, self.dedit, self.tsize, self.mrate.work,
+-            self.vrate.work])
++            self.vrate.work, stat])
+         if not self.drawn:
+             return
+         # Insert bwldrt
+@@ -2514,7 +2550,7 @@ Combination Number %10s"""
+             return
+         state = self.df.disableButtonsTags()
+         self.df.setWidget(self.df.mstFrame, state="hide")
+-        self.doShowDraw("View of Draw", self.adraw1)
++        self.doShowDraw("View Draw", self.adraw1)
+         self.df.enableButtonsTags(state)
+         self.df.setWidget(self.df.mstFrame, state="show")
+         self.doShowQuantity()
+diff --git a/crs/cr3050.py b/crs/cr3050.py
+index aff9b2a..e38ab45 100644
+--- a/crs/cr3050.py
++++ b/crs/cr3050.py
+@@ -118,7 +118,8 @@ Curdt: Produce a report based on Financial Period, this will always balance with
+         if self.totsonly == "Y":
+             if "args" not in self.opts or "noprint" not in self.opts["args"]:
+                 self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
+-                self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
++                if len(self.df.topEntry[0][8]) > 4:
++                    self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+             self.acc1 = ""
+             self.fm = "First"
+             self.acc2 = "zzzzzzz"
+@@ -136,7 +137,8 @@ Curdt: Produce a report based on Financial Period, this will always balance with
+             pass
+         else:
+             self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
+-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
++            if len(self.df.topEntry[0][8]) > 4:
++                self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+ 
+     def doAcc1(self, frt, pag, r, c, p, i, w):
+         self.acc1 = w
+diff --git a/crs/cr3080.py b/crs/cr3080.py
+index dc21792..ff8ffd3 100644
+--- a/crs/cr3080.py
++++ b/crs/cr3080.py
+@@ -518,7 +518,8 @@ If you decide to do this, you must remember to upload the BEST file to the Bank
+                 ref1 = trans[ctc.index("crt_ref1")]
+                 # Create Ageing Transaction
+                 self.sql.insRec("crsage", data=[self.opts["conum"], self.acno,
+-                    trtp, ref1, self.curdt, 5, self.refno, payamt, 0])
++                    trtp, ref1, self.curdt, 5, self.refno, payamt, 0],
++                    dofmt=False)
+             count += 1
+         for x in range(count, self.form.maxlines):
+             for cod in self.form.body:
+diff --git a/crs/cr6020.py b/crs/cr6020.py
+index 17d1e7d..3d58b78 100644
+--- a/crs/cr6020.py
++++ b/crs/cr6020.py
+@@ -150,7 +150,7 @@ class cr6020(object):
+                             ("crt_ref1", "=", tr[0])])
+                         self.sql.insRec("crsage", data=[self.opts["conum"],
+                             self.acno, tr[1], tr[0], self.curdt, tr[1], tr[0],
+-                            tr[6], 0])
++                            tr[6], 0], dofmt=False)
+             else:
+                 self.key = "cancel"
+         self.agevar.set(False)
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 7643ca9..9015d45 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.16
++:Version:   6.17
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/drs/dr6020.py b/drs/dr6020.py
+index 333c2ff..725585e 100644
+--- a/drs/dr6020.py
++++ b/drs/dr6020.py
+@@ -189,7 +189,7 @@ class dr6020(object):
+                             ("drt_ref1", "=", tr[1])])
+                         self.sql.insRec("drsage", data=[self.opts["conum"],
+                             self.chain, self.acno, tr[1], tr[0], self.curdt,
+-                            tr[1], tr[0], tr[6], 0])
++                            tr[1], tr[0], tr[6], 0], dofmt=False)
+             else:
+                 self.key = "cancel"
+         self.agevar.set(False)
+diff --git a/mem/ml6010.py b/mem/ml6010.py
+index 0fb5c23..bfed61e 100644
+--- a/mem/ml6010.py
++++ b/mem/ml6010.py
+@@ -142,7 +142,7 @@ class ml6010(object):
+                             ("mlt_refno", "=", tr[1])])
+                         self.sql.insRec("memage", data=[self.opts["conum"],
+                             self.memno, tr[1], tr[0], self.curdt, tr[1], tr[0],
+-                            tr[6], 0])
++                            tr[6], 0], dofmt=False)
+             else:
+                 self.key = "cancel"
+         self.agevar.set(False)
+diff --git a/ms0000.py b/ms0000.py
+index fb94ca5..15f18cd 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 16)
++    VERSION = (6, 17)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+diff --git a/sls/si3060.py b/sls/si3060.py
+index 358b893..c71beec 100644
+--- a/sls/si3060.py
++++ b/sls/si3060.py
+@@ -27,7 +27,7 @@ COPYING
+ import time
+ from TartanClasses import ASD, CCD, GetCtl, MyFpdf, ProgressBar, Sql
+ from TartanClasses import TartanDialog
+-from tartanFunctions import getModName, doPrinter, showError
++from tartanFunctions import doWriteExport, getModName, doPrinter, showError
+ 
+ class si3060(object):
+     def __init__(self, **opts):
+@@ -52,6 +52,13 @@ class si3060(object):
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+         self.sysdtd = "%i/%02i/%02i" % (t[0], t[1], t[2])
++        self.colsh = ["Reference", "Typ", "Drs-Acc", "Ref-Num-2", "Grp",
++            "Product-Code", "Description", "Quantity", "Sell-Value",
++            "Cost-Value", "Profit", "Prf-%"]
++        self.forms = [("Na", 9, False, False, True), ("UA", 3),
++            ("UA", 7, False, False, True), ("Na", 9), ("UA", 3), ("NA", 20),
++            ("NA", 30), ("SD", 11.2), ("SD", 11.2), ("SD", 11.2), ("SD", 11.2),
++            ("SD", 7.2)]
+         return True
+ 
+     def mainProcess(self):
+@@ -70,7 +77,7 @@ class si3060(object):
+             mail = None
+         else:
+             var = ["", "", ""]
+-            view = ("N","V")
++            view = ("Y","V")
+             mail = ("Y","N")
+         fld = (
+             (("T",0,0,0),"ID2",7,"Start Period","",
+@@ -86,9 +93,11 @@ class si3060(object):
+ 
+     def doSdate(self, frt, pag, r, c, p, i, w):
+         self.sdate = w
++        self.sperd = self.df.t_disp[0][0][0]
+ 
+     def doEdate(self, frt, pag, r, c, p, i, w):
+         self.edate = w
++        self.eperd = self.df.t_disp[0][0][1]
+ 
+     def doRep(self, frt, pag, r, c, p, i, w):
+         if w:
+@@ -121,12 +130,68 @@ class si3060(object):
+         if not recs:
+             showError(self.opts["mf"].body, "Processing Error",
+             "No Records Selected")
++        elif self.df.repprt[2] == "export":
++            self.exportReport(recs)
+         else:
+             self.printReport(recs)
+         if "args" in self.opts and "noprint" in self.opts["args"]:
+             self.t_work = [self.df.t_work[0][0]]
+         self.closeProcess()
+ 
++    def exportReport(self, recs):
++        p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
++        expnam = getModName(self.opts["mf"].rcdic["wrkdir"],
++            self.__class__.__name__, self.opts["conum"])
++        self.head = "%03u %s" % (self.opts["conum"], self.opts["conam"])
++        self.expheads = [self.head + " %s" % self.sysdtd]
++        self.expheads.append("Sales by Salesman's Report for Period "\
++            "%s to %s" % (self.sperd, self.eperd))
++        self.expcolsh = [self.colsh]
++        self.expforms = self.forms
++        self.expdatas = []
++        self.stot = [0] * 3
++        self.gtot = [0] * 3
++        old_rep = ""
++        for num, dat in enumerate(recs):
++            p.displayProgress(num)
++            if p.quit:
++                p.closeProgress()
++                return
++            vals = self.getValues(dat)
++            if not vals:
++                continue
++            if self.rep.work != old_rep:
++                if old_rep:
++                    self.repTotal()
++                rep = self.sql.getRec("ctlrep", cols=["rep_name"],
++                    where=[("rep_cono", "=", self.opts["conum"]),
++                    ("rep_code", "=", self.rep.work)], limit=1)
++                if rep:
++                    repn = rep[0]
++                else:
++                    repn = "Unknown"
++                head = self.expheads[:]
++                head.append("Salesman %s %s" % (self.rep.work, repn))
++                line = ["PAGE", (head, self.expcolsh, self.expforms,
++                    self.rep.work)]
++                self.expdatas.append(line)
++                old_rep = self.rep.work
++            grp, cod, rf1, rf2, drs, qty, cst, sll, des, prf, pcn = \
++                    self.getValues(dat)
++            line = ["BODY", [rf1.work, "Sls", drs.work, rf2.work, grp.work,
++                cod.work, des.work, qty.work, sll.work, cst.work, prf.work,
++                pcn.work]]
++            self.expdatas.append(line)
++            self.stot[0] = float(ASD(self.stot[0]) + ASD(sll.work))
++            self.stot[1] = float(ASD(self.stot[1]) + ASD(cst.work))
++            self.gtot[0] = float(ASD(self.gtot[0]) + ASD(sll.work))
++            self.gtot[1] = float(ASD(self.gtot[1]) + ASD(cst.work))
++        p.closeProgress()
++        #self.grandTotal()
++        doWriteExport(xtype=self.df.repprt[1], name=expnam,
++            heads=self.expheads, colsh=self.expcolsh, forms=self.expforms,
++            datas=self.expdatas, rcdic=self.opts["mf"].rcdic)
++
+     def printReport(self, recs):
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+         self.head = "%03u %-138s" % (self.opts["conum"], self.opts["conam"])
+@@ -139,23 +204,8 @@ class si3060(object):
+             p.displayProgress(num)
+             if p.quit:
+                 break
+-            self.rep = CCD(dat[0], "Na", 3)
+-            grp = CCD(dat[1], "NA", 3)
+-            cod = CCD(dat[2], "NA", 20)
+-            rf1 = CCD(dat[5], "Na", 9)
+-            rf2 = CCD(dat[6], "Na", 9)
+-            drs = CCD(dat[9], "NA", 7)
+-            qty = CCD(float(ASD(0) - ASD(dat[10])), "SD", 11.2)
+-            cst = CCD(float(ASD(0) - ASD(dat[11])), "SD", 11.2)
+-            sll = CCD(float(ASD(0) - ASD(dat[12])), "SD", 11.2)
+-            des = CCD(dat[13], "NA", 30)
+-            prf = float(ASD(sll.work) - ASD(cst.work))
+-            prf = CCD(prf, "SD", 11.2)
+-            if sll.work == 0:
+-                pcn = 0
+-            else:
+-                pcn = round((prf.work * 100.0 / sll.work), 2)
+-            pcn = CCD(pcn, "SD", 7.2)
++            grp, cod, rf1, rf2, drs, qty, cst, sll, des, prf, pcn = \
++                    self.getValues(dat)
+             if old_rep and old_rep != self.rep.work:
+                 self.repTotal()
+                 self.pglin = 999
+@@ -182,6 +232,28 @@ class si3060(object):
+                         pdfnam=pdfnam, header=self.tit, repprt=self.df.repprt,
+                         fromad=self.fromad, repeml=self.df.repeml)
+ 
++    def getValues(self, data):
++        self.rep = CCD(data[0], "Na", 3)
++        grp = CCD(data[1], "NA", 3)
++        cod = CCD(data[2], "NA", 20)
++        rf1 = CCD(data[5], "Na", 9)
++        rf2 = CCD(data[6], "Na", 9)
++        drs = CCD(data[9], "NA", 7)
++        qty = CCD(float(ASD(0) - ASD(data[10])), "SD", 11.2)
++        cst = CCD(float(ASD(0) - ASD(data[11])), "SD", 11.2)
++        sll = CCD(float(ASD(0) - ASD(data[12])), "SD", 11.2)
++        des = CCD(data[13], "NA", 30)
++        prf = float(ASD(sll.work) - ASD(cst.work))
++        prf = CCD(prf, "SD", 11.2)
++        if sll.work == 0:
++            pcn = 0
++        else:
++            pcn = round((prf.work * 100.0 / sll.work), 2)
++        pcn = CCD(pcn, "SD", 7.2)
++        if pcn.err:
++            pcn = CCD(0, "SD", 7.2)
++        return (grp, cod, rf1, rf2, drs, qty, cst, sll, des, prf, pcn)
++
+     def pageHeading(self):
+         self.fpdf.add_page()
+         self.fpdf.setFont(style="B")
+@@ -191,8 +263,8 @@ class si3060(object):
+             ("Sales By Salesman Report as at", self.sysdtd))
+         self.fpdf.drawText()
+         self.fpdf.drawText("%-23s%-7s%-3s%-11s%-7s%-1s" % \
+-            ("(Options: Start Period ", self.df.t_disp[0][0][0], "",
+-                "End Period ", self.df.t_disp[0][0][1], ")"))
++            ("(Options: Start Period ", self.sperd, "",
++                "End Period ", self.eperd, ")"))
+         self.fpdf.drawText()
+         rep = self.sql.getRec("ctlrep", cols=["rep_name"],
+             where=[("rep_cono", "=", self.opts["conum"]),
+@@ -221,10 +293,15 @@ class si3060(object):
+         else:
+             pcn = round((prf.work * 100.0 / sll.work), 2)
+         pcn = CCD(pcn, "SD", 7.2)
+-        self.fpdf.drawText()
+-        self.fpdf.drawText("%-56s %-41s %s%s %s %s" % \
+-            (" ", "Rep Totals", sll.disp, cst.disp, prf.disp, pcn.disp))
+-        self.fpdf.drawText()
++        if self.df.repprt[2] == "export":
++            self.expdatas.append(["ULINES"])
++            self.expdatas.append(["TOTAL", ("", "", "", "", "", "", "", "",
++                sll.work, cst.work, prf.work, pcn.work)])
++        else:
++            self.fpdf.drawText()
++            self.fpdf.drawText("%-56s %-41s %s%s %s %s" % \
++                (" ", "Rep Totals", sll.disp, cst.disp, prf.disp, pcn.disp))
++            self.fpdf.drawText()
+         self.stot = [0] * 2
+ 
+     def grandTotal(self):
+diff --git a/str/st5010.py b/str/st5010.py
+index 612a782..1ec8f3e 100644
+--- a/str/st5010.py
++++ b/str/st5010.py
+@@ -146,7 +146,7 @@ class st5010(object):
+         self.qty = w
+ 
+     def doZero(self, frt, pag, r, c, p, i, w):
+-        self.zero = w
++        self.ignzero = w
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+@@ -201,7 +201,7 @@ class st5010(object):
+             desc = CCD(dat[4], "UA", 30)
+             uoi = CCD(dat[5], "NA", 10)
+             cdt = int(self.sysdtw / 100)
+-            if self.zero == "Y":
++            if self.ignzero == "Y":
+                 cbal = self.sql.getRec("strtrn", cols=["sum(stt_qty)"],
+                     where=[("stt_cono", "=", self.opts["conum"]),
+                     ("stt_group", "=", grp.work), ("stt_code", "=", code.work),
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index b737ad1..61301f6 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -2658,7 +2658,7 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
+                         data.append(ctr[col.index("%s_type" % pfx)])
+                         data.append(ctr[col.index("%s_ref1" % pfx)])
+                         data.extend([diff, 0])
+-                        sql.insRec(age, data=data)
++                        sql.insRec(age, data=data, dofmt=False)
+                     if not camt:
+                         break
+                 diff = float(ASD(cbal) - ASD(camt))
+@@ -2676,7 +2676,7 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
+                     data.append(ctr[col.index("%s_type" % pfx)])
+                     data.append(ctr[col.index("%s_ref1" % pfx)])
+                     data.extend([diff, 0])
+-                    sql.insRec(age, data=data)
++                    sql.insRec(age, data=data, dofmt=False)
+ 
+ def getImage(name, siz=None, fle=None):
+     import base64, io
+diff --git a/tartanWork.py b/tartanWork.py
+index 2feb6ff..e6835d9 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -1351,7 +1351,8 @@ tabdic = {
+             [9, "bdm_tsize", "UI", 1.0, "Team Size", "S"],
+             [10, "bdm_mrate", "UD", 5.2, "Member Rate", "M-Rte"],
+             [11, "bdm_vrate", "UD", 5.2, "Visitor Rate", "V-Rte"],
+-            [12, "bdm_xflag", "UA", 1.0, "Export Flag", "X"]],
++            [12, "bdm_stats", "TX", 14.0, "Draw Stats", "Stats"],
++            [13, "bdm_xflag", "UA", 1.0, "Export Flag", "X"]],
+         "idx": [
+             ["Tabs Draw - Master", 1, "U", "bdm_cono", "bdm_date",
+                 "bdm_time"]]},
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index aeb6e01..6334b93 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -51,7 +51,7 @@ def getName(nam, x, y, z=None):
+ dist = "tartan"                                 # Distribition
+ cs = dist.capitalize()                          # Tartan
+ bd = os.path.expanduser("~")                    # Base directory
+-sv = "root@mail"                                # http login@server
++sv = "root@server"                              # http login@server
+ vv = 6                                          # Version number
+ bv = "%s-%s" % (cs, vv)                         # Version base name
+ bx = "TartanExe"                                # Executable directory
+@@ -509,7 +509,8 @@ if email:
+     from emladd import addrs
+     chgfle = "%s/ver/ver_%s.%s.changes" % (pypath, cver[0], cver[1])
+     if os.path.isfile(chgfle):
+-        serv = ["mail", 465, 2, 1, "paul", "jHlzgrWZDdw4DrS9sFo="]
++        serv = ["tartan-co-za-smtp.dynu.com", 465, 2, 1,
++                        "paul@tartan.co.za", "Pakati1@"]
+         mfrm = "paul@tartan.co.za"
+         subj = "Tartan Update %s.%s is Available" % tuple(cver)
+         info = open(chgfle, "r")

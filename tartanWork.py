@@ -1351,7 +1351,8 @@ tabdic = {
             [9, "bdm_tsize", "UI", 1.0, "Team Size", "S"],
             [10, "bdm_mrate", "UD", 5.2, "Member Rate", "M-Rte"],
             [11, "bdm_vrate", "UD", 5.2, "Visitor Rate", "V-Rte"],
-            [12, "bdm_xflag", "UA", 1.0, "Export Flag", "X"]],
+            [12, "bdm_stats", "TX", 14.0, "Draw Stats", "Stats"],
+            [13, "bdm_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Tabs Draw - Master", 1, "U", "bdm_cono", "bdm_date",
                 "bdm_time"]]},

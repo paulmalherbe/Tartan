@@ -146,7 +146,7 @@ class st5010(object):
         self.qty = w
 
     def doZero(self, frt, pag, r, c, p, i, w):
-        self.zero = w
+        self.ignzero = w
 
     def doEnd(self):
         self.df.closeProcess()
@@ -201,7 +201,7 @@ class st5010(object):
             desc = CCD(dat[4], "UA", 30)
             uoi = CCD(dat[5], "NA", 10)
             cdt = int(self.sysdtw / 100)
-            if self.zero == "Y":
+            if self.ignzero == "Y":
                 cbal = self.sql.getRec("strtrn", cols=["sum(stt_qty)"],
                     where=[("stt_cono", "=", self.opts["conum"]),
                     ("stt_group", "=", grp.work), ("stt_code", "=", code.work),

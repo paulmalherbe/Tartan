@@ -142,7 +142,7 @@ class ml6010(object):
                             ("mlt_refno", "=", tr[1])])
                         self.sql.insRec("memage", data=[self.opts["conum"],
                             self.memno, tr[1], tr[0], self.curdt, tr[1], tr[0],
-                            tr[6], 0])
+                            tr[6], 0], dofmt=False)
             else:
                 self.key = "cancel"
         self.agevar.set(False)

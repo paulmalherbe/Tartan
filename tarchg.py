@@ -1,4 +1,19 @@
-changes = """ver_6.16 2023-08-15
+changes = """ver_6.17 2023-11-12
+===================
+ 1) Fixed an error in creditor's age analysis.
+ 2) Fixed an error with debtor and creditor age re-allocations.
+ 3) Added export to spreadsheet facility to the sales by salesman report.
+ 4) Added support for hyperlinks in pdf viewer.
+ 5) Added stats to bowls tabs-in draw master.
+ 6) Updated some items in the reference manual.
+ 7) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.16 2023-08-15
 ===================
  1) Dropped Support for Windows 7 and 8.
  2) Fixed an error in general ledger account statements.

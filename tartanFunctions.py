@@ -2658,7 +2658,7 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
                         data.append(ctr[col.index("%s_type" % pfx)])
                         data.append(ctr[col.index("%s_ref1" % pfx)])
                         data.extend([diff, 0])
-                        sql.insRec(age, data=data)
+                        sql.insRec(age, data=data, dofmt=False)
                     if not camt:
                         break
                 diff = float(ASD(cbal) - ASD(camt))
@@ -2676,7 +2676,7 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
                     data.append(ctr[col.index("%s_type" % pfx)])
                     data.append(ctr[col.index("%s_ref1" % pfx)])
                     data.extend([diff, 0])
-                    sql.insRec(age, data=data)
+                    sql.insRec(age, data=data, dofmt=False)
 
 def getImage(name, siz=None, fle=None):
     import base64, io
