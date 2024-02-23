@@ -412,12 +412,11 @@ class si3030(object):
                 sveprt = True
             else:
                 sveprt = False
-            rp = RepPrt(self.opts["mf"], name=self.__class__.__name__,
+            RepPrt(self.opts["mf"], name=self.__class__.__name__,
                 tables=data, ttype="D", heads=heds, cols=cols,
                 stots=[["a", "Group Total", "Y"]], gtots=gtots,
                 repprt=self.df.repprt, repeml=self.df.repeml,
                 sveprt=sveprt)
-            self.fpdf = rp.fpdf
         self.opts["mf"].closeLoop()
 
     def doExit(self):

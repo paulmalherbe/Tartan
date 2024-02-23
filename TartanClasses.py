@@ -7789,7 +7789,10 @@ class ShowImage(object):
                 height = msiz
                 width = int(height / relate)
             self.currentImage = {}
-            image = pilimg.resize((width, height), Image.ANTIALIAS)
+            try:
+                image = pilimg.resize((width, height), Image.ANTIALIAS)
+            except:
+                image = pilimg.resize((width, height), Image.LANCZOS)
             self.currentImage["data"] = image
             self.frm = MyFrame(self.vbox, width=width, height=height)
             if self.vbox:
@@ -13950,7 +13953,7 @@ class RepPrt(object):
                 A combination of the two options.
     stots   :   A list of lists of columns, in least significant order, to be
                 breaks for sub-totalling as follows:
-                [] = No sub-totals
+                    [] = No sub-totals
                                         OR
                     column or "as" name
                     description or another column's contents
@@ -14492,18 +14495,32 @@ class RepPrt(object):
         self.grandTotal()
         try:
             if self.repprt[2] == "export":
+                ctots = []
+                #for tot in self.gtots:
+                #    cnt = 0
+                #    for col in self.cols:
+                #        if len(col) > 4 and col[4] == "N":
+                #            continue
+                #        if col[0].count(tot):
+                #            ctots.append(cnt)
+                #            break
+                #        cnt += 1
                 doWriteExport(rcdic=self.mf.rcdic, xtype=self.repprt[1],
                     name=self.expnam, heads=self.expheads, colsh=self.expcolsh,
-                    forms=self.expforms, datas=self.expdatas)
+                    forms=self.expforms, datas=self.expdatas, ctots=ctots)
             else:
+                if len(self.heads) > 1:
+                    rpthd = self.heads[1]
+                else:
+                    rpthd = self.heads[0]
                 if self.tails:
                     self.fpdf.setFont(style="B")
                     for tail in self.tails:
                         self.fpdf.drawText(txt=tail)
                 if self.sveprt and self.fpdf.saveFile(self.pdfnam):
                     doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
-                        header=self.heads[-1], fromad=self.fromad,
-                        repprt=self.repprt, repeml=self.repeml)
+                        header=rpthd, fromad=self.fromad, repprt=self.repprt,
+                        repeml=self.repeml)
         except:
             pass
 
@@ -17963,7 +17980,7 @@ Do you want to Export All Linked Companies?""" % (tx2, tx1), default="no")
                 continue
             self.doTable(tab)
             num += 1
-        self.only = True
+        self.only = False
         if 1 not in self.cono:
             self.only = True
         for tab in self.coys:
@@ -18959,10 +18976,10 @@ class ViewPDF(object):
                 self.links[link["from"]] = link["uri"]
         if not self.maxi and self.links:
             self.win.bind("<Button-1>", self.showLinks)
-            self.win.bind("<Motion>", self.changeCursor)
+            #self.win.bind("<Motion>", self.changeCursor)
         else:
             self.win.unbind("<Button-1>")
-            self.win.unbind("<Motion>")
+            #self.win.unbind("<Motion>")
         # Create image
         self.pgd.configure(state="normal")
         self.pgd.delete(0, "end")

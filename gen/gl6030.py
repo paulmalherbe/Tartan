@@ -177,9 +177,9 @@ class gl6030(object):
                             ("glo_acno", "=", acc), ("glo_trdt", "=",
                             self.start)], limit=1)
                         if o:
-                            b = CCD(o[0], "SD", 14.2)
+                            b = CCD(o[0], "SD", 15.2)
                         else:
-                            b = CCD(0, "SD", 14.2)
+                            b = CCD(0, "SD", 15.2)
                         self.gar_bal = float(ASD(self.gar_bal) + ASD(b.work))
                         o = self.sql.getRec("gentrn",
                             cols=["round(sum(glt_tramt), 2)"],
@@ -188,9 +188,9 @@ class gl6030(object):
                             self.s_per), ("glt_curdt", "<=",
                             self.opts["period"])], limit=1)
                         if o and o[0]:
-                            b = CCD(float(o[0]), "SD", 14.2)
+                            b = CCD(float(o[0]), "SD", 15.2)
                         else:
-                            b = CCD(0, "SD", 14.2)
+                            b = CCD(0, "SD", 15.2)
                         self.gar_bal = float(ASD(self.gar_bal) + ASD(b.work))
                         done.append(acc)
             o = self.sql.getRec("asstrn",
@@ -210,9 +210,9 @@ class gl6030(object):
                 where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
                 self.bkm_ctl), ("glo_trdt", "=", self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gbk_bal = float(ASD(self.gbk_bal) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
@@ -220,9 +220,9 @@ class gl6030(object):
                 ("glt_curdt", ">=", self.s_per), ("glt_curdt", "<=",
                 self.opts["period"])], limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gbk_bal = float(ASD(self.gbk_bal) + ASD(b.work))
             bal = self.sql.getRec("bkmtrn",
                 cols=["round(sum(bkt_tramt), 2)"], where=[("bkt_cono", "=",
@@ -241,9 +241,9 @@ class gl6030(object):
                 where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
                 self.crs_ctl), ("glo_trdt", "=", self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gcr_bal = float(ASD(self.gcr_bal) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
@@ -251,9 +251,9 @@ class gl6030(object):
                 ("glt_curdt", ">=", self.s_per), ("glt_curdt", "<=",
                 self.opts["period"])], limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gcr_bal = float(ASD(self.gcr_bal) + ASD(b.work))
             bal = self.sql.getRec("crstrn",
                 cols=["round(sum(crt_tramt), 2)"], where=[("crt_cono", "=",
@@ -272,9 +272,9 @@ class gl6030(object):
                 where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
                 self.drs_ctl), ("glo_trdt", "=", self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gdr_bal = float(ASD(self.gdr_bal) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
@@ -282,9 +282,9 @@ class gl6030(object):
                 ("glt_curdt", ">=", self.s_per), ("glt_curdt", "<=",
                 self.opts["period"])], limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gdr_bal = float(ASD(self.gdr_bal) + ASD(b.work))
             bal = self.sql.getRec("drstrn",
                 cols=["round(sum(drt_tramt), 2)"], where=[("drt_cono", "=",
@@ -303,9 +303,9 @@ class gl6030(object):
                 where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
                 self.lon_ctl), ("glo_trdt", "=", self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gln_bal = float(ASD(self.gln_bal) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
@@ -313,9 +313,9 @@ class gl6030(object):
                 ("glt_curdt", ">=", self.s_per), ("glt_curdt", "<=",
                 self.opts["period"])], limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gln_bal = float(ASD(self.gln_bal) + ASD(b.work))
             bal = self.sql.getRec("lontrn",
                 cols=["round(sum(lnt_tramt), 2)"], where=[("lnt_cono", "=",
@@ -334,9 +334,9 @@ class gl6030(object):
                 where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
                 self.mem_ctl), ("glo_trdt", "=", self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gml_bal = float(ASD(self.gml_bal) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
@@ -344,9 +344,9 @@ class gl6030(object):
                 ("glt_curdt", ">=", self.s_per), ("glt_curdt", "<=",
                 self.opts["period"])], limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gml_bal = float(ASD(self.gml_bal) + ASD(b.work))
             bal = self.sql.getRec("memtrn",
                 cols=["round(sum(mlt_tramt), 2)"], where=[("mlt_cono", "=",
@@ -366,9 +366,9 @@ class gl6030(object):
                 ("glo_acno", "=", self.own_ctl), ("glo_trdt", "=",
                 self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.grc_own = float(ASD(self.grc_own) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"],
@@ -377,9 +377,9 @@ class gl6030(object):
                 self.s_per), ("glt_curdt", "<=", self.opts["period"])],
                 limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.grc_own = float(ASD(self.grc_own) + ASD(b.work))
             o = self.sql.getRec("rcaowt",
                 cols=["round(sum(rot_tramt), 2)"], where=[("rot_cono", "=",
@@ -395,9 +395,9 @@ class gl6030(object):
                 ("glo_acno", "=", self.tnt_ctl), ("glo_trdt", "=",
                 self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.grc_tnt = float(ASD(self.grc_tnt) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"],
@@ -406,9 +406,9 @@ class gl6030(object):
                 self.s_per), ("glt_curdt", "<=", self.opts["period"])],
                 limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.grc_tnt = float(ASD(self.grc_tnt) + ASD(b.work))
             o = self.sql.getRec("rcatnt",
                 cols=["round(sum(rtu_tramt), 2)"], where=[("rtu_cono", "=",
@@ -424,9 +424,9 @@ class gl6030(object):
                 ("glo_acno", "=", self.dep_ctl), ("glo_trdt", "=",
                 self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.grc_dep = float(ASD(self.grc_dep) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"],
@@ -435,9 +435,9 @@ class gl6030(object):
                 self.s_per), ("glt_curdt", "<=", self.opts["period"])],
                 limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.grc_dep = float(ASD(self.grc_dep) + ASD(b.work))
             o = self.sql.getRec("rcatnt",
                 cols=["round(sum(rtu_tramt), 2)"], where=[("rtu_cono", "=",
@@ -468,9 +468,9 @@ class gl6030(object):
                         ("glo_acno", "=", acc[0]), ("glo_trdt", "=",
                         self.start)], limit=1)
                     if o:
-                        b = CCD(o[0], "SD", 14.2)
+                        b = CCD(o[0], "SD", 15.2)
                     else:
-                        b = CCD(0, "SD", 14.2)
+                        b = CCD(0, "SD", 15.2)
                     self.grt_bal = float(ASD(self.grt_bal) + ASD(b.work))
                     o = self.sql.getRec("gentrn",
                         cols=["round(sum(glt_tramt), 2)"],
@@ -479,9 +479,9 @@ class gl6030(object):
                         self.s_per), ("glt_curdt", "<=", self.opts["period"])],
                         limit=1)
                     if o and o[0]:
-                        b = CCD(float(o[0]), "SD", 14.2)
+                        b = CCD(float(o[0]), "SD", 15.2)
                     else:
-                        b = CCD(0, "SD", 14.2)
+                        b = CCD(0, "SD", 15.2)
                     self.grt_bal = float(ASD(self.grt_bal) + ASD(b.work))
                     done.append(acc[0])
             o = self.sql.getRec("rtltrn",
@@ -501,9 +501,9 @@ class gl6030(object):
                 where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
                 self.str_ctl), ("glo_trdt", "=", self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gst_bal = float(ASD(self.gst_bal) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
@@ -511,9 +511,9 @@ class gl6030(object):
                 ("glt_curdt", ">=", self.s_per), ("glt_curdt", "<=",
                 self.opts["period"])], limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gst_bal = float(ASD(self.gst_bal) + ASD(b.work))
             o = self.sql.getRec("strtrn",
                 cols=["round(sum(stt_cost), 2)"], where=[("stt_cono", "=",
@@ -532,9 +532,9 @@ class gl6030(object):
                 where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
                 self.sln_ctl), ("glo_trdt", "=", self.start)], limit=1)
             if o:
-                b = CCD(o[0], "SD", 14.2)
+                b = CCD(o[0], "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gsl_bal = float(ASD(self.gsl_bal) + ASD(b.work))
             o = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
@@ -542,9 +542,9 @@ class gl6030(object):
                 ("glt_curdt", ">=", self.s_per), ("glt_curdt", "<=",
                 self.opts["period"])], limit=1)
             if o and o[0]:
-                b = CCD(float(o[0]), "SD", 14.2)
+                b = CCD(float(o[0]), "SD", 15.2)
             else:
-                b = CCD(0, "SD", 14.2)
+                b = CCD(0, "SD", 15.2)
             self.gsl_bal = float(ASD(self.gsl_bal) + ASD(b.work))
             o = self.sql.getRec("wagltf",
                 cols=["round(sum(wlt_amt), 2)"], where=[("wlt_cono", "=",

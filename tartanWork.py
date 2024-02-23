@@ -675,6 +675,16 @@ payeRates = {
             [370500, 77362, 31],
             [237100, 42678, 26],
             [0, 0, 18]],
+        "allow": [17235, 9444, 3145, 0]},
+    "2025": {
+        "rates": [
+            [1817000, 644489, 45],
+            [857900, 251258, 41],
+            [673000, 179147, 39],
+            [512800, 121475, 36],
+            [370500, 77362, 31],
+            [237100, 42678, 26],
+            [0, 0, 18]],
         "allow": [17235, 9444, 3145, 0]}}
 siteRates = {
     "2004": 60000,
@@ -697,7 +707,8 @@ siteRates = {
     "2021": 0,
     "2022": 0,
     "2023": 0,
-    "2024": 0}
+    "2024": 0,
+    "2025": 0}
 uifRates = {
     "2004": [1.00, 1.00],
     "2005": [1.00, 1.00],
@@ -719,7 +730,8 @@ uifRates = {
     "2021": [1.00, 1.00],
     "2022": [1.00, 1.00],
     "2023": [1.00, 1.00],
-    "2024": [1.00, 1.00]}
+    "2024": [1.00, 1.00],
+    "2025": [1.00, 1.00]}
 sdlRates = {
     "2004": [0.00, 1.00],
     "2005": [0.00, 1.00],
@@ -741,7 +753,8 @@ sdlRates = {
     "2021": [0.00, 1.00],
     "2022": [0.00, 1.00],
     "2023": [0.00, 1.00],
-    "2024": [0.00, 1.00]}
+    "2024": [0.00, 1.00],
+    "2025": [0.00, 1.00]}
 # Labels
 labels = {
     "L7159": {
@@ -2258,7 +2271,7 @@ tabdic = {
             [0, "glo_cono", "UI", 3.0, "Company Number", "Coy"],
             [1, "glo_acno", "UI", 7.0, "Account Number", "Acc-Num"],
             [2, "glo_trdt", "D1", 10.0, "Year Start Date", "Start-Date"],
-            [3, "glo_cyr", "SD", 13.2, "Opening Balance - Amount", "Op-Amount"],
+            [3, "glo_cyr", "SD", 15.2, "Opening Balance - Amount", "Op-Amount"],
             [4, "glo_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["General Ledger Opening Bals", 1, "U", "glo_cono", "glo_acno",
@@ -2484,7 +2497,7 @@ tabdic = {
             [9, "glt_desc", "NA", 30.0, "Description", "Description"],
             [10, "glt_taxind", "UA", 1.0, "Tax Indicator", "V"],
             [11, "glt_batind", "UA", 1.0, "Batch Indicator", "B"],
-            [12, "glt_recon", "UI", 7.0, "Bank Date", "Bank-Dt"],
+            [12, "glt_recon", "d2", 7.0, "Bank Date", "Bank-Dt"],
             [13, "glt_capnm", "TX", 20.0, "Capture Name", "Capture-Name"],
             [14, "glt_capdt", "d1", 10.0, "Capture Date", "Capture-Dt"],
             [15, "glt_xflag", "UA", 1.0, "Export Flag", "X"],

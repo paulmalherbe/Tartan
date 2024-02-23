@@ -2376,7 +2376,7 @@ def getFileName(path, ptyp="FF", wrkdir=None, check=False):
             os.chmod(nam, stat.S_IRWXU)
         con.close()
         return nam
-    except:
+    except Exception as err:
         if con:
             con.close()
         if fle:
@@ -2786,6 +2786,7 @@ def doWriteExport(**args):
                         "ULINES" - A sigle underline - skip
                         "TOTAL"  - A total line of columns of data
                     List of values
+        ctots  - A list of TOTAL columns to sum using the SUBTOTAL function
         rcdic  - The tartanrc dictionary
         view   - Whether to view the report
         wait   - Whether to wait for the viewer to exit.
@@ -2938,10 +2939,10 @@ def doWriteExport(**args):
         blank = False
         for num, valx in enumerate(args["heads"]):
             if type(valx) in (list, tuple):
-                cols = len(args["colsh"][-1])
                 hgt, siz = valx[1:]
                 hxf = {"font": ["Ariel", siz, True]}
                 hxf["align"] = ["center", "center"]
+                cols = len(args["colsh"][-1])
             else:
                 hxf = {"font": "Ariel"}
                 hxf["bold"] = True
@@ -3036,6 +3037,13 @@ def doWriteExport(**args):
             sheet, rowx = createSheet(fmt, page)
             page += 1
         # Generate the body
+        if "ctots" in args and args["ctots"]:
+            gtot = {}
+            stot = {}
+            for tot in args["ctots"]:
+                if type(tot) in (list, tuple):
+                    stot[tot[0]]
+                stot[tot] = []
         for num, row in enumerate(args["datas"]):
             if row[0] == "PAGE":
                 args["heads"] = row[1][0]
@@ -3068,10 +3076,7 @@ def doWriteExport(**args):
                     unl = "d"
             # Write columns
             for colx, valx in enumerate(row[1]):
-                if type(valx) in (list, tuple):
-                    valx, bord = valx
-                else:
-                    bord = None
+                # Dates
                 if row[0] == "BODY":
                     if valx and args["forms"][colx][0].lower() == "d1":
                         # D1 Date conversion
@@ -3079,13 +3084,37 @@ def doWriteExport(**args):
                     elif valx and args["forms"][colx][0].lower() == "d2":
                         # D2 Date conversion
                         valx = datetime.datetime.strptime(str(valx), "%Y%m")
+                # Sum Totals
+                if "ctots" in args and args["ctots"]:
+                    if colx in stot:
+                        cola = getLetter(colx + 1)
+                        if row[0] == "BODY":
+                            if not stot[colx]:
+                                stot[colx] = ["%s%s" % (cola, rowx + 1),
+                                    "%s%s" % (cola, rowx + 1)]
+                                if not colx in gtot:
+                                    gtot[colx] = ["%s%s" % (cola, rowx + 1), ""]
+                            else:
+                                stot[colx][1] = "%s%s" % (cola, rowx + 1)
+                        elif row[0] == "TOTAL":
+                            if stot[colx]:
+                                valx = "=SUBTOTAL(9,%s:%s)" % tuple(stot[colx])
+                                gtot[colx][1] = "%s%s" % (cola, rowx + 1)
+                                stot[colx] = []
+                            elif gtot[colx]:
+                                valx = "=SUBTOTAL(9,%s:%s)" % tuple(gtot[colx])
                 # Format Font, Bold and/or Border
+                if type(valx) in (list, tuple):
+                    valx, bord = valx
+                else:
+                    bord = None
                 hxf = dict(fmt)
                 if row[0] in ("HEAD", "TOTAL"):
                     hxf["bold"] = True
                 # Underline & Border
                 ccd = list(args["forms"][colx][:])
-                if ccd[0] in numer and type(valx) == str:
+                if ccd[0] in numer and type(valx) == str and \
+                        not valx.count("=SUBTOTAL"):
                     ccd[0] = "NA"
                 if unl == "s" and ccd[0] in numer:
                     hxf["border"] = ["B", "thin"]

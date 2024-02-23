@@ -9,7 +9,7 @@ This routine is used to create or amend a system control record by entering the 
 + **Minimum Characters** - If you elected to enforce passwords enter the minimum number of characters that the passwords must consist of.
 + **Maximum Life (Days)** - If you elected to enforce passwords enter the maximum number of days that the passwords will be valid for.
 + **Backup History (Days)** - Enter the maximum number of days that backups will be retained. Enter 0 for infinity.
-+ **SMTP Server** - If you have email then enter your SMTP server's address e.g. smtp.mweb.co.za or smtp.saix.net or smtp.vodacom.co.za
++ **SMTP Server** - If you have email then enter your SMTP server's address e.g. smtp.mweb.co.za or smtp.saix.net or smtp.vodacom.co.za etc.
 + **SMTP Security** - Select the appropriate security method.
 + **SMTP Authentication** - Select the appropriate authentication method.
 + **SMTP Port Number** - Select the appropriate smtp port number.
@@ -30,7 +30,7 @@ While most of the fields are self explanatory the following are of note:
 + **E-Mail Address** - The company's default email address.
 + **V.A.T. Default** - Any alphanumeric character. If the code, except **N** which is used for no V.A.T., has not previously been created you will be prompted to create one as in `V.A.T. Records Maintenance`_.
 + **Systems** - You must tick all the systems that you would like to enable otherwise they will not appear on your menu.
-+ **Logo** - You can select an image file to be used as the letterhead for invoices, statements and remittance advices. this file should be a jpg file.
++ **Logo** - You can select an image file to be used as the letterhead for invoices, statements and remittance advices. This file should be a `jpeg` file.
 
 After creating a **new** company record you will be prompted for the initial financial period's starting and ending dates e.g. 20060301 and 20070228.
 

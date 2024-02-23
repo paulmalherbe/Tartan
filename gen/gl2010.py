@@ -73,7 +73,7 @@ Please Contact your Software Support and Quote this Message as this is a Serious
             (("C",0,0,0),"IUI",7,"Acc-Num","Account Number",
                 "","N",self.doAcc,sel_acc,None,None),
             (("C",0,0,1),"ONA",30,"Description"),
-            (("C",0,0,2),"ISD",13.2,"Balance","Balance Value",
+            (("C",0,0,2),"ISD",15.2,"Balance","Balance Value",
                 "","N",self.doBal,None,None,None))
         but = (
             ("Import File",None,self.doImport,0,("C",0,1),("C",0,2),
@@ -90,7 +90,7 @@ Please Contact your Software Support and Quote this Message as this is a Serious
         self.df.setWidget(self.df.mstFrame, state="hide")
         impcol = [
             ["Account Number", 0, "UI", 7],
-            ["Opening Balance", 1, "SD", 13.2]]
+            ["Opening Balance", 1, "SD", 15.2]]
         fi = FileImport(self.opts["mf"], impcol=impcol)
         err = None
         for num, line in enumerate(fi.impdat):
@@ -169,7 +169,7 @@ Please Contact your Software Support and Quote this Message as this is a Serious
             where=[("glo_cono", "=", self.opts["conum"]), ("glo_trdt", "=",
             self.start)], limit=1)
         if bals[0]:
-            diff = CCD(bals[0], "SD", 13.2)
+            diff = CCD(bals[0], "SD", 15.2)
             showError(self.opts["mf"].body, "Out of Balance",
                 "Opening Balances Do Not Balance by %s" % diff.disp)
             self.df.focusField(self.df.frt, self.df.pag, self.df.col)

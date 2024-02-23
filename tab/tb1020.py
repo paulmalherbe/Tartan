@@ -174,6 +174,14 @@ class tb1020(object):
         for num, self.table in enumerate(self.tabs):
             if self.opts["bar"] and self.opts["mf"] and self.opts["mf"].window:
                 self.p1.displayProgress(num)
+            if self.table == "gentrn":
+                recon = self.sql.getRec("ffield", cols=["ff_type"],
+                    where=[("ff_tabl", "=", "gentrn"), ("ff_name", "=",
+                    "glt_recon")], limit=1)
+                if recon[0] == "UI":
+                    self.sql.updRec("ffield", cols=["ff_type"], data=["d2"],
+                    where=[("ff_tabl", "=", "gentrn"), ("ff_name", "=",
+                    "glt_recon")])
             recs = False
             chk = self.doReadTables("idx")
             if not chk:

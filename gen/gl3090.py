@@ -114,12 +114,13 @@ class gl3090(object):
             whr.append(("grt_date", "<=", self.to))
         if self.unall == "Y":
             whr.append(("grt_flag", "=", "N"))
-        odr = "grt_date, grt_refno"
+        tab = ["genrct"]
         tot = ["grt_amount"]
+        odr = "grt_date, grt_refno"
         RepPrt(self.opts["mf"], conum=self.opts["conum"],
-            conam=self.opts["conam"], name=self.__class__.__name__,
-            tables=["genrct"], heads=hds, cols=col, where=whr, order=odr,
-            gtots=tot, repprt=self.df.repprt, repeml=self.df.repeml)
+            conam=self.opts["conam"], name=self.__class__.__name__, tables=tab,
+            heads=hds, cols=col, where=whr, order=odr, gtots=tot,
+            repprt=self.df.repprt, repeml=self.df.repeml)
         self.closeProcess()
 
     def doExit(self):

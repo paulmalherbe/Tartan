@@ -96,7 +96,8 @@ class si3090(object):
         for c in col[:5]:
             cols.append((c, dics[c][2], dics[c][3], dics[c][5]))
         RepPrt(self.opts["mf"], name=self.__class__.__name__, tables=data,
-            ttype="D", heads=hed, cols=cols)
+            ttype="D", heads=hed, cols=cols, repprt=self.df.repprt,
+            repeml=self.df.repeml)
         self.opts["mf"].closeLoop()
 
     def doExit(self):

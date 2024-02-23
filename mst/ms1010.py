@@ -266,7 +266,7 @@ class ms1010(object):
                     pass
             self.img = ShowImage(self.df.nb.Page4, logo,
                 wrkdir=self.opts["mf"].rcdic["wrkdir"], msiz=640)
-        except:
+        except Exception as err:
             return "error"
 
     def doReadVat(self, w):

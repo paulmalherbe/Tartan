@@ -52,7 +52,7 @@ class gl3030(object):
             "Typ", "Batch", "Remarks", "Debit", "Credit", "Balance"]
         self.forms = [("UI", 3), ("UI", 7), ("NA", 30), ("D1", 10),
             ("Na", 9), ("NA", 3), ("Na", 7), ("NA", 30), ("SD", 13.2),
-            ("SD", 13.2), ("SD", 14.2)]
+            ("SD", 13.2), ("SD", 15.2)]
         self.s_per = int(self.opts["period"][1][0] / 100)
         self.e_per = int(self.opts["period"][2][0] / 100)
         self.recs = None
@@ -221,7 +221,7 @@ class gl3030(object):
     def printReport(self, recs):
         self.newpage = True
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = "%03u %-101s" % (self.opts["conum"], self.opts["conam"])
+        self.head = "%03u %-102s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         for seq, dat in enumerate(recs):
             p.displayProgress(seq)
@@ -240,22 +240,22 @@ class gl3030(object):
                 else:
                     self.newAccount()
             if acctot:
-                w1 = CCD(acctot, "SD", 14.2)
+                w1 = CCD(acctot, "SD", 15.2)
                 self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %-13s %-13s "\
-                    "%-14s" % (self.sdate.disp + "-01", "", "", "",
+                    "%-15s" % (self.sdate.disp + "-01", "", "", "",
                     "Opening Balance", "", "", w1.disp))
             for acc in trn:
                 trdt, refno, trtp, batch, amt, dbt, crt, detail, curdt, \
                     curmth = self.getTrnValues(acc)
                 if self.fpdf.newPage():
                     self.pageHeading()
-                    bf = CCD(acctot, "SD", 14.2)
+                    bf = CCD(acctot, "SD", 15.2)
                     if bf.work:
-                        self.fpdf.drawText("%32s %-30s %27s %14s" % ("",
+                        self.fpdf.drawText("%32s %-30s %27s %15s" % ("",
                             "Brought Forward", "", bf.disp))
                 acctot = float(ASD(acctot) + ASD(amt.work))
-                w1 = CCD(acctot, "SD", 14.2)
-                self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %13s %13s %14s"\
+                w1 = CCD(acctot, "SD", 15.2)
+                self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %13s %13s %15s"\
                     % (trdt.disp, refno.disp, gltrtp[(trtp.work - 1)][0],
                     batch.disp, detail.disp, dbt.disp, crt.disp, w1.disp))
             if self.pages == "Y" and (acctot or trn):
@@ -279,18 +279,18 @@ class gl3030(object):
             where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
             acno.work), ("glo_trdt", "=", self.opts["period"][1][0])], limit=1)
         if o:
-            b = CCD(o[0], "SD", 14.2)
+            b = CCD(o[0], "SD", 15.2)
         else:
-            b = CCD(0, "SD", 14.2)
+            b = CCD(0, "SD", 15.2)
         ob = b.work
         o = self.sql.getRec("gentrn", cols=["round(sum(glt_tramt), 2)"],
             where=[("glt_cono", "=", self.opts["conum"]), ("glt_acno", "=",
             acno.work), ("glt_curdt", ">=", self.s_per), ("glt_curdt",
             "<", self.sdate.work)], limit=1)
         if o and o[0]:
-            b = CCD(o[0], "SD", 14.2)
+            b = CCD(o[0], "SD", 15.2)
         else:
-            b = CCD(0, "SD", 14.2)
+            b = CCD(0, "SD", 15.2)
         acctot = float(ASD(ob) + ASD(b.work))
         return (acno, desc, acctot)
 
@@ -340,9 +340,9 @@ class gl3030(object):
             self.fpdf.drawText("%-7s %-7s %-30s" % ("Account", self.acno.disp,
                 self.desc.disp))
             self.fpdf.drawText()
-            self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %-13s %-13s %-14s" \
+            self.fpdf.drawText("%-10s %-9s %-3s %-7s %-30s %-13s %-13s %-15s" \
                 % ("   Date", "Reference", "Typ", "Batch", "Remarks",
-                "       Debit", "      Credit", "     Balance"))
+                "       Debit", "      Credit", "       Balance"))
             self.fpdf.underLine(self.head)
             self.fpdf.setFont()
 

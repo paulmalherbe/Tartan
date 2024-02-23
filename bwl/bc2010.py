@@ -1779,13 +1779,13 @@ Combination Number %10s"""
                     (self.count, self.tot)
             else:
                 if self.tsize == 3:
-                    bcl = "Pairs"
+                    btp = "Pairs"
                 else:
-                    bcl = "Broken"
+                    btp = "Broken"
                 txt = "Best Random Draw After Trying %s Different "\
                     "Combinations, Largest Team Difference is %s, "\
                     "Skips Clash %s, Players Clash %s, %s %s" % \
-                    (self.count, self.tot, self.scl, self.pcl, bcl, self.bcl)
+                    (self.count, self.tot, self.scl, self.pcl, btp, self.bcl)
             self.doShowDraw(txt, self.adraw1)
             self.dedit = "N"
             self.doSave()
@@ -2290,7 +2290,7 @@ Combination Number %10s"""
                 drw.append([f[0], nam, f[5]])
         self.adraw2.append(drw)
 
-    def doSave(self):
+    def doSave(self, stat=True):
         # Delete all existing records
         self.sql.delRec("bwldrm", where=[("bdm_cono", "=", self.opts["conum"]),
             ("bdm_date", "=", self.date), ("bdm_time", "=", self.time)])
@@ -2299,8 +2299,10 @@ Combination Number %10s"""
         # Insert bwldrm
         if self.stats:
             stat = self.stats
-        else:
+        elif self.drawn:
             stat = "%s %s %s %s" % (self.tot, self.scl, self.pcl, self.bcl)
+        else:
+            stat = ""
         self.sql.insRec("bwldrm", data=[self.opts["conum"], self.date,
             self.time, self.mixgd, self.mixrt, self.nbase, self.dtype,
             self.dhist, self.dedit, self.tsize, self.mrate.work,

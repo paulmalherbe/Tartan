@@ -89,7 +89,7 @@ class bcc110(object):
         r1s = (("Yes","Y"),("No","N"))
         r2s = (("Position","P"),("Rating","R"),("Combined","C"))
         r3s = (("Ascending","A"),("Descending","D"))
-        r4s = (("S32L-S32L","A"),("S32L-L23S","B"))
+        r4s = (("S32L-L23S","B"),("S32L-S32L","A"))
         if self.memctl:
             self.fld = [
                 (("T",0,0,0),["IRB",r1s],0,"M/L Integration","",

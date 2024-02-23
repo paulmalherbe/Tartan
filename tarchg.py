@@ -1,4 +1,18 @@
-changes = """ver_6.17 2023-11-12
+changes = """ver_6.18 2024-02-23
+===================
+ 1) Modified general ledger opening balances to accept billions.
+ 2) Updated tax tables (same as last year) for 2024/2025 tax year.
+ 3) Enabled email facility with cancelled sales documnents report.
+ 4) Fixed an error with bowls tabs-inn draw status.
+ 5) Updated some items in the reference manual.
+ 6) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.17 2023-11-12
 ===================
  1) Fixed an error in creditor's age analysis.
  2) Fixed an error with debtor and creditor age re-allocations.

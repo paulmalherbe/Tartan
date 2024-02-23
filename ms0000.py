@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 17)
+    VERSION = (6, 18)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -1655,40 +1655,39 @@ System --> Change Password""")
             dft = None
             if "wrka" in self.mf.rcdic and self.mf.rcdic["wrka"] == "Y":
                 ask = self.mf.rcdic["wrkf"]
+                if ask == "T" and not TRASH:
+                    ask = "D"
             else:
+                if TRASH:
+                    but = [("Trash", "T", "Send files to Recycle Bin")]
+                else:
+                    but = []
+                but.extend([
+                    ("Delete", "D", "Permanently Delete the files"),
+                    ("Keep", "K", "Keep the files in the Work Directory")])
                 if "wrkf" in self.mf.rcdic:
                     if self.mf.rcdic["wrkf"] == "T":
-                        dft = "Trash"
+                        if TRASH:
+                            dft = "Trash"
+                        else:
+                            dft = "Delete"
                     elif self.mf.rcdic["wrkf"] == "D":
                         dft = "Delete"
                     else:
                         dft = "Keep"
-                if TRASH:
-                    but = [("Trash", "T", "Send files to Recycle Bin")]
-                    if not dft:
-                        dft = "Trash"
-                else:
-                    but = []
-                if  not dft:
-                        dft = "Delete"
-                but.extend([
-                    ("Delete", "D", "Permanently Delete the files"),
-                    ("Keep", "K", "Keep the files in the Work Directory")])
+                if not dft:
+                    dft = "Delete"
                 ask = askChoice(self.mf.body, "Temporary Files",
                     "What do you wish to do with the Temporary Report Files "\
                     "in the wrk Directory?", butt=but, default=dft)
-            if ask == "T":
-                for fle in fles:
-                    try:
+            for fle in fles:
+                try:
+                    if ask == "T":
                         send2trash(fle)
-                    except:
-                        pass
-            elif ask == "D":
-                for fle in fles:
-                    try:
+                    elif ask == "D":
                         os.remove(fle)
-                    except:
-                        pass
+                except:
+                    pass
 
     def doExit(self, dbm=True):
         if dbm and self.dbm.dbopen:

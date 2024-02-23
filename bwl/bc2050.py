@@ -487,7 +487,7 @@ class bc2050(object):
         whr = [
             ("bcg_cono", "=", self.opts["conum"]),
             ("bcg_ccod", "=", self.ccod)]
-        if self.cfmat in ("T", "X"):
+        if not self.reprint and self.cfmat in ("T", "X"):
             # Delete bwlgme records
             wer = copyList(whr)
             wer.append(("bcg_game", ">=", self.game))

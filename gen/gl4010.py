@@ -106,11 +106,11 @@ class gl4010(object):
             (("T",0,0,0),"ONA",30,"Description"),
             (("T",0,0,0),"OUA",1,"Type"),
             (("T",0,0,0),"OUA",1,"Indicator"),
-            (("C",1,0,0),"OSD",14.2,"Actual","","","N",
+            (("C",1,0,0),"OSD",15.2,"Actual","","","N",
                 None,None,None,None,("Months",14)),
-            (("C",1,0,1),"OSD",14.2,"Budget"),
-            (("C",1,0,2),"OSD",14.2,"Variance"),
-            (("C",1,0,3),"OSD",14.2,"Last-Year"),
+            (("C",1,0,1),"OSD",15.2,"Budget"),
+            (("C",1,0,2),"OSD",15.2,"Variance"),
+            (("C",1,0,3),"OSD",15.2,"Last-Year"),
             (("T",2,0,0),"Id2",7,"Period (YYYYMM)","Financial Period (0=All)",
                 self.trnper,"Y",self.doPeriod,None,None,None))
         tag = (
@@ -276,7 +276,7 @@ class gl4010(object):
             ("glt_batch", "", 0, "Batch"),
             ("glt_tramt", "", 0, "       Debit"),
             ("glt_tramt", "", 0, "      Credit"),
-            ("balance", "SD", 14.2, "     Balance"),
+            ("balance", "SD", 15.2, "     Balance"),
             ("glt_desc", "", 0, "Remarks"),
             ("glt_seq", "", 0, "Sequence"))
         mthno, acctot = self.getObal()
@@ -432,7 +432,7 @@ class gl4010(object):
                     ["glt_batch", "Na", 7, "BatchNo"],
                     ["debit", "SD", 13.2, "       Debit "],
                     ["credit", "SD", 13.2, "      Credit "],
-                    ["balance", "SD", 14.2, "     Balance "],
+                    ["balance", "SD", 15.2, "     Balance "],
                     ["glt_desc", "NA", 30, "Remarks"]]
                 if acctot:
                     if acctot < 0:
