@@ -100,10 +100,9 @@ Please select Control --> System Record Maintenance and change the Years to Keep
         self.cur = int(self.opts["period"][2][0] / 100)
         self.l_per = self.sql.getRec("ctlynd", cols=["max(cye_period)"],
             where=[("cye_cono", "=", self.opts["conum"])], limit=1)[0]
-        self.last, self.oldf = self.sql.getRec("ctlynd",
-            cols=["cye_last", "cye_final"], where=[("cye_cono", "=",
-            self.opts["conum"]), ("cye_period", "=", self.opts["period"][0])],
-            limit=1)[:2]
+        self.last, self.oldf = self.sql.getRec("ctlynd", cols=["cye_last",
+            "cye_final"], where=[("cye_cono", "=", self.opts["conum"]),
+            ("cye_period", "=", self.opts["period"][0])], limit=1)[:2]
         if self.oldf == "Y" and "args" not in self.opts:
             cf = PwdConfirm(self.opts["mf"], conum=0, system="MST",
                 code="YearEnd")
@@ -191,9 +190,9 @@ Please select Control --> System Record Maintenance and change the Years to Keep
         for per in range(0, self.c_per + 1):
             if "args" not in self.opts:
                 pb.displayProgress(per)
-            chk = self.sql.getRec("ctlynd", cols=["cye_final"],
-                where=[("cye_cono", "=", self.opts["conum"]), ("cye_period",
-                "=", per)], limit=1)
+            chk = self.sql.getRec("ctlynd", cols=["cye_final", "cye_start"],
+                where=[("cye_cono", "=", self.opts["conum"]),
+                ("cye_period", "=", per)], limit=1)
             if self.oldf == "Y" or chk[0] != "Y":
                 self.retinc = 0
                 self.doYearEnd(per)
@@ -263,7 +262,7 @@ Please select Control --> System Record Maintenance and change the Years to Keep
                     self.retinc = float(ASD(self.retinc) + ASD(bal))
                     bal = 0.00
                 self.sql.insRec("genbal", data=[self.opts["conum"], ac[0],
-                    start_n,bal])
+                    start_n, bal])
             ri_bal = self.sql.getRec("genbal", cols=["glo_cyr"],
                 where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
                 self.ri_acc), ("glo_trdt", "=", start_n)], limit=1)
@@ -313,12 +312,15 @@ Please select Control --> System Record Maintenance and change the Years to Keep
             ["wagtf2", "wt2_date", []]]
         ynds = self.sql.getRec("ctlynd", where=[("cye_cono", "=",
             self.opts["conum"])], order="cye_period")
-        if len(ynds) <= self.years:
+        chk1 = len(ynds) - self.years
+        chk2 = len(ynds) - (self.years + 1)
+        if not chk1 or not chk2:
             return
-        last = ynds[len(ynds) - (self.years + 1)]
+        last = ynds[chk2]
         sdate = last[self.sql.ctlynd_col.index("cye_start")]
         edate = last[self.sql.ctlynd_col.index("cye_end")]
-        etime = (edate * 10000) + 9999
+        ndate = ynds[chk1][self.sql.ctlynd_col.index("cye_start")]
+        etime = str((edate * 10000) + 9999)
         emldt = "%04i-%02i-99 99:99" % (int(edate / 10000),
             (int(edate / 100) % 100))
         ecurdt = int(edate / 100)
@@ -415,6 +417,13 @@ Please select Control --> System Record Maintenance and change the Years to Keep
                 elif tab[0] == "genbal":
                     whrt.append((tab[1], "<=", sdate))
                     sql.delRec(tab[0], where=whrt)
+                    # Opening Balances in 0 Period
+                    recs = sql.getRec("genbal", where=[("glo_cono", "=",
+                        self.opts["conum"]), ("glo_trdt", "=", ndate)])
+                    for rec in recs:
+                        dat = rec[:]
+                        dat[sql.genbal_col.index("glo_trdt")] = sdate
+                        sql.insRec("genbal", data=dat)
                 elif tab[0] == "genrct":
                     whrt.append((tab[1], "<=", sdate))
                     sql.delRec(tab[0], where=whrt)

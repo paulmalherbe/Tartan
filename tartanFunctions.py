@@ -174,9 +174,10 @@ def showWarning(screen=None, head="", mess=""):
 
 def getFontSize(tk=None, width=None, height=None, font=10):
     if not tk:
-        tk, ttk = importTkinter()
-    if not tk:
-        return 800, 600, 10
+        try:
+            import tkinter as tk
+        except:
+            return 800, 600, 10
     plus = True
     while True:
         win = tk.Tk()
@@ -2445,32 +2446,6 @@ def luhnFunc(number):
     for d in even_digits:
         checksum += sum(digits_of(d*2))
     return checksum % 10 == 0
-
-def internetConnect(host="1.1.1.1", port=53):
-    """
-    Host: 1.1.1.1 free Domain Name System (DNS) service
-    OpenPort: 53/tcp
-    Service: domain (DNS/TCP)
-    """
-    import socket
-
-    try:
-        socket.setdefaulttimeout(1)
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-        return True
-    except:
-        return False
-
-def roundup(number, places=0):
-    from decimal import Decimal as dec
-    from decimal import ROUND_HALF_UP
-
-    if type(number) is float:
-        number = str(number)
-    place = "1."
-    for i in range(places):
-        place = "".join([place, "0"])
-    return float(dec(number).quantize(dec(place), rounding=ROUND_HALF_UP))
 
 def getColors(style, scheme):
     if scheme == "R":

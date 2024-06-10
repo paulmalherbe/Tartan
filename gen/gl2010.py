@@ -174,9 +174,7 @@ Please Contact your Software Support and Quote this Message as this is a Serious
                 "Opening Balances Do Not Balance by %s" % diff.disp)
             self.df.focusField(self.df.frt, self.df.pag, self.df.col)
         else:
-            showInfo(self.opts["mf"].body, "Year End", """A Year End for the Previous Period Must be Executed to Include These Opening Balances.
-
-If the Current Period is 1 then the Year End for Period 0 must be Executed.""")
+            showInfo(self.opts["mf"].body, "Year End", """A Year End for the Previous Period Must be Executed to Include These Opening Balances.""")
             self.df.closeProcess()
             self.opts["mf"].closeLoop()
 

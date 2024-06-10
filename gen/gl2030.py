@@ -1039,7 +1039,12 @@ class gl2030(object):
                 self.curdt = self.bh.curdt
             for desc1, desc2, desc3, trtp, self.allcoy, self.accnum, \
                         acrs, achn, adrs, aage, self.vatcod in codes:
-                self.alldet = CCD(desc1, "NA", 30).work
+                desc = desc1
+                if desc2:
+                    desc = "%s %s" % (desc, desc2)
+                if desc3:
+                    desc = "%s %s" % (desc, desc3)
+                self.alldet = CCD(desc, "NA", 30).work
                 found = True
                 if desc1 not in memo:
                     found = False

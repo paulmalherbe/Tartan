@@ -45,7 +45,7 @@ for o, v in opts:
         print("""
 Usage: python mklinux.py [options]
 
-    -d The Installed Path e.g. /home/paul/Tartan\prg
+    -d The Installed Path e.g. /home/paul/Tartan/prg
     -e The Destination Path e.g. /home/paul/TartanExe
     -f Generate Onefile
     -s The Source path e.g. /home/paul/TartanSve

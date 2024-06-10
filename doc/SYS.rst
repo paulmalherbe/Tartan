@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
 =================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.18
+:Version:   6.19
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -343,7 +343,7 @@ In order to use this exported database perform the following steps on the comput
     + Enter the Database Name i.e. the name of the exported file e.g. tartan001.db and hit enter.
     + Hit enter to accept the Host Name i.e. localhost
     + Enter the Files Directory i.e. the directory where the exported file has been copied to.
-    + Click on the Save button and the the Close button.
+    + Click on the Save button and the Close button.
 
 + The Tartan menu should now be displaying.
 + After exiting Tartan you can re-enter Tartan by executing the third step i.e. Execute Tartan with the following command:

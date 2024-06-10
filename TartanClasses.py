@@ -153,20 +153,6 @@ try:
         "udiaeresis", "Udiaeresis",
         "ssharp"]
 
-    class ArrowButton(ttk.Button):
-        arrow_layout = lambda self, direc: ([("Button.focus",
-            {"children": [("Button.%sarrow" % direc, None)]})])
-
-        def __init__(self, master, **kw):
-            direction = kw.pop("direction", "left")
-            style = ttk.Style(master)
-            style.configure("L.TButton", relief="raised")
-            style.layout("L.TButton", self.arrow_layout("left"))
-            style.configure("R.TButton", relief="raised")
-            style.layout("R.TButton", self.arrow_layout("right"))
-            kw["style"] = "L.TButton" if direction == "left" else "R.TButton"
-            super().__init__(master, **kw)
-
     class MyButtonBox(ttk.Frame):
         def __init__(self, parent, row=None, padx=0, pady=0, **kwargs):
             super().__init__(parent, **kwargs)
@@ -188,21 +174,6 @@ try:
             self.columnconfigure(self.rows[row], weight=1)
             self.rows[row] += spn
             return but
-
-        def focusNext(self, event):
-            key = event.keysym
-            idx = self.buttons.index(event.widget["text"])
-            if key == "Left":
-                if not idx:
-                    idx = len(self.buttons) - 1
-                else:
-                    idx -= 1
-            elif idx == (len(self.buttons) - 1):
-                idx = 0
-            else:
-                idx += 1
-            widgets = self.winfo_children()
-            widgets[idx].focus_set()
 
     class MyButton(ttk.Button):
         def __init__(self, parent, cmd=None, txt=True, img=True, fnt=None, relief=None, **kwargs):
@@ -567,7 +538,7 @@ try:
                 for bind in b.bind():
                     if "<Key-Alt_L>" in bind:
                         self.binds.append(bind)
-                ecmd = lambda event, num=num: self.navigate(event, num)
+                ecmd = lambda event, num=num: self.doNavigate(event, num)
                 b.bind("<Left>", ecmd)
                 b.bind("<Right>", ecmd)
                 if len(but) == 3:
@@ -633,7 +604,7 @@ try:
             if not self.parent:
                 self.msgwin.quit()
 
-        def navigate(self, event, num):
+        def doNavigate(self, event, num):
             if event.keysym == "Left":
                 if num == 0:
                     self.butts[-1].focus_set()
@@ -8577,7 +8548,8 @@ class TartanConfig(object):
                     self.fft.append(font)
                 if font not in self.aft:
                     self.aft.append(font)
-            except:
+            except Exception as err:
+                print(err)
                 continue
         sp.closeSplash()
 

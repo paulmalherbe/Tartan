@@ -434,16 +434,16 @@ if publish:
     if windows:
         # Rename Windows exe's
         if "32" in bits:
-            exeCmd("mv %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
+            exeCmd("cp %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "64" in bits:
-            exeCmd("mv %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
+            exeCmd("cp %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "8" in bits:
-            exeCmd("mv %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
+            exeCmd("cp %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "7" in bits:
-            exeCmd("mv %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
+            exeCmd("cp %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
     print("Version Number is %s.%s" % tuple(cver))
     # Dropbox

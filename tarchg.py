@@ -1,4 +1,16 @@
-changes = """ver_6.18 2024-02-23
+changes = """ver_6.19 2024-06-10
+===================
+ 1) Fixed a problem with the financial year end routine.
+ 2) Changed the transaction details in general ledger bank statement imports.
+ 3) Updated some items in the reference manual.
+ 4) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.18 2024-05-16
 ===================
  1) Modified general ledger opening balances to accept billions.
  2) Updated tax tables (same as last year) for 2024/2025 tax year.

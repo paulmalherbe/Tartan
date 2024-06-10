@@ -217,13 +217,8 @@ class st3060(object):
         self.closeProcess()
 
     def getValues(self, data):
-        grp = CCD(data[0], "UA", 3)
-        self.groupd = grp.disp
-        code = CCD(data[1], "NA", 20)
-        desc = CCD(data[2], "NA", 30)
-        uoi = CCD(data[3], "NA", 10)
         bals = Balances(self.opts["mf"], "STR", self.opts["conum"], self.edate,
-            keys=(grp.work, code.work, self.loc))
+            keys=(data[0], data[1], self.loc))
         figs = [0] * 8
         m_ob,m_mv,m_cb,y_ob,y_mv,y_cb,ac,lc, ls = bals.doStrBals(self.sdate)
         figs[0] = y_ob[0]
@@ -237,6 +232,11 @@ class st3060(object):
                 figs[5] = float(ASD(figs[5]) - ASD(bal[2]))
         figs[6] = y_cb[0]
         figs[7] = y_cb[1]
+        grp = CCD(data[0], "UA", 3)
+        self.groupd = grp.disp
+        code = CCD(data[1], "NA", 20)
+        desc = CCD(data[2], "NA", 30)
+        uoi = CCD(data[3], "NA", 10)
         t = [grp, code, desc, uoi]
         for y in range(8):
             t.append(CCD(figs[y], "SD", 12.2))

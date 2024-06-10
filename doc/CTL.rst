@@ -30,7 +30,7 @@ While most of the fields are self explanatory the following are of note:
 + **E-Mail Address** - The company's default email address.
 + **V.A.T. Default** - Any alphanumeric character. If the code, except **N** which is used for no V.A.T., has not previously been created you will be prompted to create one as in `V.A.T. Records Maintenance`_.
 + **Systems** - You must tick all the systems that you would like to enable otherwise they will not appear on your menu.
-+ **Logo** - You can select an image file to be used as the letterhead for invoices, statements and remittance advices. This file should be a `jpeg` file.
++ **Logo** - You can select an image file to be used as the letterhead for invoices, statements and remittance advices. This file should be a `jpg` file.
 
 After creating a **new** company record you will be prompted for the initial financial period's starting and ending dates e.g. 20060301 and 20070228.
 
