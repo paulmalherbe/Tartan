@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -112,9 +112,7 @@ class bc2060(object):
         self.df.loadEntry(frt, pag, p+1, data=self.cdes)
         bwltyp = self.sql.getRec("bwltyp", where=[("bct_cono", "=",
             self.opts["conum"]), ("bct_code", "=", self.ctyp)], limit=1)
-        cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
-        if cfmat in ("D", "K", "R"):
-            return "Knockout and R/Robin Draws Cannot be Changed"
+        self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
         self.ends = bwltyp[self.sql.bwltyp_col.index("bct_ends")]
         self.grgame = bwltyp[self.sql.bwltyp_col.index("bct_grgame")]
         gmes = self.sql.getRec("bwlgme", cols=["bcg_game", "bcg_type",
@@ -131,7 +129,7 @@ class bc2060(object):
                     continue
                 if gme[3] in ("", "D", "S") and gme[4]:
                     self.draws[gme[0]] = gme[1:]
-        elif cfmat == "X":
+        elif self.cfmat in ("D", "K", "R", "W", "X"):
             return "Draw Not Yet Done"
         else:
             ok = askQuestion(self.opts["mf"].body, "Manual Draw",
@@ -225,6 +223,10 @@ class bc2060(object):
             self.df.loadEntry(frt, pag, p+3, data=name)
         if not self.manual and skp[3]:
             self.df.loadEntry(frt, pag, p+4, data=skp[3])
+        if self.cfmat in ("D", "K", "R", "W"):
+            if skp[2]:
+                self.new_opp = skp[2]
+            return "sk3"
 
     def doOppCod(self, frt, pag, r, c, p, i, w):
         opp = self.sql.getRec(tables=["bwlgme", "bwltab"], cols=["btb_surname",

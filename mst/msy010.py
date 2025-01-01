@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -198,7 +198,7 @@ Please select Control --> System Record Maintenance and change the Years to Keep
                 self.doYearEnd(per)
         if "args" not in self.opts:
             pb.closeProgress()
-        if self.years:
+        if self.years and self.c_per == self.l_per and self.c_per > self.years:
             self.doDropYears()
         self.opts["mf"].dbm.commitDbase()
         if "args" not in self.opts:
@@ -312,14 +312,10 @@ Please select Control --> System Record Maintenance and change the Years to Keep
             ["wagtf2", "wt2_date", []]]
         ynds = self.sql.getRec("ctlynd", where=[("cye_cono", "=",
             self.opts["conum"])], order="cye_period")
-        chk1 = len(ynds) - self.years
-        chk2 = len(ynds) - (self.years + 1)
-        if not chk1 or not chk2:
-            return
-        last = ynds[chk2]
+        last = ynds[len(ynds) - (self.years + 1)]
         sdate = last[self.sql.ctlynd_col.index("cye_start")]
         edate = last[self.sql.ctlynd_col.index("cye_end")]
-        ndate = ynds[chk1][self.sql.ctlynd_col.index("cye_start")]
+        ndate = ynds[0][self.sql.ctlynd_col.index("cye_start")]
         etime = str((edate * 10000) + 9999)
         emldt = "%04i-%02i-99 99:99" % (int(edate / 10000),
             (int(edate / 100) % 100))

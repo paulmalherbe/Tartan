@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ class wg3010(object):
                 state = "hide"
             else:
                 state = "show"
-            if len(self.df.topEntry[0][2]) == 5:
+            if len(self.df.topEntry[0][2]) > 4:
                 self.df.setWidget(self.df.topEntry[0][2][4][0], state=state)
             self.df.setWidget(self.df.topEntry[0][2][3][0], state=state)
 

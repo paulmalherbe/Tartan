@@ -9,7 +9,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -226,7 +226,7 @@ New Stock Balance:    %s\n""" % (CCD(obal, "SD", 12.2).disp,
             w = whr[:]
             w.append(("stt_curdt", "<=", per))
             chk = self.sql.getRec("strtrn", cols=["max(stt_curdt)", "stt_qty",
-                "stt_cost"], where=whr, group="stt_curdt, stt_qty, stt_cost",
+                "stt_cost"], where=w, group="stt_curdt, stt_qty, stt_cost",
                 order="stt_curdt desc", limit=1)
             if not chk:
                 continue

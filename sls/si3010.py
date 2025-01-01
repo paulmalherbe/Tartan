@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -100,11 +100,13 @@ class si3010(object):
             self.ord1 = 0
             self.ord2 = 999999999
             self.df.setWidget(self.df.topEntry[0][5][3][0], state="show")
-            self.df.setWidget(self.df.topEntry[0][5][4][0], state="show")
+            if len(self.df.topEntry[0][5]) > 4:
+                self.df.setWidget(self.df.topEntry[0][5][4][0], state="show")
         else:
             self.df.loadEntry(frt, pag, p+1, data="")
             self.df.setWidget(self.df.topEntry[0][5][3][0], state="hide")
-            self.df.setWidget(self.df.topEntry[0][5][4][0], state="hide")
+            if len(self.df.topEntry[0][5]) > 4:
+                self.df.setWidget(self.df.topEntry[0][5][4][0], state="hide")
             return "sk1"
 
     def doContent(self, frt, pag, r, c, p, i, w):

@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -156,7 +156,8 @@ class ml3030(object):
         self.totsonly = w
         if self.totsonly == "Y":
             self.df.setWidget(self.df.topEntry[0][13][3][0], state="hide")
-            self.df.setWidget(self.df.topEntry[0][13][4][0], state="hide")
+            if len(self.df.topEntry[0][13]) > 4:
+                self.df.setWidget(self.df.topEntry[0][13][4][0], state="hide")
             self.sort = "N"
             self.acc1 = 0
             self.fm = "First"
@@ -169,7 +170,8 @@ class ml3030(object):
             return "sk7"
         else:
             self.df.setWidget(self.df.topEntry[0][13][3][0], state="show")
-            self.df.setWidget(self.df.topEntry[0][13][4][0], state="show")
+            if len(self.df.topEntry[0][13]) > 4:
+                self.df.setWidget(self.df.topEntry[0][13][4][0], state="show")
 
     def doSort(self, frt, pag, r, c, p, i, w):
         self.sort = w

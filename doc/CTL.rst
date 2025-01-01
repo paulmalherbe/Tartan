@@ -128,4 +128,4 @@ Use this routine to end a financial period. This will create opening balances in
 
 Change Year End Date
 ....................
-Use this routine to change the financial year end date from a specific period.
+Use this routine to change the financial year end date for a specific period.

@@ -310,7 +310,7 @@ Use this routine to create competition type records as follows:
 
 + **Type Code** - zero for the next number else an existing number. To see existing types press the F1 key.
 + **Description** - The competition description.
-+ **Competition Format** - The type of competition i.e. Tournament, K/Out (D), K/Out (N), R/Robin or Teams. K/Out (D) is for drawn teams knockout and K/Out (N) is for nominated teams knockout. Teams is for a competition between the home club and a visiting club.
++ **Competition Format** - The type of competition i.e. Tournament, K/Out (D), K/Out (N), R/Robin, R/R (G) or Teams. K/Out (D) is for drawn teams knockout and K/Out (N) is for nominated teams knockout. R/R (G) is for Groups of Teams. Teams is for a competition between the home club and a visiting club.
 + **Team Size** - The number of players in a team.
 + **Number of Games** - The total number of games comprising the competition.
 + **Number of Ends per Game** - The number of ends to be completed in a game.
@@ -345,7 +345,7 @@ Use this routine to capture entries in a competition as follows:
 In the event of drawn games enter all player's codes else enter only the skip's codes.
 
 + **Code** - The player's code as created in `Tab's Maintenance (BC)`_ or you can enter a zero to enter a new player as per `Tab's Maintenance (BC)`_.
-+ **Team** - The team's code, if relevant i.e. H or V if the competition type is Teams.
++ **Group** - The team's code, if relevant i.e. H or V if the competition type is Teams and a valid Group Number if the competition type is R/R (G). Valid groups can be created by executing the Bowling Clubs, League, Club Records module.
 + **P** - Whether or not the player has paid, Y or N.
 
 Entries Listing (BC)
@@ -363,14 +363,13 @@ Use this routine to print the competition format.
 
 Competition Draw (BC)
 +++++++++++++++++++++
-If the first draw of a competition is a Manual Draw use `Change Draw` otherwise
-use this routine to create a draw and, if relevant, print match cards as follows:
+If the first draw of a Tournament competition is a Manual Draw, use `Change Draw` to capture it, otherwise use this routine to create a draw and, if relevant, print match cards as follows:
 
 + **Tournament, Teams and Round Robin**
     + **Competition Code** - The relevant competition code. If the competition is a new competition and is a Round Robin competition you will have the facility to sectionalise it.
         + **Sections** - Select Yes or No.
         + **Entries per Section** - Enter the number of entries per section.
-    + **Game Number** - The relevant game number.
+    + **Game Number** - The relevant game number. If it is the first game an option to print All Drawn Games will be displayed.
     + **Game Date** - The date of the game.
     + **Pair Home with Away Skips** - This only applies to the first drawn game.
         + **No** - Standard random draw where anyone could be paired with anyone.
@@ -382,8 +381,8 @@ use this routine to create a draw and, if relevant, print match cards as follows
     + **Print Cards** - Whether or not to print score cards.
     + **Card Type** - If available, select the type of scorecard to print.
         + **Ends** - A scorecard showing all ends.
-        + **Totals** - A scorecard showing only game totals.
-    + **All Cards** - If cards were selected to be printed, whether to print all cards or only selected ones.
+        + **Totals** - A scorecard showing only game totals. This is only available for Round Robin and if All Drawn Games was selected when doing the first draw.
+    + **All Cards** - If cards were selected to be printed, whether to print cards for all skips or only selected ones.
 
 + **Knockout**
     + **Competition Code** - The relevant competition code.

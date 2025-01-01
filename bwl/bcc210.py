@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -39,11 +39,10 @@ class bcc210(object):
             prog=self.__class__.__name__)
         if self.sql.error:
             return
-        acc = self.sql.getRec("bwlclb", where=[("bcc_code", "=",
-            self.opts["conum"])], limit=1)
+        # Create Own Club Record
+        acc = self.sql.getRec("bwlclb", where=[("bcc_code", "=", 1)], limit=1)
         if not acc:
-            self.sql.insRec("bwlclb", data=[self.opts["conum"],
-                self.opts["conam"]])
+            self.sql.insRec("bwlclb", data=[1, self.opts["conam"]])
             self.opts["mf"].dbm.commitDbase()
         return True
 

@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ class ms3030(object):
         else:
             frm = self.frm.disp
         hds = "Email Log Report from %s to %s" % (frm, self.too.disp)
-        col = ["eml_too", "eml_sub", "eml_dtt", "eml_sta"]
+        col = ["eml_too", "eml_frm", "eml_sub", "eml_dtt", "eml_sta"]
         whr = [
             ("eml_dtt", ">=", "%10s 00:00" % self.frm.disp),
             ("eml_dtt", "<=", "%10s 99:99" % self.too.disp)]

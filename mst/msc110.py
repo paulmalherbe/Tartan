@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ COPYING
 
 import time
 from TartanClasses import Sql, TartanDialog
-from tartanFunctions import chkMod, copyList, sendMail, showError
+from tartanFunctions import b64Convert, chkMod, copyList, sendMail, showError
 
 class msc110(object):
     def __init__(self, **opts):
@@ -104,7 +104,16 @@ class msc110(object):
         self.df = TartanDialog(self.opts["mf"], eflds=self.fld,
             butt=but, tend=tnd, txit=txt, focus=False)
         for n, f in enumerate(self.acc):
-            self.df.loadEntry("T", 0, n, data=f)
+            if not n:
+                self.df.loadEntry("T", 0, n, data=0)
+            elif n in (10, 13):
+                try:
+                    f = b64Convert("decode", f)
+                    self.df.loadEntry("T", 0, n, data=f)
+                except:
+                    self.df.loadEntry("T", 0, n, data=f)
+            else:
+                self.df.loadEntry("T", 0, n, data=f)
         self.df.focusField("T", 0, 1, clr=False)
 
     def doHist(self, frt, pag, r, c, p, i, w):
@@ -185,6 +194,9 @@ class msc110(object):
                 return
         tme = time.localtime()
         data = copyList(self.df.t_work[0][0])
+        data[10] = b64Convert("encode", data[10])
+        if data[13]:
+            data[10] = b64Convert("encode", data[13])
         if self.new:
             self.sql.insRec("ctlsys", data=data)
         elif data != self.acc[:len(data)]:

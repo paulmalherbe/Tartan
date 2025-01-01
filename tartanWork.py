@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,9 +33,11 @@ pymoda = [
     ("win32api", "pywin32", None, "win32")]
 pymodb = [
     ("beepy", "beepy", None, "linux"),
+    ("cairosvg", "cairosvg", "__version__"),
     ("Crypto", "pycryptodome", "__version__"),
     ("cups", "pycups", None, "linux"),
-    ("fitz", "pymupdf", "version"),
+    ("docutils", "docutils", "__version__"),
+    ("pymupdf", "pymupdf", "version"),
     ("markdown", "markdown", "__version__"),
     ("ofxtools", "ofxtools", "__version__"),
     ("openpyxl", "openpyxl", "__version__"),
@@ -48,7 +50,6 @@ pymodb = [
     ("requests", "requests", "__version__"),
     ("send2trash", "send2trash", None),
     ("smb", "pysmb", None),
-    ("svglib", "svglib", ("svglib", "__version__")),
     ("tkcalendar", "tkcalendar", "__version__"),
     ("tkcolorpicker", "tkcolorpicker", None),
     ("tkinterhtml", "tkinterhtml", None)]
@@ -228,6 +229,7 @@ stdtpl = [
     "booking_form",
     "booking_invoice",
     "booking_statement",
+    "comp_boards",
     "comp_cards",
     "member_cards",
     "payslip",
@@ -255,9 +257,10 @@ tptrtp = {
             }},
     "C": {
         "tables": {
-            "BWL": ["bwlcmp", "bwlgme"],
+            "BWL": ["bwlcmp", "bwlgme", "bwltab"],
             "SCP": ["scpcmp", "scprnd"]},
         "codes": {
+            "sign": [["", "BL", 0, "Sign"], []],
             "skip": [["", "NA", 30, "Skip Name & Code"], []],
             "opponent": [["", "NA", 30, "Opponent Name & Code"], []],
             "shots_for": [["", "BL", 0, "Shots For"], []],
@@ -465,10 +468,11 @@ dattyp = (
     ("Sd", "Convert Integer to Signed Decimal"),
     ("SI", "Signed Integer"),
     ("SL", "Signed Long Integer"),
+    ("TB", "Blob Alphanumeric Variable Length"),
     ("TM", "Time (HH:MM)"),
     ("TS", "Timestamp (CCYY-MM-DD HH:MM:SS)"),
-    ("TV", "Text or View"),
-    ("TX", "Text or Blob Alphanumeric Variable Length"),
+    ("TV", "Blob Text or View"),
+    ("TX", "Text Alphanumeric Variable Length"),
     ("UA", "Upper Case Alphanumeric"),
     ("Ua", "Upper Case Alphanumeric Right Justified"),
     ("UD", "Unsigned Decimal"),
@@ -1156,7 +1160,7 @@ tabdic = {
         "fld": [
             [0, "bkl_cono", "UI", 3.0, "Company Number", "Coy"],
             [1, "bkl_code", "UA", 1.0, "Letter Code", "C"],
-            [2, "bkl_body", "TX", 80.0, "Letter Body", "Letter-Body"],
+            [2, "bkl_body", "TV", 80.0, "Letter Body", "Letter-Body"],
             [3, "bkl_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
             ["Booking Letters", 1, "U", "bkl_cono", "bkl_code"]]},
@@ -1396,7 +1400,7 @@ tabdic = {
             [0, "bce_cono", "UI", 3.0, "Club Number", "Clb"],
             [1, "bce_ccod", "UI", 3.0, "Competition Code", "Cod"],
             [2, "bce_scod", "UI", 6.0, "Skip Code", "S-Code"],
-            [3, "bce_tcod", "UA", 1.0, "Team Code", "T"],
+            [3, "bce_tcod", "Ua", 3.0, "Team Code", "T"],
             [4, "bce_paid", "UA", 1.0, "Paid Flag", "P"],
             [5, "bce_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
@@ -1506,7 +1510,7 @@ tabdic = {
         "fld": [
             [0, "bcn_cono", "UI", 3.0, "Club Number", "Clb"],
             [1, "bcn_ccod", "UI", 3.0, "Competition Code", "Cod"],
-            [2, "bcn_note", "TX", 50.0, "Competition Notes",
+            [2, "bcn_note", "TV", 50.0, "Competition Notes",
                 "Competition-Notes"],
             [3, "bcn_xflag", "UA", 1.0, "Export Flag", "X"]],
         "idx": [
@@ -1903,7 +1907,7 @@ tabdic = {
             [2, "not_key", "NA", 30.0, "Key", "Key"],
             [3, "not_date", "D1", 10.0, "Capture Date", "Capture-Dt"],
             [4, "not_user", "NA", 20.0, "User Name", "User"],
-            [5, "not_desc", "TX", 50.0, "Details", "Details"],
+            [5, "not_desc", "TV", 50.0, "Details", "Details"],
             [6, "not_aflag", "UA", 1.0, "Action Flag", "F"],
             [7, "not_adate", "d1", 10.0, "Action Date", "Action-Dte"],
             [8, "not_auser", "NA", 20.0, "Action User", "Action-User"],
@@ -4868,6 +4872,7 @@ datdic = {
         ["booking_form", "Booking Form", "B", "BKM", "", "A4", "P"],
         ["booking_invoice", "Booking Invoice", "I", "BKM", "", "A4", "L"],
         ["booking_statement", "Booking Statement", "S", "BKM", "N", "A4", "P"],
+        ["comp_boards", "Competition Boards", "C", "BWL", "", "A4", "P"],
         ["comp_cards", "Competition Cards", "C", "BWL", "", "A4", "P"],
         ["member_cards", "Membership Cards", "M", "MEM", "", "CC", "P"],
         ["payslip", "Payslip", "P", "WAG", "", "A4", "P"],
@@ -5261,6 +5266,42 @@ datdic = {
             4.0, 264.0, 0.0, "ctm_b_acno", "courier", 10, "#000000", "N",
             "N", "N", "L", "RB", "N", 142.0, 16, 178.0, 260.0, 4.0, 264.0, 1,
             1],
+        ["comp_boards", 1.0, "C", "A", "N", "", "", 0, "", "", "", "", "",
+            "", "", 0.0, 0, 0.0, 0.0, 0, 0.0, 0.0, "bcm_name", "courier", 14,
+            "#000000", "Y", "N", "N", "C", "TLRB", "Y", 35.0, 30, 175.0, 5.0,
+            10, 15.0, 1, 1],
+        ["comp_boards", 2.0, "C", "A", "N", "", "", 0, "", "", "", "", "",
+            "", "", 0.0, 0, 0.0, 0.0, 0, 0.0, 0.0, "skip", "courier", 12,
+            "#000000", "Y", "N", "N", "C", "TLRB", "N", 35.0, 50, 175.0,
+            15.0, 10, 25.0, 1, 1],
+        ["comp_boards", 3.0, "C", "B", "H", "OPP", "courier", 10, "#000000",
+            "Y", "N", "N", "C", "TLRB", "Y", 35.0, 6, 50.0, 25.0, 5, 30.0,
+            0.0, "bcg_ocod", "courier", 10, "#000000", "N", "N", "N", "C",
+            "LRB", "N", 35.0, 6, 50.0, 30.0, 10, 40.0, 1, 7],
+        ["comp_boards", 4.0, "C", "B", "H", "NAME", "courier", 10, "#000000",
+            "Y", "N", "N", "L", "TLRB", "Y", 50.0, 30, 116.0, 25.0, 5, 30.0,
+            0.0, "btb_names", "courier", 10, "#000000", "N", "N", "N", "L",
+            "LRB", "N", 50.0, 30, 116.0, 30.0, 10, 40.0, 1, 7],
+        ["comp_boards", 5.0, "C", "B", "H", "RINK", "courier", 10, "#000000",
+            "Y", "N", "N", "C", "TLRB", "Y", 116.0, 4, 127.0, 25.0, 5, 30.0,
+            0.0, "bcg_rink", "courier", 10, "#000000", "N", "N", "N", "C",
+            "LRB", "N", 116.0, 4, 127.0, 30.0, 10, 40.0, 1, 7],
+        ["comp_boards", 6.0, "C", "B", "H", "FOR", "courier", 10, "#000000",
+            "Y", "N", "N", "C", "TLRB", "Y", 127.0, 3, 136.0, 25.0, 5, 30.0,
+            0.0, "shots_for", "courier", 10, "#000000", "N", "N", "N", "R",
+            "LRB", "N", 127.0, 3, 136.0, 30.0, 10, 40.0, 1, 7],
+        ["comp_boards", 7.0, "C", "B", "H", "AGT", "courier", 10, "#000000",
+            "Y", "N", "N", "C", "TLRB", "Y", 136.0, 3, 145.0, 25.0, 5, 30.0,
+            0.0, "shots_agt", "courier", 10, "#000000", "N", "N", "N", "R",
+            "LRB", "N", 136.0, 3, 145.0, 30.0, 10, 40.0, 1, 7],
+        ["comp_boards", 8.0, "C", "B", "H", "PTS", "courier", 10, "#000000",
+            "Y", "N", "N", "C", "TLRB", "Y", 145.0, 3, 154.0, 25.0, 5, 30.0,
+            0.0, "points_for", "courier", 10, "#000000", "N", "N", "N", "R",
+            "LRB", "N", 145.0, 3, 154.0, 30.0, 10, 40.0, 1, 7],
+        ["comp_boards", 9.0, "C", "B", "H", "SIGN", "courier", 10, "#000000",
+            "Y", "N", "N", "L", "TLRB", "Y", 154.0, 9, 175.0, 25.0, 5, 30.0,
+            0.0, "sign", "courier", 10, "#000000", "N", "N", "N", "L",
+            "LRB", "N", 154.0, 9, 175.0, 30.0, 10, 40.0, 1, 7],
         ["comp_cards", 1.0, "C", "A", "N", "", "", 0, "#000000", "", "", "",
             "", "", "", 0.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, "bcm_name",
             "courier", 14, "#000000", "Y", "N", "N", "C", "", "N", 58.5, 30,

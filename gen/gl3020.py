@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -185,20 +185,16 @@ class gl3020(object):
         self.totsonly = w
         if "args" in self.opts and "noprint" in self.opts["args"]:
             return
-        if self.totsonly == "Y":
-            if self.multi == "Y":
-                self.df.setWidget(self.df.topEntry[0][9][3][0], state="hide")
-                self.df.setWidget(self.df.topEntry[0][9][4][0], state="hide")
-            else:
-                self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
-                self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+        if self.multi == "Y":
+            x = 9
         else:
-            if self.multi == "Y":
-                self.df.setWidget(self.df.topEntry[0][9][3][0], state="show")
-                self.df.setWidget(self.df.topEntry[0][9][4][0], state="show")
-            else:
-                self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
-                self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+            x = 8
+        if self.totsonly == "Y":
+            state = "hide"
+        else:
+            state = "show"
+        for y in range(3, len(self.df.rvs)):
+            self.df.setWidget(self.df.topEntry[0][x][y][0], state=state)
 
     def doCoy(self, frt, pag, r, c, p, i, w):
         self.other = w

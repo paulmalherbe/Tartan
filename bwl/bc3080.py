@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -85,8 +85,7 @@ class bc3080(object):
             (("T",0,1,0),"ITV",(50,10),"Notes","",
                 "","N",self.doNotes,None,None,None,None,"""Enter All Additional Rules and Notes for the Competition e.g. what to do in these cases:
 
-Trial Ends - Only 1 trial end per game.
-Burnt Ends - Replay the end."""),
+Only 1 trial end per game and burnt ends must be re-played."""),
             (("T",0,2,0),("IRB",r1s),0,"Paper Type","",
                 "P","N",self.doPaper,None,None,None),
             (("T",0,3,0),"IUI",2,"Quantity","",
@@ -192,7 +191,7 @@ Burnt Ends - Replay the end."""),
                 txt = "Tournament"
             elif ldic["bct_cfmat"] in ("D", "K"):
                 txt = "Knockout"
-            elif ldic["bct_cfmat"] == "R":
+            elif ldic["bct_cfmat"] in ("R", "W"):
                 txt = "Round Robin"
             else:
                 txt = "Match"
@@ -200,7 +199,7 @@ Burnt Ends - Replay the end."""),
             self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_tsize"][4],
                 h=h, ln=0)
             self.fpdf.drawText(txt=ldic["bct_tsize"], x=x1, h=h, ctyp="M")
-            #if ldic["bct_cfmat"] in ("D", "K", "R"):
+            #if ldic["bct_cfmat"] in ("D", "K", "R", "W"):
             #    return
             self.fpdf.drawText(txt="Draw", h=h, ln=0)
             if ldic["bct_drawn"] == ldic["bct_games"]:
@@ -315,6 +314,7 @@ Burnt Ends - Replay the end."""),
                         txt = "Points"
                     txt = "Therefore a Maximum of %s %s per Game." % (pts, txt)
                     self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+            # Notes
             if self.notes:
                 txt = "Notes"
                 self.fpdf.drawText(h=h)

@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -204,11 +204,11 @@ class ms3010(object):
     def doTotsOnly(self, frt, pag, r, c, p, i, w):
         self.totsonly = w
         if self.totsonly == "Y":
-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+            state = "hide"
         else:
-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+            state = "show"
+        for x in range(3, len(self.df.rvs)): 
+            self.df.setWidget(self.df.topEntry[0][8][x][0], state=state)
         if self.sper or self.cat not in ("A", "B") or self.code or \
                                 self.system or self.totsonly == "Y":
             self.flag = "N"

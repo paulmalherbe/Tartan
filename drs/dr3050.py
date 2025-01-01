@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -122,7 +122,9 @@ Curdt: Produce a report based on Financial Period, this will always balance with
         if self.totsonly == "Y":
             if "args" not in self.opts or "noprint" not in self.opts["args"]:
                 self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
-                self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+                if len(self.df.topEntry[0][8]) > 4:
+                    self.df.setWidget(self.df.topEntry[0][8][4][0],
+                        state="hide")
             self.drsact = "All"
             self.df.loadEntry(frt, pag, p+1, data=self.drsact)
             self.drstyp = "All"
@@ -138,7 +140,8 @@ Curdt: Produce a report based on Financial Period, this will always balance with
             pass
         else:
             self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+            if len(self.df.topEntry[0][8]) > 4:
+                self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
 
     def doDrsAct(self, frt, pag, r, c, p, i, w):
         if w:

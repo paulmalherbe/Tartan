@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ try:
 except:
     MARKDOWN = False
 try:
-    import fitz
+    import pymupdf
     FITZ = True
 except:
     FITZ = False
@@ -683,7 +683,7 @@ xbm   X Bitmap Files""")
         o = os.path.join(self.opts["mf"].rcdic["wrkdir"],
             pathlib.Path(b).stem)
         f = o + "_%03i.jpg"
-        doc = fitz.open(fnam)
+        doc = pymupdf.open(fnam)
         for num, pag in enumerate(doc):
             try:
                 pix = pag.get_pixmap()

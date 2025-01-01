@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -180,11 +180,11 @@ class cr3020(object):
         if "args" in self.opts and "noprint" in self.opts["args"]:
             return
         if self.totsonly == "Y":
-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="hide")
-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="hide")
+            state = "hide"
         else:
-            self.df.setWidget(self.df.topEntry[0][8][3][0], state="show")
-            self.df.setWidget(self.df.topEntry[0][8][4][0], state="show")
+            state = "show"
+        for x in range(3, len(self.df.rvs)):
+            self.df.setWidget(self.df.topEntry[0][8][x][0], state=state)
 
     def doEnd(self):
         self.df.closeProcess()

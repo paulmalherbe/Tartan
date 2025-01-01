@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -267,7 +267,7 @@ class ms1010(object):
             self.img = ShowImage(self.df.nb.Page4, logo,
                 wrkdir=self.opts["mf"].rcdic["wrkdir"], msiz=640)
         except Exception as err:
-            return "error"
+            print(err)
 
     def doReadVat(self, w):
         acc = self.sql.getRec("ctlvmf", cols=["vtm_desc"],

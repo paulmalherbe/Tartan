@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
 =================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.19
+:Version:   6.20
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -63,6 +63,7 @@ The following dependencies must be installed using pip:
 Additionally, the following dependencies should also be installed using pip or, at a later stage, using the -m command line option.
 
 + beepy                 # Used to play a notification sound
++ cairosvg              # SVG to PDF File Converter
 + docutils              # Used to display licence
 + importlib             # Used to import modules
 + markdown              # Bulk Mail - Enable Markdown Format
@@ -78,7 +79,6 @@ Additionally, the following dependencies should also be installed using pip or, 
 + pysmb                 # Netbios File Names
 + requests              # Web Scraping
 + send2trash            # Move Files to Recycle Bin
-+ svglib                # SVG to PDF File Converter
 + tkcalendar            # Calendar for date picker
 + tkcolorpicker         # Alternative to colorchooser for Tkinter
 + tkinterhtml           # HTML Viewer

@@ -7,7 +7,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 19)
+    VERSION = (6, 20)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -224,6 +224,7 @@ Options:
                 cmd = [sys.executable, "-m", "pip", "install", "-qU"]
                 chke(cmd + ["pip"])
                 # Install and or Upgrade all modules
+                errs = []
                 for mod in pymoda + pymodb:
                     if len(mod) == 4 and sys.platform != mod[3]:
                         continue
@@ -234,7 +235,12 @@ Options:
                         else:
                             chke(cmd + [mod[1]])
                     except:
-                        print("Module Not Found")
+                        errs.append(mod)
+                if errs:
+                    mess = "These Modules Were Not Found:\n"
+                    for mod in errs:
+                        mess += "\n%s" % mod
+                    raise Exception(mess)
             except Exception as err:
                 print(err)
             sys.exit()
@@ -307,7 +313,7 @@ Options:
         self.mf = None
         self.loop = False
         self.rcdic = None
-        main = "Tartan Systems - Copyright %s 2004-2023 Paul Malherbe" % \
+        main = "Tartan Systems - Copyright %s 2004-2025 Paul Malherbe" % \
             chr(0xa9)
         while not self.rcdic:
             self.rcdic = loadRcFile(self.rcfile, default=True)
@@ -1172,7 +1178,7 @@ System --> Change Password""")
             ("not_aflag", "F", 1, "UA", "N"),
             ("not_adate", "Action-Dte", 10, "d1", "N"),
             ("not_auser", "Action-User", 20, "NA", "N"),
-            ("not_desc", "Description", 50, "TX", "N"),
+            ("not_desc", "Description", 50, "TV", "N"),
             ("not_seq", "Sequence", 10, "US", "N")]
         sr = SelectChoice(self.mf.body, tits, cols, data)
         if sr.selection:
@@ -1628,7 +1634,7 @@ System --> Change Password""")
                 fle.close()
         fle = io.StringIO(str(man))
         if FITZ:
-            # Make fitz the default viewer
+            # Make pymupdf the default viewer
             vwr = self.mf.rcdic["vwr"]
             self.mf.rcdic["vwr"] = ""
         man = MakeManual(fle, vwr=self.mf.rcdic["vwr"])

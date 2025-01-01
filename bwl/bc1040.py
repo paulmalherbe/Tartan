@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@ class bc1040(object):
             ("K/Out (D)", "D"),
             ("K/Out (N)", "K"),
             ("R/Robin", "R"),
+            ("R/R (G)", "W"),
             ("Teams", "X"))
         r2s = (("Yes", "Y"), ("No", "N"))
         fld = (
@@ -74,12 +75,13 @@ Tournament: The default format for tournaments.
 K/Out (D): This is for all Drawn Knockout Competitions.
 K/Out (N): This is for Normal Knockout Competitions.
 R/Robin: This is for Round Robin Competitions.
+R/R (G): This is for Round Robin Group Competitions.
 Teams: This is for Team Competitions e.g. Club V Club.
 """),
             (("T",0,3,0),"I@bct_tsize",0,"","",
                 4,"N",self.doTSize,None,None,("notzero",)),
             (("T",0,4,0),"I@bct_games",0,"","",
-                0,"N",self.doGames,None,None,("notzero",)),
+                0,"N",self.doGames,None,None,("efld",)),
             (("T",0,5,0),"I@bct_ends",0,"","",
                 21,"N",self.doEnds,None,None,("notzero",)),
             (("T",0,6,0),("IRB",r2s),0,"Groups by Position","",
@@ -187,12 +189,14 @@ Are you Sure this is what you Want to Do?""", default="no")
             return "sk1"
 
     def doGames(self, frt, pag, r, c, p, i, w):
+        if self.cfmat != "W" and not w:
+            return "Invalid Number of Games"
         self.games = w
 
     def doEnds(self, frt, pag, r, c, p, i, w):
         self.ends = w
-        if self.cfmat in ("D", "K", "R", "X"):
-            if self.cfmat in ("D", "K", "R"):
+        if self.cfmat in ("D", "K", "R", "W", "X"):
+            if self.cfmat in ("D", "K", "R", "W"):
                 defaults = ["N", 0, "N", "", 0, 0, "N", "N"]
             else:
                 defaults = ["N", 0, "N", "", 0, self.games, "N", "N"]

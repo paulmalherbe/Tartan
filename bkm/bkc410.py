@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -73,12 +73,13 @@ class bkc410(object):
     def doEnd(self):
         data = [self.opts["conum"], self.ltyp, self.df.t_work[0][0][1]]
         if self.lnew:
-            self.sql.insRec("bkmlet", data=data)
+            self.sql.insRec("bkmlet", data=data, dofmt=False)
         elif data != self.let[:len(data)]:
             col = self.sql.bkmlet_col
             data.append(self.let[col.index("bkl_xflag")])
             self.sql.updRec("bkmlet", data=data, where=[("bkl_cono", "=",
-                self.opts["conum"]), ("bkl_code", "=", self.ltyp)])
+                self.opts["conum"]), ("bkl_code", "=", self.ltyp)],
+                dofmt=False)
         self.opts["mf"].dbm.commitDbase()
         self.df.focusField("T", 0, 1)
 

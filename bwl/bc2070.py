@@ -14,7 +14,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -135,7 +135,7 @@ class bc2070(object):
         self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
         self.groups = bwltyp[self.sql.bwltyp_col.index("bct_groups")]
         self.grgame = bwltyp[self.sql.bwltyp_col.index("bct_grgame")]
-        if self.cfmat == "R":
+        if self.cfmat in ("R", "W"):
             games = self.sql.getRec("bwlgme", cols=["count(*)"],
                 where=[("bcg_cono", "=", self.opts["conum"]),
                 ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", 1)],

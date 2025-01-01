@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -173,7 +173,7 @@ def showWarning(screen=None, head="", mess=""):
     showDialog(screen, "warning", head, mess)
 
 def getFontSize(tk=None, width=None, height=None, font=10):
-    if not tk:
+    if tk is None:
         try:
             import tkinter as tk
         except:
@@ -616,6 +616,7 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
 
     # Email Document
     sp = None
+    subj = None
     if repeml and repeml[1] == "Y" and repeml[2]:
         try:
             dbm = Dbase(mf.rcdic)
@@ -730,7 +731,10 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
                 import webbrowser
                 webbrowser.open_new(pdfnam)
             else:
-                ViewPDF(mf, pdfnam)
+                if subj is None:
+                    ViewPDF(mf, pdfnam, header)
+                else:
+                    ViewPDF(mf, pdfnam, subj)
             return
         # Print Document
         if splash:
@@ -2339,9 +2343,8 @@ def getFileName(path, ptyp="FF", wrkdir=None, check=False):
     usr = ""
     pwd = ""
     try:
-        import socket, stat
+        import stat
         from smb.SMBConnection import SMBConnection
-        socket.setdefaulttimeout(5)
         obj = path.replace("/", "|").replace("\\", "|")
         obj = obj.split("|")
         obj[:] = (value for value in obj if value != "")
@@ -2356,7 +2359,7 @@ def getFileName(path, ptyp="FF", wrkdir=None, check=False):
             con = SMBConnection(usr, pwd, usr, svr, is_direct_tcp=False)
         except:
             con = SMBConnection(usr, pwd, svr, is_direct_tcp=True)
-        con.connect(svr)
+        con.connect(svr, timeout=1)
         att = con.getAttributes(shr, pth)
         if ptyp == "FD" and not att.isDirectory:
             raise Exception("Invalid Directory")
@@ -2377,7 +2380,7 @@ def getFileName(path, ptyp="FF", wrkdir=None, check=False):
             os.chmod(nam, stat.S_IRWXU)
         con.close()
         return nam
-    except Exception as err:
+    except:
         if con:
             con.close()
         if fle:
@@ -2540,6 +2543,8 @@ def doPublish(scrn, flenam):
         MD = False
     ext = flenam.split(".")[1].lower()
     try:
+        if ext in ("rst", "md", "html") and not HTML:
+            raise Exception("Missing tkinterhtml module")
         input_file = io.open(flenam, mode="r", encoding="utf8")
         text = input_file.read()
         if ext == "txt":
@@ -2553,10 +2558,10 @@ def doPublish(scrn, flenam):
             elif ext == "html":
                 html = text
             else:
-                raise Exception
+                raise Exception("Invalid file type")
             ScrollHtml(scrn=scrn, mess=html, horizontal="auto")
-    except:
-        return
+    except Exception as err:
+        return err
 
 def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
     from TartanClasses import ASD, Sql
@@ -2676,12 +2681,12 @@ def getImage(name, siz=None, fle=None):
 def printPDF(prt, fle, cpy=1):
     import sys
     if sys.platform == "win32":
-        import io, fitz, win32con, win32gui, win32print, win32ui
+        import io, pymupdf, win32con, win32gui, win32print, win32ui
         from PIL import Image, ImageWin
         hdl = win32print.OpenPrinter(prt)
         dev = win32print.GetPrinter(hdl, 2)["pDevMode"]
         dev.PaperSize = 9
-        fd = fitz.open(fle)
+        fd = pymupdf.open(fle)
         for pge in fd:
             # Fitz
             buf = io.BytesIO()
@@ -2690,8 +2695,8 @@ def printPDF(prt, fle, cpy=1):
             except:
                 rect = pge.MediaBox
             siz = [int(rect[2]), int(rect[3])]
-            mat = fitz.Matrix(4.16667, 4.16667)
-            clp = fitz.Rect(0, 0, siz[0], siz[1])
+            mat = pymupdf.Matrix(4.16667, 4.16667)
+            clp = pymupdf.Rect(0, 0, siz[0], siz[1])
             dst = (0, 0, int(rect[2] * 20), int(rect[3] * -20))
             try:
                 lst = pge.get_displaylist()

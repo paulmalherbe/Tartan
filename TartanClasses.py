@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ if not fpdf.fpdf.Image:
 # MuPDF
 # ========================================================
 try:
-    import fitz
+    import pymupdf
     FITZ = True
 except:
     FITZ = False
@@ -654,6 +654,11 @@ try:
                 self.tk_focusNext().focus_set()
                 return "break"
 
+    class MySpinbox(ttk.Spinbox):
+        def __init__(self, parent, **kwargs):
+            super().__init__(parent, **kwargs)
+            self.set(kwargs["from_"])
+
     class MyText(tk.Text):
         def __init__(self, parent, **kwargs):
             super().__init__(parent, **kwargs)
@@ -1199,7 +1204,7 @@ class MainFrame(object):
                     print("Missing Tkinter and/or ttk modules")
                     sys.exit()
                 if not title:
-                    title = "Tartan Systems - Copyright %s 2004-2023 "\
+                    title = "Tartan Systems - Copyright %s 2004-2024 "\
                         "Paul Malherbe" % chr(0xa9)
                 self.window = MkWindow(title=title, icon="tartan",
                     size=self.geo, resiz=False).newwin
@@ -2154,7 +2159,9 @@ class Dbase(object):
             elif typ == "ID":
                 qry += " %s," % self.lng
             elif typ[0] in ("S", "T", "U"):
-                if typ[1].upper() == "D":
+                if typ[1] == "B":
+                    qry += " %s," % self.blb
+                elif typ[1].upper() == "D":
                     if typ[0] == "S":
                         siz -= 1
                     qry += " %s(%s)," % (self.dec, str(siz).replace(".", ","))
@@ -2168,6 +2175,8 @@ class Dbase(object):
                     else:
                         sequence = nam
                         qry += " %s," % self.ser
+                elif typ[1] == "V":
+                    qry += " %s," % self.blb
                 elif typ[1] == "X":
                     qry += " %s," % self.txt
             else:
@@ -2867,8 +2876,8 @@ class CCD(object):
     Sd = Convert Integer to Signed Decimal (size includes sign and decimals)
     TM = Time (HH:MM)
     TS = Timestamp (CCYY-MM-DD HH:MM:SS)
-    TV = Text View - This is only used with TartanDialog for input purposes
-    TX = Text or Blob Alphanumeric Variable Length - Storing Text Views etc.
+    TV = Text View for Blob, No formatting
+    TX = Text Alphanumeric Variable Length - Storing Text Views etc.
     Tv = Text View - This is only used with TartanDialog for input purposes
     UA = Upper Case Alphanumeric (Must also have 'size' set)
     UD = Unsigned Decimal (size includes decimals)
@@ -2912,7 +2921,7 @@ class CCD(object):
         # Work around for None
         # ======================================================================
         if data is None:
-            if types[1].lower() in ("a", "v", "w", "x"):
+            if types[1].lower() in ("a", "b", "v", "w", "x"):
                 self.data = ""
             else:
                 self.data = "0"
@@ -2922,10 +2931,10 @@ class CCD(object):
         elif types[0] != "T" and types[1].lower() != "a" and data == "None":
             self.data = "0"
         # ======================================================================
-        elif types[1].lower() in ("a", "v", "x"):
+        elif types in ("NA", "Na", "Tv", "TX"):
             if type(data) is str:
                 self.data = data.rstrip().replace("\\", "/")
-                for x in range(31):
+                for x in range(32):
                     self.data = self.data.replace(chr(x), "")
             else:
                 self.data = str(data)
@@ -3278,10 +3287,10 @@ class ASD(object):
         self.amt = int(round((float(amount) * self.multiply), 0))
 
     def __add__(self, other):
-        return ASD((self.amt + other.amt) / self.multiply)
+        return ASD((self.amt + other.amt) / self.multiply, self.decimals)
 
     def __sub__(self, other):
-        return ASD((self.amt - other.amt) / self.multiply)
+        return ASD((self.amt - other.amt) / self.multiply, self.decimals)
 
     def __float__(self):
         return(round((self.amt / self.multiply), self.decimals))
@@ -3910,7 +3919,7 @@ class TartanDialog(object):
                     "stype": "C",
                     "titl": "Available Printers",
                     "data": data}
-                rvs = [("View","V"),("Print","P"),("None","N")]
+                self.rvs = [("View","V"),("Print","P"),("None","N")]
                 mes = """Select what to do with the generated report.
 
 View   - The generated report will be opened in the default
@@ -3919,15 +3928,15 @@ View   - The generated report will be opened in the default
 Print  - The report will be printed on the selected printer."""
                 if self.view[0].lower() in ("y", "c", "x"):
                     if self.view[0].lower() in ("y", "c"):
-                        rvs.append(("Export CSV","C"))
+                        self.rvs.append(("Export CSV","C"))
                     if XLSX and self.view[0].lower() in ("y", "x"):
-                        rvs.append(("Export XLSX","X"))
+                        self.rvs.append(("Export XLSX","X"))
                     mes = """%s
 
 Export - The report in the selected format will be opened
          in the default spreadsheet application.""" % mes
                 row += 1
-                self.eflds.append((("T",0,row,col),("IRB",rvs),0,"Output",
+                self.eflds.append((("T",0,row,col),("IRB",self.rvs),0,"Output",
                     "Output Method",self.view[1].upper(),"Y",self.setView,
                     None,None, None,None,mes))
                 row += 1
@@ -13126,6 +13135,149 @@ class PrintCards(object):
         else:
             return "* Bye *"
 
+class PrintBoards(object):
+    """
+    Print bowls boards using the following options:
+
+    mf     - The Mainframe object.
+    cono   - The company number.
+    cdes   - The competition number.
+    tname  - The template to be used.
+    """
+    def __init__(self, mf, cono, ccod, cdes, skps):
+        self.mf = mf
+        self.cono = cono
+        self.ccod = ccod
+        self.cdes = cdes
+        self.skps = skps
+        if self.doVariables():
+            self.doMainProcess()
+            self.doPrintBoards()
+
+    def doVariables(self):
+        self.sql = Sql(self.mf.dbm, ("bwlcmp", "bwlgme", "tplmst"),
+            prog=__name__)
+        if self.sql.error:
+            return
+        self.tplnam = "comp_boards"
+        return True
+
+    def doMainProcess(self):
+        tit = "Select Score Boards Output"
+        tpm = {
+            "stype": "R",
+            "tables": ("tplmst",),
+            "cols": (
+                ("tpm_tname", "", 0, "Template"),
+                ("tpm_title", "", 0, "Title", "Y")),
+            "where": [("tpm_type", "=", "C")],
+            "order": "tpm_tname"}
+        fld = ((("T",0,0,0),"ONA",20,"Template Name","",
+            self.tplnam,"N",self.doTplNam,tpm,None,None),)
+        tnd = ((self.doEnd,"Y"),)
+        txt = (self.doExit,)
+        self.df = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
+            tend=tnd, txit=txt, view=("N","V"))
+        self.df.window.deiconify()
+        self.df.mstFrame.wait_window()
+
+    def doTplNam(self, frt, pag, r, c, p, i, w):
+        acc = self.sql.getRec("tplmst", where=[("tpm_tname", "=", w),
+            ("tpm_type", "=", "C")], limit=1)
+        if not acc:
+            return "Invalid Template Name"
+        self.tname = w
+
+    def doEnd(self):
+        self.df.closeProcess()
+        self.repprt = self.df.repprt
+        showWarning(self.mf.body, "Change Paper",
+            "In Order to Print Boards You Need to Change the Paper to "\
+            "A6 Cards. Please Do So Now Before Continuing.")
+
+    def doExit(self):
+        return "rf"
+
+    def doPrintBoards(self):
+        self.pdfnam = getModName(self.mf.rcdic["wrkdir"], __name__,
+            "comp_cards", ext="pdf")
+        self.form = DrawForm(self.mf.dbm, self.tname, foot=False,
+            wrkdir=self.mf.rcdic["wrkdir"])
+        self.doLoadStatic()
+        self.form.doNewDetail()
+        tdc = self.form.sql.tpldet_col
+        txt = tdc.index("tpd_text")
+        y1 = tdc.index("tpd_mrg_y1")
+        lh = tdc.index("tpd_mrg_lh")
+        y2 = tdc.index("tpd_mrg_y2")
+        ff = self.form.newdic["%s_T%02i" % (self.form.body[2], 0)]
+        y3 = ff[y1]
+        mm = round((7 * ff[lh]) / self.games, 2)
+        y4 = y3 + mm
+        for x in range(self.games):
+            for nam in self.form.body:
+                fld = "%s_C%02i" % (nam, x)
+                if fld in self.form.newdic:
+                    self.form.newdic[fld][y1] = y3
+                    self.form.newdic[fld][y2] = y4
+            y3 = y4
+            y4 = y3 + mm
+        for skp in self.skips:
+            if skp > 900000:
+                continue
+            nam = self.doGetName(skp)
+            nam = "%s %s" % (skp, nam)
+            self.form.newdic["skip_C00"][txt] = nam
+            opps = self.sql.getRec("bwlgme", cols=["bcg_ocod", "bcg_rink"],
+                where=[("bcg_cono", "=", self.cono), ("bcg_ccod", "=",
+                self.ccod), ("bcg_scod", "=", skp)], order="bcg_game")
+            for num, opp in enumerate(opps):
+                self.form.newdic["bcg_ocod_C0%s" % num][txt] = opp[0]
+                nam = self.doGetName(opp[0])
+                self.form.newdic["btb_names_C0%s" % num][txt] = nam
+                self.form.newdic["bcg_rink_C0%s" % num][txt] = opp[1]
+            self.form.add_page()
+            for key in self.form.newkey:
+                self.form.doDrawDetail(self.form.newdic[key])
+        self.form.output(self.pdfnam, "F")
+        doPrinter(mf=self.mf, conum=self.cono, pdfnam=self.pdfnam,
+            repprt=self.repprt)
+
+    def doLoadStatic(self):
+        bwlgme = self.sql.getRec("bwlgme", where=[("bcg_cono", "=", self.cono),
+            ("bcg_ccod", "=", self.ccod)], order="bcg_scod, bcg_game")
+        gmes = {}
+        for skip in bwlgme:
+            if skip[2] not in self.skps:
+                continue
+            if skip[2] not in gmes:
+                gmes[skip[2]] = [(skip[6], skip[7])]
+            else:
+                gmes[skip[2]].append((skip[6], skip[7]))
+        self.skips = list(gmes.keys())
+        self.skips.sort()
+        self.games = len(gmes[self.skips[0]])
+        tdc = self.form.sql.tpldet_col
+        if self.games < 7:
+            for line in self.form.tpldet:
+                if line[tdc.index("tpd_repeat")] == 7:
+                    line[tdc.index("tpd_repeat")] = self.games
+        if "bcm_name" in self.form.tptp:
+            self.form.tptp["bcm_name"][1] = self.cdes
+
+    def doGetName(self, skp):
+        nam = self.sql.getRec("bwltab", cols=["btb_tab", "btb_surname",
+            "btb_names"], where=[("btb_cono", "=", self.cono),
+            ("btb_tab", "=", skp)], limit=1)
+        if nam:
+            if nam[2]:
+                name = "%s, %s" % (nam[1], nam[2].split()[0])
+            else:
+                name = nam[1]
+            return name
+        else:
+            return "* Bye *"
+
 class PrintTabDraw(object):
     def __init__(self, mf, conum, date, dtim, **args):
         self.mf = mf
@@ -15820,7 +15972,7 @@ class CreateChart(object):
                 "M","N",self.doAct,None,None,None,None),
             (("T",0,1,0),("IRB",r2s),0,"Select Chart","",
                 "L","N",self.doCht,None,None,None,None)]
-        if PYGAL and CVTSVG:
+        if CVTSVG:
             fld.append((("T",0,2,0),("IRB",r3s),0,"View As","",
                 "P","N",self.doVwr,None,None,None,None))
             idx = 3
@@ -17383,11 +17535,11 @@ class DrawForm(MyFpdf):
                 self.newdic["name_init"][tdc.index("tpd_text")] = dat
 
     def changeSize(self, pdfnam):
-        doc = fitz.open(pdfnam)
+        doc = pymupdf.open(pdfnam)
         mbox = doc[0].mediabox
         mbox[1] = float(mbox[3] - (self.get_y() * 3))
         doc[0].set_mediabox(mbox)
-        doc2 = fitz.open()
+        doc2 = pymupdf.open()
         doc2.insert_pdf(doc, from_page=0, to_page=0)
         doc2.save(pdfnam)
         doc.close()
@@ -17537,15 +17689,17 @@ Mobile:            27-82-9005260
             docdir = os.path.join(getPrgPath()[0], "doc")
             if HTML and os.path.isfile(os.path.join(docdir, "gnugpl.html")):
                 fle = "gnugpl.html"
-            elif os.path.isfile(os.path.join(docdir, "gnugpl.md")):
+            elif HTML and os.path.isfile(os.path.join(docdir, "gnugpl.md")):
                 fle = "gnugpl.md"
             elif os.path.isfile(os.path.join(docdir, "gnugpl.txt")):
                 fle = "gnugpl.txt"
             else:
                 raise Exception
-            doPublish(self.mf.window, os.path.join(docdir, fle))
+            err = doPublish(self.mf.window, os.path.join(docdir, fle))
+            if err:
+                raise Eception(err)
         except:
-            pass
+            showError(self.mf.window, "Error", "Missing licence file")
         self.about.place(anchor="center", relx=0.5, rely=0.5)
         self.b0.configure(state="normal")
         if self.b1:
@@ -18395,7 +18549,7 @@ class MakeManual(object):
             elif line.count("#"):
                 words = line.split("#")
             elif line.count("+ "):
-                match = re.compile("[^\W\d]").search(line)
+                match = re.compile("[^\\W\\d]").search(line)
                 words = [line[:match.start()], line[match.start():]]
             if words:
                 if len(words) == 3:
@@ -18510,8 +18664,12 @@ class ViewPDF(object):
     This class is used to view pdf files using either the system default
     pdf viewer, a viewer set up in the rcfile or pymupdf.
     """
-    def __init__(self, mf=None, pdfnam=None):
+    def __init__(self, mf=None, pdfnam=None, subj=None):
         self.mf = mf
+        if subj is None:
+            self.subj = "PDF Report"
+        else:
+            self.subj = subj
         if self.mf and self.mf.window:
             self.mf.window.withdraw()
         try:
@@ -18569,7 +18727,7 @@ class ViewPDF(object):
         self.win.configure(borderwidth=2)
         self.sw = self.win.winfo_screenwidth()
         self.sh = int(self.win.winfo_screenheight() * .90)
-        self.doc = fitz.open(self.pdfnam)
+        self.doc = pymupdf.open(self.pdfnam)
         pwd = self.doc.needs_pass
         if pwd and not self.doPassword():
             return
@@ -18716,7 +18874,7 @@ class ViewPDF(object):
                     cnf.close()
             except:
                 pass
-        self.matrix = list(fitz.Matrix(self.zoom, self.zoom))
+        self.matrix = list(pymupdf.Matrix(self.zoom, self.zoom))
         # Other settings
         self.pgno = 1
         self.pags = []
@@ -18948,10 +19106,10 @@ class ViewPDF(object):
                 self.links[link["from"]] = link["uri"]
         if not self.maxi and self.links:
             self.win.bind("<Button-1>", self.showLinks)
-            #self.win.bind("<Motion>", self.changeCursor)
+            self.win.bind("<Enter>", self.changeCursor)
         else:
             self.win.unbind("<Button-1>")
-            #self.win.unbind("<Motion>")
+            self.win.unbind("<Enter>")
         # Create image
         self.pgd.configure(state="normal")
         self.pgd.delete(0, "end")
@@ -19158,7 +19316,7 @@ class ViewPDF(object):
                     while annot:
                         annot = page.delete_annot(annot)
                 bbox = cdata[sc.selection[0]]
-                rect = fitz.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
+                rect = pymupdf.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
                 self.pgno = int(sc.selection[2])
                 page = self.doc[self.pgno - 1]
                 self.prec[self.pgno] = rect
@@ -19179,6 +19337,7 @@ class ViewPDF(object):
                     except:
                         showError(self.win, "Browser Error",
                             "Cannot Load Browser or URL")
+
     def changeCursor(self, event=None):
         x = event.x/self.zoom
         y = event.y/self.zoom
@@ -19253,7 +19412,6 @@ class ViewPDF(object):
         self.ed.closeProcess()
         fromad = self.ed.t_work[0][0][0]
         toad = self.ed.repeml[2].split(",")
-        subj = "PDF Report"
         att = []
         if self.ed.repeml[3]:
             body = self.ed.repeml[3][1]
@@ -19268,14 +19426,14 @@ class ViewPDF(object):
             while not ok:
                 sp = SplashScreen(self.mf.window.focus_displayof(),
                     "E-Mailing the Report to:\n\n%s\n\nPlease Wait....." % add)
-                err = sendMail(self.server, fromad, add, subj, mess=body,
+                err = sendMail(self.server, fromad, add, self.subj, mess=body,
                     attach=att, wrkdir=self.mf.rcdic["wrkdir"])
                 sp.closeSplash()
                 if err:
                     ok = askQuestion(self.mf.window.focus_displayof(),
                         "E-Mail Error", "Problem Delivering This "\
                         "Message.\n\nTo: %s\nSubject: %s\n\n%s\n\nWould "\
-                        "You Like to Retry?" % (add, subj, err))
+                        "You Like to Retry?" % (add, self.subj, err))
                     if ok == "yes":
                         ok = False
                     else:
@@ -19287,7 +19445,7 @@ class ViewPDF(object):
                         tim = time.localtime()[0:  5]
                         tim = "%04i-%02i-%02i %02i:%02i" % tim
                         sql.insRec("emllog", data=[fromad.strip(),
-                            add.strip(), subj, tim, ok])
+                            add.strip(), self.subj, tim, ok])
                     except:
                         pass
                     break
@@ -19323,7 +19481,7 @@ class ViewPDF(object):
                 else:
                     if sel == "P":
                         wrk = ent.get()
-                        if wrk.count(",") and wrk.count("-"):
+                        if not wrk or (wrk.count(",") and wrk.count("-")):
                             raise Exception("Invalid Range Selected")
                         if wrk.count(","):
                             wrk = wrk.split(",")
@@ -19348,7 +19506,7 @@ class ViewPDF(object):
                         raise Exception("No Valid Pages Selected")
                     tme = "%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3]
                     fle = os.path.join(tempfile.gettempdir(), "%s.pdf" % tme)
-                    doc2 = fitz.open()
+                    doc2 = pymupdf.open()
                     for pg in pag:
                         doc2.insert_pdf(self.doc, from_page=pg, to_page=pg)
                     doc2.save(fle)
@@ -19387,12 +19545,9 @@ class ViewPDF(object):
         fr2 = MyFrame(win, relief="ridge", borderwidth=2,
             style="pdf.TFrame")
         fr2.pack(fill="both", expand="yes")
-        fr2 = MyFrame(win, relief="ridge", borderwidth=2,
-            style="pdf.TFrame")
-        fr2.pack(fill="both", expand="yes")
-        fr2.columnconfigure(0, weight=1)
-        fr2.columnconfigure(1, weight=1)
-        fr2.columnconfigure(2, weight=1)
+        fr2.grid_columnconfigure(0, weight=1)
+        fr2.grid_columnconfigure(1, weight=1)
+        fr2.grid_columnconfigure(2, weight=1)
         lb2 = MyLabel(fr2, color=False, text="Range", style="pdfbold.TLabel")
         lb2.grid(row=0, column=0, sticky="w")
         var = tk.StringVar()
@@ -19416,7 +19571,7 @@ class ViewPDF(object):
         ent.grid(row=3, column=1, sticky="nsew", columnspan=2)
         lb3 = MyLabel(fr2, text="Copies", style="pdfbold.TLabel", color=False)
         lb3.grid(row=0, column=2, sticky="e")
-        spn = tk.Spinbox(fr2, from_=1, to=10, font=self.font, width=5)
+        spn = MySpinbox(fr2, from_=1, to=10, font=self.font, width=5)
         spn.grid(row=1, column=2, sticky="e")
         fr3 = MyFrame(win, style="pdf.TFrame")
         fr3.pack(fill="x", expand="yes")
@@ -19427,6 +19582,7 @@ class ViewPDF(object):
             style="pdf.TButton")
         bt2.pack(side="left", fill="x", expand="yes")
         placeWindow(win, self.cv, expose=True)
+        spn.set(1)
         lbx.selection_set(0)
         lbx.activate(0)
         lbx.focus_set()

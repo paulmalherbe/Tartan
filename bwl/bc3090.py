@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ COPYING
 """
 
 from TartanClasses import GetCtl, RepPrt, Sql, TartanDialog
+from tartanFunctions import showError
 
 class bc3090(object):
     def __init__(self, **opts):
@@ -77,7 +78,7 @@ class bc3090(object):
         if ret:
             return ret
         self.df.loadEntry(frt, pag, p+1, data=self.cdes)
-        if self.cfmat == "R":
+        if self.cfmat in ("R", "W"):
             self.excfin = "N"
             self.df.loadEntry(frt, pag, p+2, data=self.excfin)
             return "sk2"
@@ -96,7 +97,7 @@ class bc3090(object):
         self.games = bwltyp[self.sql.bwltyp_col.index("bct_games")]
         if self.cfmat in ("D", "K"):
             return "Knockout Competitions has No Summary"
-        if self.cfmat == "R":
+        if self.cfmat in ("R", "W"):
             games = self.sql.getRec("bwlgme", cols=["count(*)"],
                 where=[("bcg_cono", "=", self.opts["conum"]),
                 ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", 1)],
@@ -125,10 +126,9 @@ class bc3090(object):
             where=[("bcg_cono", "=", self.opts["conum"]),
             ("bcg_ccod", "=", self.ccod), ("bcg_rink", "<>", "")],
             limit=1)[0]
-        #lgame = 0
-        #for l in lst:
-        #    if l[1]:
-        #        lgame = l[0]
+        if lgame is None:
+            showError(self.opts["mf"].window, "Error", "No Games Drawn")
+            self.doExit()
         col = ["bce_scod", "btb_surname", "btb_names"]
         if lgame <= self.grgame:
             col.extend([
@@ -219,7 +219,7 @@ class bc3090(object):
             ["a", "UI",  6, "Skp",  "y"],
             ["b", "NA", 29, "Name", "y"]]
         if grp:
-            if self.cfmat == "R":
+            if self.cfmat in ("R", "W"):
                 cols.append(["c", "UA",  1, "S",    "y"])
             else:
                 cols.append(["c", "UA",  1, "G",    "y"])

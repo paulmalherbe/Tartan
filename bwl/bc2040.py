@@ -8,7 +8,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2023 Paul Malherbe.
+    Copyright (C) 2004-2025 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ class bc2040(object):
 
     def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwltab", "bwlent",
-            "bwltyp", "bwlgme", "bwltms", "bwlrnd"],
+            "bwltyp", "bwlgme", "bwltms", "bwlrnd", "bwlclb"],
             prog=self.__class__.__name__)
         if self.sql.error:
             return
@@ -87,6 +87,12 @@ class bc2040(object):
                 ("btb_tab=bce_scod",)],
             "whera": [("T", "bce_ccod", 0, 0)],
             "order": "btb_surname"}
+        grp = {
+            "stype": "R",
+            "tables": ("bwlclb",),
+            "cols": (
+                ("bcc_code", "", 0, "Cod"),
+                ("bcc_name", "", 0, "Name", "Y"))}
         fld = (
             (("T",0,0,0),"I@bcm_code",0,"Code","Competition Code",
                 "","Y",self.doCmpCod,com,None,("efld",)),
@@ -98,10 +104,11 @@ class bc2040(object):
                 "","N",self.doCmpTyp,typ,None,("efld",)),
             (("C",0,0,0),"I@btb_tab",0,"P-Code","Player's Code",
                 "","Y",self.doSkpCod,sk1,None,("efld",)),
-            (("C",0,0,1),"ONA",30,"Name","",
-                "","N",None,None,None,("notblank",)),
-            (("C",0,0,2),"I@bce_tcod",0,"T","Team Code (H or V)",
-                "H","n",self.doTeam,None,None,("in", ("H","V"))),
+            (("C",0,0,1),"ONA",30,"Name"),
+            (("C",0,0,2),"I@bce_tcod",0,"Grp","Group Code",
+                "","N",self.doGroup,grp,self.doDelSkp,("efld",)),
+            (("C",0,0,3),"I@bcc_name",0,"Name","Group Name",
+                "","N",self.doGroupName,None,None,("efld",)),
             (("C",0,0,4),"I@bce_paid",0,"","Paid Flag (Y or N)",
                 "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N","W"))))
         but = (("Entered Players",sk2,None,0,("C",0,1),("T",0,1)),)
@@ -217,29 +224,70 @@ Do You Want to Erase All Draws and Results?""", default="no")
         if not chk:
             return "Invalid Player Code"
         self.df.loadEntry(frt, pag, p+1, data=self.getName(chk))
-        ent = self.sql.getRec("bwlent", cols=["bce_tcod",
-            "bce_paid"], where=[("bce_cono", "=", self.opts["conum"]),
-            ("bce_ccod", "=", self.ccod), ("bce_scod", "=", self.scod)],
-            limit=1)
+        ent = self.sql.getRec("bwlent", cols=["bce_tcod", "bce_paid"],
+            where=[("bce_cono", "=", self.opts["conum"]), ("bce_ccod", "=",
+            self.ccod), ("bce_scod", "=", self.scod)], limit=1)
         if ent:
             self.newent = False
             self.df.loadEntry(frt, pag, p+2, data=ent[0])
-            self.df.loadEntry(frt, pag, p+3, data=ent[1])
+            if ent[0] == "H":
+                self.df.loadEntry(frt, pag, p+3, data="Home")
+            elif ent[0] == "V":
+                self.df.loadEntry(frt, pag, p+3, data="Visitor")
+            elif ent[0]:
+                coy = self.sql.getRec("bwlclb", where=[("bcc_code", "=",
+                    int(ent[0].strip()))], limit=1)
+                if coy:
+                    self.df.loadEntry(frt, pag, p+3, data=coy[1])
+                else:
+                    return "Invalid Club/Group Code"
+            self.df.loadEntry(frt, pag, p+4, data=ent[1])
         else:
             self.newent = True
         if self.cfmat == "X":
             if self.scod < self.nstart:
                 self.tcod = "H"
+                name = "Home"
             else:
                 self.tcod = "V"
+                name = "Visitor"
             self.df.loadEntry(frt, pag, p+2, data=self.tcod)
-        else:
+            self.df.loadEntry(frt, pag, p+3, data=name)
+        elif self.cfmat != "W":
             self.tcod = ""
-            return "sk2"
+            return "sk3"
 
-    def doTeam(self, frt, pag, r, c, p, i, w):
+    def doGroup(self, frt, pag, r, c, p, i, w):
+        if not w:
+            return "Invalid Group Code"
         self.tcod = w
+        if self.cfmat == "W":
+            cod = int(self.tcod.strip())
+            coy = self.sql.getRec("bwlclb", where=[("bcc_code", "=", cod)],
+                limit=1)
+            if not coy:
+                ok = askQuestion(self.opts["mf"].body, head="Group Code",
+                    mess="Do You Want to Create this Group", default="yes")
+                if ok == "no":
+                    return "Invalid Group Code"
+                else:
+                    self.df.loadEntry(frt, pag, p+1, data="")
+                    return
+            self.df.loadEntry(frt, pag, p+1, data=coy[1])
+        elif self.cfmat == "X":
+            if self.tcod == "H":
+                self.df.loadEntry(frt, pag, p+1, data="Home")
+            elif self.tcod == "V":
+                self.df.loadEntry(frt, pag, p+1, data="Visitor")
+            else:
+                return "Invalid Group Code"
+        return "sk1"
 
+    def doGroupName(self, frt, pag, r, c, p, i, w):
+        if not w:
+            return "rf"
+        self.sql.insRec("bwlclb", data=[self.tcod, w, "N"])
+            
     def doNewCode(self):
         r1s = (("Male","M"), ("Female","F"))
         r2s = (("Skip",4), ("Third",3), ("Second",2), ("Lead",1))
@@ -272,7 +320,7 @@ Do You Want to Erase All Draws and Results?""", default="no")
         return self.newcod
 
     def doNMail(self, frt, pag, r, c, p, i, w):
-        if self.cfmat in ("T", "K", "R", "X"):
+        if self.cfmat in ("T", "K", "R", "W", "X"):
             if self.dbase in ("C", "P"):
                 self.new.loadEntry(frt, pag, p+1, data=4)
             else:

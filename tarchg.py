@@ -1,4 +1,16 @@
-changes = """ver_6.19 2024-06-10
+changes = """ver_6.20 2025-01-01
+===================
+ 1) Updated all python modules to latest SECURITY updates.
+ 2) Added a new competition type for Round Robin Groups.
+ 3) Updated some items in the reference manual.
+ 4) Many minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.19 2024-07-11
 ===================
  1) Fixed a problem with the financial year end routine.
  2) Changed the transaction details in general ledger bank statement imports.
