@@ -39,15 +39,15 @@ class fc1010(object):
     def mainProcess(self):
         tit = ("Loans and Leases",)
         fld = (
-            (("T",0,0,0),"IUD",13.2,"Capital Amount","",
+            (("T",0,0,0),"ISD",14.2,"Capital Amount","",
                 "","Y",self.doCap,None,None,("efld",)),
-            (("T",0,1,0),"IUD",13.2,"Residual Value","",
+            (("T",0,1,0),"ISD",14.2,"Residual Value","",
                 "","N",None,None,None,("efld",)),
-            (("T",0,2,0),"IUI",13.2,"Number of Months","",
+            (("T",0,2,0),"ISI",14.2,"Number of Months","",
                 "","N",None,None,None,("notzero",)),
-            (("T",0,3,0),"IUD",13.2,"Repay Amount","",
+            (("T",0,3,0),"ISD",14.2,"Repay Amount","",
                 "","N",self.doRep,None,None,("efld",)),
-            (("T",0,4,0),"IUD",13.4,"Interest Rate","",
+            (("T",0,4,0),"ISD",14.4,"Interest Rate","",
                 "","N",self.doInt,None,None,("efld",)))
         tnd = ((self.doEnd, "y"), )
         txt = (self.doExit, )
@@ -94,7 +94,6 @@ class fc1010(object):
                 (((1 + rate) ** mth) - 1), 2) < rep:
             cap += 100
         self.df.loadEntry("T", 0, 0, data=round(cap, 2))
-        self.df.setWidget(self.df.topEntry[0][0], state="normal")
         self.df.setWidget(self.df.topEntry[0][0], state="disabled")
 
     def doRepay(self, cap, res, mth, rte):
@@ -102,7 +101,6 @@ class fc1010(object):
         rep = round((((cap * rate) * ((1 + rate) ** mth)) - (res * rate)) /
             (((1 + rate) ** mth) - 1), 2)
         self.df.loadEntry("T", 0, 3, data=round(rep, 2))
-        self.df.setWidget(self.df.topEntry[0][3], state="normal")
         self.df.setWidget(self.df.topEntry[0][3], state="disabled")
 
     def doRate(self, cap, res, mth, rep):
@@ -114,7 +112,6 @@ class fc1010(object):
             pay = round((((cap * rate) * ((1 + rate) ** mth)) - (res * rate)) /
                 (((1 + rate) ** mth) - 1), 2)
         self.df.loadEntry("T", 0, 4, data=round(rte, 4))
-        self.df.setWidget(self.df.topEntry[0][4], "normal")
         self.df.setWidget(self.df.topEntry[0][4], state="disabled")
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

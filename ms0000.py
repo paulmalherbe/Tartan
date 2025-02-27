@@ -65,12 +65,13 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 20)
+    VERSION = (6, 21)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
     def __init__(self, opts, args):
         self.cv = [VERSION, "%s.%s" % VERSION]
+        frozen = getattr(sys, "frozen", False)
         default = [
             ("altered", True),
             ("bpwd", ""),
@@ -115,7 +116,12 @@ class ms0000(object):
             elif o in ("-l", "--loader"):
                 self.loader = True
             elif o in ("-m", "--imods"):
+                if frozen:
+                    print("Invalid Option, Code is Frozen")
+                    self.doExit(dbm=False)
                 self.imods = True
+            elif o in ("-n", "--noprint"):
+                os.environ["NOMAIL"] = "Y"
             elif o in ("-o", "--output"):
                 self.output = True
             elif o in ("-p", "--program"):
@@ -181,6 +187,7 @@ Options:
             -i, --image             Toggle the Tartan image option.
             -l, --loader            Try and remove module before importing
             -m, --imods             Try to install missing modules using pip
+            -n, --nomail            No checking for email smtp servers
             -o, --output            Toggle stdout redirection to stdout.txt
             -P, --pdf=              View a pdf file using built in viewer
             -p, --program=          Execute program directly bypassing the menu
@@ -195,7 +202,7 @@ Options:
 """)
             self.doExit(dbm=False)
         if self.script:
-            if getattr(sys, "frozen", False):
+            if frozen:
                 sys.path.append(getPrgPath()[1])
             try:
                 exec("import %s" % self.script)
@@ -210,7 +217,7 @@ Options:
             elif not self.user:
                 print("xdisplay False but No User Name")
                 self.doExit(dbm=False)
-        if self.imods:
+        if not frozen and self.imods:
             # Import/Upgrade All modules
             if getattr(sys, "frozen", False):
                 print("Tartan is frozen, Upgrades not Possible.")
@@ -968,6 +975,7 @@ System --> Change Password""")
     def getCompany(self, prg=None, period=None):
         self.prg = prg
         self.pertyp = period
+        self.mf.head.configure(text="Tartan Systems")
         sql = Sql(self.dbm, "ctlmst", prog="ms0000")
         if self.acoy:
             whr = [("ctm_cono", "in", tuple(self.acoy))]
@@ -994,27 +1002,26 @@ System --> Change Password""")
                 self.conum = self.acoy[0]
             else:
                 self.conum = 1
-        csel = {
-            "stype": "R",
-            "tables": ("ctlmst",),
-            "cols": (
-                ("ctm_cono", "", 0, "Com"),
-                ("ctm_name", "", 0, "Name", "Y")),
-            "order": "ctm_cono"}
-        if self.acoy:
-            csel["where"] = [("ctm_cono", "in", tuple(self.acoy))]
+            self.conam = ""
         if self.coys == 1:
-            # Single Company
-            tit = ("Period Details",)
-            fld = []
+            fld = [[("T",0,0,0),"OUI",3,"Company Number","",
+                self.conum,"N",None,None,None,None]]
         else:
-            tit = ("Company Details",)
-            fld = [
-                [("T",0,0,0),"IUI",3,"Company Number","",
-                    self.conum,"N",self.coNum,csel,None,("notzero",)],
-                [("T",0,1,0),"ONA",30,"Company Name","",
-                    "","N",None,None,None,None]]
+            csel = {
+                "stype": "R",
+                "tables": ("ctlmst",),
+                "cols": (
+                    ("ctm_cono", "", 0, "Com"),
+                    ("ctm_name", "", 0, "Name", "Y")),
+                "order": "ctm_cono"}
+            if self.acoy:
+                csel["where"] = [("ctm_cono", "in", tuple(self.acoy))]
+            fld = [[("T",0,0,0),"IUI",3,"Company Number","",
+                self.conum,"N",self.coNum,csel,None,("notzero",)]]
+        fld.append([("T",0,1,0),"ONA",30,"Company Name","",
+            self.conam,"N",None,None,None,None])
         if self.pertyp == "Y":
+            tit = "Company and Financial Period Details"
             self.psel = {
                 "stype": "R",
                 "tables": ("ctlynd",),
@@ -1029,18 +1036,21 @@ System --> Change Password""")
                     0,"N",self.finPeriod,self.psel,None,None])
             if self.coys == 1:
                 self.psel["where"] = [("cye_cono", "=", self.conum)]
-                fld[0][0][2] = 0
+                #fld[2][0][2] = 0
                 self.getLastPeriod()
-                fld[0][5] = self.finper
+                fld[2][5] = self.finper
         elif self.pertyp == "L":
             self.getLastPeriod()
             if self.coys == 1:
                 return
+            tit = "Company Details"
         else:
             self.finper = None
             if self.coys == 1:
                 return
-        but = (("Cancel", None, self.coExit, 1, ("T",0,1), ("T",0,0)),)
+            tit = "Company Details"
+        but = (("Cancel", None, self.coExit, 1, (("T",0,1), ("T",0,3)),
+            ("T",0,0)),)
         self.cp = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
             butt=but, tend=((self.coEnd, "y"),), txit=(self.coExit,))
         if self.conum:
@@ -1075,9 +1085,8 @@ System --> Change Password""")
 
     def finPeriod(self, frt, pag, r, c, p, i, w):
         sql = Sql(self.dbm, "ctlynd", prog="ms0000")
-        r = sql.getRec("ctlynd", cols=["cye_period"],
-            where=[("cye_cono", "=", self.conum), ("cye_period", "=", w)],
-            limit=1)
+        r = sql.getRec("ctlynd", cols=["cye_period"], where=[("cye_cono",
+            "=", self.conum), ("cye_period", "=", w)], limit=1)
         if not r:
             return "Invalid Financial Period"
         self.finper = w
@@ -1762,6 +1771,8 @@ System --> Change Password""")
                 self.dbm.commitDbase()
         if not rec:
             return "error"
+        if not rec[sql.ctlsys_col.index("sys_msvr")]:
+            os.environ["NOMAIL"] = "Y"
 
     def doCheckMst(self):
         chk = self.conoCheck(1, ctl=True)
@@ -1851,9 +1862,9 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(sys.argv[1:],
             "ab:c:de:f:hiklmnoP:p:R:r:s:t:u:vxz", [
             "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
-            "help", "image", "loader", "imods", "output", "pdf=", "program=",
-            "rcfdir=", "rcfile=", "script=", "tcode=", "user=", "version",
-            "xdisplay", "zerobar"])
+            "help", "image", "loader", "nomail", "imods", "output", "pdf=",
+            "program=", "rcfdir=", "rcfile=", "script=", "tcode=", "user=",
+            "version", "xdisplay", "zerobar"])
     except:
         opts, args = [("-h", "")], []
     ms0000(opts, args)

@@ -115,14 +115,15 @@ class bc6020(object):
                             (key[2], "=", ttt)])
         # Removing old tabs
         jon = "Left outer join bwldrt on bdt_cono=btb_cono and bdt_tab=btb_tab"
-        col = ["btb_tab", "max(bdt_date)"]
+        col = ["btb_tab", "max(bdt_date)", "btb_surname", "btb_names"]
         whr = [
             ("btb_cono", "=", self.opts["conum"]),
             ("btb_tab", ">=", self.nstart)]
-        grp = "btb_tab"
+        grp = "btb_tab, btb_surname, btb_names"
         odr = "btb_tab"
         tabs = self.sql.getRec("bwltab", join=jon, cols=col, where=whr,
             group=grp, order=odr)
+        dels = "Delete These Tabs\n=================\n"
         for tab in tabs:
             if tab[1] and tab[1] >= self.delent:
                 continue
@@ -138,6 +139,7 @@ class bc6020(object):
                     break
             if not found:
                 # Delete the tab
+                dels += "%s %s, %s\n" % (tab[0], tab[2], tab[3])
                 self.sql.delRec("bwltab", where=[("btb_cono", "=",
                     self.opts["conum"]), ("btb_tab", "=", tab[0])])
                 # Replace tab in bwldrt with 900001+ number
@@ -161,7 +163,7 @@ class bc6020(object):
                     (key[2], "=", tab[0])])
             start += 1
         splash.closeSplash()
-        self.opts["mf"].dbm.commitDbase(ask=True)
+        self.opts["mf"].dbm.commitDbase(ask=True, mess=dels)
         self.opts["mf"].closeLoop()
 
     def doExit(self):

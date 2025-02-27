@@ -43,7 +43,8 @@ except:
 
 from TartanClasses import FileImport, GetCtl, Image, ShowEmail, SplashScreen
 from TartanClasses import Sql, TartanDialog
-from tartanFunctions import askQuestion, getSingleRecords, sendMail, showError
+from tartanFunctions import askQuestion, b64Convert, getSingleRecords
+from tartanFunctions import sendMail, showError
 
 class bm1010(object):
     def __init__(self, **opts):
@@ -64,7 +65,11 @@ class bm1010(object):
         if REQ:
             self.sms = []
             for fld in ("ssvr", "snam", "spwd"):
-                self.sms.append(ctlsys["sys_%s" % fld])
+                if fld == "spwd":
+                    pwd = b64Convert("decode", ctlsys["sys_spwd"])
+                    self.sms.append(pwd)
+                else:
+                    self.sms.append(ctlsys["sys_%s" % fld])
         else:
             self.sms = ["N"]
         if not self.smtp[0] and self.sms[0] == "N":

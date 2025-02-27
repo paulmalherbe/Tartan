@@ -651,6 +651,9 @@ class gl2040(object):
                     (lin, len(line))
                 break
             ref = line[0]
+            if not ref:
+                err = "Line %s: Invalid Reference Number" % (lin)
+                break
             dte = line[1]
             # Check if date in period
             if dte < self.opts["period"][1][0] or \

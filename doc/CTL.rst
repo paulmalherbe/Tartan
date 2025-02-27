@@ -36,10 +36,19 @@ After creating a **new** company record you will be prompted for the initial fin
 
 Department Records Maintenance
 ..............................
-Use this routine to create department records if departments were enabled in the Systems Record.
+Use this routine to create department records if departments were enabled in the Systems Record or Salaries & Wages has been enabled in the Company Record.
 
 + **Department** - The department code.
 + **Name** - The name of the department.
+
+**and if Salaries and Wages has been enabled**
+
++ **Debit Company** - The company number to be debited
++ **Salary A/C** - The account to be debited with salaries or wages
++ **Commission A/C** - The account to be debited with commission paid
++ **Credit Company** - The company number to be credited
++ **Salary A/C** - The account to be credited with salaries or wages
++ **Commission A/C** - The account to be credited with commission paid
 
 Module Passwords Maintenance
 ............................
@@ -51,11 +60,11 @@ Use this routine to set passwords to override certain security limitations e.g. 
 + **Password** - The password required to override this restriction.
 
 .. csv-table:: **Examples**
-  :header: "System", "Code", "Description"
-  :widths: 8, 20, 50
+  :header: "Coy", "System", "Code", "Description"
+  :widths: 5, 8, 20, 50
 
-  "MST", "TarBck", "Allow Database Backup"
-  "MST", "TarRes", "Allow Database Restore"
+  "  0", "MST", "TarBck", "Allow Database Backup"
+  "  0", "MST", "TarRes", "Allow Database Restore"
 
 Module Passwords Listing
 ........................
@@ -65,7 +74,7 @@ V.A.T. Records Maintenance
 ..........................
 Use this routine to create, amend or delete value added tax records. Please note that you can have multiple rate records for a code e.g. Code 'I' could have a rate record starting at 2014/01/01 @ 14% and another one starting at 2016/01/01 @ 15% etc. The system will then automatically apply the correct rate depending on the transaction date of entries.
 
-+ **V,A.T. Code** - A single character V.A.T. code.
++ **V.A.T. Code** - A single character V.A.T. code.
 + **Description** - A description of the code.
 + **Category** - The category of the code as follows:
 

@@ -194,9 +194,10 @@ class msc110(object):
                 return
         tme = time.localtime()
         data = copyList(self.df.t_work[0][0])
-        data[10] = b64Convert("encode", data[10])
+        if data[10]:
+            data[10] = b64Convert("encode", data[10])
         if data[13]:
-            data[10] = b64Convert("encode", data[13])
+            data[13] = b64Convert("encode", data[13])
         if self.new:
             self.sql.insRec("ctlsys", data=data)
         elif data != self.acc[:len(data)]:

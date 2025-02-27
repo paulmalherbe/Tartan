@@ -1,0 +1,973 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index 677fbbb..e8678f0 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -2933,9 +2933,11 @@ class CCD(object):
+         # ======================================================================
+         elif types in ("NA", "Na", "Tv", "TX"):
+             if type(data) is str:
+-                self.data = data.rstrip().replace("\\", "/")
+-                for x in range(32):
+-                    self.data = self.data.replace(chr(x), "")
++                self.data = ""
++                data = data.rstrip().replace("\\", "/")
++                for ch in data:
++                    if ord(ch) > 31 and ord(ch) < 127:
++                        self.data += ch
+             else:
+                 self.data = str(data)
+         else:
+@@ -3875,7 +3877,7 @@ class TartanDialog(object):
+         else:
+             self.repprt = ["Y", "", ""]
+         self.repeml = ["N", "N", "", "", "Y"]
+-        if self.mail:
++        if self.mail and "NOMAIL" not in os.environ:
+             try:
+                 gc = GetCtl(self.mf)
+                 ctlsys = gc.getCtl("ctlsys", error=False)
+@@ -3890,7 +3892,8 @@ class TartanDialog(object):
+                             "Mail Server Invalid or Unavailable.\n\n%s" % err)
+                     else:
+                         self.repeml = ["Y", "", "", "", "Y"]
+-            except:
++            except Exception as err:
++                print(err)
+                 pass
+         if self.view or self.mail:
+             if self.eflds and tuple(self.eflds[0][0][:2]) != ("T", 0):
+@@ -4803,7 +4806,7 @@ Export - The report in the selected format will be opened
+     def selectItem(self, pag, opts):
+         if opts["stype"] == "C":
+             self.rs = self.selChoice(opts)
+-        elif opts["stype"] == "D":
++        elif opts["stype"] == "D" and TKCAL:
+             if self.frt == "T":
+                 fwid = self.topEntry[pag][self.pos]
+             else:
+@@ -7514,7 +7517,7 @@ class ScrollText(object):
+     def __init__(self, **args):
+         defaults = {
+             "butt": None,
+-            "height": 40,
++            "height": 35,
+             "horizontal": True,
+             "font": None,
+             "mess": None,
+@@ -13083,6 +13086,7 @@ class PrintCards(object):
+             if x == self.ends:
+                 dat = "Total"
+                 fill = True
++                y4 += 2
+             else:
+                 dat = end = x + 1
+                 fill = bool(self.skins == "Y" and not end % self.sends)
+@@ -15394,7 +15398,7 @@ class TarBckRes(object):
+         self.mode = mode
+         self.budays = 0
+         self.smtp = False
+-        if csys:
++        if csys and "NOMAIL" not in os.environ:
+             self.budays = csys[0]
+             if csys[1] and not sendMail(csys[1:], "", "", "", check=True,
+                     wrkdir=self.mf.rcdic["wrkdir"]):
+@@ -15420,9 +15424,11 @@ class TarBckRes(object):
+         self.bupdir = os.path.join(self.mf.rcdic["bupdir"],
+             self.mf.rcdic["dbname"])
+         if self.mode == "R" and not os.path.isdir(self.bupdir):
++            showError(self.mf.body, "Error", "Backup Folder Does Not Exist")
+             return
+         self.archdir = os.path.join(self.bupdir, "arch")
+         if self.mode == "R" and not os.path.isdir(self.archdir):
++            showError(self.mf.body, "Error", "No Backups Exist")
+             return
+         self.tmpdir = os.path.join(self.bupdir, "temp")
+         # Get all company and non-company tables
+@@ -15679,7 +15685,7 @@ class TarBckRes(object):
+                 self.bu.closeProcess()
+             self.doBackup()
+             if self.mf.window and self.smtp and self.smtp[0]:
+-                if self.bu.repeml[2]:
++                if self.bu.repeml[2] and "NOMAIL" not in os.environ:
+                     txt = "Tartan Backup for %s at %s" % (self.coys[0][1],
+                         CCD(self.sysdtw, "D1", 10).disp)
+                     sendMail(self.smtp, self.coys[0][2], self.bu.repeml[2],
+@@ -16595,7 +16601,8 @@ class FileImport(object):
+         elif name.split(".")[-1].lower() == "xlsx" and XLSX:
+             self.ftype = "xlsx"
+             try:
+-                self.workbk = openpyxl.load_workbook(filename=name)
++                self.workbk = openpyxl.load_workbook(filename=name,
++                    data_only=True)
+                 self.sht["data"] = self.workbk.sheetnames
+             except Exception as err:
+                 return "Invalid xlsx File (%s)" % err
+@@ -16641,32 +16648,32 @@ class FileImport(object):
+                 data = csv.reader(self.csvfle, quoting=csv.QUOTE_MINIMAL)
+             else:
+                 data = self.worksh
++            chk = [None] * len(self.impcol)
+             for row, rdd in enumerate(data):
+                 if not rdd:
+                     continue
+                 try:
+                     lin = []
++                    nun = []
+                     for col, cdd in enumerate(self.impcol):
+                         if cdd[1] is None:
+                             dat = ""
+                         else:
+                             dat = rdd[cdd[1]]
++                            if dat is None:
++                                nun.append(dat)
+                         if self.ftype in ("xls", "xlsx"):
+                             if cdd[2] in ("D1", "d1"):
+                                 if isinstance(dat, datetime.date):
+                                     dat = int(dat.strftime("%Y%m%d"))
+                                 elif isinstance(dat, datetime.datetime):
+                                     dat = int(rdd.strftime("%Y%m%d"))
+-                                else:
+-                                    try:
+-                                        dat = int(dat)
+-                                    except:
+-                                        dat = 0
+-                                        cdd[2] = "d1"
+                         d = CCD(dat, cdd[2], cdd[3])
+                         if d.err:
+                             raise Exception(d.err)
+                         lin.append(d.work)
++                    if nun == chk:
++                        break
+                     self.impdat.append(lin)
+                 except Exception as err:
+                     if self.impign == "N":
+@@ -17697,7 +17704,7 @@ Mobile:            27-82-9005260
+                 raise Exception
+             err = doPublish(self.mf.window, os.path.join(docdir, fle))
+             if err:
+-                raise Eception(err)
++                raise Exception(err)
+         except:
+             showError(self.mf.window, "Error", "Missing licence file")
+         self.about.place(anchor="center", relx=0.5, rely=0.5)
+@@ -18799,7 +18806,7 @@ class ViewPDF(object):
+             ("Save as..", self.doSave),
+             ("Send to..", self.doSend),
+             ("Help", self.doHelp)]
+-        if self.mf and self.mf.dbm:
++        if self.mf and self.mf.dbm and "NOMAIL" not in os.environ:
+             try:
+                 gc = GetCtl(self.mf)
+                 ctlsys = gc.getCtl("ctlsys", error=False)
+@@ -18866,14 +18873,16 @@ class ViewPDF(object):
+         self.scale = .75
+         self.zoom = 1.25
+         if self.mf:
+-            try:
+-                chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
+-                if os.path.isfile(chk):
+-                    cnf = open(chk, "r")
+-                    self.zoom = float(cnf.read())
+-                    cnf.close()
+-            except:
+-                pass
++            chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
++        else:
++            chk = os.path.join(os.path.expanduser("~"), ".pdfview.conf")
++        try:
++            if os.path.isfile(chk):
++                cnf = open(chk, "r")
++                self.zoom = float(cnf.read())
++                cnf.close()
++        except:
++            pass
+         self.matrix = list(pymupdf.Matrix(self.zoom, self.zoom))
+         # Other settings
+         self.pgno = 1
+@@ -19008,14 +19017,13 @@ class ViewPDF(object):
+ 
+     def doSearch(self, event=None):
+         def getSearch(event=None):
++            if self.search:
++                self.endSearch()
+             self.search = ent.get()
+             self.found = False
+             self.pags = []
+             self.prec = {}
+             for page in self.doc:
+-                annot = page.first_annot
+-                while annot:
+-                    annot = page.delete_annot(annot)
+                 found = page.search_for(self.search)
+                 if found:
+                     self.found = True
+@@ -19069,10 +19077,7 @@ class ViewPDF(object):
+         self.pags = []
+         self.prec = {}
+         self.search = ""
+-        for page in self.doc:
+-            annot = page.first_annot
+-            while annot:
+-                annot = page.delete_annot(annot)
++        self.clearAnnots()
+         self.showPage()
+ 
+     def doUnbind(self, unbind=True, key=True, exc=None):
+@@ -19311,10 +19316,7 @@ class ViewPDF(object):
+                 modal=True, cols=cols, data=tabs, font="Courier", sort=False)
+             self.doUnbind(False)
+             if sc.selection:
+-                for page in self.doc:
+-                    annot = page.first_annot
+-                    while annot:
+-                        annot = page.delete_annot(annot)
++                self.clearAnnots()
+                 bbox = cdata[sc.selection[0]]
+                 rect = pymupdf.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
+                 self.pgno = int(sc.selection[2])
+@@ -19325,6 +19327,15 @@ class ViewPDF(object):
+                 self.showPage()
+             self.cv.focus_force()
+ 
++    def clearAnnots(self):
++        for page in self.doc:
++            annot = page.first_annot
++            while annot and annot.type != "null":
++                if annot.type[0] == pymupdf.PDF_ANNOT_HIGHLIGHT:
++                    annot = page.delete_annot(annot)
++                else:
++                    annot = annot.next
++
+     def showLinks(self, event=None):
+         if not self.maxi:
+             x = event.x/self.zoom
+@@ -19594,13 +19605,15 @@ class ViewPDF(object):
+ 
+     def doClose(self, event=None):
+         if self.mf:
+-            try:
+-                chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
+-                cnf = open(chk, "w")
+-                cnf.write("%s" % self.zoom)
+-                cnf.close()
+-            except:
+-                pass
++            chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
++        else:
++            chk = os.path.join(os.path.expanduser("~"), ".pdfview.conf")
++        try:
++            cnf = open(chk, "w")
++            cnf.write("%s" % self.zoom)
++            cnf.close()
++        except:
++            pass
+         self.doc.close()
+         self.win.destroy()
+ 
+diff --git a/bwl/bc2050.py b/bwl/bc2050.py
+index c36c972..562825f 100644
+--- a/bwl/bc2050.py
++++ b/bwl/bc2050.py
+@@ -75,6 +75,7 @@ class bc2050(object):
+         self.fromad = bwlctl["ctb_emadd"]
+         t = time.localtime()
+         self.today = ((t[0] * 10000) + (t[1] * 100) + t[2])
++        self.grpsel = False
+         self.sects = False
+         self.game = 0
+         random.seed()
+diff --git a/bwl/bc2070.py b/bwl/bc2070.py
+index de3bd71..9c2b4cb 100644
+--- a/bwl/bc2070.py
++++ b/bwl/bc2070.py
+@@ -574,6 +574,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
+                 txt = ", ".join(msc)
+                 showError(self.opts["mf"].body, "Error", "The Following "\
+                     "Rinks Still Need to be Captured.\n\n%s" % txt)
++                self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+                 return
+             if self.cfmat in ("D", "K") and self.gcod != self.games:
+                 # Delete Next Round's Records
+diff --git a/bwl/bc6020.py b/bwl/bc6020.py
+index 1acffdd..a8fff54 100644
+--- a/bwl/bc6020.py
++++ b/bwl/bc6020.py
+@@ -115,14 +115,15 @@ class bc6020(object):
+                             (key[2], "=", ttt)])
+         # Removing old tabs
+         jon = "Left outer join bwldrt on bdt_cono=btb_cono and bdt_tab=btb_tab"
+-        col = ["btb_tab", "max(bdt_date)"]
++        col = ["btb_tab", "max(bdt_date)", "btb_surname", "btb_names"]
+         whr = [
+             ("btb_cono", "=", self.opts["conum"]),
+             ("btb_tab", ">=", self.nstart)]
+-        grp = "btb_tab"
++        grp = "btb_tab, btb_surname, btb_names"
+         odr = "btb_tab"
+         tabs = self.sql.getRec("bwltab", join=jon, cols=col, where=whr,
+             group=grp, order=odr)
++        dels = "Delete These Tabs\n=================\n"
+         for tab in tabs:
+             if tab[1] and tab[1] >= self.delent:
+                 continue
+@@ -138,6 +139,7 @@ class bc6020(object):
+                     break
+             if not found:
+                 # Delete the tab
++                dels += "%s %s, %s\n" % (tab[0], tab[2], tab[3])
+                 self.sql.delRec("bwltab", where=[("btb_cono", "=",
+                     self.opts["conum"]), ("btb_tab", "=", tab[0])])
+                 # Replace tab in bwldrt with 900001+ number
+@@ -161,7 +163,7 @@ class bc6020(object):
+                     (key[2], "=", tab[0])])
+             start += 1
+         splash.closeSplash()
+-        self.opts["mf"].dbm.commitDbase(ask=True)
++        self.opts["mf"].dbm.commitDbase(ask=True, mess=dels)
+         self.opts["mf"].closeLoop()
+ 
+     def doExit(self):
+diff --git a/doc/CTL.rst b/doc/CTL.rst
+index c3333eb..72b137f 100644
+--- a/doc/CTL.rst
++++ b/doc/CTL.rst
+@@ -36,11 +36,20 @@ After creating a **new** company record you will be prompted for the initial fin
+ 
+ Department Records Maintenance
+ ..............................
+-Use this routine to create department records if departments were enabled in the Systems Record.
++Use this routine to create department records if departments were enabled in the Systems Record or Salaries & Wages has been enabled in the Company Record.
+ 
+ + **Department** - The department code.
+ + **Name** - The name of the department.
+ 
++**and if Salaries and Wages has been enabled**
++
+++ **Debit Company** - The company number to be debited
+++ **Salary A/C** - The account to be debited with salaries or wages
+++ **Commission A/C** - The account to be debited with commission paid
+++ **Credit Company** - The company number to be credited
+++ **Salary A/C** - The account to be credited with salaries or wages
+++ **Commission A/C** - The account to be credited with commission paid
++
+ Module Passwords Maintenance
+ ............................
+ Use this routine to set passwords to override certain security limitations e.g. locked general ledger account, inhibit the sale of items at prices under cost or inhibit sales to a debtor exceeding their credit limit.
+@@ -51,11 +60,11 @@ Use this routine to set passwords to override certain security limitations e.g.
+ + **Password** - The password required to override this restriction.
+ 
+ .. csv-table:: **Examples**
+-  :header: "System", "Code", "Description"
+-  :widths: 8, 20, 50
++  :header: "Coy", "System", "Code", "Description"
++  :widths: 5, 8, 20, 50
+ 
+-  "MST", "TarBck", "Allow Database Backup"
+-  "MST", "TarRes", "Allow Database Restore"
++  "  0", "MST", "TarBck", "Allow Database Backup"
++  "  0", "MST", "TarRes", "Allow Database Restore"
+ 
+ Module Passwords Listing
+ ........................
+@@ -65,7 +74,7 @@ V.A.T. Records Maintenance
+ ..........................
+ Use this routine to create, amend or delete value added tax records. Please note that you can have multiple rate records for a code e.g. Code 'I' could have a rate record starting at 2014/01/01 @ 14% and another one starting at 2016/01/01 @ 15% etc. The system will then automatically apply the correct rate depending on the transaction date of entries.
+ 
+-+ **V,A.T. Code** - A single character V.A.T. code.
+++ **V.A.T. Code** - A single character V.A.T. code.
+ + **Description** - A description of the code.
+ + **Category** - The category of the code as follows:
+ 
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 4d67743..ab1cec3 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.20
++:Version:   6.21
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/gen/gl2040.py b/gen/gl2040.py
+index 8a8072a..b3ef3f9 100644
+--- a/gen/gl2040.py
++++ b/gen/gl2040.py
+@@ -651,6 +651,9 @@ class gl2040(object):
+                     (lin, len(line))
+                 break
+             ref = line[0]
++            if not ref:
++                err = "Line %s: Invalid Reference Number" % (lin)
++                break
+             dte = line[1]
+             # Check if date in period
+             if dte < self.opts["period"][1][0] or \
+diff --git a/gen/gl3040.py b/gen/gl3040.py
+index a781520..05fe76b 100644
+--- a/gen/gl3040.py
++++ b/gen/gl3040.py
+@@ -27,6 +27,7 @@ COPYING
+ import time
+ from TartanClasses import ASD, CCD, MyFpdf, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import doPrinter, doWriteExport, getModName, showError
++from tartanFunctions import showInfo
+ from tartanWork import mthnam
+ 
+ class gl3040(object):
+@@ -275,6 +276,8 @@ N - Period Movements will be Printed"""),
+                     doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                         pdfnam=pdfnam, header=self.tit, repprt=self.repprt,
+                         repeml=self.repeml)
++        elif not p.quit:
++            showInfo(self.opts["mf"].body, "Info", "No Balances to Print")
+ 
+     def getValues(self, data):
+         acno = CCD(data[0], "UI", 7)
+@@ -434,6 +437,7 @@ N - Period Movements will be Printed"""),
+                     break
+         if self.fpdf.newPage(extra):
+             self.pageHeading()
++            self.fpdf.setFont(style="B")
+         else:
+             self.fpdf.underLine()
+         if self.rtype == "S":
+diff --git a/ms0000.py b/ms0000.py
+index cec33e6..3c4e1a5 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -65,12 +65,13 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 20)
++    VERSION = (6, 21)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+     def __init__(self, opts, args):
+         self.cv = [VERSION, "%s.%s" % VERSION]
++        frozen = getattr(sys, "frozen", False)
+         default = [
+             ("altered", True),
+             ("bpwd", ""),
+@@ -115,7 +116,12 @@ class ms0000(object):
+             elif o in ("-l", "--loader"):
+                 self.loader = True
+             elif o in ("-m", "--imods"):
++                if frozen:
++                    print("Invalid Option, Code is Frozen")
++                    self.doExit(dbm=False)
+                 self.imods = True
++            elif o in ("-n", "--noprint"):
++                os.environ["NOMAIL"] = "Y"
+             elif o in ("-o", "--output"):
+                 self.output = True
+             elif o in ("-p", "--program"):
+@@ -181,6 +187,7 @@ Options:
+             -i, --image             Toggle the Tartan image option.
+             -l, --loader            Try and remove module before importing
+             -m, --imods             Try to install missing modules using pip
++            -n, --nomail            No checking for email smtp servers
+             -o, --output            Toggle stdout redirection to stdout.txt
+             -P, --pdf=              View a pdf file using built in viewer
+             -p, --program=          Execute program directly bypassing the menu
+@@ -195,7 +202,7 @@ Options:
+ """)
+             self.doExit(dbm=False)
+         if self.script:
+-            if getattr(sys, "frozen", False):
++            if frozen:
+                 sys.path.append(getPrgPath()[1])
+             try:
+                 exec("import %s" % self.script)
+@@ -210,7 +217,7 @@ Options:
+             elif not self.user:
+                 print("xdisplay False but No User Name")
+                 self.doExit(dbm=False)
+-        if self.imods:
++        if not frozen and self.imods:
+             # Import/Upgrade All modules
+             if getattr(sys, "frozen", False):
+                 print("Tartan is frozen, Upgrades not Possible.")
+@@ -968,6 +975,7 @@ System --> Change Password""")
+     def getCompany(self, prg=None, period=None):
+         self.prg = prg
+         self.pertyp = period
++        self.mf.head.configure(text="Tartan Systems")
+         sql = Sql(self.dbm, "ctlmst", prog="ms0000")
+         if self.acoy:
+             whr = [("ctm_cono", "in", tuple(self.acoy))]
+@@ -994,27 +1002,26 @@ System --> Change Password""")
+                 self.conum = self.acoy[0]
+             else:
+                 self.conum = 1
+-        csel = {
+-            "stype": "R",
+-            "tables": ("ctlmst",),
+-            "cols": (
+-                ("ctm_cono", "", 0, "Com"),
+-                ("ctm_name", "", 0, "Name", "Y")),
+-            "order": "ctm_cono"}
+-        if self.acoy:
+-            csel["where"] = [("ctm_cono", "in", tuple(self.acoy))]
++            self.conam = ""
+         if self.coys == 1:
+-            # Single Company
+-            tit = ("Period Details",)
+-            fld = []
++            fld = [[("T",0,0,0),"OUI",3,"Company Number","",
++                self.conum,"N",None,None,None,None]]
+         else:
+-            tit = ("Company Details",)
+-            fld = [
+-                [("T",0,0,0),"IUI",3,"Company Number","",
+-                    self.conum,"N",self.coNum,csel,None,("notzero",)],
+-                [("T",0,1,0),"ONA",30,"Company Name","",
+-                    "","N",None,None,None,None]]
++            csel = {
++                "stype": "R",
++                "tables": ("ctlmst",),
++                "cols": (
++                    ("ctm_cono", "", 0, "Com"),
++                    ("ctm_name", "", 0, "Name", "Y")),
++                "order": "ctm_cono"}
++            if self.acoy:
++                csel["where"] = [("ctm_cono", "in", tuple(self.acoy))]
++            fld = [[("T",0,0,0),"IUI",3,"Company Number","",
++                self.conum,"N",self.coNum,csel,None,("notzero",)]]
++        fld.append([("T",0,1,0),"ONA",30,"Company Name","",
++            self.conam,"N",None,None,None,None])
+         if self.pertyp == "Y":
++            tit = "Company and Financial Period Details"
+             self.psel = {
+                 "stype": "R",
+                 "tables": ("ctlynd",),
+@@ -1029,18 +1036,21 @@ System --> Change Password""")
+                     0,"N",self.finPeriod,self.psel,None,None])
+             if self.coys == 1:
+                 self.psel["where"] = [("cye_cono", "=", self.conum)]
+-                fld[0][0][2] = 0
++                #fld[2][0][2] = 0
+                 self.getLastPeriod()
+-                fld[0][5] = self.finper
++                fld[2][5] = self.finper
+         elif self.pertyp == "L":
+             self.getLastPeriod()
+             if self.coys == 1:
+                 return
++            tit = "Company Details"
+         else:
+             self.finper = None
+             if self.coys == 1:
+                 return
+-        but = (("Cancel", None, self.coExit, 1, ("T",0,1), ("T",0,0)),)
++            tit = "Company Details"
++        but = (("Cancel", None, self.coExit, 1, (("T",0,1), ("T",0,3)),
++            ("T",0,0)),)
+         self.cp = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
+             butt=but, tend=((self.coEnd, "y"),), txit=(self.coExit,))
+         if self.conum:
+@@ -1075,9 +1085,8 @@ System --> Change Password""")
+ 
+     def finPeriod(self, frt, pag, r, c, p, i, w):
+         sql = Sql(self.dbm, "ctlynd", prog="ms0000")
+-        r = sql.getRec("ctlynd", cols=["cye_period"],
+-            where=[("cye_cono", "=", self.conum), ("cye_period", "=", w)],
+-            limit=1)
++        r = sql.getRec("ctlynd", cols=["cye_period"], where=[("cye_cono",
++            "=", self.conum), ("cye_period", "=", w)], limit=1)
+         if not r:
+             return "Invalid Financial Period"
+         self.finper = w
+@@ -1762,6 +1771,8 @@ System --> Change Password""")
+                 self.dbm.commitDbase()
+         if not rec:
+             return "error"
++        if not rec[sql.ctlsys_col.index("sys_msvr")]:
++            os.environ["NOMAIL"] = "Y"
+ 
+     def doCheckMst(self):
+         chk = self.conoCheck(1, ctl=True)
+@@ -1851,9 +1862,9 @@ if __name__ == "__main__":
+         opts, args = getopt.getopt(sys.argv[1:],
+             "ab:c:de:f:hiklmnoP:p:R:r:s:t:u:vxz", [
+             "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
+-            "help", "image", "loader", "imods", "output", "pdf=", "program=",
+-            "rcfdir=", "rcfile=", "script=", "tcode=", "user=", "version",
+-            "xdisplay", "zerobar"])
++            "help", "image", "loader", "nomail", "imods", "output", "pdf=",
++            "program=", "rcfdir=", "rcfile=", "script=", "tcode=", "user=",
++            "version", "xdisplay", "zerobar"])
+     except:
+         opts, args = [("-h", "")], []
+     ms0000(opts, args)
+diff --git a/mst/msc110.py b/mst/msc110.py
+index 17e8e1c..adeb4de 100644
+--- a/mst/msc110.py
++++ b/mst/msc110.py
+@@ -194,9 +194,10 @@ class msc110(object):
+                 return
+         tme = time.localtime()
+         data = copyList(self.df.t_work[0][0])
+-        data[10] = b64Convert("encode", data[10])
++        if data[10]:
++            data[10] = b64Convert("encode", data[10])
+         if data[13]:
+-            data[10] = b64Convert("encode", data[13])
++            data[13] = b64Convert("encode", data[13])
+         if self.new:
+             self.sql.insRec("ctlsys", data=data)
+         elif data != self.acc[:len(data)]:
+diff --git a/tab/tb3010.py b/tab/tb3010.py
+index 131f024..d7da363 100644
+--- a/tab/tb3010.py
++++ b/tab/tb3010.py
+@@ -98,7 +98,7 @@ class tb3010(object):
+                 "ft_desc"], where=whr, order="ft_tabl")
+         if not tabs:
+             return
+-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=80)
++        self.fpdf = MyFpdf(name=self.__class__.__name__, head=120)
+         self.pgnum = 0
+         p = ProgressBar(self.opts["mf"].body, mxs=len(tabs), esc=True)
+         for num, tab in enumerate(tabs):
+@@ -135,8 +135,9 @@ class tb3010(object):
+                 h = CCD(rec[8], "NA", 10).disp
+                 i = CCD(rec[9], "NA", 10).disp
+                 j = CCD(rec[10], "NA", 10).disp
++                k = CCD(rec[11], "NA", 10).disp
+                 self.fpdf.drawText("%-20s %2s %1s %-10s %-10s %-10s %-10s "\
+-                    "%-10s %-10s %-10s" % (a, b, c, d, e, f, g, h, i, j))
++                    "%-10s %-10s %-10s %-10s" % (a,b,c,d,e,f,g,h,i,j,k))
+         p.closeProgress()
+         if self.fpdf.page and not p.quit:
+             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
+@@ -161,9 +162,9 @@ class tb3010(object):
+             self.fpdf.drawText()
+             self.fpdf.drawText("Table Indexes for Table %s" % table)
+             head = "%-20s %2s %1s %-10s %-10s %-10s %-10s %-10s %-10s "\
+-                "%-10s" % ("Table Description", "Sq", "T", "1st-Col",
+-                "2nd-Col", "3rd-Col", "4th-Col", "5th-Col", "6th-Col",
+-                "7th-Col")
++                "%-10s %-10s" % ("Table Description", "Sq", "T",
++                "1st-Col", "2nd-Col", "3rd-Col", "4th-Col", "5th-Col",
++                "6th-Col", "7th-Col", "8th-Col")
+         self.fpdf.drawText()
+         self.fpdf.drawText(head)
+         self.fpdf.underLine(head)
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index 1eb2527..18a8757 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -427,7 +427,7 @@ def showException(scrn, path, mess, maxTB=None, xits=None, dbm=None):
+         flenam.write(mess + "\n")
+         flenam.write("*******************************" + "\n")
+         flenam.close()
+-        if dbm:
++        if dbm and "NOMAIL" not in os.environ:
+             if not dbm.dbopen:
+                 opened = True
+                 dbm.openDbase()
+@@ -870,6 +870,10 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
+         return subj
+ 
+     host, port, secu, auth, unam, upwd = server
++    try:
++        upwd = b64Convert("decode", upwd)
++    except Exception as err:
++        pass
+     try:
+         if secu and int(secu) == 2:
+             smtp = smtplib.SMTP_SSL(host, port, local, timeout=timeout)
+diff --git a/tartanWork.py b/tartanWork.py
+index 5ff796f..6f17bc3 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -1178,7 +1178,7 @@ tabdic = {
+             [9, "bkm_stddep", "UD", 10.2, "Deposit I-Value", "I-Dep-Val"],
+             [10, "bkm_stddte", "D1", 10.0, "Deposit I-Date", "I-Due-Date"],
+             [11, "bkm_grpdep", "UD", 10.2, "Deposit G-Value", "G-Dep-Val"],
+-            [12, "bkm_grpdte", "D1", 10.0, "Deposit G-Date", "G-Due-Date"],
++            [12, "bkm_grpdte", "d1", 10.0, "Deposit G-Date", "G-Due-Date"],
+             [13, "bkm_remarks", "TX", 50.0, "Remarks", "Remarks"],
+             [14, "bkm_state", "UA", 1.0, "Booking Status", "S"],
+             [15, "bkm_ccode", "UA", 7.0, "Contact Code", "Contact"],
+@@ -4029,7 +4029,7 @@ tarmen = {
+         ["F","mm_sy","sysUpd",8,"Upgrade System"],
+         ["F","mm_sy","tarUpd",8,"Update File Formats"],
+         ["PNNN","mm_sy","tb1040",9,"Copy Tables"],
+-        ["F","mm_sy","tarExp",0,"Export Database"],
++        ["F","mm_sy","tarExp",5,"Export Database"],
+         ["F","mm_sy","tarMrg",5,"Merge Database"],
+         ["F","mm_sy","tarBck",0,"Backup Database"],
+         ["F","mm_sy","tarRes",5,"Restore Database"],
+diff --git a/uty/bm1010.py b/uty/bm1010.py
+index c647326..0ba2c0b 100644
+--- a/uty/bm1010.py
++++ b/uty/bm1010.py
+@@ -43,7 +43,8 @@ except:
+ 
+ from TartanClasses import FileImport, GetCtl, Image, ShowEmail, SplashScreen
+ from TartanClasses import Sql, TartanDialog
+-from tartanFunctions import askQuestion, getSingleRecords, sendMail, showError
++from tartanFunctions import askQuestion, b64Convert, getSingleRecords
++from tartanFunctions import sendMail, showError
+ 
+ class bm1010(object):
+     def __init__(self, **opts):
+@@ -64,7 +65,11 @@ class bm1010(object):
+         if REQ:
+             self.sms = []
+             for fld in ("ssvr", "snam", "spwd"):
+-                self.sms.append(ctlsys["sys_%s" % fld])
++                if fld == "spwd":
++                    pwd = b64Convert("decode", ctlsys["sys_spwd"])
++                    self.sms.append(pwd)
++                else:
++                    self.sms.append(ctlsys["sys_%s" % fld])
+         else:
+             self.sms = ["N"]
+         if not self.smtp[0] and self.sms[0] == "N":
+diff --git a/uty/fc1010.py b/uty/fc1010.py
+index ddf8906..2bad303 100644
+--- a/uty/fc1010.py
++++ b/uty/fc1010.py
+@@ -39,15 +39,15 @@ class fc1010(object):
+     def mainProcess(self):
+         tit = ("Loans and Leases",)
+         fld = (
+-            (("T",0,0,0),"IUD",13.2,"Capital Amount","",
++            (("T",0,0,0),"ISD",14.2,"Capital Amount","",
+                 "","Y",self.doCap,None,None,("efld",)),
+-            (("T",0,1,0),"IUD",13.2,"Residual Value","",
++            (("T",0,1,0),"ISD",14.2,"Residual Value","",
+                 "","N",None,None,None,("efld",)),
+-            (("T",0,2,0),"IUI",13.2,"Number of Months","",
++            (("T",0,2,0),"ISI",14.2,"Number of Months","",
+                 "","N",None,None,None,("notzero",)),
+-            (("T",0,3,0),"IUD",13.2,"Repay Amount","",
++            (("T",0,3,0),"ISD",14.2,"Repay Amount","",
+                 "","N",self.doRep,None,None,("efld",)),
+-            (("T",0,4,0),"IUD",13.4,"Interest Rate","",
++            (("T",0,4,0),"ISD",14.4,"Interest Rate","",
+                 "","N",self.doInt,None,None,("efld",)))
+         tnd = ((self.doEnd, "y"), )
+         txt = (self.doExit, )
+@@ -94,7 +94,6 @@ class fc1010(object):
+                 (((1 + rate) ** mth) - 1), 2) < rep:
+             cap += 100
+         self.df.loadEntry("T", 0, 0, data=round(cap, 2))
+-        self.df.setWidget(self.df.topEntry[0][0], state="normal")
+         self.df.setWidget(self.df.topEntry[0][0], state="disabled")
+ 
+     def doRepay(self, cap, res, mth, rte):
+@@ -102,7 +101,6 @@ class fc1010(object):
+         rep = round((((cap * rate) * ((1 + rate) ** mth)) - (res * rate)) /
+             (((1 + rate) ** mth) - 1), 2)
+         self.df.loadEntry("T", 0, 3, data=round(rep, 2))
+-        self.df.setWidget(self.df.topEntry[0][3], state="normal")
+         self.df.setWidget(self.df.topEntry[0][3], state="disabled")
+ 
+     def doRate(self, cap, res, mth, rep):
+@@ -114,7 +112,6 @@ class fc1010(object):
+             pay = round((((cap * rate) * ((1 + rate) ** mth)) - (res * rate)) /
+                 (((1 + rate) ** mth) - 1), 2)
+         self.df.loadEntry("T", 0, 4, data=round(rte, 4))
+-        self.df.setWidget(self.df.topEntry[0][4], "normal")
+         self.df.setWidget(self.df.topEntry[0][4], state="disabled")
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+diff --git a/uty/mkwindows.py b/uty/mkwindows.py
+index 58194b6..a51624b 100644
+--- a/uty/mkwindows.py
++++ b/uty/mkwindows.py
+@@ -47,7 +47,10 @@ else:
+     PFX = "32"
+ DPT = os.path.join("c:\\", "Tartan", "prg")     # Directory for pyinstaller exe
+ EXE = os.path.join("%s\\" % MAP, "TartanExe")   # Destination of installer
+-SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
++if "WINEPREFIX" in os.environ:
++    SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
++else:
++    SRC = HOM
+ TMP = os.path.join("%s\\" % HOM, "Temp")        # Working Directory
+ onefle = False                                  # Generate a single file
+ UPG = False                                     # Upgrade python modules
+@@ -84,9 +87,6 @@ Usage: python mkwindows.py [options]
+ # Set default variables
+ ISC = doFind("iscc.exe")
+ ISS = "tartan.iss"
+-fle = open(os.path.join(EXE, "current"), "r")
+-VER = fle.read().strip()
+-fle.close()
+ # Open the log file
+ out = open("%s\\log" % HOM, "w")
+ # Delete installation directories
+@@ -97,7 +97,7 @@ os.makedirs(TMP)
+ os.chmod(HOM, 0o777)
+ for pth in ("fnt", "thm", "uty"):
+     os.makedirs(os.path.join(DPT, pth))
+-# Enter source directory
++# Enter TMP directory
+ os.chdir(TMP)
+ # Unzip sources
+ with ZipFile(os.path.join(SRC, "tartan-6.zip"), "r") as zipObj:
+@@ -130,10 +130,12 @@ if UPG:
+     doUpgrade()
+ # Run pyinstaller
+ os.chdir(os.path.join(TMP, "tartan"))
++cmd = ["python", "-m", "PyInstaller"]
+ if onefle:
+-    subprocess.call(["pyinstaller", "onefle.spec"], stdout=out, stderr=out)
++    cmd.append("onefle.spec")
+ else:
+-    subprocess.call(["pyinstaller", "onedir.spec"], stdout=out, stderr=out)
++    cmd.append("onedir.spec")
++subprocess.call(cmd, stdout=out, stderr=out)
+ # Copy files to DPT
+ shutil.copy("tartan.ico", DPT)
+ if onefle:
+@@ -147,8 +149,12 @@ if "WINEPREFIX" in os.environ:
+     elif PFX == "8":
+         shutil.copy("ucrtbase.8", os.path.join(DPT, "ucrtbase.dll"))
+ subprocess.call([ISC, ISS], stdout=out, stderr=out)
+-shutil.copy(os.path.join("Output", "Tartan.exe"),
+-    os.path.join(EXE, "tartan-6-%s.exe" % PFX))
++if "WINEPREFIX" in os.environ:
++    shutil.copy(os.path.join("Output", "Tartan.exe"),
++        os.path.join(EXE, "tartan-6-%s.exe" % PFX))
++else:
++    shutil.copy(os.path.join("Output", "Tartan.exe"),
++        os.path.join(HOM, "tartan-6-%s.exe" % PFX))
+ os.chdir(HOM)
+ shutil.rmtree(TMP)
+ shutil.rmtree(DPT)
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 9af9e24..861ee77 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -65,7 +65,7 @@ sys.path.append(vd)
+ from tartanFunctions import findFile, sendMail
+ from ms0000 import VERSION
+ 
+-bits = ["7", "8", "32", "64"]
++bits = []
+ home = str(pathlib.Path.home())
+ email = False
+ mkcd = False
+@@ -132,7 +132,9 @@ Usage: python pkgprg.py [options]
+         newver = v
+     elif o == "-w":
+         windows = True
+-        if v != "0":
++        if v == "0":
++            bits = ["7", "8", "32", "64"]
++        else:
+             bits = v.split(",")
+ 
+ if windows:
+@@ -349,7 +351,6 @@ exeCmd("zip -qr %s/%s/%s %s --exclude \.git\*" % (bd, bs, zipfle, dist))
+ if windows:
+     # Python windows executable
+     if names:
+-        url = "\\\\\\\\192.168.0.1\\\\paul\\\\Tartan-6\\\\uty"
+         for name in ("win10", "win8", "win7"):
+             if name in names and name == "win10":
+                 bitw = ["64"]
+@@ -359,17 +360,20 @@ if windows:
+                 bitw = ["7"]
+             else:
+                 continue
++            exeCmd("scp Tartan-6/uty/mkwindows.py paul@%s:." % name)
++            exeCmd("scp TartanSve/tartan-6.zip paul@%s:." % name)
+             for bit in bitw:
+                 print("Packaging %s bit" % bit)
+                 if bit in bits:
+                     bits.remove(bit)
+-                cmd = "%s\\\\mkwindows.py -a%s" % (url, bit)
++                cmd = "mkwindows.py -a%s" % bit
+                 if onefle:
+                     cmd += " -o"
+                 if upgpip:
+                     # Update dependancies
+                     cmd += " -u"
+-                exeCmd("ssh %s python %s" % (name, cmd))
++                exeCmd("ssh paul@%s python %s" % (name, cmd))
++                exeCmd("scp paul@%s:tartan-6-%s.exe %s/%s" % (bit, bd, bx))
+     for bit in bits:
+         print("Packaging %s bit" % bit)
+         WPFX = "%s/.wine%s" % (bd, bit)
+@@ -412,37 +416,43 @@ if publish:
+         else:
+             addPage(doc, fle)
+     doc.close()
+-    exeCmd("rst2pdf %s/%s/doc/Manual.rst -o /tmp/Manual.pdf "\
+-            "-s %s/%s/doc/mystylesheet" % (bd, bv, bd, bv))
++    exeCmd("rst2pdf %s/%s/doc/Manual.rst -o /tmp/Manual.pdf" % (bd, bv))
+     # Create changes rst
+     rst = open("doc/Changes.txt", "w")
+     chg = __import__("tarchg")
+     rst.write(chg.changes)
+     rst.close()
+-    # Move Current to Old
++    # Move Current tgz to Old
+     exeCmd("mv %s/%s/%s_%s.%s.tgz %s/%s/" %
+         (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+-    exeCmd("mv %s/%s/%s_%s.%s-*.exe %s/%s/" %
+-        (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+-    # Create Source tgz and zip
++    # Create Source tgz
+     os.chdir(bd)
+     exeCmd("tar -czf %s/%s/%s_%s.%s.tgz %s" %
+         (bd, bx, cs, cver[0], cver[1], dist))
++    # Create Source zip
+     os.chdir(pypath)
+     exeCmd("cp -p %s/%s/%s-%s.zip %s/%s/%s_%s.%s.zip" %
+         (bd, bs, dist, vv, bd, bs, cs, cver[0], cver[1]))
+     if windows:
+         # Rename Windows exe's
+         if "32" in bits:
++            exeCmd("mv %s/%s/%s_%s.%s-32.exe %s/%s/" %
++                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+             exeCmd("cp %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
+                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
+         if "64" in bits:
++            exeCmd("mv %s/%s/%s_%s.%s-64.exe %s/%s/" %
++                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+             exeCmd("cp %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
+                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
+         if "8" in bits:
++            exeCmd("mv %s/%s/%s_%s.%s-8.exe %s/%s/" %
++                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+             exeCmd("cp %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
+                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
+         if "7" in bits:
++            exeCmd("mv %s/%s/%s_%s.%s-7.exe %s/%s/" %
++                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+             exeCmd("cp %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
+                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
+     print("Version Number is %s.%s" % tuple(cver))
+@@ -527,6 +537,6 @@ if email:
+         mess = (text, html)
+         for addr in addrs:
+             sendMail(serv, mfrm, addr, subj, mess=(text, html))
+-shutil.rmtree("%s/%s" % (bd, dist))
++#shutil.rmtree("%s/%s" % (bd, dist))
+ print("DONE")
+ # END
+diff --git a/uty/pm1010.py b/uty/pm1010.py
+index a97b631..a675d0e 100644
+--- a/uty/pm1010.py
++++ b/uty/pm1010.py
+@@ -133,7 +133,7 @@ class pm1010(object):
+             "stype": "C",
+             "titl": "Select the Secret to Change or <Esc> to Exit",
+             "head": ("Code", "Clear-Text"),
+-            "typs": (("NA", 30), ("NA", 50)),
++            "typs": (("NA", 30, "Y"), ("NA", 50)),
+             "data": self.doLoadCodes()}
+         fld = (
+             (("T",0,0,0),"INA",30,"Code","",

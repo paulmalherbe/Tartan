@@ -427,7 +427,7 @@ def showException(scrn, path, mess, maxTB=None, xits=None, dbm=None):
         flenam.write(mess + "\n")
         flenam.write("*******************************" + "\n")
         flenam.close()
-        if dbm:
+        if dbm and "NOMAIL" not in os.environ:
             if not dbm.dbopen:
                 opened = True
                 dbm.openDbase()
@@ -870,6 +870,10 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
         return subj
 
     host, port, secu, auth, unam, upwd = server
+    try:
+        upwd = b64Convert("decode", upwd)
+    except Exception as err:
+        pass
     try:
         if secu and int(secu) == 2:
             smtp = smtplib.SMTP_SSL(host, port, local, timeout=timeout)

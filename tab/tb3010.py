@@ -98,7 +98,7 @@ class tb3010(object):
                 "ft_desc"], where=whr, order="ft_tabl")
         if not tabs:
             return
-        self.fpdf = MyFpdf(name=self.__class__.__name__, head=80)
+        self.fpdf = MyFpdf(name=self.__class__.__name__, head=120)
         self.pgnum = 0
         p = ProgressBar(self.opts["mf"].body, mxs=len(tabs), esc=True)
         for num, tab in enumerate(tabs):
@@ -135,8 +135,9 @@ class tb3010(object):
                 h = CCD(rec[8], "NA", 10).disp
                 i = CCD(rec[9], "NA", 10).disp
                 j = CCD(rec[10], "NA", 10).disp
+                k = CCD(rec[11], "NA", 10).disp
                 self.fpdf.drawText("%-20s %2s %1s %-10s %-10s %-10s %-10s "\
-                    "%-10s %-10s %-10s" % (a, b, c, d, e, f, g, h, i, j))
+                    "%-10s %-10s %-10s %-10s" % (a,b,c,d,e,f,g,h,i,j,k))
         p.closeProgress()
         if self.fpdf.page and not p.quit:
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
@@ -161,9 +162,9 @@ class tb3010(object):
             self.fpdf.drawText()
             self.fpdf.drawText("Table Indexes for Table %s" % table)
             head = "%-20s %2s %1s %-10s %-10s %-10s %-10s %-10s %-10s "\
-                "%-10s" % ("Table Description", "Sq", "T", "1st-Col",
-                "2nd-Col", "3rd-Col", "4th-Col", "5th-Col", "6th-Col",
-                "7th-Col")
+                "%-10s %-10s" % ("Table Description", "Sq", "T",
+                "1st-Col", "2nd-Col", "3rd-Col", "4th-Col", "5th-Col",
+                "6th-Col", "7th-Col", "8th-Col")
         self.fpdf.drawText()
         self.fpdf.drawText(head)
         self.fpdf.underLine(head)

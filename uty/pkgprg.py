@@ -65,7 +65,7 @@ sys.path.append(vd)
 from tartanFunctions import findFile, sendMail
 from ms0000 import VERSION
 
-bits = ["7", "8", "32", "64"]
+bits = []
 home = str(pathlib.Path.home())
 email = False
 mkcd = False
@@ -132,7 +132,9 @@ Usage: python pkgprg.py [options]
         newver = v
     elif o == "-w":
         windows = True
-        if v != "0":
+        if v == "0":
+            bits = ["7", "8", "32", "64"]
+        else:
             bits = v.split(",")
 
 if windows:
@@ -349,7 +351,6 @@ exeCmd("zip -qr %s/%s/%s %s --exclude \.git\*" % (bd, bs, zipfle, dist))
 if windows:
     # Python windows executable
     if names:
-        url = "\\\\\\\\192.168.0.1\\\\paul\\\\Tartan-6\\\\uty"
         for name in ("win10", "win8", "win7"):
             if name in names and name == "win10":
                 bitw = ["64"]
@@ -359,17 +360,20 @@ if windows:
                 bitw = ["7"]
             else:
                 continue
+            exeCmd("scp Tartan-6/uty/mkwindows.py paul@%s:." % name)
+            exeCmd("scp TartanSve/tartan-6.zip paul@%s:." % name)
             for bit in bitw:
                 print("Packaging %s bit" % bit)
                 if bit in bits:
                     bits.remove(bit)
-                cmd = "%s\\\\mkwindows.py -a%s" % (url, bit)
+                cmd = "mkwindows.py -a%s" % bit
                 if onefle:
                     cmd += " -o"
                 if upgpip:
                     # Update dependancies
                     cmd += " -u"
-                exeCmd("ssh %s python %s" % (name, cmd))
+                exeCmd("ssh paul@%s python %s" % (name, cmd))
+                exeCmd("scp paul@%s:tartan-6-%s.exe %s/%s" % (bit, bd, bx))
     for bit in bits:
         print("Packaging %s bit" % bit)
         WPFX = "%s/.wine%s" % (bd, bit)
@@ -412,37 +416,43 @@ if publish:
         else:
             addPage(doc, fle)
     doc.close()
-    exeCmd("rst2pdf %s/%s/doc/Manual.rst -o /tmp/Manual.pdf "\
-            "-s %s/%s/doc/mystylesheet" % (bd, bv, bd, bv))
+    exeCmd("rst2pdf %s/%s/doc/Manual.rst -o /tmp/Manual.pdf" % (bd, bv))
     # Create changes rst
     rst = open("doc/Changes.txt", "w")
     chg = __import__("tarchg")
     rst.write(chg.changes)
     rst.close()
-    # Move Current to Old
+    # Move Current tgz to Old
     exeCmd("mv %s/%s/%s_%s.%s.tgz %s/%s/" %
         (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
-    exeCmd("mv %s/%s/%s_%s.%s-*.exe %s/%s/" %
-        (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
-    # Create Source tgz and zip
+    # Create Source tgz
     os.chdir(bd)
     exeCmd("tar -czf %s/%s/%s_%s.%s.tgz %s" %
         (bd, bx, cs, cver[0], cver[1], dist))
+    # Create Source zip
     os.chdir(pypath)
     exeCmd("cp -p %s/%s/%s-%s.zip %s/%s/%s_%s.%s.zip" %
         (bd, bs, dist, vv, bd, bs, cs, cver[0], cver[1]))
     if windows:
         # Rename Windows exe's
         if "32" in bits:
+            exeCmd("mv %s/%s/%s_%s.%s-32.exe %s/%s/" %
+                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
             exeCmd("cp %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "64" in bits:
+            exeCmd("mv %s/%s/%s_%s.%s-64.exe %s/%s/" %
+                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
             exeCmd("cp %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "8" in bits:
+            exeCmd("mv %s/%s/%s_%s.%s-8.exe %s/%s/" %
+                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
             exeCmd("cp %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "7" in bits:
+            exeCmd("mv %s/%s/%s_%s.%s-7.exe %s/%s/" %
+                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
             exeCmd("cp %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
     print("Version Number is %s.%s" % tuple(cver))
@@ -527,6 +537,6 @@ if email:
         mess = (text, html)
         for addr in addrs:
             sendMail(serv, mfrm, addr, subj, mess=(text, html))
-shutil.rmtree("%s/%s" % (bd, dist))
+#shutil.rmtree("%s/%s" % (bd, dist))
 print("DONE")
 # END

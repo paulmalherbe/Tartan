@@ -47,7 +47,10 @@ else:
     PFX = "32"
 DPT = os.path.join("c:\\", "Tartan", "prg")     # Directory for pyinstaller exe
 EXE = os.path.join("%s\\" % MAP, "TartanExe")   # Destination of installer
-SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
+if "WINEPREFIX" in os.environ:
+    SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
+else:
+    SRC = HOM
 TMP = os.path.join("%s\\" % HOM, "Temp")        # Working Directory
 onefle = False                                  # Generate a single file
 UPG = False                                     # Upgrade python modules
@@ -84,9 +87,6 @@ Usage: python mkwindows.py [options]
 # Set default variables
 ISC = doFind("iscc.exe")
 ISS = "tartan.iss"
-fle = open(os.path.join(EXE, "current"), "r")
-VER = fle.read().strip()
-fle.close()
 # Open the log file
 out = open("%s\\log" % HOM, "w")
 # Delete installation directories
@@ -97,7 +97,7 @@ os.makedirs(TMP)
 os.chmod(HOM, 0o777)
 for pth in ("fnt", "thm", "uty"):
     os.makedirs(os.path.join(DPT, pth))
-# Enter source directory
+# Enter TMP directory
 os.chdir(TMP)
 # Unzip sources
 with ZipFile(os.path.join(SRC, "tartan-6.zip"), "r") as zipObj:
@@ -130,10 +130,12 @@ if UPG:
     doUpgrade()
 # Run pyinstaller
 os.chdir(os.path.join(TMP, "tartan"))
+cmd = ["python", "-m", "PyInstaller"]
 if onefle:
-    subprocess.call(["pyinstaller", "onefle.spec"], stdout=out, stderr=out)
+    cmd.append("onefle.spec")
 else:
-    subprocess.call(["pyinstaller", "onedir.spec"], stdout=out, stderr=out)
+    cmd.append("onedir.spec")
+subprocess.call(cmd, stdout=out, stderr=out)
 # Copy files to DPT
 shutil.copy("tartan.ico", DPT)
 if onefle:
@@ -147,8 +149,12 @@ if "WINEPREFIX" in os.environ:
     elif PFX == "8":
         shutil.copy("ucrtbase.8", os.path.join(DPT, "ucrtbase.dll"))
 subprocess.call([ISC, ISS], stdout=out, stderr=out)
-shutil.copy(os.path.join("Output", "Tartan.exe"),
-    os.path.join(EXE, "tartan-6-%s.exe" % PFX))
+if "WINEPREFIX" in os.environ:
+    shutil.copy(os.path.join("Output", "Tartan.exe"),
+        os.path.join(EXE, "tartan-6-%s.exe" % PFX))
+else:
+    shutil.copy(os.path.join("Output", "Tartan.exe"),
+        os.path.join(HOM, "tartan-6-%s.exe" % PFX))
 os.chdir(HOM)
 shutil.rmtree(TMP)
 shutil.rmtree(DPT)

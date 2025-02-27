@@ -574,6 +574,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                 txt = ", ".join(msc)
                 showError(self.opts["mf"].body, "Error", "The Following "\
                     "Rinks Still Need to be Captured.\n\n%s" % txt)
+                self.df.focusField(self.df.frt, self.df.pag, self.df.col)
                 return
             if self.cfmat in ("D", "K") and self.gcod != self.games:
                 # Delete Next Round's Records

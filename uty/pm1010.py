@@ -133,7 +133,7 @@ class pm1010(object):
             "stype": "C",
             "titl": "Select the Secret to Change or <Esc> to Exit",
             "head": ("Code", "Clear-Text"),
-            "typs": (("NA", 30), ("NA", 50)),
+            "typs": (("NA", 30, "Y"), ("NA", 50)),
             "data": self.doLoadCodes()}
         fld = (
             (("T",0,0,0),"INA",30,"Code","",

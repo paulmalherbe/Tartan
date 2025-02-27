@@ -27,6 +27,7 @@ COPYING
 import time
 from TartanClasses import ASD, CCD, MyFpdf, ProgressBar, Sql, TartanDialog
 from tartanFunctions import doPrinter, doWriteExport, getModName, showError
+from tartanFunctions import showInfo
 from tartanWork import mthnam
 
 class gl3040(object):
@@ -275,6 +276,8 @@ N - Period Movements will be Printed"""),
                     doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
                         pdfnam=pdfnam, header=self.tit, repprt=self.repprt,
                         repeml=self.repeml)
+        elif not p.quit:
+            showInfo(self.opts["mf"].body, "Info", "No Balances to Print")
 
     def getValues(self, data):
         acno = CCD(data[0], "UI", 7)
@@ -434,6 +437,7 @@ N - Period Movements will be Printed"""),
                     break
         if self.fpdf.newPage(extra):
             self.pageHeading()
+            self.fpdf.setFont(style="B")
         else:
             self.fpdf.underLine()
         if self.rtype == "S":

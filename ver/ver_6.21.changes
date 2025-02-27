@@ -1,0 +1,11 @@
+Tartan Systems Upgrade
+----------------------
+ 1) Fixed a password problem with emails.
+ 2) Updated all python modules to latest SECURITY updates.
+ 3) Updated some items in the reference manual.
+ 4) Many minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.

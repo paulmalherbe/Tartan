@@ -75,6 +75,7 @@ class bc2050(object):
         self.fromad = bwlctl["ctb_emadd"]
         t = time.localtime()
         self.today = ((t[0] * 10000) + (t[1] * 100) + t[2])
+        self.grpsel = False
         self.sects = False
         self.game = 0
         random.seed()

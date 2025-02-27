@@ -2933,9 +2933,11 @@ class CCD(object):
         # ======================================================================
         elif types in ("NA", "Na", "Tv", "TX"):
             if type(data) is str:
-                self.data = data.rstrip().replace("\\", "/")
-                for x in range(32):
-                    self.data = self.data.replace(chr(x), "")
+                self.data = ""
+                data = data.rstrip().replace("\\", "/")
+                for ch in data:
+                    if ord(ch) > 31 and ord(ch) < 127:
+                        self.data += ch
             else:
                 self.data = str(data)
         else:
@@ -3875,7 +3877,7 @@ class TartanDialog(object):
         else:
             self.repprt = ["Y", "", ""]
         self.repeml = ["N", "N", "", "", "Y"]
-        if self.mail:
+        if self.mail and "NOMAIL" not in os.environ:
             try:
                 gc = GetCtl(self.mf)
                 ctlsys = gc.getCtl("ctlsys", error=False)
@@ -3890,7 +3892,8 @@ class TartanDialog(object):
                             "Mail Server Invalid or Unavailable.\n\n%s" % err)
                     else:
                         self.repeml = ["Y", "", "", "", "Y"]
-            except:
+            except Exception as err:
+                print(err)
                 pass
         if self.view or self.mail:
             if self.eflds and tuple(self.eflds[0][0][:2]) != ("T", 0):
@@ -4803,7 +4806,7 @@ Export - The report in the selected format will be opened
     def selectItem(self, pag, opts):
         if opts["stype"] == "C":
             self.rs = self.selChoice(opts)
-        elif opts["stype"] == "D":
+        elif opts["stype"] == "D" and TKCAL:
             if self.frt == "T":
                 fwid = self.topEntry[pag][self.pos]
             else:
@@ -7514,7 +7517,7 @@ class ScrollText(object):
     def __init__(self, **args):
         defaults = {
             "butt": None,
-            "height": 40,
+            "height": 35,
             "horizontal": True,
             "font": None,
             "mess": None,
@@ -13083,6 +13086,7 @@ class PrintCards(object):
             if x == self.ends:
                 dat = "Total"
                 fill = True
+                y4 += 2
             else:
                 dat = end = x + 1
                 fill = bool(self.skins == "Y" and not end % self.sends)
@@ -15394,7 +15398,7 @@ class TarBckRes(object):
         self.mode = mode
         self.budays = 0
         self.smtp = False
-        if csys:
+        if csys and "NOMAIL" not in os.environ:
             self.budays = csys[0]
             if csys[1] and not sendMail(csys[1:], "", "", "", check=True,
                     wrkdir=self.mf.rcdic["wrkdir"]):
@@ -15420,9 +15424,11 @@ class TarBckRes(object):
         self.bupdir = os.path.join(self.mf.rcdic["bupdir"],
             self.mf.rcdic["dbname"])
         if self.mode == "R" and not os.path.isdir(self.bupdir):
+            showError(self.mf.body, "Error", "Backup Folder Does Not Exist")
             return
         self.archdir = os.path.join(self.bupdir, "arch")
         if self.mode == "R" and not os.path.isdir(self.archdir):
+            showError(self.mf.body, "Error", "No Backups Exist")
             return
         self.tmpdir = os.path.join(self.bupdir, "temp")
         # Get all company and non-company tables
@@ -15679,7 +15685,7 @@ class TarBckRes(object):
                 self.bu.closeProcess()
             self.doBackup()
             if self.mf.window and self.smtp and self.smtp[0]:
-                if self.bu.repeml[2]:
+                if self.bu.repeml[2] and "NOMAIL" not in os.environ:
                     txt = "Tartan Backup for %s at %s" % (self.coys[0][1],
                         CCD(self.sysdtw, "D1", 10).disp)
                     sendMail(self.smtp, self.coys[0][2], self.bu.repeml[2],
@@ -16595,7 +16601,8 @@ class FileImport(object):
         elif name.split(".")[-1].lower() == "xlsx" and XLSX:
             self.ftype = "xlsx"
             try:
-                self.workbk = openpyxl.load_workbook(filename=name)
+                self.workbk = openpyxl.load_workbook(filename=name,
+                    data_only=True)
                 self.sht["data"] = self.workbk.sheetnames
             except Exception as err:
                 return "Invalid xlsx File (%s)" % err
@@ -16641,32 +16648,32 @@ class FileImport(object):
                 data = csv.reader(self.csvfle, quoting=csv.QUOTE_MINIMAL)
             else:
                 data = self.worksh
+            chk = [None] * len(self.impcol)
             for row, rdd in enumerate(data):
                 if not rdd:
                     continue
                 try:
                     lin = []
+                    nun = []
                     for col, cdd in enumerate(self.impcol):
                         if cdd[1] is None:
                             dat = ""
                         else:
                             dat = rdd[cdd[1]]
+                            if dat is None:
+                                nun.append(dat)
                         if self.ftype in ("xls", "xlsx"):
                             if cdd[2] in ("D1", "d1"):
                                 if isinstance(dat, datetime.date):
                                     dat = int(dat.strftime("%Y%m%d"))
                                 elif isinstance(dat, datetime.datetime):
                                     dat = int(rdd.strftime("%Y%m%d"))
-                                else:
-                                    try:
-                                        dat = int(dat)
-                                    except:
-                                        dat = 0
-                                        cdd[2] = "d1"
                         d = CCD(dat, cdd[2], cdd[3])
                         if d.err:
                             raise Exception(d.err)
                         lin.append(d.work)
+                    if nun == chk:
+                        break
                     self.impdat.append(lin)
                 except Exception as err:
                     if self.impign == "N":
@@ -17697,7 +17704,7 @@ Mobile:            27-82-9005260
                 raise Exception
             err = doPublish(self.mf.window, os.path.join(docdir, fle))
             if err:
-                raise Eception(err)
+                raise Exception(err)
         except:
             showError(self.mf.window, "Error", "Missing licence file")
         self.about.place(anchor="center", relx=0.5, rely=0.5)
@@ -18799,7 +18806,7 @@ class ViewPDF(object):
             ("Save as..", self.doSave),
             ("Send to..", self.doSend),
             ("Help", self.doHelp)]
-        if self.mf and self.mf.dbm:
+        if self.mf and self.mf.dbm and "NOMAIL" not in os.environ:
             try:
                 gc = GetCtl(self.mf)
                 ctlsys = gc.getCtl("ctlsys", error=False)
@@ -18866,14 +18873,16 @@ class ViewPDF(object):
         self.scale = .75
         self.zoom = 1.25
         if self.mf:
-            try:
-                chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
-                if os.path.isfile(chk):
-                    cnf = open(chk, "r")
-                    self.zoom = float(cnf.read())
-                    cnf.close()
-            except:
-                pass
+            chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
+        else:
+            chk = os.path.join(os.path.expanduser("~"), ".pdfview.conf")
+        try:
+            if os.path.isfile(chk):
+                cnf = open(chk, "r")
+                self.zoom = float(cnf.read())
+                cnf.close()
+        except:
+            pass
         self.matrix = list(pymupdf.Matrix(self.zoom, self.zoom))
         # Other settings
         self.pgno = 1
@@ -19008,14 +19017,13 @@ class ViewPDF(object):
 
     def doSearch(self, event=None):
         def getSearch(event=None):
+            if self.search:
+                self.endSearch()
             self.search = ent.get()
             self.found = False
             self.pags = []
             self.prec = {}
             for page in self.doc:
-                annot = page.first_annot
-                while annot:
-                    annot = page.delete_annot(annot)
                 found = page.search_for(self.search)
                 if found:
                     self.found = True
@@ -19069,10 +19077,7 @@ class ViewPDF(object):
         self.pags = []
         self.prec = {}
         self.search = ""
-        for page in self.doc:
-            annot = page.first_annot
-            while annot:
-                annot = page.delete_annot(annot)
+        self.clearAnnots()
         self.showPage()
 
     def doUnbind(self, unbind=True, key=True, exc=None):
@@ -19311,10 +19316,7 @@ class ViewPDF(object):
                 modal=True, cols=cols, data=tabs, font="Courier", sort=False)
             self.doUnbind(False)
             if sc.selection:
-                for page in self.doc:
-                    annot = page.first_annot
-                    while annot:
-                        annot = page.delete_annot(annot)
+                self.clearAnnots()
                 bbox = cdata[sc.selection[0]]
                 rect = pymupdf.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
                 self.pgno = int(sc.selection[2])
@@ -19324,6 +19326,15 @@ class ViewPDF(object):
                 self.cont = True
                 self.showPage()
             self.cv.focus_force()
+
+    def clearAnnots(self):
+        for page in self.doc:
+            annot = page.first_annot
+            while annot and annot.type != "null":
+                if annot.type[0] == pymupdf.PDF_ANNOT_HIGHLIGHT:
+                    annot = page.delete_annot(annot)
+                else:
+                    annot = annot.next
 
     def showLinks(self, event=None):
         if not self.maxi:
@@ -19594,13 +19605,15 @@ class ViewPDF(object):
 
     def doClose(self, event=None):
         if self.mf:
-            try:
-                chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
-                cnf = open(chk, "w")
-                cnf.write("%s" % self.zoom)
-                cnf.close()
-            except:
-                pass
+            chk = os.path.join(self.mf.rcdic["wrkdir"], "pdfview.conf")
+        else:
+            chk = os.path.join(os.path.expanduser("~"), ".pdfview.conf")
+        try:
+            cnf = open(chk, "w")
+            cnf.write("%s" % self.zoom)
+            cnf.close()
+        except:
+            pass
         self.doc.close()
         self.win.destroy()
 
