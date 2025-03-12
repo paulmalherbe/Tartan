@@ -37,6 +37,7 @@ Required
 Optional
 --------
 + beepy           - Used to play a notification sound
++ cairosvg        - Used to convert svg to pdf
 + docutils        - Used to display licence
 + importlib       - Used to import modules
 + markdown        - Used for bulk mailing
@@ -52,7 +53,7 @@ Optional
 + pysmb           - Used for netbios file formats
 + requests        - Used to get web scraping
 + send2trash      - Used to trash documents
-+ svglib          - Used to convert svg to pdf
++ tkcalendar      - Used for web scraping
 + tkcolorpicker   - Used to select colours
 + tkinterhtml     - Used to display html documents
 

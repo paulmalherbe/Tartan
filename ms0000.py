@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 21)
+    VERSION = (6, 22)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -279,21 +279,20 @@ Options:
                     print("%-16s: Not Installed" % mod[1])
                 else:
                     try:
-                        if not mod[2]:
-                            raise Exception
-                        if type(mod[2]) == tuple:
-                            ver = getattr(ver, mod[2][0])
-                            ver = getattr(ver, mod[2][1])
-                        else:
+                        from importlib.metadata import version
+                        ver = version(mod[1])
+                    except:
+                        try:
                             ver = getattr(ver, mod[2])
+                        except Exception as err:
+                            print("%-16s: Installed" % mod[1], err)
+                            continue
                         if type(ver) == list:
                             ver = "%s.%s.%s" % tuple(ver)
                         elif type(ver) == tuple:
                             ver = ver[0]
                         ver = ver.split()[0]
-                        print("%-16s: %s" % (mod[1], ver))
-                    except:
-                        print("%-16s: Installed" % mod[1])
+                    print("%-16s: %s" % (mod[1], ver))
             self.doExit(dbm=False)
         if self.debug:
             # Set trace mode
@@ -885,10 +884,19 @@ System --> Change Password""")
                             if per == (None, None, None):
                                 error = True
                             elif rtn and per[2] == "Y":
-                                showError(self.mf.window, "Period Error",
-                                    "This Period Has Already Been Finalised")
-                                error = True
-                            else:
+                                sql = Sql(self.dbm, "ctlpwr", prog="ms0000")
+                                if not sql.getRec("ctlpwr", where=[("pwd_code",
+                                                "=", "AllowFinal")], limit=1):
+                                    error = True
+                                else:
+                                    cf = PwdConfirm(self.mf, conum=0,
+                                        system="MST", code="AllowFinal")
+                                    if cf.flag != "ok":
+                                        error = True
+                                if error:
+                                    showError(self.mf.window, "Period Error",
+                                        "This Period Has Been Finalised")
+                            if not error:
                                 popt["period"] = (self.finper, (per[0].work,
                                     per[0].disp), (per[1].work, per[1].disp))
                     else:

@@ -87,7 +87,8 @@ class ms1030(object):
                 "","N",self.doCode,pwd,None,("notblank",)),
             (("T",0,3,0),"ONA",50,"Description"),
             (("T",0,4,0),"IHA",30,"Password","",
-                "","N",self.doPwd,None,self.doDelete,None))
+                "","N",self.doPwd,None,self.doDelete,("notblank",),None,
+             "Use Ctl-T to Toggle View"))
         but = (
             ("Show All",self.ctl,None,0,("T",0,1),("T",0,0)),
             ("Cancel",None,self.doCancel,0,("T",0,2),("T",0,0)),
@@ -96,6 +97,8 @@ class ms1030(object):
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], eflds=fld, butt=but,
             tend=tnd, txit=txt)
+        self.df.topEntry[0][4].bind("<Control-t>", self.doToggle)
+        self.df.topEntry[0][4].bind("<Control-T>", self.doToggle)
 
     def doCompany(self, frt, pag, r, c, p, i, w):
         if w:
@@ -144,21 +147,20 @@ class ms1030(object):
 
     def doPwd(self, frt, pag, r, c, p, i, w):
         self.pwd = w
+        if self.df.topEntry[pag][i].cget("show") == "":
+            self.df.topEntry[pag][i].configure(show="*")
 
     def doEnd(self):
-        if self.pwd:
-            pwd = b64Convert("encode", self.pwd)
-            if self.new == "y":
-                self.sql.insRec("ctlpwr", data=[self.coy, self.sys, self.code,
-                    self.desc, pwd])
-            else:
-                self.sql.updRec("ctlpwr", cols=["pwd_desc", "pwd_pass"],
-                    data=[self.desc, pwd], where=[("pwd_cono", "=", self.coy),
-                    ("pwd_sys", "=", self.sys), ("pwd_code", "=", self.code)])
-            self.opts["mf"].dbm.commitDbase()
-            self.df.focusField("T", 0, 1)
-        elif self.new == "n":
-            self.doDelete()
+        pwd = b64Convert("encode", self.pwd)
+        if self.new == "y":
+            self.sql.insRec("ctlpwr", data=[self.coy, self.sys, self.code,
+                self.desc, pwd])
+        else:
+            self.sql.updRec("ctlpwr", cols=["pwd_desc", "pwd_pass"],
+                data=[self.desc, pwd], where=[("pwd_cono", "=", self.coy),
+                ("pwd_sys", "=", self.sys), ("pwd_code", "=", self.code)])
+        self.opts["mf"].dbm.commitDbase()
+        self.df.focusField("T", 0, 1)
 
     def doDelete(self):
         self.sql.delRec("ctlpwr", where=[("pwd_cono", "=", self.coy),
@@ -169,6 +171,12 @@ class ms1030(object):
     def doCancel(self):
         self.opts["mf"].dbm.rollbackDbase()
         self.df.focusField("T", 0, 1)
+
+    def doToggle(self, event=None):
+        if event.widget.cget("show") == "*":
+            event.widget.configure(show="")
+        else:
+            event.widget.configure(show="*")
 
     def doExit(self):
         self.df.closeProcess()

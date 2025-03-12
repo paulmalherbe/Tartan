@@ -1962,10 +1962,18 @@ Do you want to Re-Allocate Rinks for %s on %s?""" % (
                         else:
                             s2 = "%sA" % (skp[1] - 700000)
                         skips.append([s1, s2, 0, 1])
-                    elif skp[1] > 900000:
-                        skips.append(["%s" % skp[0], "Bye", 0, 1])
                     else:
-                        skips.append(["%s" % skp[0], "%s" % skp[1], 0, 1])
+                        if skp[0] > 800000:
+                            s1 = skp[0] - 800000
+                        else:
+                            s1 = skp[0] - 700000
+                        if skp[1] > 900000:
+                            s2 = "Bye"
+                        elif skp[1] > 800000:
+                            s2 = skp[1] - 800000
+                        else:
+                            s2 = skp[1] - 700000
+                        skips.append(["%s" % s1, "%s" % s2, 0, 1])
             else:
                 # Allocate to pair groups
                 bye = int(byes / 2)

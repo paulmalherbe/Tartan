@@ -83,13 +83,15 @@ class msc110(object):
             (("T",0,9,0),"ITX",20,"SMTP Username","",
                 self.acc[9],"N",self.doUsr,None,None,None),
             (("T",0,10,0),"IHA",20,"SMTP Password","",
-                self.acc[10],"N",None,None,None,None),
+                self.acc[10],"N",self.doPwd,None,None,None,None,
+                 "Use Ctl-T to Toggle View"),
             (("T",0,11,0),("IRB",r1s),0,"SMS Service","",
                 self.acc[11],"N",self.doSms,None,None,None),
             (("T",0,12,0),"ITX",20,"SMS Username","",
                 self.acc[12],"N",self.doSmsUsr,None,None,None),
             (("T",0,13,0),"IHA",20,"SMS Password","",
-                self.acc[13],"N",self.doSmsPwd,None,None,None),
+                self.acc[13],"N",self.doSmsPwd,None,None,None,None,
+                 "Use Ctl-T to Toggle View"),
             (("T",0,14,0),("IRB",r1s),0,"G/L Departments","",
                 self.acc[14],"N",self.doGlDept,None,None,None,None,
                 "G/L Account Numbers include Department Numbers"),
@@ -103,6 +105,10 @@ class msc110(object):
         txt = (self.doExit,)
         self.df = TartanDialog(self.opts["mf"], eflds=self.fld,
             butt=but, tend=tnd, txit=txt, focus=False)
+        self.df.topEntry[0][10].bind("<Control-t>", self.doToggle)
+        self.df.topEntry[0][10].bind("<Control-T>", self.doToggle)
+        self.df.topEntry[0][13].bind("<Control-t>", self.doToggle)
+        self.df.topEntry[0][13].bind("<Control-T>", self.doToggle)
         for n, f in enumerate(self.acc):
             if not n:
                 self.df.loadEntry("T", 0, n, data=0)
@@ -150,6 +156,10 @@ class msc110(object):
         if not w:
             return "Invalid SMTP Name"
 
+    def doPwd(self, frt, pag, r, c, p, i, w):
+        if self.df.topEntry[pag][i].cget("show") == "":
+            self.df.topEntry[pag][i].configure(show="*")
+
     def doSms(self, frt, pag, r, c, p, i, w):
         if w == "Y" and not chkMod("requests"):
             showError(self.opts["mf"].body, "Error", "Missing requests Module")
@@ -171,6 +181,8 @@ class msc110(object):
     def doSmsPwd(self, frt, pag, r, c, p, i, w):
         if not w:
             return "Invalid SMS Password"
+        if self.df.topEntry[pag][i].cget("show") == "":
+            self.df.topEntry[pag][i].configure(show="*")
 
     def doGlDept(self, frt, pag, r, c, p, i, w):
         if w == "N":
@@ -221,6 +233,12 @@ class msc110(object):
             self.df.focusField(frt, pag, (col+1), err=mes)
         else:
             self.df.doEndFrame("T", 0, cnf="N")
+
+    def doToggle(self, event=None):
+        if event.widget.cget("show") == "*":
+            event.widget.configure(show="")
+        else:
+            event.widget.configure(show="*")
 
     def doExit(self):
         self.df.closeProcess()

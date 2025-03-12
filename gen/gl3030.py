@@ -137,9 +137,9 @@ class gl3030(object):
             return "yes"
 
     def doStartPer(self, frt, pag, r, c, p, i, w):
-        if w < self.s_per or w > self.e_per:
+        if w and w < self.s_per or w > self.e_per:
             return "Invalid Period, Outside Financial Period"
-        self.sdate = CCD(w, "D2", 7)
+        self.sdate = CCD(w, "d2", 7)
 
     def doEndPer(self, frt, pag, r, c, p, i, w):
         if w < self.sdate.work:
@@ -275,11 +275,15 @@ class gl3030(object):
         dic = self.sql.genmst_dic
         acno = CCD(data[dic["glm_acno"][1]], "UI", 7)
         desc = CCD(str(data[dic["glm_desc"][1]]), "NA", 30)
-        o = self.sql.getRec("genbal", cols=["glo_cyr"],
-            where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
-            acno.work), ("glo_trdt", "=", self.opts["period"][1][0])], limit=1)
-        if o:
-            b = CCD(o[0], "SD", 15.2)
+        if self.sdate.work:
+            o = self.sql.getRec("genbal", cols=["glo_cyr"],
+                where=[("glo_cono", "=", self.opts["conum"]), ("glo_acno", "=",
+                acno.work), ("glo_trdt", "=", self.opts["period"][1][0])],
+                limit=1)
+            if o:
+                b = CCD(o[0], "SD", 15.2)
+            else:
+                b = CCD(0, "SD", 15.2)
         else:
             b = CCD(0, "SD", 15.2)
         ob = b.work

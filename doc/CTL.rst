@@ -14,10 +14,10 @@ This routine is used to create or amend a system control record by entering the 
 + **SMTP Authentication** - Select the appropriate authentication method.
 + **SMTP Port Number** - Select the appropriate smtp port number.
 + **SMTP Username** - If your smtp server requires a username enter it here.
-+ **SMTP Password** - If your smtp server requires a password enter it here.
++ **SMTP Password** - If your smtp server requires a password enter it here. It is possible to check what is entered by using Ctl-T.
 + **SMS Service** - Select Yes or No. In order to use the SMS facility. You will first have to register with www.smsportal.co.za in order to get a username and password.
 + **SMS Username** - Enter the user name for the service.
-+ **SMS Password** - Enter the password for the service.
++ **SMS Password** - Enter the password for the service. It is possible to check what is entered by using Ctl-T.
 + **G/L Departments** - Whether to allow departmental financial reporting.
 + **Number of Digits** - The number of digits the department code uses in the account numbers i.e. if you enter 3 then the first 3 digits of the 7 digit account number will be reserved for the department code.
 

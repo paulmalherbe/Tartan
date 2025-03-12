@@ -1,4 +1,15 @@
-changes = """ver_6.21 2025-02-27
+changes = """ver_6.22 2025-03-12
+===================
+ 1) Updated PAYE and Tax data.
+ 2) Updated some items in the reference manual.
+ 3) Many minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.21 2025-02-27
 ===================
  1) Fixed a password problem with emails.
  2) Updated all python modules to latest SECURITY updates.

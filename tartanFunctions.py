@@ -872,7 +872,7 @@ def sendMail(server, ex, to, subj, mess="", attach=None, embed=None, check=False
     host, port, secu, auth, unam, upwd = server
     try:
         upwd = b64Convert("decode", upwd)
-    except Exception as err:
+    except:
         pass
     try:
         if secu and int(secu) == 2:

@@ -71,6 +71,7 @@ if not fpdf.fpdf.Image:
 # ========================================================
 try:
     import pymupdf
+    pymupdf.TOOLS.mupdf_display_errors(False)
     FITZ = True
 except:
     FITZ = False
@@ -238,8 +239,8 @@ try:
                         self.cmd[0](self.cmd[1])
                     else:
                         self.cmd()
-                self.event_generate("<Leave>")
                 self.update_idletasks()
+                self.event_generate("<Leave>")
             except:
                 pass
             return "break"
@@ -1644,8 +1645,10 @@ class TartanMenu(object):
                     m[2] = m[2][0]
                 elif len(m[2]) == 2:
                     m[2] = "%s\n%s" % tuple(m[2])
-                else:
+                elif len(m[2]) == 3:
                     m[2] = "%s\n%s %s" % tuple(m[2])
+                else:
+                    m[2] = "%s\n%s %s %s" % tuple(m[2])
                 buts[nm] = MyMenuButton(self.menubar, bg=bg, fg=fg,
                     af=bg, ab=fg, font=font, menu=m[1], text=m[2],
                     underline=pos)
@@ -13646,9 +13649,9 @@ class PwdConfirm(object):
             where=[("pwd_cono", "=", 0), ("pwd_sys", "=", self.system),
             ("pwd_code", "=", self.code)], limit=1)
         if not pwd:
-            pwd = self.sql.getRec("ctlpwr", cols=["pwd_pass",
-                "pwd_desc"], where=[("pwd_cono", "=", self.conum), ("pwd_sys",
-                "=", self.system), ("pwd_code", "=", self.code)], limit=1)
+            pwd = self.sql.getRec("ctlpwr", cols=["pwd_pass", "pwd_desc"],
+                where=[("pwd_cono", "=", self.conum), ("pwd_sys", "=",
+                self.system), ("pwd_code", "=", self.code)], limit=1)
         if not pwd:
             self.pwd = None
             if not self.desc:
@@ -19120,7 +19123,10 @@ class ViewPDF(object):
         self.pgd.delete(0, "end")
         self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
         self.pgd.configure(state="disabled")
-        dlist = page.get_displaylist()
+        try:
+            dlist = page.get_displaylist()
+        except:
+            pass
         pix = dlist.get_pixmap(matrix=self.matrix, alpha=False)
         self.ti = tk.PhotoImage(data=pix.tobytes("ppm"))
         self.cv.create_image(0, 0, image=self.ti, anchor="nw", tags="img")
