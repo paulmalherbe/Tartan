@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 22)
+    VERSION = (6, 23)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -1659,7 +1659,7 @@ System --> Change Password""")
         try:
             if os.path.exists(pdf):
                 os.remove(pdf)
-            man.fpdf.output(pdf, "F")
+            man.fpdf.output(pdf)
             if os.path.exists(pdf):
                 ViewPDF(self.mf, pdf)
         except Exception as err:
@@ -1850,31 +1850,29 @@ System --> Change Password""")
 
 if __name__ == "__main__":
     import getopt
-
-    # Ensure that python 3 is being used
-    if sys.version_info[:2] < (3, 5):
-        print("Invalid Python Version, Must be >= 3.5")
-        sys.exit()
-    # Add the program path to the PATH variable if possible
-    ppath = os.path.realpath(sys.path[0])
-    if os.path.isfile(ppath):
-        ppath = os.path.normpath(os.path.dirname(ppath))
-    if ppath not in os.environ["PATH"].split(os.pathsep):
-        epath = "%s%s%s" % (os.environ["PATH"], os.pathsep, ppath)
-        os.environ["PATH"] = epath
-    # Ubuntu Unity uses the Global Menu which breaks Tartan's Menu
-    if sys.platform in ("linux", "linux2"):
-        os.environ["UBUNTU_MENUPROXY"] = "0"
-    # Load options
     try:
+        # Ensure that python 3 is being used
+        if sys.version_info[:2] < (3, 5):
+            raise Exception("Invalid Python Version, Must be >= 3.5")
+        # Add the program path to the PATH variable if possible
+        ppath = os.path.realpath(sys.path[0])
+        if os.path.isfile(ppath):
+            ppath = os.path.normpath(os.path.dirname(ppath))
+        if ppath not in os.environ["PATH"].split(os.pathsep):
+            epath = "%s%s%s" % (os.environ["PATH"], os.pathsep, ppath)
+            os.environ["PATH"] = epath
+        # Ubuntu Unity uses the Global Menu which breaks Tartan's Menu
+        if sys.platform in ("linux", "linux2"):
+            os.environ["UBUNTU_MENUPROXY"] = "0"
+        # Load options
         opts, args = getopt.getopt(sys.argv[1:],
             "ab:c:de:f:hiklmnoP:p:R:r:s:t:u:vxz", [
             "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
             "help", "image", "loader", "nomail", "imods", "output", "pdf=",
             "program=", "rcfdir=", "rcfile=", "script=", "tcode=", "user=",
             "version", "xdisplay", "zerobar"])
-    except:
-        opts, args = [("-h", "")], []
-    ms0000(opts, args)
+        ms0000(opts, args)
+    except Exception as err:
+        print(err)
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

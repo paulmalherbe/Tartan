@@ -2366,7 +2366,7 @@ Combination Number %10s"""
     def doPrint(self, dg=None):
         if not dg:
             dg = self.df
-        if not self.drawn:
+        if not self.reprint and not self.drawn:
             showError(self.opts["mf"].body, "Error",
                 "The Draw Has Not Yet Been Done")
             dg.focusField("T", 1, 1)
@@ -2378,13 +2378,17 @@ Combination Number %10s"""
             (("T",0,0,0),("IRB",r1s),0,"Print Cards","",
                 "N","Y",self.doCards,None,None,None),
             (("T",0,1,0),"INA",30,"Heading","",
-                "","N",self.doHead,None,None,("notblank",)),
+                "TABS","N",self.doHead,None,None,("notblank",)),
             (("T",0,2,0),"IUI",2,"Number of Ends","",
                 0,"N",self.doEnds,None,None,("notzero",))]
         if self.mrate.work or self.vrate.work:
+            if self.reprint:
+                dft = "N"
+            else:
+                dft = "Y"
             fld.append(
                 (("T",0,3,0),("IRB",r2s),0,"Cash Takings Sheet","",
-                    "Y","Y",self.doTakings,None,None,None))
+                    dft,"Y",self.doTakings,None,None,None))
             idx = 4
         else:
             self.takings = "N"

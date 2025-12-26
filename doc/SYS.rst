@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
 =================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.22
+:Version:   6.23
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -55,14 +55,13 @@ Ensure that python is installed on your system:
 
 The following dependencies must be installed using pip:
 
-+ fpdf                  # Used to create all documents
++ fpdf2                 # Used to create all documents
 + pillow                # Used by fpdf and imaging
 + pymupdf               # Used for viewing pdf files
 + pywin32               # Windows only
 
 Additionally, the following dependencies should also be installed using pip or, at a later stage, using the -m command line option.
 
-+ beepy                 # Used to play a notification sound
 + cairosvg              # SVG to PDF File Converter
 + docutils              # Used to display licence
 + importlib             # Used to import modules

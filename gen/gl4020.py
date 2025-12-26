@@ -137,8 +137,6 @@ class gl4020(object):
         self.con = w
         if self.con == "Y" and self.gldep == "N":
             self.dep = 0
-            self.df.loadEntry(frt, pag, p+1, data=self.dep)
-            return "sk1"
 
     def doDept(self, frt, pag, r, c, p, i, w):
         if w:
@@ -244,8 +242,8 @@ class gl4020(object):
     def doCoyCmd(self, frt, pag, r, c, p, i, w):
         c = ""
         for co in w:
-            if int(co) != 0:
-                c = c + str(int(co)) + ","
+            if int(co[0]) != 0:
+                c = c + str(int(co[0])) + ","
         if len(c) > 1:
             c = c[:-1]
         self.cf.loadEntry(frt, pag, p, data=c)
@@ -259,14 +257,14 @@ class gl4020(object):
 
     def doCoyEnd(self):
         if self.con == "I":
-            self.con = self.coy
+            self.scon = self.coy
         elif self.con == "E":
-            self.con = []
+            self.scon = []
             for co in self.coys:
-                self.con.append(int(co[0]))
+                self.scon.append(int(co[0]))
             for co in self.coy:
-                del self.con[self.con.index(int(co))]
-            self.con.sort()
+                del self.scon[self.scon.index(int(co))]
+            self.scon.sort()
         self.doCoyClose()
 
     def doCoyExit(self):
@@ -306,16 +304,16 @@ class gl4020(object):
         self.var_tot = makeArray(self.mths + 2, 10, 1)
         self.var_str = makeArray(self.mths + 2, 100, 1)
         if self.con == "N":
-            self.con = None
+            self.scon = None
         elif self.con == "Y":
             coy = self.sql.getRec("ctlmst", cols=["ctm_cono"],
                 order="ctm_cono")
             if not coy:
-                self.con = None
+                self.scon = None
                 return
-            self.con = []
+            self.scon = []
             for c in coy:
-                self.con.append(c[0])
+                self.scon.append(c[0])
         self.rep_num = 0
         self.rpt_lst = self.sql.getRec("genrpt", where=[("glr_cono",
             "=", self.repco), ("glr_repno", "=", self.rep)], order="glr_seq")
@@ -495,7 +493,7 @@ class gl4020(object):
                 deps = [self.dep]
             else:
                 deps = copyList(self.alldeps)
-        if not self.con:
+        if not self.scon:
             if self.gldep == "Y":
                 accs = []
                 for dep in deps:
@@ -529,43 +527,43 @@ class gl4020(object):
                 if not accs:
                     accs = []
         else:
+            accs = []
             if self.gldep == "Y":
-                accs = []
                 for dep in deps:
                     glf = (dep * (10 ** (7 - self.gldig))) + glfrom
                     if glto:
                         glt = (dep * (10 ** (7 - self.gldig))) + glto
                         acs = self.sql.getRec("genmst",
                             cols=["glm_acno"], where=[("glm_cono", "in",
-                            self.con), ("glm_acno", ">=", glf),
+                            self.scon), ("glm_acno", ">=", glf),
                             ("glm_acno", "<=", glt)], group="glm_acno",
                             order="glm_acno")
                     else:
                         acs = self.sql.getRec("genmst",
                             cols=["glm_acno"], where=[("glm_cono", "in",
-                            self.con), ("glm_acno", "=", glf)],
+                            self.scon), ("glm_acno", "=", glf)],
                             group="glm_acno")
                     if acs:
                         for ac in acs:
                             accs.append(self.sql.getRec("genmst",
-                                where=[("glm_cono", "in", self.con),
+                                where=[("glm_cono", "in", self.scon),
                                 ("glm_acno", "=", ac[0])], limit=1))
             else:
                 if not glto:
                     acs = self.sql.getRec("genmst",
                         cols=["glm_acno"], where=[("glm_cono", "in",
-                        self.con), ("glm_acno", "=", glfrom)],
+                        self.scon), ("glm_acno", "=", glfrom)],
                         group="glm_acno")
                 else:
                     acs = self.sql.getRec("genmst",
                         cols=["glm_acno"], where=[("glm_cono", "in",
-                        self.con), ("glm_acno", ">=", glfrom),
+                        self.scon), ("glm_acno", ">=", glfrom),
                         ("glm_acno", "<=", glto)], group="glm_acno",
                         order="glm_acno")
                 if acs:
                     for ac in acs:
                         accs.append(self.sql.getRec("genmst",
-                            where=[("glm_cono", "in", self.con),
+                            where=[("glm_cono", "in", self.scon),
                             ("glm_acno", "=", ac[0])], limit=1))
         return accs
 
@@ -656,7 +654,7 @@ class gl4020(object):
                 self.trn[self.s_desc][self.mths + 1].extend(trn)
 
     def getObal(self):
-        if not self.con:
+        if not self.scon:
             if not self.opts["period"][0]:
                 lyr = None
             else:
@@ -674,11 +672,11 @@ class gl4020(object):
             else:
                 lyr = self.sql.getRec("genbal",
                     cols=["round(sum(glo_cyr), 2)"], where=[("glo_cono", "in",
-                    self.con), ("glo_acno", "=", self.s_acno), ("glo_trdt",
+                    self.scon), ("glo_acno", "=", self.s_acno), ("glo_trdt",
                     "=", self.s_lyr.work)], limit=1)[0]
             cyr = self.sql.getRec("genbal",
                 cols=["round(sum(glo_cyr), 2)"], where=[("glo_cono", "in",
-                self.con), ("glo_acno", "=", self.s_acno), ("glo_trdt",
+                self.scon), ("glo_acno", "=", self.s_acno), ("glo_trdt",
                 "=", self.opts["period"][1][0])], limit=1)[0]
         if not lyr:
             lyr = 0
@@ -691,7 +689,7 @@ class gl4020(object):
         return (lyr, cyr)
 
     def getMbal(self, curdt):
-        if not self.con:
+        if not self.scon:
             lyr = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
                 self.s_cono), ("glt_acno", "=", self.s_acno), ("glt_curdt",
@@ -709,17 +707,17 @@ class gl4020(object):
         else:
             lyr = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
-                self.con), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+                self.scon), ("glt_acno", "=", self.s_acno), ("glt_curdt",
                 "=", (curdt - 100))], limit=1)[0]
             cyr = self.sql.getRec("gentrn",
                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
-                self.con), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+                self.scon), ("glt_acno", "=", self.s_acno), ("glt_curdt",
                 "=", curdt)], limit=1)[0]
             bud = self.sql.getRec("genbud", cols=["sum(glb_tramt)"],
-                where=[("glb_cono", "in", self.con), ("glb_acno", "=",
+                where=[("glb_cono", "in", self.scon), ("glb_acno", "=",
                 self.s_acno), ("glb_curdt", "=", curdt)], limit=1)[0]
             trn = self.sql.getRec("gentrn", where=[("glt_cono", "in",
-                self.con), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+                self.scon), ("glt_acno", "=", self.s_acno), ("glt_curdt",
                 "=", curdt)], order="glt_trdt")
         if not lyr:
             lyr = 0
@@ -820,13 +818,13 @@ class gl4020(object):
         head.append("%03u %-s" % (self.opts["conum"], self.opts["conam"]))
         head.append("%-s for the period %s to %s" % ("Financials",
             self.opts["period"][1][1], self.opts["period"][2][1]))
-        if not self.con:
+        if not self.scon:
             pass
         elif self.con == "Y":
             head.append("Consolidated Companies (All)")
         else:
-            con = str(tuple(self.con)).replace("'", "").replace(" ", "")
-            head.append("Consolidated Companies (%s)" % con)
+            con = str(tuple(self.scon)).replace("'", "").replace(" ", "")
+            head.append("Consolidated Companies %s" % con)
         labs = (("Description", 30),)
         tags = (
             ("label", ("black", "lightgray")),

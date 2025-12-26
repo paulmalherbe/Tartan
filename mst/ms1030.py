@@ -68,9 +68,10 @@ class ms1030(object):
             "stype": "C",
             "titl": "Available Control Codes",
             "head": ("Sys","Code","Description"),
-            "data": pwctrl,
+            "data": [],
             "index": 1,
-            "retn": "D"}
+            "retn": "D",
+            "comnd": self.doCtl}
         pwd = {
             "stype": "R",
             "tables": ("ctlpwr",),
@@ -82,7 +83,7 @@ class ms1030(object):
             (("T",0,0,0),"IUI",3,"Company","",
                 "","Y",self.doCompany,coy,None,None),
             (("T",0,1,0),"IUA",3,"System","",
-                "","N",self.doSystem,sys,None,("notblank",)),
+                "","Y",self.doSystem,sys,None,("notblank",)),
             (("T",0,2,0),"INA",20,"Code","",
                 "","N",self.doCode,pwd,None,("notblank",)),
             (("T",0,3,0),"ONA",50,"Description"),
@@ -90,7 +91,7 @@ class ms1030(object):
                 "","N",self.doPwd,None,self.doDelete,("notblank",),None,
              "Use Ctl-T to Toggle View"))
         but = (
-            ("Show All",self.ctl,None,0,("T",0,1),("T",0,0)),
+            ("Show All",self.ctl,None,0,("T",0,2),("T",0,0)),
             ("Cancel",None,self.doCancel,0,("T",0,2),("T",0,0)),
             ("Quit",None,self.doExit,1,None,None))
         tnd = ((self.doEnd,"y"), )
@@ -108,6 +109,25 @@ class ms1030(object):
                 return "Invalid Company Number"
         self.coy = w
         self.sys = None
+        self.ctl["data"] = pwctrl[:]
+
+    def doCtl(self, *opts):
+        self.sys = opts[6][0]
+        self.code = opts[6][1]
+        self.desc = opts[6][2]
+        self.df.loadEntry("T", 0, 1, data=self.sys)
+        self.df.loadEntry("T", 0, 2, data=self.code)
+        self.df.loadEntry("T", 0, 3, data=self.desc)
+        acc = self.sql.getRec("ctlpwr", cols=["pwd_desc", "pwd_pass"],
+            where=[("pwd_cono", "=", self.coy), ("pwd_sys", "=", self.sys),
+            ("pwd_code", "=", self.code)], limit=1)
+        if not acc:
+            self.new = "y"
+            self.df.loadEntry("T", 0, 4, data="")
+        else:
+            self.new = "n"
+            self.df.loadEntry("T", 0, 4, data=b64Convert("decode", acc[1]))
+        self.df.focusField("T", 0, 5)
 
     def doSystem(self, frt, pag, r, c, p, i, w):
         d1 = ""

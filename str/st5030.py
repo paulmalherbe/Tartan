@@ -99,8 +99,6 @@ class st5030(object):
             return "Invalid Date, Not in Financial Period"
         self.date = w
         self.dated = self.df.t_disp[pag][0][p]
-        if self.reprt == "N":
-            self.curdt = int(self.date / 100)
 
     def doLoc(self, frt, pag, r, c, p, i, w):
         acc = self.sql.getRec("strloc", cols=["srl_desc"],
@@ -144,7 +142,7 @@ class st5030(object):
             vprc = dat[self.sql.strvar_col.index("stv_ucost")]
             if self.reprt == "N":
                 bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
-                    self.curdt, keys=(grp, code, self.loc,
+                    int(self.sysdtw / 100), keys=(grp, code, self.loc,
                     ("P", self.opts["period"][0])))
                 mob, mmv, mcb, yob, ymv, ycb, ac, lc, ls = bals.doStrBals()
                 fqty, fval = ycb

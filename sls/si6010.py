@@ -24,7 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from TartanClasses import Sql, TartanDialog
+from TartanClasses import CCD, Sql, TartanDialog
 
 class si6010(object):
     def __init__(self, **opts):
@@ -34,7 +34,7 @@ class si6010(object):
             self.opts["mf"].startLoop()
 
     def setVariables(self):
-        self.sql = Sql(self.opts["mf"].dbm, ["drsmst", "slsiv1"],
+        self.sql = Sql(self.opts["mf"].dbm, ["drsmst", "drstrn", "slsiv1"],
             prog=self.__class__.__name__)
         if self.sql.error:
             return
@@ -87,16 +87,25 @@ class si6010(object):
         if not acc:
             return "Invalid Invoice Number"
         self.invno = w
+        self.chain = acc[1]
+        self.acno = acc[2]
+        self.ref1 = CCD(self.invno, "Na", 9.0).work
         for n, a in enumerate(acc):
             self.df.loadEntry(frt, pag, p+1+n, data=a)
 
     def doNewOrd(self, frt, pag, r, c, p, i, w):
         self.ordno = w
+        self.ref2 = self.ordno.strip()[:9]
+        print(self.ref2)
 
     def doEnd(self):
         self.sql.updRec("slsiv1", cols=["si1_cus_ord"], data=[self.ordno],
             where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
             "I"), ("si1_docno", "=", self.invno)])
+        self.sql.updRec("drstrn", cols=["drt_ref2"], data=[self.ref2],
+            where=[("drt_cono", "=", self.opts["conum"]), ("drt_chain", "=",
+            self.chain), ("drt_acno", "=", self.acno), ("drt_ref1", "=",
+            self.ref1)])
         self.opts["mf"].dbm.commitDbase()
         self.df.focusField("T", 0, 1)
 

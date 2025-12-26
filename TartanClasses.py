@@ -61,6 +61,7 @@ except:
 # ========================================================
 try:
     import fpdf
+    from fpdf.enums import XPos, YPos
 except:
     print("Missing python fpdf module")
     os._exit(1)
@@ -234,13 +235,12 @@ try:
 
         def execButCmd(self, event=None):
             try:
+                self.state(["!active", "!pressed"])
                 if str(self.cget("state")) == "normal":
                     if type(self.cmd) in (list, tuple):
                         self.cmd[0](self.cmd[1])
                     else:
                         self.cmd()
-                self.update_idletasks()
-                self.event_generate("<Leave>")
             except:
                 pass
             return "break"
@@ -740,7 +740,7 @@ try:
             [(text, span), (text, span)],                       ### Optional
             [(text, ('SD',10.2)), or (text, 10), ..... ]]
         data = [
-            (((label, tag) (label, tag) (label, tag)),
+            (((label, tag), (label, tag), (label, tag)),
             ((text, tag, span), (text, tag), (text, tag), (text, tag)),)]
         butt = A list of additional buttons e.g. [("hello", cmd)]
         cmds = A list of bind commands
@@ -1016,9 +1016,10 @@ try:
             if wh > height:
                 self.window.configure(height=height)
                 self.window.update()
+            elif height > wh:
+                height = wh
             # Place window
             self.window.geometry("%dx%d+0+0" % (ww, height))
-            self.window.geometry("+0+0")
             if self.window.state() == "withdrawn":
                 self.window.deiconify()
             self.window.grab_set()
@@ -1900,7 +1901,6 @@ class Dbase(object):
             if check:
                 raise Exception("Invalid rcdic")
             if self.dbase == "PgSQL":
-                self.dbmod = "psycopg2"
                 import psycopg2 as engine
                 try:
                     # Typecast the numeric datatype as Float not Decimal
@@ -1910,16 +1910,17 @@ class Dbase(object):
                     pgx.register_type(NUM)
                 except Exception as err:
                     raise Exception("Typecast Error (%s)" % err)
+                self.dbmod = "psycopg2"
                 self.dbf = "%s"
             elif self.dbase == "SQLite":
+                from sqlite3 import dbapi2 as engine
                 if self.dbdir:
                     self.dbdsn = os.path.join(self.dbdir, self.dbname)
                 else:
                     self.dbdsn = self.dbname
-                self.dbmod = "sqlite3"
-                from sqlite3 import dbapi2 as engine
                 if int(engine.sqlite_version.split(".")[1]) < 8:
                     self.mrecs = False
+                self.dbmod = "sqlite3"
                 self.dbf = "?"
             else:
                 raise Exception("Invalid Database Type (%s)" % self.dbase)
@@ -1935,25 +1936,25 @@ class Dbase(object):
 
     def setVariables(self):
         if self.dbase == "PgSQL":
-            self.dtm = "timestamp"
-            self.key = "varchar"
+            #self.dtm = "timestamp"
+            #self.key = "varchar"
             self.var = "varchar"
             self.txt = "text"
             self.itg = "int4"
             self.lng = "int8"
             self.dec = "numeric"
-            self.flt = "numeric"
+            #self.flt = "numeric"
             self.ser = "serial"
             self.blb = "varchar"
         elif self.dbase == "SQLite":
-            self.dtm = "varchar"
-            self.key = "varchar"
+            #self.dtm = "varchar"
+            #self.key = "varchar"
             self.var = "varchar"
             self.txt = "blob"
             self.itg = "integer"
             self.lng = "integer"
             self.dec = "float"
-            self.flt = "float"
+            #self.flt = "float"
             self.ser = "integer primary key"
             self.blb = "blob"
         else:
@@ -5235,8 +5236,7 @@ Export - The report in the selected format will be opened
                         import winsound
                         winsound.Beep(2500, 500)
                     else:
-                        import beepy
-                        beepy.beep(1)
+                        os.system("aplay -q %s/snd/ding.wav" % getPrgPath()[0])
                 except:
                     self.mf.window.bell()
             self.mf.updateStatus("%s, Retry%s" % (err, sufx), "white", "red")
@@ -11645,7 +11645,7 @@ class PrintOrder(object):
                 head += "S"
                 for doc in self.docs:
                     head += " %s" % doc[0]
-        self.form.output(pdfnam, "F")
+        self.form.output(pdfnam)
         doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
             fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
         if self.repeml[1] == "Y" and not self.emadd:
@@ -11928,7 +11928,7 @@ class PrintCharges(object):
                     head += " %s" % doc[0]
             pdfnam = getModName(self.mf.rcdic["wrkdir"], pfx,
                 "%s_all" % self.conum, ext="pdf")
-        self.form.output(pdfnam, "F")
+        self.form.output(pdfnam)
         doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
             fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
         if self.repeml[1] == "Y" and not self.emadd:
@@ -12294,7 +12294,7 @@ class PrintInvoice(object):
                     head += " %s" % doc[0]
             pdfnam = getModName(self.mf.rcdic["wrkdir"], pfx,
                 "%s_all" % self.conum, ext="pdf")
-        self.form.output(pdfnam, "F")
+        self.form.output(pdfnam)
         doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
             fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
         if self.repeml[1] == "Y" and not self.emadd:
@@ -12660,7 +12660,7 @@ class PrintBookingInvoice(object):
                 head = "%sS" % head
                 for doc in self.docs:
                     head += " %s" % doc.strip()
-        self.form.output(pdfnam, "F")
+        self.form.output(pdfnam)
         doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
             fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
         if self.repeml[1] == "Y":
@@ -12980,7 +12980,7 @@ class PrintPayslip(object):
         head += " for %s" % self.rundt.disp
         self.pdfnam = getModName(self.mf.rcdic["wrkdir"], "payslip", key,
             ext="pdf")
-        self.form.output(self.pdfnam, "F")
+        self.form.output(self.pdfnam)
         doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
             fromad=self.fromad, header=head, repprt=self.repprt,
             repeml=self.repeml)
@@ -13115,7 +13115,7 @@ class PrintCards(object):
                 self.form.newdic["bcg_rink_C00"][txt] = grn
             for key in self.form.newkey:
                 self.form.doDrawDetail(self.form.newdic[key])
-        self.form.output(self.pdfnam, "F")
+        self.form.output(self.pdfnam)
         doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
             repprt=self.repprt)
 
@@ -13246,7 +13246,7 @@ class PrintBoards(object):
             self.form.add_page()
             for key in self.form.newkey:
                 self.form.doDrawDetail(self.form.newdic[key])
-        self.form.output(self.pdfnam, "F")
+        self.form.output(self.pdfnam)
         doPrinter(mf=self.mf, conum=self.cono, pdfnam=self.pdfnam,
             repprt=self.repprt)
 
@@ -13532,7 +13532,7 @@ class PrintTabDraw(object):
             txt = "%s for the %s of %s" % (self.cdes, self.timed, self.dated)
         if htyp == "C":
             self.fpdf.add_page(orientation="L")
-            self.def_orientation = "L"
+            self.fpdf.doOrientation("set", "L")
             self.fpdf.setFont("Arial", "B", 24)
             self.fpdf.drawText(txt, align="C")
             self.fpdf.drawText(" ")
@@ -16422,6 +16422,7 @@ class FileImport(object):
         self.impskp = []
         self.impfld = []
         self.impfle = ""
+        self.frozen = None
         self.impsht = None
         self.impdlg = True
         self.impign = "N"
@@ -16618,9 +16619,15 @@ class FileImport(object):
         try:
             if self.ftype == "ods":
                 self.worksh = self.workbk[w]
+                if self.worksh.freeze_panes:
+                    self.frozen = self.worksh.freeze_panes
             elif self.ftype == "xls":
                 self.worksh = self.workbk[w]
+                if self.worksh.freeze_panes:
+                    self.frozen = self.worksh.freeze_panes
             else:
+                if self.workbk[w].freeze_panes:
+                    self.frozen = self.workbk[w].freeze_panes
                 self.worksh = self.workbk[w].values
         except:
             return "Invalid Sheet"
@@ -16654,6 +16661,9 @@ class FileImport(object):
             chk = [None] * len(self.impcol)
             for row, rdd in enumerate(data):
                 if not rdd:
+                    continue
+                if self.frozen and "A%s" % (row + 1) < self.frozen:
+                    # Ignore frozen headings
                     continue
                 try:
                     lin = []
@@ -16834,6 +16844,22 @@ class MyFpdf(fpdf.FPDF):
         except Exception as err:
             print(err)
 
+    def doOrientation(self, typ="get", val=None):
+        try:
+            if type(self.def_orientation) == str:
+                if typ == "get":
+                    return self.def_orientation
+                self.def_orientation = val
+            elif typ == "get":
+                return self.def_orientation.value
+            else:
+                from fpdf.enums import PageOrientation
+                self.def_orientation = PageOrientation.coerce(val)
+        except Exception as err:
+            import traceback
+            err = "%s\n\n%s" % (err, traceback.format_exc())
+            print(typ, val, err)
+
     def setValues(self, name, head, font="", border=""):
         # Add TTF Fonts
         try:
@@ -16850,7 +16876,7 @@ class MyFpdf(fpdf.FPDF):
                 font = [font, "", 10]
             self.setFont(font[0], font[1], font[2], default=True)
             self.chgt = round(font[2] * .4, 1)
-            if self.def_orientation == "P":
+            if self.doOrientation() == "P":
                 self.lpp = int(self.portrait[1] / self.chgt)
             else:
                 self.lpp = int(self.portrait[0] / self.chgt)
@@ -16863,10 +16889,10 @@ class MyFpdf(fpdf.FPDF):
         else:
             family = font[0]
         if family.lower() == "courier" and len(head) > 120:
-            self.def_orientation = "L"
+            self.doOrientation("set", "L")
         self.font = None
         while not self.font:
-            if self.def_orientation == "P":
+            if self.doOrientation() == "P":
                 mm = self.portrait[0]
             else:
                 mm = self.portrait[1]
@@ -16877,20 +16903,20 @@ class MyFpdf(fpdf.FPDF):
                     self.chgt += 1
                 self.setFont(family, "", siz, default=True)
                 self.width = self.get_string_width(head)
-                if self.def_orientation == "P":
+                if self.doOrientation() == "P":
                     if self.width > self.portrait[0]:
                         continue
                     self.font = [family, siz, self.chgt]
                     self.lpp = int(self.portrait[1] / self.chgt)
                     break
-                if self.def_orientation == "L":
+                if self.doOrientation() == "L":
                     if self.width > self.portrait[1]:
                         continue
                     self.font = [font, siz, self.chgt]
                     self.lpp = int(self.portrait[0] / self.chgt)
                     break
             if not self.font:
-                if self.def_orientation == "P":
+                if self.doOrientation() == "P":
                     self.def_orientation = "L"
                 else:
                     print("Invalid head length", len(head))
@@ -16922,12 +16948,18 @@ class MyFpdf(fpdf.FPDF):
                 self.setFont(family, style)
         if not h:
             h = self.font[2]
+        if not ln:
+            new_x = XPos.RIGHT
+            new_y = YPos.TOP
+        else:
+            new_x = XPos.LMARGIN
+            new_y = YPos.NEXT
         if ctyp == "S":
-            self.cell(w=w, h=h, ln=ln, txt=txt, border=border, align=align,
-                fill=fill)
+            self.cell(w=w, h=h, txt=txt, border=border, align=align,
+                new_x=new_x, new_y=new_y, fill=fill)
         else:
             self.multi_cell(w=w, h=h, txt=txt, border=border, align=align,
-                fill=fill)
+                new_x=new_x, new_y=new_y, fill=fill)
 
     def setFont(self, family="", style="", size=0, default=False):
         if not family:
@@ -16996,7 +17028,7 @@ class MyFpdf(fpdf.FPDF):
             if lhgt is None:
                 lhgt = self.font[2]
             y = self.get_y()
-            if self.def_orientation == "P":
+            if self.doOrientation() == "P":
                 pd = self.portrait[1]
             else:
                 pd = self.portrait[0]
@@ -17007,7 +17039,7 @@ class MyFpdf(fpdf.FPDF):
 
     def saveFile(self, pdfnam, scrn=None):
         try:
-            self.output(pdfnam, "F")
+            self.output(pdfnam)
             return True
         except Exception as err:
             showError(scrn, "Error", err)
@@ -18774,27 +18806,29 @@ class ViewPDF(object):
         fr2 = MyFrame(fr1, borderwidth=1, relief="raised")
         fr2.pack(fill="x", expand="yes")
         # Buttons and Entries
-        self.bt1 = MyButton(fr2, text="Goto", cmd=self.gotoPage,
-            style="pdf.TButton", underline=0)
-        ToolTip(self.bt1, "Jump To Page Number")
-        self.bt1.pack(padx=3, pady=3, side="left")
-        self.entsiz = len(str(self.lastpg))
-        self.pgd = MyEntry(fr2, width=self.entsiz, maxsize=self.entsiz,
-            style="pdf.TEntry")
-        self.pgd.bind("<Return>", self.enterPage)
-        self.pgd.bind("<KP_Enter>", self.enterPage)
-        self.pgd.pack(padx=3, pady=3, side="left")
-        lab = MyLabel(fr2, text="of %s" % self.lastpg, color=False,
-            style="pdf.TLabel")
-        lab.pack(padx=3, pady=3, side="left")
-        self.bt2 = MyButton(fr2, txt=False, text="Former",
-            cmd=self.priorPage, style="pdf.TButton", underline=0)
-        ToolTip(self.bt2, "Show Previous Page")
-        self.bt2.pack(padx=3, pady=3, side="left")
-        self.bt3 = MyButton(fr2, txt=False, text="Next", cmd=self.nextPage,
-            style="pdf.TButton", underline=getUnderline(fr2, "Next")[1])
-        ToolTip(self.bt3, "Show Next Page")
-        self.bt3.pack(padx=3, pady=3, side="left")
+        if self.lastpg > 1:
+            self.bt1 = MyButton(fr2, text="Goto", cmd=self.gotoPage,
+                style="pdf.TButton", underline=0)
+            ToolTip(self.bt1, "Jump To Page Number")
+            self.bt1.pack(padx=3, pady=3, side="left")
+            self.entsiz = len(str(self.lastpg))
+            self.pgd = MyEntry(fr2, width=self.entsiz, maxsize=self.entsiz,
+                style="pdf.TEntry")
+            self.pgd.bind("<Return>", self.enterPage)
+            self.pgd.bind("<KP_Enter>", self.enterPage)
+            self.pgd.pack(padx=3, pady=3, side="left")
+            lab = MyLabel(fr2, text="of %s" % self.lastpg, color=False,
+                style="pdf.TLabel")
+            lab.pack(padx=3, pady=3, side="left")
+            self.bt2 = MyButton(fr2, txt=False, text="Former",
+                cmd=self.priorPage, style="pdf.TButton", underline=0)
+            ToolTip(self.bt2, "Show Previous Page")
+            self.bt2.pack(padx=3, pady=3, side="left")
+            self.bt3 = MyButton(fr2, txt=False, text="Next",
+                cmd=self.nextPage, style="pdf.TButton",
+                underline=getUnderline(fr2, "Next")[1])
+            ToolTip(self.bt3, "Show Next Page")
+            self.bt3.pack(padx=3, pady=3, side="left")
         # Draw menu
         imgm = getImage("menu", siz=(20, 20))
         self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat", fg=fg,
@@ -18839,6 +18873,13 @@ class ViewPDF(object):
             "Button to UnZoom. Ctrl plus the Numeric Keypad +- Keys can "\
             "also be used. Use F11 to toggle full screen.")
         self.bt5.pack(padx=3, pady=3, side="right")
+        self.bt6 = MyButton(fr2, text="Rotate", style="pdf.TButton")
+        self.bt6.bind("<Button-1>", self.doRotate)
+        self.bt6.bind("<Button-3>", self.doRotate)
+        ToolTip(self.bt6, "Left Button to Rotate 90 degrees to the Left "\
+            "and Right Button to Rotate to the Right. Ctrl plus the l and "\
+            "r Keys can also be used.")
+        self.bt6.pack(padx=3, pady=3, side="right")
         fr1.update_idletasks()
         # Canvas
         self.cv = tk.Canvas(self.win, highlightthickness=0)
@@ -18868,6 +18909,7 @@ class ViewPDF(object):
         self.win.bind("<Control-f>", self.doSearch)
         self.win.bind("<Control-n>", self.nextSearch)
         self.win.bind("<Control-e>", self.endSearch)
+        self.win.bind("<Control-l>", self.doRotate)
         self.win.bind("<Control-r>", self.doRotate)
         self.win.bind("<Control-KP_Add>", self.doZoom)
         self.win.bind("<Control-KP_Subtract>", self.doZoom)
@@ -18999,10 +19041,16 @@ class ViewPDF(object):
         self.showPage()
 
     def doRotate(self, event=None):
-        if self.rotate == 270:
-            self.rotate = 0
+        if event.num == 3 or event.keysym == "r":
+            if self.rotate == 270:
+                self.rotate = 0
+            else:
+                self.rotate += 90
         else:
-            self.rotate += 90
+            if self.rotate == -270:
+                self.rotate = 0
+            else:
+                self.rotate -= 90
         for page in self.doc:
             page.set_rotation(self.rotate)
         self.showPage()
@@ -19084,6 +19132,10 @@ class ViewPDF(object):
         self.showPage()
 
     def doUnbind(self, unbind=True, key=True, exc=None):
+        if self.lastpg == 1:
+            frm = 4
+        else:
+            frm = 1
         if unbind:
             if key:
                 self.cvbinds = []
@@ -19091,14 +19143,14 @@ class ViewPDF(object):
                     if exc is None or bind != exc:
                         self.cvbinds.append((bind, self.win.bind(bind)))
                         self.win.unbind(bind)
-            for x in range(1, 6):
+            for x in range(frm, 6):
                 bt = getattr(self, "bt%s" % x)
                 bt.configure(state="disabled")
         else:
             if key:
                 for bind in self.cvbinds:
                     self.win.bind(bind[0], bind[1])
-            for x in range(1, 6):
+            for x in range(frm, 6):
                 bt = getattr(self, "bt%s" % x)
                 bt.configure(state="normal")
         self.win.update_idletasks()
@@ -19114,19 +19166,21 @@ class ViewPDF(object):
                 self.links[link["from"]] = link["uri"]
         if not self.maxi and self.links:
             self.win.bind("<Button-1>", self.showLinks)
-            self.win.bind("<Enter>", self.changeCursor)
+            self.win.bind("<Motion>", self.changeCursor)
         else:
             self.win.unbind("<Button-1>")
-            self.win.unbind("<Enter>")
-        # Create image
-        self.pgd.configure(state="normal")
-        self.pgd.delete(0, "end")
-        self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
-        self.pgd.configure(state="disabled")
+            self.win.unbind("<Motion>")
+        if self.lastpg > 1:
+            self.pgd.configure(state="normal")
+            self.pgd.delete(0, "end")
+            fmt = "%s%s%s" % ("%", self.entsiz, "s")
+            self.pgd.insert(0, fmt % self.pgno)
+            self.pgd.configure(state="disabled")
         try:
             dlist = page.get_displaylist()
         except:
             pass
+        # Create image
         pix = dlist.get_pixmap(matrix=self.matrix, alpha=False)
         self.ti = tk.PhotoImage(data=pix.tobytes("ppm"))
         self.cv.create_image(0, 0, image=self.ti, anchor="nw", tags="img")
@@ -19344,8 +19398,9 @@ class ViewPDF(object):
 
     def showLinks(self, event=None):
         if not self.maxi:
-            x = event.x/self.zoom
-            y = event.y/self.zoom
+            d = self.cv.canvasy(0)
+            x = event.x / self.zoom
+            y = (event.y + d) / self.zoom
             for lk in self.links:
                 if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
                     try:
@@ -19356,8 +19411,9 @@ class ViewPDF(object):
                             "Cannot Load Browser or URL")
 
     def changeCursor(self, event=None):
-        x = event.x/self.zoom
-        y = event.y/self.zoom
+        d = self.cv.canvasy(0)
+        x = event.x / self.zoom
+        y = (event.y + d) / self.zoom
         for lk in self.links:
             if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
                 self.win.config(cursor="hand2")
@@ -19483,7 +19539,7 @@ class ViewPDF(object):
 
         def doPages(event=None):
             ent.configure(state="normal")
-            ent.focus_set()
+            ent.focus_force()
 
         def doCancel(event=None):
             win.destroy()

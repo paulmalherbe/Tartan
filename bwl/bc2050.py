@@ -802,11 +802,10 @@ class bc2050(object):
                 where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod",
                 "=", self.ccod), ("bcg_game", "=", self.game)])
             self.game += 1
+            nxt = False
             if self.cfmat == "T":
-                nxt = self.sql.getRec("bwlgme", where=[("bcg_cono",
-                    "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
-                    ("bcg_game", "=", self.game), ("bcg_type", "=", "D")],
-                    limit=1)
+                if self.game <= self.games:
+                    nxt = True
             else:
                 nxt = self.sql.getRec("bwlgme", where=[("bcg_cono",
                     "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod),

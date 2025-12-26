@@ -444,7 +444,7 @@ class ms3010(object):
             vtt.append(("vtt_styp", "=", self.system))
         if self.flag == "R":
             vtt.append(("vtt_paid", "=", self.paid))
-        else:
+        elif not self.sper:
             vtt.append(("vtt_paid", "=", 0))
         vtf = self.sql.getRec("ctlvtf", where=vtt,
             order="vtt_styp, vtt_ttyp, vtt_refdt, vtt_refno")

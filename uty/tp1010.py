@@ -956,7 +956,7 @@ class tp1010(object):
             line[self.sql.tpldet_col.index("tpd_text")] = dat
             self.frm.doDrawDetail(line, fmat=False)
         pdfnam = os.path.join(self.opts["mf"].rcdic["wrkdir"], "test.pdf")
-        self.frm.output(pdfnam, "F")
+        self.frm.output(pdfnam)
         ViewPDF(self.opts["mf"], pdfnam)
         self.opts["mf"].window.deiconify()
         self.df.setWidget(self.df.mstFrame, state="show")

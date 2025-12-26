@@ -156,6 +156,7 @@ class dr3080(object):
             self.df.loadEntry(frt, pag, p+1, data=self.oitem)
             self.df.loadEntry(frt, pag, p+2, data=self.pages)
             return "sk2"
+        self.df.topf[0][1][5] = "N"
 
     def doOItem(self, frt, pag, r, c, p, i, w):
         self.oitem = w

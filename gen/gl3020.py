@@ -273,8 +273,8 @@ class gl3020(object):
     def doCoyCmd(self, frt, pag, r, c, p, i, w):
         c = ""
         for co in w:
-            if int(co):
-                c = c + str(int(co)) + ","
+            if int(co[0]):
+                c = c + str(int(co[0])) + ","
         if len(c) > 1:
             c = c[:-1]
         self.cf.loadEntry(frt, pag, p, data=c)
@@ -283,6 +283,8 @@ class gl3020(object):
         if w[-1:] == ",":
             w = w[:-1]
         self.coy = w.split(",")
+        if not self.coy[0]:
+            return "No Companies Entered"
 
     def doCoyEnd(self):
         if self.con == "I":

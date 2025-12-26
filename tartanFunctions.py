@@ -129,6 +129,7 @@ def cutpasteMenu(event):
     return "break"
 
 def getPrgPath():
+    # Return ms0000 and python executable paths
     import os, sys
     epath = os.path.dirname(sys.executable)
     if getattr(sys, "frozen", False):
@@ -2914,7 +2915,7 @@ def doWriteExport(**args):
                     sheet[ccc].border = Border(top=stl, left=stl, right=stl,
                         bottom=stl)
 
-    def createSheet(fmt, page, text=None):
+    def createSheet(book, fmt, page, text=None):
         if text is None:
             text = "Page %s" % page
         sheet = book.create_sheet(title=text)
@@ -3018,7 +3019,7 @@ def doWriteExport(**args):
         del book["Sheet"]
         page = 1
         if args["datas"][0][0] != "PAGE":
-            sheet, rowx = createSheet(fmt, page)
+            sheet, rowx = createSheet(book, fmt, page)
             page += 1
         # Generate the body
         if "ctots" in args and args["ctots"]:
@@ -3039,9 +3040,9 @@ def doWriteExport(**args):
                 else:
                     pg = page
                 if len(row[1]) == 4:
-                    sheet, rowx = createSheet(fmt, pg, row[1][3])
+                    sheet, rowx = createSheet(book, fmt, pg, row[1][3])
                 else:
-                    sheet, rowx = createSheet(fmt, pg)
+                    sheet, rowx = createSheet(book, fmt, pg)
                 page += 1
                 continue
             if row[0] in ("ULINES", "ULINED"):

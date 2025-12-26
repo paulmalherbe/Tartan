@@ -732,7 +732,7 @@ class sc2020(object):
                 head = (self.rnds * 26) + 25
             self.fpdf = MyFpdf(name=self.__class__.__name__, head=head,
                 font="Helvetica")
-            self.fpdf.def_orientation = "P"
+            self.fpdf.doOrientation("set", "P")
             self.fpdf.font[2] = 5
         else:
             self.fpdf = MyFpdf(name=self.__class__.__name__, head=65,

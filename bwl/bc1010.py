@@ -554,22 +554,25 @@ class bc1010(object):
                     if self.dbase == "P":
                         cols.append(["btb_pos1", dic["btb_pos1"][2],
                             dic["btb_pos1"][3], dic["btb_pos1"][5]])
-                        cols.append(["btb_pos2", dic["btb_pos2"][2],
-                            dic["btb_pos2"][3], dic["btb_pos2"][5]])
+                        if self.mixed == "Y":
+                            cols.append(["btb_pos2", dic["btb_pos2"][2],
+                                dic["btb_pos2"][3], dic["btb_pos2"][5]])
                     elif self.dbase == "R":
                         cols.append(["btb_rate1", dic["btb_rate1"][2],
                             dic["btb_rate1"][3], dic["btb_rate1"][5]])
-                        cols.append(["btb_rate2", dic["btb_rate2"][2],
-                            dic["btb_rate2"][3], dic["btb_rate2"][5]])
+                        if self.mixed == "Y":
+                            cols.append(["btb_rate2", dic["btb_rate2"][2],
+                                dic["btb_rate2"][3], dic["btb_rate2"][5]])
                     else:
                         cols.append(["btb_pos1", dic["btb_pos1"][2],
                             dic["btb_pos1"][3], dic["btb_pos1"][5]])
                         cols.append(["btb_rate1", dic["btb_rate1"][2],
                             dic["btb_rate1"][3], dic["btb_rate1"][5]])
-                        cols.append(["btb_pos2", dic["btb_pos2"][2],
-                            dic["btb_pos2"][3], dic["btb_pos2"][5]])
-                        cols.append(["btb_rate2", dic["btb_rate2"][2],
-                            dic["btb_rate2"][3], dic["btb_rate2"][5]])
+                        if self.mixed == "Y":
+                            cols.append(["btb_pos2", dic["btb_pos2"][2],
+                                dic["btb_pos2"][3], dic["btb_pos2"][5]])
+                            cols.append(["btb_rate2", dic["btb_rate2"][2],
+                                dic["btb_rate2"][3], dic["btb_rate2"][5]])
                 else:
                     cols.append([col, dic[col][2], dic[col][3], dic[col][5]])
             whr = [("btb_cono", "=", self.opts["conum"])]

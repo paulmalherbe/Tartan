@@ -1,4 +1,28 @@
-changes = """ver_6.22 2025-03-12
+changes = """ver_6.23 2025-12-26
+===================
+
+ 1) Modified Bowling Clubs, Tabs - Tabs Maintenance
+ 2) Modified Bowling Clubs, Tabs - Tabs-In Draw
+ 3) Modified Bowling Clubs, Competitions - Competiton Draw
+ 4) Modified Bowling Clubs, Tabs - Tabs-In Summary
+ 5) Modified Debtors Ledger, Reporting - Statements
+ 6) Modified General Ledger, Data Capture - Sales
+ 7) Modified General Ledger, Reporting - Transaction Audit Trail
+ 8) Modified General Ledger, Interrogation - Interrogation (Financials)
+ 9) Modified Master Control, File Maintenance - Module Passwords Maintenance
+10) Modified Master Control, Reporting - V.A.T. Statement
+11) Modified Master Control, Year-End Routines - Financial Year End Routine
+13) Modified Sales Invoicing, Toolbox - Change Customer Order Number
+14) Modified Stores Ledger, Stock Take - Stock Take Variance Report
+15) Modified Stores Ledger, Stock Take - Stock Take Merge
+16) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.22 2025-03-12
 ===================
  1) Updated PAYE and Tax data.
  2) Updated some items in the reference manual.
@@ -9,7 +33,7 @@ NB:
 You can only upgrade to this version if your current version is 5.5 or later.
 If you have an older version than 5.5 please contact me for assistance.
 
-ver_6.21 2025-02-27
+ver_6.21 2025-02-28
 ===================
  1) Fixed a password problem with emails.
  2) Updated all python modules to latest SECURITY updates.

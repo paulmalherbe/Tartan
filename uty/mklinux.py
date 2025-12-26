@@ -13,7 +13,7 @@ def doUpgrade():
     from tartanWork import pymoda, pymodb
     mods = ["pip", "docutils", "pyinstaller"]
     for mod in pymoda + pymodb:
-        if len(mod) == 4 and mod[3] != "win32":
+        if len(mod) == 4 and mod[3] == "win32":
             continue
         mods.append(mod[1])
     for mod in mods:

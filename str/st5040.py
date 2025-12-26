@@ -115,8 +115,9 @@ class st5040(object):
         vqty = rec[col.index("stv_qty")]
         vprc = rec[col.index("stv_ucost")]
         # Test for Variances
-        bals = Balances(self.opts["mf"], "STR", self.opts["conum"], self.curdt,
-            keys=(grp, code, loc, ("P", self.opts["period"][0])))
+        bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
+            int(self.sysdtw / 100), keys=(grp, code, loc, ("P",
+            self.opts["period"][0])))
         m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
         fqty, fval = y_cb
         if fval and fqty:
@@ -139,8 +140,8 @@ class st5040(object):
             self.sql.insRec("strtrn", data=[self.opts["conum"],
                 rec[col.index("stv_group")], rec[col.index("stv_code")],
                 rec[col.index("stv_loc")], self.date, rtn, ref, "ST-MERG", "",
-                qdif, vdif, 0, self.curdt, "Stock Take Adjustment", 0,
-                "", "", "STR", 0, "", self.opts["capnm"], self.sysdtw, 0])
+                qdif, vdif, 0, self.curdt, "Stock Take Adjustment", 0, "", "",
+                "STR", 0, "", self.opts["capnm"], self.sysdtw, 0])
             if self.glint == "Y":
                 # General Ledger Control Transaction (Stock On Hand)
                 col = self.sql.gentrn_col

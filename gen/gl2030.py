@@ -880,8 +880,7 @@ class gl2030(object):
                         "  Payee:     %s\n"\
                         "  Amount:    %s\n\n"\
                         "  Import Anyway?" % \
-                        (date.disp, payee.disp, amount.disp),
-                    default="no")
+                        (date.disp, payee.disp, amount.disp), default="no")
                 if ok == "no":
                     continue
             elif acc:
@@ -1110,12 +1109,13 @@ class gl2030(object):
     def doReadRct(self):
         whr = [("grt_cono", "=", self.opts["conum"]), ("grt_acno", "=",
             self.bh.acc), ("grt_flag", "=", "N")]
-        start = (self.bh.curdt * 100) + 1
-        end = mthendDate(start)
         if self.bh.multi == "N":
-            whr.append(("grt_date", "between", start, end))
+            start = (self.bh.curdt * 100) + 1
+            end = mthendDate(start)
         else:
-            whr.append(("grt_date", "<=", end))
+            start = self.opts["period"][1][0]
+            end = self.opts["period"][2][0]
+        whr.append(("grt_date", "between", start, end))
         return self.sql.getRec("genrct", where=whr, order="grt_date")
 
     def doSelectEntry(self, date, memo, refno, amount, glt):

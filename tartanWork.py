@@ -28,11 +28,10 @@ import os
 # Modules
 #--------
 pymoda = [
-    ("fpdf", "fpdf", "__version__"),
+    ("fpdf", "fpdf2", "__version__"),
     ("PIL", "pillow", "__version__"),
     ("win32api", "pywin32", None, "win32")]
 pymodb = [
-    ("beepy", "beepy", None, "linux"),
     ("cairosvg", "cairosvg", "__version__"),
     ("Crypto", "pycryptodome", "__version__"),
     ("cups", "pycups", None, "linux"),
@@ -402,56 +401,54 @@ tptrtp = {
 #-----------------------------
 # Password Controlled Routines
 #-----------------------------
-pwctrl = (
-    ("ASS", "Super", "Supervisor Password"),
-    ("BKM", "Super", "Supervisor Password"),
-    ("BKS", "Super", "Supervisor Password"),
-    ("BWL", "Super", "Supervisor Password"),
-    ("BWL", "Delete", "Allow the Deletion of Draw"),
-    ("BWL", "Modify", "Allow the Modification of Ratings"),
-    ("CSH", "Super", "Supervisor Password"),
-    ("CRS", "NewAcc", "Allow Capture of New Account"),
-    ("CRS", "Super", "Supervisor Password"),
-    ("DRS", "CrLimit", "Allow Overide of Credit Limit"),
-    ("DRS", "NewAcc", "Allow Capture of New Account"),
-    ("DRS", "RefLimit", "Allow Override of Referral Limit"),
-    ("DRS", "RejLimit", "Allow Override of Rejection Limit"),
-    ("DRS", "Super", "Supervisor Password"),
-    ("GEN", "CtlAcc", "Allow Postings to Control Accounts"),
-    ("GEN", "JnlBal", "Allow Journal Imbalance i.e. Debits <> Credits"),
-    ("GEN", "NoPost", "Allow Postings to Locked Accounts"),
-    ("GEN", "Super", "Supervisor Password"),
-    ("INV", "BelowCost", "Allow Sale Below Cost"),
-    ("INV", "ChangeRep", "Allow Overide of Salesman"),
-    ("INV", "ExQty", "Allow Overide of Quantity Limit"),
-    ("INV", "Invoices", "Allow Invoices and Credit Notes"),
-    ("INV", "NoCharge", "Allow No Charge Sale"),
-    ("INV", "Super", "Supervisor Password"),
-    ("INV", "UserPwd", "User Password"),
-    ("LON", "Super", "Supervisor Password"),
-    ("MEM", "FinPer", "Override Financial Period Dates"),
-    ("MEM", "MemCards", "Allow Printing of Membership Cards"),
-    ("MEM", "PropSec", "Blank Proposer and/or Seconder"),
-    ("MEM", "Super", "Supervisor Password"),
-    ("MST", "ChgBatch", "Allow Changes to Batch Totals"),
-    ("MST", "MultiDate", "Allow Multiple Date Allocations"),
-    ("MST", "Super", "Supervisor Password"),
-    ("MST", "TarBck", "Allow Database Backup"),
-    ("MST", "TarRes", "Allow Database Restore"),
-    ("MST", "AllowFinal", "Allow Override of Finalised Year End"),
-    ("MST", "UnbalBatch", "Allow Override of Unbalanced Batches"),
-    ("MST", "YearEnd", "Allow Year End to be Run for a Finalised Period"),
-    ("RCA", "DateOver", "Allow Override of Transaction Date"),
-    ("RCA", "Overpaid", "Allow Override of Overpayment"),
-    ("RCA", "Super", "Supervisor Password"),
-    ("RTL", "NewAcc", "Allow Capture of New Account"),
-    ("RTL", "Super", "Supervisor Password"),
-    ("SCP", "Super", "Supervisor Password"),
-    ("STR", "DupOrd", "Allow Ordering of Item Already Ordered"),
-    ("STR", "ExQty", "Allow Overide of Quantity Limit"),
-    ("STR", "NewAcc", "Allow Capture of New Account"),
-    ("STR", "Super", "Supervisor Password"),
-    ("WAG", "Super", "Supervisor Password"))
+pwctrl = [
+    ["ASS", "Super", "Supervisor Password"],
+    ["BKM", "Super", "Supervisor Password"],
+    ["BKS", "Super", "Supervisor Password"],
+    ["BWL", "Super", "Supervisor Password"],
+    ["BWL", "Delete", "Allow the Deletion of Draw"],
+    ["BWL", "Modify", "Allow the Modification of Ratings"],
+    ["CSH", "Super", "Supervisor Password"],
+    ["CRS", "NewAcc", "Allow Capture of New Account"],
+    ["CRS", "Super", "Supervisor Password"],
+    ["DRS", "CrLimit", "Allow Overide of Credit Limit"],
+    ["DRS", "NewAcc", "Allow Capture of New Account"],
+    ["DRS", "RefLimit", "Allow Override of Referral Limit"],
+    ["DRS", "RejLimit", "Allow Override of Rejection Limit"],
+    ["DRS", "Super", "Supervisor Password"],
+    ["GEN", "CtlAcc", "Allow Postings to Control Accounts"],
+    ["GEN", "JnlBal", "Allow Journal Imbalance i.e. Debits <> Credits"],
+    ["GEN", "NoPost", "Allow Postings to Locked Accounts"],
+    ["GEN", "Super", "Supervisor Password"],
+    ["INV", "BelowCost", "Allow Sale Below Cost"],
+    ["INV", "ChangeRep", "Allow Overide of Salesman"],
+    ["INV", "ExQty", "Allow Overide of Quantity Limit"],
+    ["INV", "Invoices", "Allow Invoices and Credit Notes"],
+    ["INV", "NoCharge", "Allow No Charge Sale"],
+    ["INV", "Super", "Supervisor Password"],
+    ["LON", "Super", "Supervisor Password"],
+    ["MEM", "FinPer", "Override Financial Period Dates"],
+    ["MEM", "MemCards", "Allow Printing of Membership Cards"],
+    ["MEM", "PropSec", "Blank Proposer and/or Seconder"],
+    ["MEM", "Super", "Supervisor Password"],
+    ["MST", "ChgBatch", "Allow Changes to Batch Totals"],
+    ["MST", "MultiDate", "Allow Multiple Date Allocations"],
+    ["MST", "Super", "Supervisor Password"],
+    ["MST", "TarBck", "Allow Database Backup"],
+    ["MST", "TarRes", "Allow Database Restore"],
+    ["MST", "AllowFinal", "Allow Override of Finalised Year End"],
+    ["MST", "UnbalBatch", "Allow Override of Unbalanced Batches"],
+    ["RCA", "DateOver", "Allow Override of Transaction Date"],
+    ["RCA", "Overpaid", "Allow Override of Overpayment"],
+    ["RCA", "Super", "Supervisor Password"],
+    ["RTL", "NewAcc", "Allow Capture of New Account"],
+    ["RTL", "Super", "Supervisor Password"],
+    ["SCP", "Super", "Supervisor Password"],
+    ["STR", "DupOrd", "Allow Ordering of Item Already Ordered"],
+    ["STR", "ExQty", "Allow Overide of Quantity Limit"],
+    ["STR", "NewAcc", "Allow Capture of New Account"],
+    ["STR", "Super", "Supervisor Password"],
+    ["WAG", "Super", "Supervisor Password"]]
 #-----------
 # Data Types
 #-----------
@@ -7230,6 +7227,8 @@ datdic = {
 # Point of Sale
 if "SPOS" in os.environ:
     allsys["POS"] = ["Point of Sale", "PS", "Y", 18]
+    pwctrl.append(["POS", "UserPwd", "User Password"])
+    pwctrl.sort()
     pkgs["ps"] = "pos"
     tabdic["poscnt"] = {
         "fld": [

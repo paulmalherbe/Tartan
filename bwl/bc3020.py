@@ -272,9 +272,12 @@ class bc3020(object):
                     self.fpdf.cell(cwth*20, 8, right[x][1], 0, 1, "L")
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
             self.__class__.__name__, self.opts["conum"], ext="pdf")
-        frm = CCD(self.start // 100, "D2", 7).disp
         too = CCD(self.end // 100, "D2", 7).disp
-        head = "Tabs Draw Summary for the period %s to %s" % (frm, too)
+        if self.start:
+            frm = CCD(self.start // 100, "D2", 7).disp
+            head = "Tabs Draw Summary for the period %s to %s" % (frm, too)
+        else:
+            head = "Tabs Draw Summary up to %s" % too
         if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
                 pdfnam=pdfnam, header=head, repprt=self.df.repprt,
@@ -308,7 +311,7 @@ class bc3020(object):
         return nam
 
     def pageHeading(self):
-        frm = CCD(self.start // 100, "D2", 7).disp
+        frm = CCD(self.start // 100, "d2", 7).disp
         too = CCD(self.end // 100, "D2", 7).disp
         self.fpdf.setFont("Arial", "B", 15)
         if os.path.isfile(self.image):

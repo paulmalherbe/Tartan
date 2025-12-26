@@ -1,0 +1,1526 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index 6675716..f9305cc 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -61,6 +61,7 @@ except:
+ # ========================================================
+ try:
+     import fpdf
++    from fpdf.enums import XPos, YPos
+ except:
+     print("Missing python fpdf module")
+     os._exit(1)
+@@ -234,13 +235,12 @@ try:
+ 
+         def execButCmd(self, event=None):
+             try:
++                self.state(["!active", "!pressed"])
+                 if str(self.cget("state")) == "normal":
+                     if type(self.cmd) in (list, tuple):
+                         self.cmd[0](self.cmd[1])
+                     else:
+                         self.cmd()
+-                self.update_idletasks()
+-                self.event_generate("<Leave>")
+             except:
+                 pass
+             return "break"
+@@ -740,7 +740,7 @@ try:
+             [(text, span), (text, span)],                       ### Optional
+             [(text, ('SD',10.2)), or (text, 10), ..... ]]
+         data = [
+-            (((label, tag) (label, tag) (label, tag)),
++            (((label, tag), (label, tag), (label, tag)),
+             ((text, tag, span), (text, tag), (text, tag), (text, tag)),)]
+         butt = A list of additional buttons e.g. [("hello", cmd)]
+         cmds = A list of bind commands
+@@ -1016,9 +1016,10 @@ try:
+             if wh > height:
+                 self.window.configure(height=height)
+                 self.window.update()
++            elif height > wh:
++                height = wh
+             # Place window
+             self.window.geometry("%dx%d+0+0" % (ww, height))
+-            self.window.geometry("+0+0")
+             if self.window.state() == "withdrawn":
+                 self.window.deiconify()
+             self.window.grab_set()
+@@ -1900,7 +1901,6 @@ class Dbase(object):
+             if check:
+                 raise Exception("Invalid rcdic")
+             if self.dbase == "PgSQL":
+-                self.dbmod = "psycopg2"
+                 import psycopg2 as engine
+                 try:
+                     # Typecast the numeric datatype as Float not Decimal
+@@ -1910,16 +1910,17 @@ class Dbase(object):
+                     pgx.register_type(NUM)
+                 except Exception as err:
+                     raise Exception("Typecast Error (%s)" % err)
++                self.dbmod = "psycopg2"
+                 self.dbf = "%s"
+             elif self.dbase == "SQLite":
++                from sqlite3 import dbapi2 as engine
+                 if self.dbdir:
+                     self.dbdsn = os.path.join(self.dbdir, self.dbname)
+                 else:
+                     self.dbdsn = self.dbname
+-                self.dbmod = "sqlite3"
+-                from sqlite3 import dbapi2 as engine
+                 if int(engine.sqlite_version.split(".")[1]) < 8:
+                     self.mrecs = False
++                self.dbmod = "sqlite3"
+                 self.dbf = "?"
+             else:
+                 raise Exception("Invalid Database Type (%s)" % self.dbase)
+@@ -1935,25 +1936,25 @@ class Dbase(object):
+ 
+     def setVariables(self):
+         if self.dbase == "PgSQL":
+-            self.dtm = "timestamp"
+-            self.key = "varchar"
++            #self.dtm = "timestamp"
++            #self.key = "varchar"
+             self.var = "varchar"
+             self.txt = "text"
+             self.itg = "int4"
+             self.lng = "int8"
+             self.dec = "numeric"
+-            self.flt = "numeric"
++            #self.flt = "numeric"
+             self.ser = "serial"
+             self.blb = "varchar"
+         elif self.dbase == "SQLite":
+-            self.dtm = "varchar"
+-            self.key = "varchar"
++            #self.dtm = "varchar"
++            #self.key = "varchar"
+             self.var = "varchar"
+             self.txt = "blob"
+             self.itg = "integer"
+             self.lng = "integer"
+             self.dec = "float"
+-            self.flt = "float"
++            #self.flt = "float"
+             self.ser = "integer primary key"
+             self.blb = "blob"
+         else:
+@@ -5235,8 +5236,7 @@ Export - The report in the selected format will be opened
+                         import winsound
+                         winsound.Beep(2500, 500)
+                     else:
+-                        import beepy
+-                        beepy.beep(1)
++                        os.system("aplay -q %s/snd/ding.wav" % getPrgPath()[0])
+                 except:
+                     self.mf.window.bell()
+             self.mf.updateStatus("%s, Retry%s" % (err, sufx), "white", "red")
+@@ -11645,7 +11645,7 @@ class PrintOrder(object):
+                 head += "S"
+                 for doc in self.docs:
+                     head += " %s" % doc[0]
+-        self.form.output(pdfnam, "F")
++        self.form.output(pdfnam)
+         doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
+             fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
+         if self.repeml[1] == "Y" and not self.emadd:
+@@ -11928,7 +11928,7 @@ class PrintCharges(object):
+                     head += " %s" % doc[0]
+             pdfnam = getModName(self.mf.rcdic["wrkdir"], pfx,
+                 "%s_all" % self.conum, ext="pdf")
+-        self.form.output(pdfnam, "F")
++        self.form.output(pdfnam)
+         doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
+             fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
+         if self.repeml[1] == "Y" and not self.emadd:
+@@ -12294,7 +12294,7 @@ class PrintInvoice(object):
+                     head += " %s" % doc[0]
+             pdfnam = getModName(self.mf.rcdic["wrkdir"], pfx,
+                 "%s_all" % self.conum, ext="pdf")
+-        self.form.output(pdfnam, "F")
++        self.form.output(pdfnam)
+         doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
+             fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
+         if self.repeml[1] == "Y" and not self.emadd:
+@@ -12660,7 +12660,7 @@ class PrintBookingInvoice(object):
+                 head = "%sS" % head
+                 for doc in self.docs:
+                     head += " %s" % doc.strip()
+-        self.form.output(pdfnam, "F")
++        self.form.output(pdfnam)
+         doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam, header=head,
+             fromad=self.fromad, repprt=self.repprt, repeml=self.repeml)
+         if self.repeml[1] == "Y":
+@@ -12980,7 +12980,7 @@ class PrintPayslip(object):
+         head += " for %s" % self.rundt.disp
+         self.pdfnam = getModName(self.mf.rcdic["wrkdir"], "payslip", key,
+             ext="pdf")
+-        self.form.output(self.pdfnam, "F")
++        self.form.output(self.pdfnam)
+         doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
+             fromad=self.fromad, header=head, repprt=self.repprt,
+             repeml=self.repeml)
+@@ -13115,7 +13115,7 @@ class PrintCards(object):
+                 self.form.newdic["bcg_rink_C00"][txt] = grn
+             for key in self.form.newkey:
+                 self.form.doDrawDetail(self.form.newdic[key])
+-        self.form.output(self.pdfnam, "F")
++        self.form.output(self.pdfnam)
+         doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
+             repprt=self.repprt)
+ 
+@@ -13246,7 +13246,7 @@ class PrintBoards(object):
+             self.form.add_page()
+             for key in self.form.newkey:
+                 self.form.doDrawDetail(self.form.newdic[key])
+-        self.form.output(self.pdfnam, "F")
++        self.form.output(self.pdfnam)
+         doPrinter(mf=self.mf, conum=self.cono, pdfnam=self.pdfnam,
+             repprt=self.repprt)
+ 
+@@ -13532,7 +13532,7 @@ class PrintTabDraw(object):
+             txt = "%s for the %s of %s" % (self.cdes, self.timed, self.dated)
+         if htyp == "C":
+             self.fpdf.add_page(orientation="L")
+-            self.def_orientation = "L"
++            self.fpdf.doOrientation("set", "L")
+             self.fpdf.setFont("Arial", "B", 24)
+             self.fpdf.drawText(txt, align="C")
+             self.fpdf.drawText(" ")
+@@ -16422,6 +16422,7 @@ class FileImport(object):
+         self.impskp = []
+         self.impfld = []
+         self.impfle = ""
++        self.frozen = None
+         self.impsht = None
+         self.impdlg = True
+         self.impign = "N"
+@@ -16618,9 +16619,15 @@ class FileImport(object):
+         try:
+             if self.ftype == "ods":
+                 self.worksh = self.workbk[w]
++                if self.worksh.freeze_panes:
++                    self.frozen = self.worksh.freeze_panes
+             elif self.ftype == "xls":
+                 self.worksh = self.workbk[w]
++                if self.worksh.freeze_panes:
++                    self.frozen = self.worksh.freeze_panes
+             else:
++                if self.workbk[w].freeze_panes:
++                    self.frozen = self.workbk[w].freeze_panes
+                 self.worksh = self.workbk[w].values
+         except:
+             return "Invalid Sheet"
+@@ -16655,6 +16662,9 @@ class FileImport(object):
+             for row, rdd in enumerate(data):
+                 if not rdd:
+                     continue
++                if self.frozen and "A%s" % (row + 1) < self.frozen:
++                    # Ignore frozen headings
++                    continue
+                 try:
+                     lin = []
+                     nun = []
+@@ -16834,6 +16844,22 @@ class MyFpdf(fpdf.FPDF):
+         except Exception as err:
+             print(err)
+ 
++    def doOrientation(self, typ="get", val=None):
++        try:
++            if type(self.def_orientation) == str:
++                if typ == "get":
++                    return self.def_orientation
++                self.def_orientation = val
++            elif typ == "get":
++                return self.def_orientation.value
++            else:
++                from fpdf.enums import PageOrientation
++                self.def_orientation = PageOrientation.coerce(val)
++        except Exception as err:
++            import traceback
++            err = "%s\n\n%s" % (err, traceback.format_exc())
++            print(typ, val, err)
++
+     def setValues(self, name, head, font="", border=""):
+         # Add TTF Fonts
+         try:
+@@ -16850,7 +16876,7 @@ class MyFpdf(fpdf.FPDF):
+                 font = [font, "", 10]
+             self.setFont(font[0], font[1], font[2], default=True)
+             self.chgt = round(font[2] * .4, 1)
+-            if self.def_orientation == "P":
++            if self.doOrientation() == "P":
+                 self.lpp = int(self.portrait[1] / self.chgt)
+             else:
+                 self.lpp = int(self.portrait[0] / self.chgt)
+@@ -16863,10 +16889,10 @@ class MyFpdf(fpdf.FPDF):
+         else:
+             family = font[0]
+         if family.lower() == "courier" and len(head) > 120:
+-            self.def_orientation = "L"
++            self.doOrientation("set", "L")
+         self.font = None
+         while not self.font:
+-            if self.def_orientation == "P":
++            if self.doOrientation() == "P":
+                 mm = self.portrait[0]
+             else:
+                 mm = self.portrait[1]
+@@ -16877,20 +16903,20 @@ class MyFpdf(fpdf.FPDF):
+                     self.chgt += 1
+                 self.setFont(family, "", siz, default=True)
+                 self.width = self.get_string_width(head)
+-                if self.def_orientation == "P":
++                if self.doOrientation() == "P":
+                     if self.width > self.portrait[0]:
+                         continue
+                     self.font = [family, siz, self.chgt]
+                     self.lpp = int(self.portrait[1] / self.chgt)
+                     break
+-                if self.def_orientation == "L":
++                if self.doOrientation() == "L":
+                     if self.width > self.portrait[1]:
+                         continue
+                     self.font = [font, siz, self.chgt]
+                     self.lpp = int(self.portrait[0] / self.chgt)
+                     break
+             if not self.font:
+-                if self.def_orientation == "P":
++                if self.doOrientation() == "P":
+                     self.def_orientation = "L"
+                 else:
+                     print("Invalid head length", len(head))
+@@ -16922,12 +16948,18 @@ class MyFpdf(fpdf.FPDF):
+                 self.setFont(family, style)
+         if not h:
+             h = self.font[2]
++        if not ln:
++            new_x = XPos.RIGHT
++            new_y = YPos.TOP
++        else:
++            new_x = XPos.LMARGIN
++            new_y = YPos.NEXT
+         if ctyp == "S":
+-            self.cell(w=w, h=h, ln=ln, txt=txt, border=border, align=align,
+-                fill=fill)
++            self.cell(w=w, h=h, txt=txt, border=border, align=align,
++                new_x=new_x, new_y=new_y, fill=fill)
+         else:
+             self.multi_cell(w=w, h=h, txt=txt, border=border, align=align,
+-                fill=fill)
++                new_x=new_x, new_y=new_y, fill=fill)
+ 
+     def setFont(self, family="", style="", size=0, default=False):
+         if not family:
+@@ -16996,7 +17028,7 @@ class MyFpdf(fpdf.FPDF):
+             if lhgt is None:
+                 lhgt = self.font[2]
+             y = self.get_y()
+-            if self.def_orientation == "P":
++            if self.doOrientation() == "P":
+                 pd = self.portrait[1]
+             else:
+                 pd = self.portrait[0]
+@@ -17007,7 +17039,7 @@ class MyFpdf(fpdf.FPDF):
+ 
+     def saveFile(self, pdfnam, scrn=None):
+         try:
+-            self.output(pdfnam, "F")
++            self.output(pdfnam)
+             return True
+         except Exception as err:
+             showError(scrn, "Error", err)
+@@ -18774,27 +18806,29 @@ class ViewPDF(object):
+         fr2 = MyFrame(fr1, borderwidth=1, relief="raised")
+         fr2.pack(fill="x", expand="yes")
+         # Buttons and Entries
+-        self.bt1 = MyButton(fr2, text="Goto", cmd=self.gotoPage,
+-            style="pdf.TButton", underline=0)
+-        ToolTip(self.bt1, "Jump To Page Number")
+-        self.bt1.pack(padx=3, pady=3, side="left")
+-        self.entsiz = len(str(self.lastpg))
+-        self.pgd = MyEntry(fr2, width=self.entsiz, maxsize=self.entsiz,
+-            style="pdf.TEntry")
+-        self.pgd.bind("<Return>", self.enterPage)
+-        self.pgd.bind("<KP_Enter>", self.enterPage)
+-        self.pgd.pack(padx=3, pady=3, side="left")
+-        lab = MyLabel(fr2, text="of %s" % self.lastpg, color=False,
+-            style="pdf.TLabel")
+-        lab.pack(padx=3, pady=3, side="left")
+-        self.bt2 = MyButton(fr2, txt=False, text="Former",
+-            cmd=self.priorPage, style="pdf.TButton", underline=0)
+-        ToolTip(self.bt2, "Show Previous Page")
+-        self.bt2.pack(padx=3, pady=3, side="left")
+-        self.bt3 = MyButton(fr2, txt=False, text="Next", cmd=self.nextPage,
+-            style="pdf.TButton", underline=getUnderline(fr2, "Next")[1])
+-        ToolTip(self.bt3, "Show Next Page")
+-        self.bt3.pack(padx=3, pady=3, side="left")
++        if self.lastpg > 1:
++            self.bt1 = MyButton(fr2, text="Goto", cmd=self.gotoPage,
++                style="pdf.TButton", underline=0)
++            ToolTip(self.bt1, "Jump To Page Number")
++            self.bt1.pack(padx=3, pady=3, side="left")
++            self.entsiz = len(str(self.lastpg))
++            self.pgd = MyEntry(fr2, width=self.entsiz, maxsize=self.entsiz,
++                style="pdf.TEntry")
++            self.pgd.bind("<Return>", self.enterPage)
++            self.pgd.bind("<KP_Enter>", self.enterPage)
++            self.pgd.pack(padx=3, pady=3, side="left")
++            lab = MyLabel(fr2, text="of %s" % self.lastpg, color=False,
++                style="pdf.TLabel")
++            lab.pack(padx=3, pady=3, side="left")
++            self.bt2 = MyButton(fr2, txt=False, text="Former",
++                cmd=self.priorPage, style="pdf.TButton", underline=0)
++            ToolTip(self.bt2, "Show Previous Page")
++            self.bt2.pack(padx=3, pady=3, side="left")
++            self.bt3 = MyButton(fr2, txt=False, text="Next",
++                cmd=self.nextPage, style="pdf.TButton",
++                underline=getUnderline(fr2, "Next")[1])
++            ToolTip(self.bt3, "Show Next Page")
++            self.bt3.pack(padx=3, pady=3, side="left")
+         # Draw menu
+         imgm = getImage("menu", siz=(20, 20))
+         self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat", fg=fg,
+@@ -18839,6 +18873,13 @@ class ViewPDF(object):
+             "Button to UnZoom. Ctrl plus the Numeric Keypad +- Keys can "\
+             "also be used. Use F11 to toggle full screen.")
+         self.bt5.pack(padx=3, pady=3, side="right")
++        self.bt6 = MyButton(fr2, text="Rotate", style="pdf.TButton")
++        self.bt6.bind("<Button-1>", self.doRotate)
++        self.bt6.bind("<Button-3>", self.doRotate)
++        ToolTip(self.bt6, "Left Button to Rotate 90 degrees to the Left "\
++            "and Right Button to Rotate to the Right. Ctrl plus the l and "\
++            "r Keys can also be used.")
++        self.bt6.pack(padx=3, pady=3, side="right")
+         fr1.update_idletasks()
+         # Canvas
+         self.cv = tk.Canvas(self.win, highlightthickness=0)
+@@ -18868,6 +18909,7 @@ class ViewPDF(object):
+         self.win.bind("<Control-f>", self.doSearch)
+         self.win.bind("<Control-n>", self.nextSearch)
+         self.win.bind("<Control-e>", self.endSearch)
++        self.win.bind("<Control-l>", self.doRotate)
+         self.win.bind("<Control-r>", self.doRotate)
+         self.win.bind("<Control-KP_Add>", self.doZoom)
+         self.win.bind("<Control-KP_Subtract>", self.doZoom)
+@@ -18999,10 +19041,16 @@ class ViewPDF(object):
+         self.showPage()
+ 
+     def doRotate(self, event=None):
+-        if self.rotate == 270:
+-            self.rotate = 0
++        if event.num == 3 or event.keysym == "r":
++            if self.rotate == 270:
++                self.rotate = 0
++            else:
++                self.rotate += 90
+         else:
+-            self.rotate += 90
++            if self.rotate == -270:
++                self.rotate = 0
++            else:
++                self.rotate -= 90
+         for page in self.doc:
+             page.set_rotation(self.rotate)
+         self.showPage()
+@@ -19084,6 +19132,10 @@ class ViewPDF(object):
+         self.showPage()
+ 
+     def doUnbind(self, unbind=True, key=True, exc=None):
++        if self.lastpg == 1:
++            frm = 4
++        else:
++            frm = 1
+         if unbind:
+             if key:
+                 self.cvbinds = []
+@@ -19091,14 +19143,14 @@ class ViewPDF(object):
+                     if exc is None or bind != exc:
+                         self.cvbinds.append((bind, self.win.bind(bind)))
+                         self.win.unbind(bind)
+-            for x in range(1, 6):
++            for x in range(frm, 6):
+                 bt = getattr(self, "bt%s" % x)
+                 bt.configure(state="disabled")
+         else:
+             if key:
+                 for bind in self.cvbinds:
+                     self.win.bind(bind[0], bind[1])
+-            for x in range(1, 6):
++            for x in range(frm, 6):
+                 bt = getattr(self, "bt%s" % x)
+                 bt.configure(state="normal")
+         self.win.update_idletasks()
+@@ -19114,19 +19166,21 @@ class ViewPDF(object):
+                 self.links[link["from"]] = link["uri"]
+         if not self.maxi and self.links:
+             self.win.bind("<Button-1>", self.showLinks)
+-            self.win.bind("<Enter>", self.changeCursor)
++            self.win.bind("<Motion>", self.changeCursor)
+         else:
+             self.win.unbind("<Button-1>")
+-            self.win.unbind("<Enter>")
+-        # Create image
+-        self.pgd.configure(state="normal")
+-        self.pgd.delete(0, "end")
+-        self.pgd.insert(0, "%s" % CCD(self.pgno, "UI", self.entsiz).disp)
+-        self.pgd.configure(state="disabled")
++            self.win.unbind("<Motion>")
++        if self.lastpg > 1:
++            self.pgd.configure(state="normal")
++            self.pgd.delete(0, "end")
++            fmt = "%s%s%s" % ("%", self.entsiz, "s")
++            self.pgd.insert(0, fmt % self.pgno)
++            self.pgd.configure(state="disabled")
+         try:
+             dlist = page.get_displaylist()
+         except:
+             pass
++        # Create image
+         pix = dlist.get_pixmap(matrix=self.matrix, alpha=False)
+         self.ti = tk.PhotoImage(data=pix.tobytes("ppm"))
+         self.cv.create_image(0, 0, image=self.ti, anchor="nw", tags="img")
+@@ -19344,8 +19398,9 @@ class ViewPDF(object):
+ 
+     def showLinks(self, event=None):
+         if not self.maxi:
+-            x = event.x/self.zoom
+-            y = event.y/self.zoom
++            d = self.cv.canvasy(0)
++            x = event.x / self.zoom
++            y = (event.y + d) / self.zoom
+             for lk in self.links:
+                 if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
+                     try:
+@@ -19356,8 +19411,9 @@ class ViewPDF(object):
+                             "Cannot Load Browser or URL")
+ 
+     def changeCursor(self, event=None):
+-        x = event.x/self.zoom
+-        y = event.y/self.zoom
++        d = self.cv.canvasy(0)
++        x = event.x / self.zoom
++        y = (event.y + d) / self.zoom
+         for lk in self.links:
+             if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
+                 self.win.config(cursor="hand2")
+@@ -19483,7 +19539,7 @@ class ViewPDF(object):
+ 
+         def doPages(event=None):
+             ent.configure(state="normal")
+-            ent.focus_set()
++            ent.focus_force()
+ 
+         def doCancel(event=None):
+             win.destroy()
+diff --git a/bwl/bc1010.py b/bwl/bc1010.py
+index a20f9ab..d78ea9a 100644
+--- a/bwl/bc1010.py
++++ b/bwl/bc1010.py
+@@ -554,22 +554,25 @@ class bc1010(object):
+                     if self.dbase == "P":
+                         cols.append(["btb_pos1", dic["btb_pos1"][2],
+                             dic["btb_pos1"][3], dic["btb_pos1"][5]])
+-                        cols.append(["btb_pos2", dic["btb_pos2"][2],
+-                            dic["btb_pos2"][3], dic["btb_pos2"][5]])
++                        if self.mixed == "Y":
++                            cols.append(["btb_pos2", dic["btb_pos2"][2],
++                                dic["btb_pos2"][3], dic["btb_pos2"][5]])
+                     elif self.dbase == "R":
+                         cols.append(["btb_rate1", dic["btb_rate1"][2],
+                             dic["btb_rate1"][3], dic["btb_rate1"][5]])
+-                        cols.append(["btb_rate2", dic["btb_rate2"][2],
+-                            dic["btb_rate2"][3], dic["btb_rate2"][5]])
++                        if self.mixed == "Y":
++                            cols.append(["btb_rate2", dic["btb_rate2"][2],
++                                dic["btb_rate2"][3], dic["btb_rate2"][5]])
+                     else:
+                         cols.append(["btb_pos1", dic["btb_pos1"][2],
+                             dic["btb_pos1"][3], dic["btb_pos1"][5]])
+                         cols.append(["btb_rate1", dic["btb_rate1"][2],
+                             dic["btb_rate1"][3], dic["btb_rate1"][5]])
+-                        cols.append(["btb_pos2", dic["btb_pos2"][2],
+-                            dic["btb_pos2"][3], dic["btb_pos2"][5]])
+-                        cols.append(["btb_rate2", dic["btb_rate2"][2],
+-                            dic["btb_rate2"][3], dic["btb_rate2"][5]])
++                        if self.mixed == "Y":
++                            cols.append(["btb_pos2", dic["btb_pos2"][2],
++                                dic["btb_pos2"][3], dic["btb_pos2"][5]])
++                            cols.append(["btb_rate2", dic["btb_rate2"][2],
++                                dic["btb_rate2"][3], dic["btb_rate2"][5]])
+                 else:
+                     cols.append([col, dic[col][2], dic[col][3], dic[col][5]])
+             whr = [("btb_cono", "=", self.opts["conum"])]
+diff --git a/bwl/bc2010.py b/bwl/bc2010.py
+index f81aeb4..c59ae75 100644
+--- a/bwl/bc2010.py
++++ b/bwl/bc2010.py
+@@ -2366,7 +2366,7 @@ Combination Number %10s"""
+     def doPrint(self, dg=None):
+         if not dg:
+             dg = self.df
+-        if not self.drawn:
++        if not self.reprint and not self.drawn:
+             showError(self.opts["mf"].body, "Error",
+                 "The Draw Has Not Yet Been Done")
+             dg.focusField("T", 1, 1)
+@@ -2378,13 +2378,17 @@ Combination Number %10s"""
+             (("T",0,0,0),("IRB",r1s),0,"Print Cards","",
+                 "N","Y",self.doCards,None,None,None),
+             (("T",0,1,0),"INA",30,"Heading","",
+-                "","N",self.doHead,None,None,("notblank",)),
++                "TABS","N",self.doHead,None,None,("notblank",)),
+             (("T",0,2,0),"IUI",2,"Number of Ends","",
+                 0,"N",self.doEnds,None,None,("notzero",))]
+         if self.mrate.work or self.vrate.work:
++            if self.reprint:
++                dft = "N"
++            else:
++                dft = "Y"
+             fld.append(
+                 (("T",0,3,0),("IRB",r2s),0,"Cash Takings Sheet","",
+-                    "Y","Y",self.doTakings,None,None,None))
++                    dft,"Y",self.doTakings,None,None,None))
+             idx = 4
+         else:
+             self.takings = "N"
+diff --git a/bwl/bc2050.py b/bwl/bc2050.py
+index 562825f..bbc1899 100644
+--- a/bwl/bc2050.py
++++ b/bwl/bc2050.py
+@@ -802,11 +802,10 @@ class bc2050(object):
+                 where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod",
+                 "=", self.ccod), ("bcg_game", "=", self.game)])
+             self.game += 1
++            nxt = False
+             if self.cfmat == "T":
+-                nxt = self.sql.getRec("bwlgme", where=[("bcg_cono",
+-                    "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
+-                    ("bcg_game", "=", self.game), ("bcg_type", "=", "D")],
+-                    limit=1)
++                if self.game <= self.games:
++                    nxt = True
+             else:
+                 nxt = self.sql.getRec("bwlgme", where=[("bcg_cono",
+                     "=", self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
+diff --git a/bwl/bc3020.py b/bwl/bc3020.py
+index 7e830ab..1a538fc 100644
+--- a/bwl/bc3020.py
++++ b/bwl/bc3020.py
+@@ -272,9 +272,12 @@ class bc3020(object):
+                     self.fpdf.cell(cwth*20, 8, right[x][1], 0, 1, "L")
+         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
+             self.__class__.__name__, self.opts["conum"], ext="pdf")
+-        frm = CCD(self.start // 100, "D2", 7).disp
+         too = CCD(self.end // 100, "D2", 7).disp
+-        head = "Tabs Draw Summary for the period %s to %s" % (frm, too)
++        if self.start:
++            frm = CCD(self.start // 100, "D2", 7).disp
++            head = "Tabs Draw Summary for the period %s to %s" % (frm, too)
++        else:
++            head = "Tabs Draw Summary up to %s" % too
+         if self.fpdf.saveFile(pdfnam, self.opts["mf"].window):
+             doPrinter(mf=self.opts["mf"], conum=self.opts["conum"],
+                 pdfnam=pdfnam, header=head, repprt=self.df.repprt,
+@@ -308,7 +311,7 @@ class bc3020(object):
+         return nam
+ 
+     def pageHeading(self):
+-        frm = CCD(self.start // 100, "D2", 7).disp
++        frm = CCD(self.start // 100, "d2", 7).disp
+         too = CCD(self.end // 100, "D2", 7).disp
+         self.fpdf.setFont("Arial", "B", 15)
+         if os.path.isfile(self.image):
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 959283b..89a86f0 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.22
++:Version:   6.23
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+@@ -55,14 +55,13 @@ Ensure that python is installed on your system:
+ 
+ The following dependencies must be installed using pip:
+ 
+-+ fpdf                  # Used to create all documents
+++ fpdf2                 # Used to create all documents
+ + pillow                # Used by fpdf and imaging
+ + pymupdf               # Used for viewing pdf files
+ + pywin32               # Windows only
+ 
+ Additionally, the following dependencies should also be installed using pip or, at a later stage, using the -m command line option.
+ 
+-+ beepy                 # Used to play a notification sound
+ + cairosvg              # SVG to PDF File Converter
+ + docutils              # Used to display licence
+ + importlib             # Used to import modules
+diff --git a/drs/dr3080.py b/drs/dr3080.py
+index a7d656b..2107477 100644
+--- a/drs/dr3080.py
++++ b/drs/dr3080.py
+@@ -156,6 +156,7 @@ class dr3080(object):
+             self.df.loadEntry(frt, pag, p+1, data=self.oitem)
+             self.df.loadEntry(frt, pag, p+2, data=self.pages)
+             return "sk2"
++        self.df.topf[0][1][5] = "N"
+ 
+     def doOItem(self, frt, pag, r, c, p, i, w):
+         self.oitem = w
+diff --git a/gen/gl2030.py b/gen/gl2030.py
+index 6b4a28a..fdb217e 100644
+--- a/gen/gl2030.py
++++ b/gen/gl2030.py
+@@ -880,8 +880,7 @@ class gl2030(object):
+                         "  Payee:     %s\n"\
+                         "  Amount:    %s\n\n"\
+                         "  Import Anyway?" % \
+-                        (date.disp, payee.disp, amount.disp),
+-                    default="no")
++                        (date.disp, payee.disp, amount.disp), default="no")
+                 if ok == "no":
+                     continue
+             elif acc:
+@@ -1110,12 +1109,13 @@ class gl2030(object):
+     def doReadRct(self):
+         whr = [("grt_cono", "=", self.opts["conum"]), ("grt_acno", "=",
+             self.bh.acc), ("grt_flag", "=", "N")]
+-        start = (self.bh.curdt * 100) + 1
+-        end = mthendDate(start)
+         if self.bh.multi == "N":
+-            whr.append(("grt_date", "between", start, end))
++            start = (self.bh.curdt * 100) + 1
++            end = mthendDate(start)
+         else:
+-            whr.append(("grt_date", "<=", end))
++            start = self.opts["period"][1][0]
++            end = self.opts["period"][2][0]
++        whr.append(("grt_date", "between", start, end))
+         return self.sql.getRec("genrct", where=whr, order="grt_date")
+ 
+     def doSelectEntry(self, date, memo, refno, amount, glt):
+diff --git a/gen/gl3020.py b/gen/gl3020.py
+index d924a5d..529999d 100644
+--- a/gen/gl3020.py
++++ b/gen/gl3020.py
+@@ -273,8 +273,8 @@ class gl3020(object):
+     def doCoyCmd(self, frt, pag, r, c, p, i, w):
+         c = ""
+         for co in w:
+-            if int(co):
+-                c = c + str(int(co)) + ","
++            if int(co[0]):
++                c = c + str(int(co[0])) + ","
+         if len(c) > 1:
+             c = c[:-1]
+         self.cf.loadEntry(frt, pag, p, data=c)
+@@ -283,6 +283,8 @@ class gl3020(object):
+         if w[-1:] == ",":
+             w = w[:-1]
+         self.coy = w.split(",")
++        if not self.coy[0]:
++            return "No Companies Entered"
+ 
+     def doCoyEnd(self):
+         if self.con == "I":
+diff --git a/gen/gl4020.py b/gen/gl4020.py
+index c5bb983..8574058 100644
+--- a/gen/gl4020.py
++++ b/gen/gl4020.py
+@@ -137,8 +137,6 @@ class gl4020(object):
+         self.con = w
+         if self.con == "Y" and self.gldep == "N":
+             self.dep = 0
+-            self.df.loadEntry(frt, pag, p+1, data=self.dep)
+-            return "sk1"
+ 
+     def doDept(self, frt, pag, r, c, p, i, w):
+         if w:
+@@ -244,8 +242,8 @@ class gl4020(object):
+     def doCoyCmd(self, frt, pag, r, c, p, i, w):
+         c = ""
+         for co in w:
+-            if int(co) != 0:
+-                c = c + str(int(co)) + ","
++            if int(co[0]) != 0:
++                c = c + str(int(co[0])) + ","
+         if len(c) > 1:
+             c = c[:-1]
+         self.cf.loadEntry(frt, pag, p, data=c)
+@@ -259,14 +257,14 @@ class gl4020(object):
+ 
+     def doCoyEnd(self):
+         if self.con == "I":
+-            self.con = self.coy
++            self.scon = self.coy
+         elif self.con == "E":
+-            self.con = []
++            self.scon = []
+             for co in self.coys:
+-                self.con.append(int(co[0]))
++                self.scon.append(int(co[0]))
+             for co in self.coy:
+-                del self.con[self.con.index(int(co))]
+-            self.con.sort()
++                del self.scon[self.scon.index(int(co))]
++            self.scon.sort()
+         self.doCoyClose()
+ 
+     def doCoyExit(self):
+@@ -306,16 +304,16 @@ class gl4020(object):
+         self.var_tot = makeArray(self.mths + 2, 10, 1)
+         self.var_str = makeArray(self.mths + 2, 100, 1)
+         if self.con == "N":
+-            self.con = None
++            self.scon = None
+         elif self.con == "Y":
+             coy = self.sql.getRec("ctlmst", cols=["ctm_cono"],
+                 order="ctm_cono")
+             if not coy:
+-                self.con = None
++                self.scon = None
+                 return
+-            self.con = []
++            self.scon = []
+             for c in coy:
+-                self.con.append(c[0])
++                self.scon.append(c[0])
+         self.rep_num = 0
+         self.rpt_lst = self.sql.getRec("genrpt", where=[("glr_cono",
+             "=", self.repco), ("glr_repno", "=", self.rep)], order="glr_seq")
+@@ -495,7 +493,7 @@ class gl4020(object):
+                 deps = [self.dep]
+             else:
+                 deps = copyList(self.alldeps)
+-        if not self.con:
++        if not self.scon:
+             if self.gldep == "Y":
+                 accs = []
+                 for dep in deps:
+@@ -529,43 +527,43 @@ class gl4020(object):
+                 if not accs:
+                     accs = []
+         else:
++            accs = []
+             if self.gldep == "Y":
+-                accs = []
+                 for dep in deps:
+                     glf = (dep * (10 ** (7 - self.gldig))) + glfrom
+                     if glto:
+                         glt = (dep * (10 ** (7 - self.gldig))) + glto
+                         acs = self.sql.getRec("genmst",
+                             cols=["glm_acno"], where=[("glm_cono", "in",
+-                            self.con), ("glm_acno", ">=", glf),
++                            self.scon), ("glm_acno", ">=", glf),
+                             ("glm_acno", "<=", glt)], group="glm_acno",
+                             order="glm_acno")
+                     else:
+                         acs = self.sql.getRec("genmst",
+                             cols=["glm_acno"], where=[("glm_cono", "in",
+-                            self.con), ("glm_acno", "=", glf)],
++                            self.scon), ("glm_acno", "=", glf)],
+                             group="glm_acno")
+                     if acs:
+                         for ac in acs:
+                             accs.append(self.sql.getRec("genmst",
+-                                where=[("glm_cono", "in", self.con),
++                                where=[("glm_cono", "in", self.scon),
+                                 ("glm_acno", "=", ac[0])], limit=1))
+             else:
+                 if not glto:
+                     acs = self.sql.getRec("genmst",
+                         cols=["glm_acno"], where=[("glm_cono", "in",
+-                        self.con), ("glm_acno", "=", glfrom)],
++                        self.scon), ("glm_acno", "=", glfrom)],
+                         group="glm_acno")
+                 else:
+                     acs = self.sql.getRec("genmst",
+                         cols=["glm_acno"], where=[("glm_cono", "in",
+-                        self.con), ("glm_acno", ">=", glfrom),
++                        self.scon), ("glm_acno", ">=", glfrom),
+                         ("glm_acno", "<=", glto)], group="glm_acno",
+                         order="glm_acno")
+                 if acs:
+                     for ac in acs:
+                         accs.append(self.sql.getRec("genmst",
+-                            where=[("glm_cono", "in", self.con),
++                            where=[("glm_cono", "in", self.scon),
+                             ("glm_acno", "=", ac[0])], limit=1))
+         return accs
+ 
+@@ -656,7 +654,7 @@ class gl4020(object):
+                 self.trn[self.s_desc][self.mths + 1].extend(trn)
+ 
+     def getObal(self):
+-        if not self.con:
++        if not self.scon:
+             if not self.opts["period"][0]:
+                 lyr = None
+             else:
+@@ -674,11 +672,11 @@ class gl4020(object):
+             else:
+                 lyr = self.sql.getRec("genbal",
+                     cols=["round(sum(glo_cyr), 2)"], where=[("glo_cono", "in",
+-                    self.con), ("glo_acno", "=", self.s_acno), ("glo_trdt",
++                    self.scon), ("glo_acno", "=", self.s_acno), ("glo_trdt",
+                     "=", self.s_lyr.work)], limit=1)[0]
+             cyr = self.sql.getRec("genbal",
+                 cols=["round(sum(glo_cyr), 2)"], where=[("glo_cono", "in",
+-                self.con), ("glo_acno", "=", self.s_acno), ("glo_trdt",
++                self.scon), ("glo_acno", "=", self.s_acno), ("glo_trdt",
+                 "=", self.opts["period"][1][0])], limit=1)[0]
+         if not lyr:
+             lyr = 0
+@@ -691,7 +689,7 @@ class gl4020(object):
+         return (lyr, cyr)
+ 
+     def getMbal(self, curdt):
+-        if not self.con:
++        if not self.scon:
+             lyr = self.sql.getRec("gentrn",
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "=",
+                 self.s_cono), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+@@ -709,17 +707,17 @@ class gl4020(object):
+         else:
+             lyr = self.sql.getRec("gentrn",
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
+-                self.con), ("glt_acno", "=", self.s_acno), ("glt_curdt",
++                self.scon), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+                 "=", (curdt - 100))], limit=1)[0]
+             cyr = self.sql.getRec("gentrn",
+                 cols=["round(sum(glt_tramt), 2)"], where=[("glt_cono", "in",
+-                self.con), ("glt_acno", "=", self.s_acno), ("glt_curdt",
++                self.scon), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+                 "=", curdt)], limit=1)[0]
+             bud = self.sql.getRec("genbud", cols=["sum(glb_tramt)"],
+-                where=[("glb_cono", "in", self.con), ("glb_acno", "=",
++                where=[("glb_cono", "in", self.scon), ("glb_acno", "=",
+                 self.s_acno), ("glb_curdt", "=", curdt)], limit=1)[0]
+             trn = self.sql.getRec("gentrn", where=[("glt_cono", "in",
+-                self.con), ("glt_acno", "=", self.s_acno), ("glt_curdt",
++                self.scon), ("glt_acno", "=", self.s_acno), ("glt_curdt",
+                 "=", curdt)], order="glt_trdt")
+         if not lyr:
+             lyr = 0
+@@ -820,13 +818,13 @@ class gl4020(object):
+         head.append("%03u %-s" % (self.opts["conum"], self.opts["conam"]))
+         head.append("%-s for the period %s to %s" % ("Financials",
+             self.opts["period"][1][1], self.opts["period"][2][1]))
+-        if not self.con:
++        if not self.scon:
+             pass
+         elif self.con == "Y":
+             head.append("Consolidated Companies (All)")
+         else:
+-            con = str(tuple(self.con)).replace("'", "").replace(" ", "")
+-            head.append("Consolidated Companies (%s)" % con)
++            con = str(tuple(self.scon)).replace("'", "").replace(" ", "")
++            head.append("Consolidated Companies %s" % con)
+         labs = (("Description", 30),)
+         tags = (
+             ("label", ("black", "lightgray")),
+diff --git a/ms0000.py b/ms0000.py
+index 1f42d42..05e57dd 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 22)
++    VERSION = (6, 23)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -1659,7 +1659,7 @@ System --> Change Password""")
+         try:
+             if os.path.exists(pdf):
+                 os.remove(pdf)
+-            man.fpdf.output(pdf, "F")
++            man.fpdf.output(pdf)
+             if os.path.exists(pdf):
+                 ViewPDF(self.mf, pdf)
+         except Exception as err:
+@@ -1850,31 +1850,29 @@ System --> Change Password""")
+ 
+ if __name__ == "__main__":
+     import getopt
+-
+-    # Ensure that python 3 is being used
+-    if sys.version_info[:2] < (3, 5):
+-        print("Invalid Python Version, Must be >= 3.5")
+-        sys.exit()
+-    # Add the program path to the PATH variable if possible
+-    ppath = os.path.realpath(sys.path[0])
+-    if os.path.isfile(ppath):
+-        ppath = os.path.normpath(os.path.dirname(ppath))
+-    if ppath not in os.environ["PATH"].split(os.pathsep):
+-        epath = "%s%s%s" % (os.environ["PATH"], os.pathsep, ppath)
+-        os.environ["PATH"] = epath
+-    # Ubuntu Unity uses the Global Menu which breaks Tartan's Menu
+-    if sys.platform in ("linux", "linux2"):
+-        os.environ["UBUNTU_MENUPROXY"] = "0"
+-    # Load options
+     try:
++        # Ensure that python 3 is being used
++        if sys.version_info[:2] < (3, 5):
++            raise Exception("Invalid Python Version, Must be >= 3.5")
++        # Add the program path to the PATH variable if possible
++        ppath = os.path.realpath(sys.path[0])
++        if os.path.isfile(ppath):
++            ppath = os.path.normpath(os.path.dirname(ppath))
++        if ppath not in os.environ["PATH"].split(os.pathsep):
++            epath = "%s%s%s" % (os.environ["PATH"], os.pathsep, ppath)
++            os.environ["PATH"] = epath
++        # Ubuntu Unity uses the Global Menu which breaks Tartan's Menu
++        if sys.platform in ("linux", "linux2"):
++            os.environ["UBUNTU_MENUPROXY"] = "0"
++        # Load options
+         opts, args = getopt.getopt(sys.argv[1:],
+             "ab:c:de:f:hiklmnoP:p:R:r:s:t:u:vxz", [
+             "altered", "bpwd=", "conum=", "debug", "exclude=", "finper=",
+             "help", "image", "loader", "nomail", "imods", "output", "pdf=",
+             "program=", "rcfdir=", "rcfile=", "script=", "tcode=", "user=",
+             "version", "xdisplay", "zerobar"])
+-    except:
+-        opts, args = [("-h", "")], []
+-    ms0000(opts, args)
++        ms0000(opts, args)
++    except Exception as err:
++        print(err)
+ 
+ # vim:set ts=4 sw=4 sts=4 expandtab:
+diff --git a/mst/ms1030.py b/mst/ms1030.py
+index 9c3187f..431a4da 100644
+--- a/mst/ms1030.py
++++ b/mst/ms1030.py
+@@ -68,9 +68,10 @@ class ms1030(object):
+             "stype": "C",
+             "titl": "Available Control Codes",
+             "head": ("Sys","Code","Description"),
+-            "data": pwctrl,
++            "data": [],
+             "index": 1,
+-            "retn": "D"}
++            "retn": "D",
++            "comnd": self.doCtl}
+         pwd = {
+             "stype": "R",
+             "tables": ("ctlpwr",),
+@@ -82,7 +83,7 @@ class ms1030(object):
+             (("T",0,0,0),"IUI",3,"Company","",
+                 "","Y",self.doCompany,coy,None,None),
+             (("T",0,1,0),"IUA",3,"System","",
+-                "","N",self.doSystem,sys,None,("notblank",)),
++                "","Y",self.doSystem,sys,None,("notblank",)),
+             (("T",0,2,0),"INA",20,"Code","",
+                 "","N",self.doCode,pwd,None,("notblank",)),
+             (("T",0,3,0),"ONA",50,"Description"),
+@@ -90,7 +91,7 @@ class ms1030(object):
+                 "","N",self.doPwd,None,self.doDelete,("notblank",),None,
+              "Use Ctl-T to Toggle View"))
+         but = (
+-            ("Show All",self.ctl,None,0,("T",0,1),("T",0,0)),
++            ("Show All",self.ctl,None,0,("T",0,2),("T",0,0)),
+             ("Cancel",None,self.doCancel,0,("T",0,2),("T",0,0)),
+             ("Quit",None,self.doExit,1,None,None))
+         tnd = ((self.doEnd,"y"), )
+@@ -108,6 +109,25 @@ class ms1030(object):
+                 return "Invalid Company Number"
+         self.coy = w
+         self.sys = None
++        self.ctl["data"] = pwctrl[:]
++
++    def doCtl(self, *opts):
++        self.sys = opts[6][0]
++        self.code = opts[6][1]
++        self.desc = opts[6][2]
++        self.df.loadEntry("T", 0, 1, data=self.sys)
++        self.df.loadEntry("T", 0, 2, data=self.code)
++        self.df.loadEntry("T", 0, 3, data=self.desc)
++        acc = self.sql.getRec("ctlpwr", cols=["pwd_desc", "pwd_pass"],
++            where=[("pwd_cono", "=", self.coy), ("pwd_sys", "=", self.sys),
++            ("pwd_code", "=", self.code)], limit=1)
++        if not acc:
++            self.new = "y"
++            self.df.loadEntry("T", 0, 4, data="")
++        else:
++            self.new = "n"
++            self.df.loadEntry("T", 0, 4, data=b64Convert("decode", acc[1]))
++        self.df.focusField("T", 0, 5)
+ 
+     def doSystem(self, frt, pag, r, c, p, i, w):
+         d1 = ""
+diff --git a/mst/ms3010.py b/mst/ms3010.py
+index c860dfe..18b9d74 100644
+--- a/mst/ms3010.py
++++ b/mst/ms3010.py
+@@ -444,7 +444,7 @@ class ms3010(object):
+             vtt.append(("vtt_styp", "=", self.system))
+         if self.flag == "R":
+             vtt.append(("vtt_paid", "=", self.paid))
+-        else:
++        elif not self.sper:
+             vtt.append(("vtt_paid", "=", 0))
+         vtf = self.sql.getRec("ctlvtf", where=vtt,
+             order="vtt_styp, vtt_ttyp, vtt_refdt, vtt_refno")
+diff --git a/mst/msy010.py b/mst/msy010.py
+index c756fa1..92a5e80 100644
+--- a/mst/msy010.py
++++ b/mst/msy010.py
+@@ -105,7 +105,7 @@ Please select Control --> System Record Maintenance and change the Years to Keep
+             ("cye_period", "=", self.opts["period"][0])], limit=1)[:2]
+         if self.oldf == "Y" and "args" not in self.opts:
+             cf = PwdConfirm(self.opts["mf"], conum=0, system="MST",
+-                code="YearEnd")
++                code="AllowFinal")
+             if cf.pwd and cf.flag == "ok":
+                 return True
+             if not cf.pwd:
+diff --git a/readme.md b/readme.md
+index a1a7361..f66e01f 100644
+--- a/readme.md
++++ b/readme.md
+@@ -36,7 +36,6 @@ Required
+ 
+ Optional
+ --------
+-+ beepy           - Used to play a notification sound
+ + cairosvg        - Used to convert svg to pdf
+ + docutils        - Used to display licence
+ + importlib       - Used to import modules
+diff --git a/scp/sc2020.py b/scp/sc2020.py
+index 7620127..07b5fa2 100644
+--- a/scp/sc2020.py
++++ b/scp/sc2020.py
+@@ -732,7 +732,7 @@ class sc2020(object):
+                 head = (self.rnds * 26) + 25
+             self.fpdf = MyFpdf(name=self.__class__.__name__, head=head,
+                 font="Helvetica")
+-            self.fpdf.def_orientation = "P"
++            self.fpdf.doOrientation("set", "P")
+             self.fpdf.font[2] = 5
+         else:
+             self.fpdf = MyFpdf(name=self.__class__.__name__, head=65,
+diff --git a/sls/si6010.py b/sls/si6010.py
+index fbe74d2..71d1cae 100644
+--- a/sls/si6010.py
++++ b/sls/si6010.py
+@@ -24,7 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
+-from TartanClasses import Sql, TartanDialog
++from TartanClasses import CCD, Sql, TartanDialog
+ 
+ class si6010(object):
+     def __init__(self, **opts):
+@@ -34,7 +34,7 @@ class si6010(object):
+             self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
+-        self.sql = Sql(self.opts["mf"].dbm, ["drsmst", "slsiv1"],
++        self.sql = Sql(self.opts["mf"].dbm, ["drsmst", "drstrn", "slsiv1"],
+             prog=self.__class__.__name__)
+         if self.sql.error:
+             return
+@@ -87,16 +87,25 @@ class si6010(object):
+         if not acc:
+             return "Invalid Invoice Number"
+         self.invno = w
++        self.chain = acc[1]
++        self.acno = acc[2]
++        self.ref1 = CCD(self.invno, "Na", 9.0).work
+         for n, a in enumerate(acc):
+             self.df.loadEntry(frt, pag, p+1+n, data=a)
+ 
+     def doNewOrd(self, frt, pag, r, c, p, i, w):
+         self.ordno = w
++        self.ref2 = self.ordno.strip()[:9]
++        print(self.ref2)
+ 
+     def doEnd(self):
+         self.sql.updRec("slsiv1", cols=["si1_cus_ord"], data=[self.ordno],
+             where=[("si1_cono", "=", self.opts["conum"]), ("si1_rtn", "=",
+             "I"), ("si1_docno", "=", self.invno)])
++        self.sql.updRec("drstrn", cols=["drt_ref2"], data=[self.ref2],
++            where=[("drt_cono", "=", self.opts["conum"]), ("drt_chain", "=",
++            self.chain), ("drt_acno", "=", self.acno), ("drt_ref1", "=",
++            self.ref1)])
+         self.opts["mf"].dbm.commitDbase()
+         self.df.focusField("T", 0, 1)
+ 
+diff --git a/str/st5030.py b/str/st5030.py
+index 76ffbb0..296d3d9 100644
+--- a/str/st5030.py
++++ b/str/st5030.py
+@@ -99,8 +99,6 @@ class st5030(object):
+             return "Invalid Date, Not in Financial Period"
+         self.date = w
+         self.dated = self.df.t_disp[pag][0][p]
+-        if self.reprt == "N":
+-            self.curdt = int(self.date / 100)
+ 
+     def doLoc(self, frt, pag, r, c, p, i, w):
+         acc = self.sql.getRec("strloc", cols=["srl_desc"],
+@@ -144,7 +142,7 @@ class st5030(object):
+             vprc = dat[self.sql.strvar_col.index("stv_ucost")]
+             if self.reprt == "N":
+                 bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
+-                    self.curdt, keys=(grp, code, self.loc,
++                    int(self.sysdtw / 100), keys=(grp, code, self.loc,
+                     ("P", self.opts["period"][0])))
+                 mob, mmv, mcb, yob, ymv, ycb, ac, lc, ls = bals.doStrBals()
+                 fqty, fval = ycb
+diff --git a/str/st5040.py b/str/st5040.py
+index 8dbb621..ec80507 100644
+--- a/str/st5040.py
++++ b/str/st5040.py
+@@ -115,8 +115,9 @@ class st5040(object):
+         vqty = rec[col.index("stv_qty")]
+         vprc = rec[col.index("stv_ucost")]
+         # Test for Variances
+-        bals = Balances(self.opts["mf"], "STR", self.opts["conum"], self.curdt,
+-            keys=(grp, code, loc, ("P", self.opts["period"][0])))
++        bals = Balances(self.opts["mf"], "STR", self.opts["conum"],
++            int(self.sysdtw / 100), keys=(grp, code, loc, ("P",
++            self.opts["period"][0])))
+         m_ob, m_mv, m_cb, y_ob, y_mv, y_cb, ac, lc, ls = bals.doStrBals()
+         fqty, fval = y_cb
+         if fval and fqty:
+@@ -139,8 +140,8 @@ class st5040(object):
+             self.sql.insRec("strtrn", data=[self.opts["conum"],
+                 rec[col.index("stv_group")], rec[col.index("stv_code")],
+                 rec[col.index("stv_loc")], self.date, rtn, ref, "ST-MERG", "",
+-                qdif, vdif, 0, self.curdt, "Stock Take Adjustment", 0,
+-                "", "", "STR", 0, "", self.opts["capnm"], self.sysdtw, 0])
++                qdif, vdif, 0, self.curdt, "Stock Take Adjustment", 0, "", "",
++                "STR", 0, "", self.opts["capnm"], self.sysdtw, 0])
+             if self.glint == "Y":
+                 # General Ledger Control Transaction (Stock On Hand)
+                 col = self.sql.gentrn_col
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index ca6cba8..c8a3c3a 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -129,6 +129,7 @@ def cutpasteMenu(event):
+     return "break"
+ 
+ def getPrgPath():
++    # Return ms0000 and python executable paths
+     import os, sys
+     epath = os.path.dirname(sys.executable)
+     if getattr(sys, "frozen", False):
+@@ -2914,7 +2915,7 @@ def doWriteExport(**args):
+                     sheet[ccc].border = Border(top=stl, left=stl, right=stl,
+                         bottom=stl)
+ 
+-    def createSheet(fmt, page, text=None):
++    def createSheet(book, fmt, page, text=None):
+         if text is None:
+             text = "Page %s" % page
+         sheet = book.create_sheet(title=text)
+@@ -3018,7 +3019,7 @@ def doWriteExport(**args):
+         del book["Sheet"]
+         page = 1
+         if args["datas"][0][0] != "PAGE":
+-            sheet, rowx = createSheet(fmt, page)
++            sheet, rowx = createSheet(book, fmt, page)
+             page += 1
+         # Generate the body
+         if "ctots" in args and args["ctots"]:
+@@ -3039,9 +3040,9 @@ def doWriteExport(**args):
+                 else:
+                     pg = page
+                 if len(row[1]) == 4:
+-                    sheet, rowx = createSheet(fmt, pg, row[1][3])
++                    sheet, rowx = createSheet(book, fmt, pg, row[1][3])
+                 else:
+-                    sheet, rowx = createSheet(fmt, pg)
++                    sheet, rowx = createSheet(book, fmt, pg)
+                 page += 1
+                 continue
+             if row[0] in ("ULINES", "ULINED"):
+diff --git a/tartanWork.py b/tartanWork.py
+index 93e4812..13eafd1 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -28,11 +28,10 @@ import os
+ # Modules
+ #--------
+ pymoda = [
+-    ("fpdf", "fpdf", "__version__"),
++    ("fpdf", "fpdf2", "__version__"),
+     ("PIL", "pillow", "__version__"),
+     ("win32api", "pywin32", None, "win32")]
+ pymodb = [
+-    ("beepy", "beepy", None, "linux"),
+     ("cairosvg", "cairosvg", "__version__"),
+     ("Crypto", "pycryptodome", "__version__"),
+     ("cups", "pycups", None, "linux"),
+@@ -402,56 +401,54 @@ tptrtp = {
+ #-----------------------------
+ # Password Controlled Routines
+ #-----------------------------
+-pwctrl = (
+-    ("ASS", "Super", "Supervisor Password"),
+-    ("BKM", "Super", "Supervisor Password"),
+-    ("BKS", "Super", "Supervisor Password"),
+-    ("BWL", "Super", "Supervisor Password"),
+-    ("BWL", "Delete", "Allow the Deletion of Draw"),
+-    ("BWL", "Modify", "Allow the Modification of Ratings"),
+-    ("CSH", "Super", "Supervisor Password"),
+-    ("CRS", "NewAcc", "Allow Capture of New Account"),
+-    ("CRS", "Super", "Supervisor Password"),
+-    ("DRS", "CrLimit", "Allow Overide of Credit Limit"),
+-    ("DRS", "NewAcc", "Allow Capture of New Account"),
+-    ("DRS", "RefLimit", "Allow Override of Referral Limit"),
+-    ("DRS", "RejLimit", "Allow Override of Rejection Limit"),
+-    ("DRS", "Super", "Supervisor Password"),
+-    ("GEN", "CtlAcc", "Allow Postings to Control Accounts"),
+-    ("GEN", "JnlBal", "Allow Journal Imbalance i.e. Debits <> Credits"),
+-    ("GEN", "NoPost", "Allow Postings to Locked Accounts"),
+-    ("GEN", "Super", "Supervisor Password"),
+-    ("INV", "BelowCost", "Allow Sale Below Cost"),
+-    ("INV", "ChangeRep", "Allow Overide of Salesman"),
+-    ("INV", "ExQty", "Allow Overide of Quantity Limit"),
+-    ("INV", "Invoices", "Allow Invoices and Credit Notes"),
+-    ("INV", "NoCharge", "Allow No Charge Sale"),
+-    ("INV", "Super", "Supervisor Password"),
+-    ("INV", "UserPwd", "User Password"),
+-    ("LON", "Super", "Supervisor Password"),
+-    ("MEM", "FinPer", "Override Financial Period Dates"),
+-    ("MEM", "MemCards", "Allow Printing of Membership Cards"),
+-    ("MEM", "PropSec", "Blank Proposer and/or Seconder"),
+-    ("MEM", "Super", "Supervisor Password"),
+-    ("MST", "ChgBatch", "Allow Changes to Batch Totals"),
+-    ("MST", "MultiDate", "Allow Multiple Date Allocations"),
+-    ("MST", "Super", "Supervisor Password"),
+-    ("MST", "TarBck", "Allow Database Backup"),
+-    ("MST", "TarRes", "Allow Database Restore"),
+-    ("MST", "AllowFinal", "Allow Override of Finalised Year End"),
+-    ("MST", "UnbalBatch", "Allow Override of Unbalanced Batches"),
+-    ("MST", "YearEnd", "Allow Year End to be Run for a Finalised Period"),
+-    ("RCA", "DateOver", "Allow Override of Transaction Date"),
+-    ("RCA", "Overpaid", "Allow Override of Overpayment"),
+-    ("RCA", "Super", "Supervisor Password"),
+-    ("RTL", "NewAcc", "Allow Capture of New Account"),
+-    ("RTL", "Super", "Supervisor Password"),
+-    ("SCP", "Super", "Supervisor Password"),
+-    ("STR", "DupOrd", "Allow Ordering of Item Already Ordered"),
+-    ("STR", "ExQty", "Allow Overide of Quantity Limit"),
+-    ("STR", "NewAcc", "Allow Capture of New Account"),
+-    ("STR", "Super", "Supervisor Password"),
+-    ("WAG", "Super", "Supervisor Password"))
++pwctrl = [
++    ["ASS", "Super", "Supervisor Password"],
++    ["BKM", "Super", "Supervisor Password"],
++    ["BKS", "Super", "Supervisor Password"],
++    ["BWL", "Super", "Supervisor Password"],
++    ["BWL", "Delete", "Allow the Deletion of Draw"],
++    ["BWL", "Modify", "Allow the Modification of Ratings"],
++    ["CSH", "Super", "Supervisor Password"],
++    ["CRS", "NewAcc", "Allow Capture of New Account"],
++    ["CRS", "Super", "Supervisor Password"],
++    ["DRS", "CrLimit", "Allow Overide of Credit Limit"],
++    ["DRS", "NewAcc", "Allow Capture of New Account"],
++    ["DRS", "RefLimit", "Allow Override of Referral Limit"],
++    ["DRS", "RejLimit", "Allow Override of Rejection Limit"],
++    ["DRS", "Super", "Supervisor Password"],
++    ["GEN", "CtlAcc", "Allow Postings to Control Accounts"],
++    ["GEN", "JnlBal", "Allow Journal Imbalance i.e. Debits <> Credits"],
++    ["GEN", "NoPost", "Allow Postings to Locked Accounts"],
++    ["GEN", "Super", "Supervisor Password"],
++    ["INV", "BelowCost", "Allow Sale Below Cost"],
++    ["INV", "ChangeRep", "Allow Overide of Salesman"],
++    ["INV", "ExQty", "Allow Overide of Quantity Limit"],
++    ["INV", "Invoices", "Allow Invoices and Credit Notes"],
++    ["INV", "NoCharge", "Allow No Charge Sale"],
++    ["INV", "Super", "Supervisor Password"],
++    ["LON", "Super", "Supervisor Password"],
++    ["MEM", "FinPer", "Override Financial Period Dates"],
++    ["MEM", "MemCards", "Allow Printing of Membership Cards"],
++    ["MEM", "PropSec", "Blank Proposer and/or Seconder"],
++    ["MEM", "Super", "Supervisor Password"],
++    ["MST", "ChgBatch", "Allow Changes to Batch Totals"],
++    ["MST", "MultiDate", "Allow Multiple Date Allocations"],
++    ["MST", "Super", "Supervisor Password"],
++    ["MST", "TarBck", "Allow Database Backup"],
++    ["MST", "TarRes", "Allow Database Restore"],
++    ["MST", "AllowFinal", "Allow Override of Finalised Year End"],
++    ["MST", "UnbalBatch", "Allow Override of Unbalanced Batches"],
++    ["RCA", "DateOver", "Allow Override of Transaction Date"],
++    ["RCA", "Overpaid", "Allow Override of Overpayment"],
++    ["RCA", "Super", "Supervisor Password"],
++    ["RTL", "NewAcc", "Allow Capture of New Account"],
++    ["RTL", "Super", "Supervisor Password"],
++    ["SCP", "Super", "Supervisor Password"],
++    ["STR", "DupOrd", "Allow Ordering of Item Already Ordered"],
++    ["STR", "ExQty", "Allow Overide of Quantity Limit"],
++    ["STR", "NewAcc", "Allow Capture of New Account"],
++    ["STR", "Super", "Supervisor Password"],
++    ["WAG", "Super", "Supervisor Password"]]
+ #-----------
+ # Data Types
+ #-----------
+@@ -7230,6 +7227,8 @@ datdic = {
+ # Point of Sale
+ if "SPOS" in os.environ:
+     allsys["POS"] = ["Point of Sale", "PS", "Y", 18]
++    pwctrl.append(["POS", "UserPwd", "User Password"])
++    pwctrl.sort()
+     pkgs["ps"] = "pos"
+     tabdic["poscnt"] = {
+         "fld": [
+diff --git a/uty/mklinux.py b/uty/mklinux.py
+index 3b7f825..9863549 100644
+--- a/uty/mklinux.py
++++ b/uty/mklinux.py
+@@ -13,7 +13,7 @@ def doUpgrade():
+     from tartanWork import pymoda, pymodb
+     mods = ["pip", "docutils", "pyinstaller"]
+     for mod in pymoda + pymodb:
+-        if len(mod) == 4 and mod[3] != "win32":
++        if len(mod) == 4 and mod[3] == "win32":
+             continue
+         mods.append(mod[1])
+     for mod in mods:
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 861ee77..3e5bf61 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -11,6 +11,7 @@ import shutil
+ import subprocess
+ import sys
+ import time
++import traceback
+ 
+ 
+ def exeCmd(cmd):
+@@ -180,9 +181,61 @@ else:
+ # Change to pypath directory
+ os.chdir(pypath)
+ if newver and newver != "%s.%s" % VERSION:
+-    if not os.path.isfile("changes.txt"):
+-        input("changes.txt File Not Found! Ctl-C to Abort")
+     try:
++        # Create changes.txt
++        sys.path.insert(0, pypath)
++        from tartanWork import allsys, pkgs, tarmen
++        ofle = open("changes.txt", "w")
++        ofle.write("""
++Tartan Systems Upgrade
++----------------------\n""")
++        new = {}
++        for p in pkgs:
++            new[pkgs[p]] = p
++        proc = subprocess.Popen("git status", shell=True, bufsize=0,
++            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
++            stderr=subprocess.PIPE, close_fds=True)
++        prt = proc.stdout.readlines()
++        skp = ["ding.wav", "doc", "ms0000", "pkgprg", "readme.md",
++            "tartan", "uty"]
++        cnt = 0
++        for line in prt:
++            line = line.decode("utf-8").replace("\n", "")
++            if line.count("modified"):
++                mtyp = "Modified"
++            elif line.count("new file"):
++                mtyp = "Added"
++            else:
++                continue
++            skip = False
++            for s in skp:
++                if line.lower().count(s):
++                    skip = True
++                    break
++            if skip:
++                continue
++            mod = line.split()[1].split("/")
++            sss = new[mod[0]]
++            if mod[0] == "sls":
++                ttt = ["Sales Invoicing"]
++            else:
++                ttt = allsys[mod[0].upper()]
++            for l in tarmen["%smod" % sss]:
++                if l[2] == mod[1].replace(".py", ""):
++                    cnt += 1
++                    for mmm in tarmen["%smen" % sss]:
++                        if mmm[2] == l[1]:
++                            ofle.write("%2s) %s %s, %s - %s\n" % \
++                                (cnt, mtyp, ttt[0], mmm[3], l[4]))
++                    break
++        cnt += 1
++        ofle.write("""%2s) Other minor changes, fixes and enhancements.
++
++NB:
++--
++You can only upgrade to this version if your current version is 5.5 or later.
++If you have an older version than 5.5 please contact me for assistance.\n""" % cnt)
++        ofle.close()
+         # Change version number in ms0000.py, SYS.rst, Downloads.rst
+         old = open("ms0000.py", "r")
+         lin = old.readlines()
+@@ -299,6 +352,7 @@ if newver and newver != "%s.%s" % VERSION:
+         if push == "y":
+             exeCmd("/usr/bin/git push -fu origin main")
+     except Exception as err:
++        err = "%s\n\n%s" % (err, traceback.format_exc())
+         print("Error Creating New Version (%s)" % err)
+         sys.exit()
+ # Create a zip of the repository
+@@ -396,6 +450,8 @@ if linux:
+     cmd = "python %s/uty/mklinux.py" % bv
+     if onefle:
+         cmd += " -o"
++    if upgpip:
++        cmd += " -u"
+     exeCmd(cmd)
+ if publish:
+     # Publish
+@@ -438,22 +494,22 @@ if publish:
+         if "32" in bits:
+             exeCmd("mv %s/%s/%s_%s.%s-32.exe %s/%s/" %
+                 (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+-            exeCmd("cp %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
++            exeCmd("mv %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
+                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
+         if "64" in bits:
+             exeCmd("mv %s/%s/%s_%s.%s-64.exe %s/%s/" %
+                 (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+-            exeCmd("cp %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
++            exeCmd("mv %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
+                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
+         if "8" in bits:
+             exeCmd("mv %s/%s/%s_%s.%s-8.exe %s/%s/" %
+                 (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+-            exeCmd("cp %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
++            exeCmd("mv %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
+                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
+         if "7" in bits:
+             exeCmd("mv %s/%s/%s_%s.%s-7.exe %s/%s/" %
+                 (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+-            exeCmd("cp %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
++            exeCmd("mv %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
+                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
+     print("Version Number is %s.%s" % tuple(cver))
+     # Dropbox
+diff --git a/uty/tp1010.py b/uty/tp1010.py
+index bda428e..853e618 100644
+--- a/uty/tp1010.py
++++ b/uty/tp1010.py
+@@ -956,7 +956,7 @@ class tp1010(object):
+             line[self.sql.tpldet_col.index("tpd_text")] = dat
+             self.frm.doDrawDetail(line, fmat=False)
+         pdfnam = os.path.join(self.opts["mf"].rcdic["wrkdir"], "test.pdf")
+-        self.frm.output(pdfnam, "F")
++        self.frm.output(pdfnam)
+         ViewPDF(self.opts["mf"], pdfnam)
+         self.opts["mf"].window.deiconify()
+         self.df.setWidget(self.df.mstFrame, state="show")

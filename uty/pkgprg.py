@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import time
+import traceback
 
 
 def exeCmd(cmd):
@@ -180,9 +181,61 @@ else:
 # Change to pypath directory
 os.chdir(pypath)
 if newver and newver != "%s.%s" % VERSION:
-    if not os.path.isfile("changes.txt"):
-        input("changes.txt File Not Found! Ctl-C to Abort")
     try:
+        # Create changes.txt
+        sys.path.insert(0, pypath)
+        from tartanWork import allsys, pkgs, tarmen
+        ofle = open("changes.txt", "w")
+        ofle.write("""
+Tartan Systems Upgrade
+----------------------\n""")
+        new = {}
+        for p in pkgs:
+            new[pkgs[p]] = p
+        proc = subprocess.Popen("git status", shell=True, bufsize=0,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, close_fds=True)
+        prt = proc.stdout.readlines()
+        skp = ["ding.wav", "doc", "ms0000", "pkgprg", "readme.md",
+            "tartan", "uty"]
+        cnt = 0
+        for line in prt:
+            line = line.decode("utf-8").replace("\n", "")
+            if line.count("modified"):
+                mtyp = "Modified"
+            elif line.count("new file"):
+                mtyp = "Added"
+            else:
+                continue
+            skip = False
+            for s in skp:
+                if line.lower().count(s):
+                    skip = True
+                    break
+            if skip:
+                continue
+            mod = line.split()[1].split("/")
+            sss = new[mod[0]]
+            if mod[0] == "sls":
+                ttt = ["Sales Invoicing"]
+            else:
+                ttt = allsys[mod[0].upper()]
+            for l in tarmen["%smod" % sss]:
+                if l[2] == mod[1].replace(".py", ""):
+                    cnt += 1
+                    for mmm in tarmen["%smen" % sss]:
+                        if mmm[2] == l[1]:
+                            ofle.write("%2s) %s %s, %s - %s\n" % \
+                                (cnt, mtyp, ttt[0], mmm[3], l[4]))
+                    break
+        cnt += 1
+        ofle.write("""%2s) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.\n""" % cnt)
+        ofle.close()
         # Change version number in ms0000.py, SYS.rst, Downloads.rst
         old = open("ms0000.py", "r")
         lin = old.readlines()
@@ -299,6 +352,7 @@ if newver and newver != "%s.%s" % VERSION:
         if push == "y":
             exeCmd("/usr/bin/git push -fu origin main")
     except Exception as err:
+        err = "%s\n\n%s" % (err, traceback.format_exc())
         print("Error Creating New Version (%s)" % err)
         sys.exit()
 # Create a zip of the repository
@@ -396,6 +450,8 @@ if linux:
     cmd = "python %s/uty/mklinux.py" % bv
     if onefle:
         cmd += " -o"
+    if upgpip:
+        cmd += " -u"
     exeCmd(cmd)
 if publish:
     # Publish
@@ -438,22 +494,22 @@ if publish:
         if "32" in bits:
             exeCmd("mv %s/%s/%s_%s.%s-32.exe %s/%s/" %
                 (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
-            exeCmd("cp %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
+            exeCmd("mv %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "64" in bits:
             exeCmd("mv %s/%s/%s_%s.%s-64.exe %s/%s/" %
                 (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
-            exeCmd("cp %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
+            exeCmd("mv %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "8" in bits:
             exeCmd("mv %s/%s/%s_%s.%s-8.exe %s/%s/" %
                 (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
-            exeCmd("cp %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
+            exeCmd("mv %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "7" in bits:
             exeCmd("mv %s/%s/%s_%s.%s-7.exe %s/%s/" %
                 (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
-            exeCmd("cp %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
+            exeCmd("mv %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
     print("Version Number is %s.%s" % tuple(cver))
     # Dropbox

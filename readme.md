@@ -36,7 +36,6 @@ Required
 
 Optional
 --------
-+ beepy           - Used to play a notification sound
 + cairosvg        - Used to convert svg to pdf
 + docutils        - Used to display licence
 + importlib       - Used to import modules

@@ -105,7 +105,7 @@ Please select Control --> System Record Maintenance and change the Years to Keep
             ("cye_period", "=", self.opts["period"][0])], limit=1)[:2]
         if self.oldf == "Y" and "args" not in self.opts:
             cf = PwdConfirm(self.opts["mf"], conum=0, system="MST",
-                code="YearEnd")
+                code="AllowFinal")
             if cf.pwd and cf.flag == "ok":
                 return True
             if not cf.pwd:
