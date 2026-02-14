@@ -72,7 +72,7 @@ def placeWindow(window, parent=None, place="C", size=None, expose=False):
         wh = window.winfo_reqheight()
     if parent:
         try:
-            import tkinter as tk
+            from TartanClasses import tk
             w = tk.Toplevel()
             w.geometry("1x1+0+0")
             w.update()
@@ -100,10 +100,10 @@ def placeWindow(window, parent=None, place="C", size=None, expose=False):
 
 def cutpasteMenu(event):
     # Cut, copy and paste menu
-    from TartanClasses import tk, tkfont
+    from TartanClasses import tkfont, MyMenu
     wid = event.widget
     font = tkfont.Font(font=("Arial", 10))
-    wid.menu = tk.Menu(wid, tearoff=False, takefocus=0, font=font)
+    wid.menu = MyMenu(wid, tearoff=False, takefocus=0, font=font)
     image = getImage("Cut", (20, 20))
     wid.menu.add_command(label="Cut", image=image, compound="left",
         accelerator="Ctl-X", font=font)
@@ -176,7 +176,7 @@ def showWarning(screen=None, head="", mess=""):
 def getFontSize(tk=None, width=None, height=None, font=10):
     if tk is None:
         try:
-            import tkinter as tk
+            from TartanClasses import tk
         except:
             return 800, 600, 10
     plus = True
@@ -2850,7 +2850,7 @@ def doWriteExport(**args):
                 if type(valc) in (list, tuple):
                     valc = valc[0]
                 if args["forms"][colc][0][0].lower() == "d" or \
-                   args["forms"][colc][0][1].lower() in ("d", "i", "l"):
+                   args["forms"][colc][0][1].lower() in ("d", "i", "l", "s"):
                     if line:
                         line = "%s,%s" % (line, valc)
                     else:

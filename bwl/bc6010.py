@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import time
 from TartanClasses import GetCtl, SplashScreen, Sql, TartanDialog
 from tartanFunctions import askChoice
 
@@ -50,7 +51,7 @@ class bc6010(object):
             ("bwlflt","bft_cono","bft_skip","bft_player"),
             ("bwlgme","bcg_cono","bcg_scod","bcg_ocod"),
             ("bwltab","btb_cono","btb_tab"))
-        tabs = []
+        tabs = ["chglog"]
         for tab in self.tables:
             if tab[0] not in tabs:
                 tabs.append(tab[0])
@@ -204,6 +205,11 @@ class bc6010(object):
                 dat = [self.newtab]
                 col = [tab[x+2]]
                 self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
+        if self.newtab != self.oldtab:
+            dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+            self.sql.insRec("chglog", data=["bwltab", "U", "%03i%06s" % \
+                (self.opts["conum"], self.oldtab), "btb_tab", dte,
+                self.opts["capnm"], self.oldtab, self.newtab])
         if "args" not in self.opts:
             self.df.focusField("T", 0, 1)
 

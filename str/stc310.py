@@ -186,11 +186,9 @@ class stc310(object):
                 # Account Names
                 if x in (4, 6):
                     continue
-            elif x == 3:
-                data.append(0)
-                data.append(0)
-                break
             data.append(self.df.t_work[0][0][x])
+        if self.glint == "N":
+            data.extend([0, 0])
         if self.new == "Y":
             self.sql.insRec("strgrp", data=data)
         elif data != self.acc[:len(data)]:

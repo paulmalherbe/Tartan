@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import time
 from TartanClasses import CCD, FileImport, ProgressBar, Sql, TartanDialog
 from tartanFunctions import askQuestion, copyList
 
@@ -78,7 +79,7 @@ class gl6010(object):
             ("wagedc", "ced_rglco", "ced_rglno"),
             ("wagtf2", "wt2_gl_econo", "wt2_gl_eacno"),
             ("wagtf2", "wt2_gl_rcono", "wt2_gl_racno")]
-        tabs = []
+        tabs = ["chglog"]
         tables = copyList(self.tables)
         for tab in tables:
             chk = sql.getRec("ftable", where=[("ft_tabl", "=", tab[0])])
@@ -216,6 +217,11 @@ class gl6010(object):
                 p2.closeProgress()
             if new:
                 self.sql.insRec(tab[0], data=new)
+        if newacc != oldacc:
+            dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+            self.sql.insRec("chglog", data=["genmst", "U", "%03i%07i" % \
+                (self.opts["conum"], oldacc), "glm_acno", dte,
+                self.opts["capnm"], oldacc, newacc])
         if self.doimp:
             p1.closeProgress()
             self.opts["mf"].dbm.commitDbase(ask=True)

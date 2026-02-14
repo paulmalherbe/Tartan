@@ -494,14 +494,18 @@ class bc3100(object):
         self.keys.sort()
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=65)
         self.lastg = None
-        for g in self.keys:
+        if self.gamrep == "Y":
             self.pageHeading()
-            if self.gamrep == "Y":
+            for g in self.keys:
                 self.doReport("G", g)
                 if g == 0 and len(chk) > 20:
                     self.pageHeading()
-            if self.matrep == "Y":
+        if self.matrep == "Y":
+            self.pageHeading()
+            for g in self.keys:
                 self.doReport("M", g)
+                if g == 0 and len(chk) > 20:
+                    self.pageHeading()
         if self.pgame == self.games:
             # Enter Prizes
             for key in self.keys:
@@ -968,9 +972,9 @@ class bc3100(object):
             head = "Match Standings After Game Number: %s" % self.pgame
         if group:
             if self.cfmat in ("R", "W"):
-                head += "  for Section: %s" % chr(64 + group)
+                head = "Section: %s %s" % (chr(64 + group), head)
             else:
-                head += "  for Group: %s" % chr(64 + group)
+                head = "Group: %s %s" % (chr(64 + group), head)
         self.fpdf.drawText(head, font=["courier", "B", 16], align="C")
         self.fpdf.drawText()
         self.fpdf.setFont(style="B")

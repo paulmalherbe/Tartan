@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import time
 from TartanClasses import GetCtl, ProgressBar, Sql, TartanDialog
 from tartanFunctions import askQuestion
 
@@ -44,7 +45,7 @@ class cr6010(object):
             ("genrcc", "grc_cono", "grc_acrs"),
             ("strpom", "pom_cono", "pom_acno"),
             ("strtrn", "stt_cono", "stt_acno", "stt_styp"))
-        tabs = []
+        tabs = ["chglog"]
         for tab in self.tables:
             tabs.append(tab[0])
         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
@@ -175,6 +176,11 @@ class cr6010(object):
                 dat = [self.newacc]
                 col = [tab[2]]
             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
+        if self.newacc != self.oldacc:
+            dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+            self.sql.insRec("chglog", data=["crsmst", "U", "%03i%-7s" % \
+                (self.opts["conum"], self.oldacc), "crm_acno", dte,
+                self.opts["capnm"], self.oldacc, self.newacc])
         if focus:
             self.df.focusField("T", 0, 1)
 

@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import time
 from TartanClasses import FileImport, GetCtl, ProgressBar, Sql, TartanDialog
 
 class st6010(object):
@@ -48,7 +49,7 @@ class st6010(object):
             ("strrcp", "srr_cono", "srr_rgroup", "srr_rcode"),
             ("strtrn", "stt_cono", "stt_group", "stt_code"),
             ("strvar", "stv_cono", "stv_group", "stv_code"))
-        tabs = ["strgrp"]
+        tabs = ["chglog", "strgrp"]
         for tab in self.tables:
             if not tabs.count(tab[0]):
                 tabs.append(tab[0])
@@ -223,6 +224,15 @@ class st6010(object):
                 dat = [self.newgrp, self.newcod]
                 col = [tab[2], tab[3]]
             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
+        dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+        if self.newgrp != self.oldgrp:
+            self.sql.insRec("chglog", data=["strmf1", "U", "%03i%-3s%-20s" % \
+                (self.opts["conum"], self.oldgrp, self.oldcod), "st1_group",
+                dte, self.opts["capnm"], self.oldgrp, self.newgrp])
+        if self.newcod != self.oldcod:
+            self.sql.insRec("chglog", data=["strmf1", "U", "%03i%-3s%-20s" % \
+                (self.opts["conum"], self.oldgrp, self.oldcod), "st1_code",
+                dte, self.opts["capnm"], self.oldcod, self.newcod])
 
     def doExit(self):
         self.df.closeProcess()

@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import time
 from TartanClasses import GetCtl, ProgressBar, Sql, TartanDialog
 from tartanFunctions import askQuestion
 
@@ -47,7 +48,7 @@ class dr6010(object):
             ("slsiv1", "si1_cono", "si1_chain", "si1_acno"),
             ("strmf1", "st1_cono", "st1_chn_excl", "st1_acc_excl"),
             ("strtrn", "stt_cono", "stt_chain", "stt_acno", "stt_styp"))
-        tabs = ["drschn"]
+        tabs = ["chglog", "drschn"]
         for tab in self.tables:
             tabs.append(tab[0])
         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
@@ -252,6 +253,15 @@ class dr6010(object):
                 dat = [self.newchn, self.newacc]
                 col = [tab[2], tab[3]]
             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
+        dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+        if self.newchn != self.oldchn:
+            self.sql.insRec("chglog", data=["drsmst", "U", "%03i%-03is%-7s" % \
+                (self.opts["conum"], self.oldchn, self.oldacc), "drm_chain",
+                dte, self.opts["capnm"], self.oldgrp, self.newgrp])
+        if self.newacc != self.oldacc:
+            self.sql.insRec("chglog", data=["drsmst", "U", "%03i%-03is%-7s" % \
+                (self.opts["conum"], self.oldchn, self.oldacc), "drm_acno",
+                dte, self.opts["capnm"], self.oldacc, self.newacc])
         if focus:
             self.df.focusField("T", 0, 1)
 

@@ -63,9 +63,9 @@ class si3020(object):
         self.colsh.append(["Grp", "Product-Code", "Description", "U.O.I",
             "Quantity", "Value", "Profit", "Prft-%", "Quantity", "Value",
             "Profit", "Prft-%"])
-        self.forms = [("UA", 3), ("NA", 20), ("NA", 30), ("NA", 10), ("SI", 9),
-            ("SI", 9), ("SI", 9), ("SD", 7.2), ("SI", 9), ("SI", 9), ("SI", 9),
-            ("SD", 7.2)]
+        self.forms = [("UA", 3), ("NA", 20), ("NA", 30), ("NA", 10),
+            ("SD", 12.2), ("SD", 12.2), ("SD", 12.2), ("SD", 7.2),
+            ("SD", 12.2), ("SD", 12.2), ("SD", 12.2), ("SD", 7.2)]
         self.stot = [0] * 6
         self.gtot = [0] * 6
         return True
@@ -184,7 +184,7 @@ class si3020(object):
 
     def printReport(self, recs):
         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
-        self.head = "%03u %-138s" % (self.opts["conum"], self.opts["conam"])
+        self.head = "%03u %-156s" % (self.opts["conum"], self.opts["conam"])
         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
         lstgrp = ""
         self.pglin = 999
@@ -251,21 +251,21 @@ class si3020(object):
                 y_cst = c
                 y_sls = s
                 break
-        mq = CCD(float(ASD(0) - ASD(m_qty)), "SI", 9)
-        mc = CCD(float(ASD(0) - ASD(m_cst)), "SI", 9)
-        ms = CCD(float(ASD(0) - ASD(m_sls)), "SI", 9)
+        mq = CCD(float(ASD(0) - ASD(m_qty)), "SD", 12.2)
+        mc = CCD(float(ASD(0) - ASD(m_cst)), "SD", 12.2)
+        ms = CCD(float(ASD(0) - ASD(m_sls)), "SD", 12.2)
         mp = float(ASD(ms.work) - ASD(mc.work))
-        mp = CCD(mp, "SI", 9)
+        mp = CCD(mp, "SD", 12.2)
         if ms.work == 0:
             mn = 0
         else:
             mn = round((mp.work * 100 / ms.work), 2)
         mn = CCD(mn, "SD", 7.2)
-        yq = CCD(float(ASD(0) - ASD(y_qty)), "SI", 9)
-        yc = CCD(float(ASD(0) - ASD(y_cst)), "SI", 9)
-        ys = CCD(float(ASD(0) - ASD(y_sls)), "SI", 9)
+        yq = CCD(float(ASD(0) - ASD(y_qty)), "SD", 12.2)
+        yc = CCD(float(ASD(0) - ASD(y_cst)), "SD", 12.2)
+        ys = CCD(float(ASD(0) - ASD(y_sls)), "SD", 12.2)
         yp = float(ASD(ys.work) - ASD(yc.work))
-        yp = CCD(yp, "SI", 9)
+        yp = CCD(yp, "SD", 12.2)
         if not ys.work:
             yn = 0
         else:
@@ -298,11 +298,11 @@ class si3020(object):
         self.fpdf.drawText("%s %s %s     %s %s" % \
             ("Group:", self.grp.disp, grpd, "Location:", self.locd))
         self.fpdf.drawText()
-        self.fpdf.drawText("%-62s %-36s %-5s%-36s " % ("",
-            "*********** Month T0 Date **********", "",
-            "*********** Year To Date ***********"))
-        self.fpdf.drawText("%-20s %-30s %-10s %9s %9s %9s %7s     "\
-            "%9s %9s %9s %7s" % ("Product-Code", "Description", "U.O.I",
+        self.fpdf.drawText("%-62s %-45s %-5s%-45s " % ("",
+            "*************** Month T0 Date ***************", "",
+            "*************** Year To Date ****************"))
+        self.fpdf.drawText("%-20s %-30s %-10s %12s %12s %12s %7s     "\
+            "%12s %12s %12s %7s" % ("Product-Code", "Description", "U.O.I",
             "Quantity ", "Value ", "Profit ", "Prft-% ",
             "Quantity ", "Value ", "Profit ", "Prft-% "))
         self.fpdf.underLine(txt=self.head)
@@ -317,17 +317,17 @@ class si3020(object):
 
     def groupTotal(self):
         self.fpdf.drawText()
-        mq = CCD(self.stot[0], "SI", 9)
-        ms = CCD(self.stot[1], "SI", 9)
-        mp = CCD(self.stot[2], "SI", 9)
+        mq = CCD(self.stot[0], "SD", 12.2)
+        ms = CCD(self.stot[1], "SD", 12.2)
+        mp = CCD(self.stot[2], "SD", 12.2)
         if ms.work == 0:
             mn = 0
         else:
             mn = round((mp.work * 100 / ms.work), 2)
         mn = CCD(mn, "SD", 7.2)
-        yq = CCD(self.stot[3], "SI", 9)
-        ys = CCD(self.stot[4], "SI", 9)
-        yp = CCD(self.stot[5], "SI", 9)
+        yq = CCD(self.stot[3], "SD", 12.2)
+        ys = CCD(self.stot[4], "SD", 12.2)
+        yp = CCD(self.stot[5], "SD", 12.2)
         if ys.work == 0:
             yn = 0
         else:
@@ -339,17 +339,17 @@ class si3020(object):
         self.stot = [0] * 6
 
     def grandTotal(self):
-        mq = CCD(self.gtot[0], "SI", 9)
-        ms = CCD(self.gtot[1], "SI", 9)
-        mp = CCD(self.gtot[2], "SI", 9)
+        mq = CCD(self.gtot[0], "SD", 12.2)
+        ms = CCD(self.gtot[1], "SD", 12.2)
+        mp = CCD(self.gtot[2], "SD", 12.2)
         if ms.work == 0:
             mn = 0
         else:
             mn = round((mp.work * 100 / ms.work), 2)
         mn = CCD(mn, "SD", 7.2)
-        yq = CCD(self.gtot[3], "SI", 9)
-        ys = CCD(self.gtot[4], "SI", 9)
-        yp = CCD(self.gtot[5], "SI", 9)
+        yq = CCD(self.gtot[3], "SD", 12.2)
+        ys = CCD(self.gtot[4], "SD", 12.2)
+        yp = CCD(self.gtot[5], "SD", 12.2)
         if ys.work == 0:
             yn = 0
         else:

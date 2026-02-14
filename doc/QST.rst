@@ -71,9 +71,9 @@ Bowling Clubs
 .............
 If you are going to use `Bowling Clubs` the following options are available.
 
++ **Control Record**
+    * Create a Control record by selecting `Control Record` from the `Tabs` menu.
 + **Tabs**
-    * Create a Control record by selecting `Control Record` from the menu.
-    * Create Tab records by selecting `Tabs Maintenance` from the menu.
     * Do a draw by selecting `Tabs-In Draw` from the menu.
     * Reprint a draw by selecting `Reprint Draw` from the menu.
     * Print a Draw Summary by selecting `Draws Summary` from the menu.

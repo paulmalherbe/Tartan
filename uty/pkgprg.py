@@ -196,7 +196,7 @@ Tartan Systems Upgrade
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, close_fds=True)
         prt = proc.stdout.readlines()
-        skp = ["ding.wav", "doc", "ms0000", "pkgprg", "readme.md",
+        skp = ["ding.wav", "doc", "ms0000", "pkgprg", "readme.md", "tab",
             "tartan", "uty"]
         cnt = 0
         for line in prt:

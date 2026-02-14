@@ -25,7 +25,7 @@ COPYING
 """
 
 import time
-from TartanClasses import CCD, RepPrt, TartanDialog
+from TartanClasses import CCD, RepPrt, Sql, TartanDialog
 from tartanWork import tabdic
 
 class ms3040(object):
@@ -36,16 +36,28 @@ class ms3040(object):
         self.opts["mf"].startLoop()
 
     def setVariables(self):
+        self.sql = Sql(self.opts["mf"].dbm, "chglog", prog=__name__)
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
 
     def mainProcess(self):
+        self.tabs = []
+        tabs = self.sql.getRec("chglog", cols=["chg_tab"], group="chg_tab",
+            order="chg_tab")
+        for tab in tabs:
+            self.tabs.append(tab[0])
         tab = {
             "stype": "R",
             "tables": ("chglog",),
             "cols": (("chg_tab", "", 0, "Table Name", "TabNam"),),
             "group": "chg_tab",
             "order": "chg_tab"}
+        key = {
+            "stype": "R",
+            "tables": ("chglog",),
+            "cols": (("chg_key", "", 0, "Table Key", "Table Key"),),
+            "group": "chg_key",
+            "order": "chg_key"}
         usr = {
             "stype": "R",
             "tables": ("chglog",),
@@ -61,11 +73,13 @@ class ms3040(object):
             (("T",0,2,0),"INA",6,"Table Name","",
                 "","N",self.doTable,tab,None,("efld",)),
             (("T",0,2,0),"ONA",30,""),
-            (("T",0,3,0),("IRB",r1s),0,"Order By Table","",
-                "Y","N",self.doOrder,None,None,None),
+            (("T",0,3,0),"INA",30,"Table Key","",
+                "","N",self.doKey,key,None,("efld",)),
             (("T",0,4,0),"INA",20,"User Login","",
                 "","N",self.doUser,usr,None,("efld",)),
-            (("T",0,4,0),"ONA",30,""))
+            (("T",0,4,0),"ONA",30,""),
+            (("T",0,5,0),("IRB",r1s),0,"Order By User","",
+                "Y","N",self.doOrder,None,None,None))
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)
         self.df = TartanDialog(self.opts["mf"], tops=False,
@@ -84,18 +98,29 @@ class ms3040(object):
         if self.table:
             if self.table not in tabdic:
                 return "Invalid Table Name"
-            self.tname = tabdic[w]["idx"][0][0]
-            self.df.loadEntry(frt, pag, p+1, data=self.tname)
+            if self.table not in self.tabs:
+                return "No Changes for Table %s" % self.table
+            tname = tabdic[w]["idx"][0][0]
+            self.df.loadEntry(frt, pag, p+1, data=tname)
+        else:
+            self.df.loadEntry(frt, pag, p+1, data="")
+
+    def doKey(self, frt, pag, r, c, p, i, w):
+        self.key = w
 
     def doUser(self, frt, pag, r, c, p, i, w):
         self.user = w
         if self.user:
-            acc = self.sql.getRec("chglog", cols=["usr_fnam"],
+            acc = self.sql.getRec("ctlpwu", cols=["usr_fnam"],
                 where=[("usr_name", "=", self.user)], limit=1)
             if not acc:
                 return "Invalid User Login"
-            self.tname = acc[0]
-            self.df.loadEntry(frt, pag, p+1, data=self.tname)
+            uname = acc[0]
+            self.df.loadEntry(frt, pag, p+1, data=uname)
+            self.byusr = "N"
+            return "sk2"
+        else:
+            self.df.loadEntry(frt, pag, p+1, data="")
 
     def doOrder(self, frt, pag, r, c, p, i, w):
         self.byusr = w
@@ -120,11 +145,13 @@ class ms3040(object):
             ("chg_dte", ">=", str(self.frm.work * 1000000)),
             ("chg_dte", "<=", str((self.too.work * 1000000) + 999999))]
         if self.byusr == "Y":
-            odr = "chg_tab, chg_dte desc"
+            odr = "chg_tab, chg_dte"
         else:
-            odr = "chg_dte desc"
+            odr = "chg_dte"
         if self.table:
             whr.append(("chg_tab", "=", self.table))
+        if self.key:
+            whr.append(("chg_key", "=", self.key))
         if self.user:
             whr.append(("chg_usr", "=", self.user))
         RepPrt(self.opts["mf"], name=self.__class__.__name__, tables=["chglog"],

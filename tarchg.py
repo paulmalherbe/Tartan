@@ -1,4 +1,30 @@
-changes = """ver_6.23 2025-12-26
+changes = """ver_6.24 2026-02-14
+===================
+
+ 1) Modified Asset Register, Toolbox - Change Asset Codes
+ 2) Modified Bowling Clubs, Tabs - Tabs Maintenance
+ 3) Modified Bowling Clubs, Competitions - Capture Entries
+ 4) Modified Bowling Clubs, Competitions - Competiton Draw
+ 5) Modified Bowling Clubs, Tabs - Tabs-In Summary
+ 6) Modified Bowling Clubs, Competitions - Match Results Report
+ 7) Modified Bowling Clubs, Toolbox - Change Tab Numbers
+ 8) Modified Creditors Ledger, Toolbox - Change Account Numbers
+ 9) Modified Debtors Ledger, Toolbox - Change Account Numbers
+10) Modified General Ledger, Toolbox - Change Account Numbers
+11) Modified Loans Ledger, Toolbox - Change Account Numbers
+12) Modified Master Control, Reporting - Changes Log Report
+13) Modified Rentals Ledger (Basic), Toolbox - Change Account Numbers
+14) Modified Sales Invoicing, Reporting - Sales By Product
+15) Modified Stores Ledger, Toolbox - Change Product Codes
+16) Modified Stores Ledger, File Maintenance - Product Groups
+17) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.23 2025-12-26
 ===================
 
  1) Modified Bowling Clubs, Tabs - Tabs Maintenance

@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 23)
+    VERSION = (6, 24)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -85,7 +85,6 @@ class ms0000(object):
             ("imods", False),
             ("output", False),
             ("program", None),
-            ("query", None),
             ("rcfdir", None),
             ("rcfile", None),
             ("script", False),
@@ -739,7 +738,7 @@ Do You Want to Update Your Files?""", default="yes")
                 if add:
                     self.usrmen.append(men)
             # List of financial modules
-            fmod = ["ms1020", "ms1040", "ms3010", "msy010", "msy020"]
+            fmod = ["ms1020", "ms1040", "ms3010", "msy010", "msy020", "rp1020"]
             mods = copyList(self.mod)
             for mod in mods:
                 add = True
@@ -1044,7 +1043,6 @@ System --> Change Password""")
                     0,"N",self.finPeriod,self.psel,None,None])
             if self.coys == 1:
                 self.psel["where"] = [("cye_cono", "=", self.conum)]
-                #fld[2][0][2] = 0
                 self.getLastPeriod()
                 fld[2][5] = self.finper
         elif self.pertyp == "L":
@@ -1842,11 +1840,6 @@ System --> Change Password""")
             for col in cols:
                 sss.append(None)
             return sss
-
-    def doSave(self):
-        fle = open(os.path.join(self.rcdic["wrkdir"], "query.txt"), "w")
-        fle.write(self.mess + "\n")
-        fle.close()
 
 if __name__ == "__main__":
     import getopt

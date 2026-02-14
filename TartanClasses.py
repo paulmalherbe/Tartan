@@ -62,8 +62,8 @@ except:
 try:
     import fpdf
     from fpdf.enums import XPos, YPos
-except:
-    print("Missing python fpdf module")
+except Exception as err:
+    print("Missing python fpdf module", err)
     os._exit(1)
 if not fpdf.fpdf.Image:
     print("Missing python-imaging-module")
@@ -432,6 +432,9 @@ try:
             self.configure(style=name)
             if size:
                 self.configure(width=size)
+    class MyMenu(tk.Menu):
+        def __init__(self, parent, **kwargs):
+            super().__init__(parent, **kwargs)
 
     class MyMenuButton(tk.Menubutton):
         def __init__(self, parent, font="TkMenuFont", fg=None, bg=None, af=None, ab=None, relief="raised", fill="both", exp="yes", side="left", **kwargs):
@@ -1653,7 +1656,7 @@ class TartanMenu(object):
                 buts[nm] = MyMenuButton(self.menubar, bg=bg, fg=fg,
                     af=bg, ab=fg, font=font, menu=m[1], text=m[2],
                     underline=pos)
-                mens[m[1]] = tk.Menu(buts[nm], fg="black", bg="white",
+                mens[m[1]] = MyMenu(buts[nm], fg="black", bg="white",
                     activeforeground=fg, activebackground=bg,
                     font=font, tearoff=False)
                 buts[nm]["menu"] = mens[m[1]]
@@ -1661,7 +1664,7 @@ class TartanMenu(object):
             elif m[0] == "CM":
                 if m[1] not in labs:
                     labs[m[1]] = []
-                mens[m[2]] = tk.Menu(mens[m[1]], fg="black", bg="white",
+                mens[m[2]] = MyMenu(mens[m[1]], fg="black", bg="white",
                     activeforeground=fg, activebackground=bg,
                     font=font, tearoff=False)
                 m[3], pos = getUnderline(blist=labs[m[1]], text=m[3])
@@ -5299,7 +5302,7 @@ Export - The report in the selected format will be opened
                 showError(self.master, "Deletion Error", ok)
             if self.frt == "C":
                 col = (self.row * self.colq[self.pag]) + 1
-                self.focusField(self.frt, self.pag, col)
+                self.focusField(self.frt, self.pag, col, clr=False)
             else:
                 self.focusField(self.first[0], self.first[1], 1)
 
@@ -16619,8 +16622,6 @@ class FileImport(object):
         try:
             if self.ftype == "ods":
                 self.worksh = self.workbk[w]
-                if self.worksh.freeze_panes:
-                    self.frozen = self.worksh.freeze_panes
             elif self.ftype == "xls":
                 self.worksh = self.workbk[w]
                 if self.worksh.freeze_panes:
@@ -16629,7 +16630,8 @@ class FileImport(object):
                 if self.workbk[w].freeze_panes:
                     self.frozen = self.workbk[w].freeze_panes
                 self.worksh = self.workbk[w].values
-        except:
+        except Exception as err:
+            print(err)
             return "Invalid Sheet"
 
     def doImpIgn(self, frt, pag, r, c, p, i, w):
@@ -16703,101 +16705,6 @@ class FileImport(object):
             infle.close()
         except:
             pass
-
-    """
-    def doImpEnd(self):
-        if self.impdlg:
-            self.ip.closeProcess()
-        imperr = False
-        if self.ftype == "csv":
-            try:
-                data = csv.reader(self.csvfle, quoting=csv.QUOTE_MINIMAL)
-                self.impdat = []
-                for row, dat in enumerate(data):
-                    if not dat:
-                        continue
-                    try:
-                        lin = []
-                        for col in self.impcol:
-                            d = CCD(dat[col[1]], col[2], col[3])
-                            if d.err:
-                                raise Exception
-                            lin.append(d.work)
-                        self.impdat.append(lin)
-                    except:
-                        if self.impign == "N":
-                            showError(self.mf.body, "Column Error",
-                                "Row %s Column %s %s\n\n%s is Invalid" %
-                                (row, col[1], col[0], dat[col[1]]))
-                            raise Exception
-            except:
-                imperr = True
-        elif self.ftype == "ods":
-            try:
-                self.impdat = []
-                for row, dat in enumerate(self.worksh):
-                    if not dat:
-                        continue
-                    try:
-                        lin = []
-                        for col in self.impcol:
-                            d = CCD(dat[col[1]], col[2], col[3])
-                            if d.err:
-                                raise Exception
-                            lin.append(d.work)
-                        self.impdat.append(lin)
-                    except:
-                        if self.impign == "N":
-                            showError(self.mf.body, "Column Error",
-                                "Row %s, Column %s\n\n%s is Invalid" %
-                                (row, col[1], col[0]))
-                            raise Exception
-            except:
-                imperr = True
-        elif self.ftype in ("xls", "xlsx"):
-            try:
-                self.impdat = []
-                for row, dat in enumerate(self.worksh):
-                    try:
-                        lin = []
-                        for col, rec in enumerate(self.impcol):
-                            cdd = dat[rec[1]]
-                            if rec[2] in ("D1", "d1"):
-                                if isinstance(cdd, datetime.date):
-                                    cdd = int(cdd.strftime("%Y%m%d"))
-                                elif isinstance(cdd, datetime.datetime):
-                                    cdd = int(dat.strftime("%Y%m%d"))
-                                else:
-                                    try:
-                                        cdd = int(cdd)
-                                    except:
-                                        cdd = 0
-                                        rec[2] = "d1"
-                            d = CCD(cdd, rec[2], rec[3])
-                            if d.err:
-                                raise Exception
-                            lin.append(d.work)
-                        self.impdat.append(lin)
-                    except Exception as err:
-                        if self.impign == "N":
-                            showError(self.mf.body, "Column Error",
-                                "Row %s, Column %s %s\n\n%s is Invalid" %
-                                (row + 1, col + 1, rec[0], cdd))
-                            raise Exception(err)
-            except:
-                imperr = True
-        else:
-            imperr = True
-        if imperr:
-            self.impdat = []
-        else:
-            try:
-                infle = open(self.lastdir, "w")
-                infle.write(os.path.dirname(os.path.normpath(self.impfle)))
-                infle.close()
-            except:
-                pass
-    """
 
     def doImpExit(self):
         self.impdat = []
@@ -18730,6 +18637,8 @@ class ViewPDF(object):
                         exe, cmd = parsePrg(nam)
                         cmd.append(pdfnam)
                         subprocess.call(cmd)
+                    else:
+                        raise Exception("Invalid Viewer %s" % vwr)
                 elif not FITZ:
                     # Try and use the default pdf viewer
                     if sys.platform == "win32":
@@ -18834,7 +18743,7 @@ class ViewPDF(object):
         self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat", fg=fg,
             bg=bg, font=self.font, image=imgm, compound="left", underline=0)
         self.bt4.pack(exp="no", padx=3, pady=3, side="right")
-        self.bt4.menu = tk.Menu(self.bt4, font=self.font, tearoff=0)
+        self.bt4.menu = MyMenu(self.bt4, font=self.font, tearoff=0)
         if fg and bg:
             self.bt4.menu.configure(fg=fg, bg=bg)
         self.bt4["menu"] = self.bt4.menu

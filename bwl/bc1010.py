@@ -164,7 +164,7 @@ class bc1010(object):
             but = []
         else:
             but = [
-            ("Import",None,self.doImport,0,("T",0,1),(("T",0,2),("T",0,3)),
+                ("Import",None,self.doImport,0,("T",0,1),(("T",0,2),("T",0,3)),
                 "Import Tabs and/or Ratings from a CSV or XLS File.")]
         but.extend([
             ("Accept",None,self.doEnd,0,("T",0,3),("T",0,0),
@@ -753,9 +753,8 @@ class bc1010(object):
         self.df.setWidget(self.df.mstFrame, state="hide")
         tit = ("Import Details",)
         r1s = (("Ratings Only", "R"), ("All Fields", "A"))
-        fld = (
-            (("T",0,0,0),("IRB",r1s),0,"Details","",
-                "R","N",self.doImpDet,None,None,None),)
+        fld = ((("T",0,0,0),("IRB",r1s),0,"Details","",
+            "R","N",self.doImpDet,None,None,None),)
         self.ip = TartanDialog(self.opts["mf"], title=tit, tops=True,
             eflds=fld, tend=((self.doImpEnd,"y"),), txit=(self.doImpExit,))
         self.ip.mstFrame.wait_window()

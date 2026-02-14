@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import time
 from TartanClasses import GetCtl, Sql, TartanDialog
 
 class rt6010(object):
@@ -40,7 +41,7 @@ class rt6010(object):
             ("rtlmst", "rtm_cono", "rtm_code", "rtm_acno"),
             ("rtlcon", "rtc_cono", "rtc_code", "rtc_acno"),
             ("rtltrn", "rtt_cono", "rtt_code", "rtt_acno"))
-        tabs = ["rtlprm"]
+        tabs = ["chglog", "rtlprm"]
         for tab in self.tables:
             tabs.append(tab[0])
         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
@@ -148,6 +149,15 @@ class rt6010(object):
                 dat = [self.newprm, self.newacc]
                 col = [tab[2], tab[3]]
             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
+        dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+        if self.newprm != self.oldprm:
+            self.sql.insRec("chglog", data=["rtlmst", "U", "%03i%-7s" % \
+                (self.opts["conum"], self.oldprm), "rtm_code", dte,
+                self.opts["capnm"], self.oldprm, self.newprm])
+        if self.newacc != self.oldacc:
+            self.sql.insRec("chglog", data=["rtlmst", "U", "%03i%-7s" % \
+                (self.opts["conum"], self.oldacc), "rtm_acno", dte,
+                self.opts["capnm"], self.oldacc, self.newacc])
         if focus:
             self.df.focusField("T", 0, 1)
 

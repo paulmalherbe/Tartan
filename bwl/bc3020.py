@@ -104,12 +104,14 @@ class bc3020(object):
         self.whole = w
 
     def doType(self, frt, pag, r, c, p, i, w):
-        if p == 3:
+        if p == 4:
             self.drawn = w
-        elif p == 4:
+        elif p == 5:
             self.bounce = w
         else:
             self.teams = w
+            if self.drawn == "N" and self.bounce == "N" and self.teams == "N":
+                return "No Type Selected"
 
     def doEnd(self):
         self.df.closeProcess()

@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import time
 from TartanClasses import GetCtl, Sql, TartanDialog
 
 class ar6010(object):
@@ -43,7 +44,7 @@ class ar6010(object):
             ("ctlvtf", "vtt_cono", "vtt_acno", "vtt_styp"),
             ("assmst", "asm_cono", "asm_group", "asm_code"),
             ("asstrn", "ast_cono", "ast_group", "ast_code"))
-        tabs = ["assgrp"]
+        tabs = ["chglog", "assgrp"]
         for tab in self.tables:
             if tab[0] not in tabs:
                 tabs.append(tab[0])
@@ -140,6 +141,15 @@ class ar6010(object):
                     (tab[2], "=", self.oldgrp),
                     (tab[3], "=", self.oldcod)]
             self.sql.updRec(tab[0], cols=col, data=dat, where=whr)
+        dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+        if self.newgrp != self.oldgrp:
+            self.sql.insRec("chglog", data=["assmst", "U", "%03i%-3s%-7s" % \
+                (self.opts["conum"], self.oldgrp, self.oldcod), "asm_group",
+                dte, self.opts["capnm"], self.oldgrp, self.newgrp])
+        if self.newcod != self.oldcod:
+            self.sql.insRec("chglog", data=["assmst", "U", "%03i%-3s%-7s" % \
+                (self.opts["conum"], self.oldgrp, self.oldcod), "asm_code",
+                dte, self.opts["capnm"], self.oldcod, self.newcod])
         self.df.focusField("T", 0, 1)
 
     def doExit(self):

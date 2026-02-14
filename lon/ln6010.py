@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import time
 from TartanClasses import GetCtl, ProgressBar, Sql, TartanDialog
 from tartanFunctions import askQuestion, genAccNum
 
@@ -41,7 +42,7 @@ class ln6010(object):
             ("lonmf2", "lm2_cono", "lm2_acno"),
             ("lonrte", "lrt_cono", "lrt_acno"),
             ("lontrn", "lnt_cono", "lnt_acno"))
-        tabs = []
+        tabs = ["chglog"]
         for tab in self.tables:
             tabs.append(tab[0])
         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
@@ -147,6 +148,11 @@ class ln6010(object):
                 col = [tab[2]]
                 dat = [self.newacc]
                 self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
+        if self.newacc != self.oldacc:
+            dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
+            self.sql.insRec("chglog", data=["lonmf1", "U", "%03i%-7s" %
+                (self.opts["conum"], self.oldacc), "lm1_acno", dte,
+                self.opts["capnm"], self.oldacc, self.newacc])
         if focus:
             self.df.focusField("T", 0, 1)
 

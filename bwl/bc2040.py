@@ -24,7 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from TartanClasses import GetCtl, Sql, TartanDialog
+from TartanClasses import FileImport, GetCtl, Sql, TartanDialog
 from tartanFunctions import askQuestion, callModule, getNextCode, showError
 
 class bc2040(object):
@@ -111,7 +111,10 @@ class bc2040(object):
                 "","N",self.doGroupName,None,None,("efld",)),
             (("C",0,0,4),"I@bce_paid",0,"","Paid Flag (Y or N)",
                 "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N","W"))))
-        but = (("Entered Players",sk2,None,0,("C",0,1),("T",0,1)),)
+        but = [
+            ("Import Players",None,self.doImport,0,("C",0,1),None,
+             "Import Players from a CSV or XLS File."),
+            ("Entered Players",sk2,None,0,("C",0,1),("T",0,1))]
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)
         cnd = ((self.doEnd,"n"),)
@@ -202,6 +205,78 @@ Do You Want to Erase All Draws and Results?""", default="no")
             return "Invalid Competition Type"
         self.cfmat = self.typ[self.sql.bwltyp_col.index("bct_cfmat")]
         self.tsize = self.typ[self.sql.bwltyp_col.index("bct_tsize")]
+        if self.cfmat != "T":
+            self.df.butt[0][4] = None
+
+    def doImport(self):
+        state = self.df.disableButtonsTags()
+        self.df.setWidget(self.df.mstFrame, state="hide")
+        cols = [
+            ["Surname", 0, "@btb_surname", 0],
+            ["Names", 1, "@btb_names", 0],
+            ["Gender", 2, "@btb_gender", 0]]
+        err = None
+        fi = FileImport(self.opts["mf"], impcol=cols)
+        for num, line in enumerate(fi.impdat):
+            if not line[0]:
+                err = "%s Is Zero" % fi.impcol[0][0]
+                break
+            sname = line[0].upper()
+            names = line[1].upper()
+            gendr = line[2].upper()
+            chk = self.sql.getRec("bwltab", cols=["btb_tab"],
+                where=[("btb_cono", "=", self.opts["conum"]),
+                ("btb_surname", "=", sname), ("btb_names", "like", names),
+                ("btb_gender", "=", gendr)], limit=1)
+            if not chk:
+                print(sname, names)
+                tab = getNextCode(self.sql, "bwltab", "btb_tab",
+                    where=[("btb_cono", "=", self.opts["conum"])],
+                    start=self.nstart, last=900000)
+                data = [self.opts["conum"], tab, 0, line[0], line[1], line[2],
+                    "", "", "", "", "", "", "", "", 4, 5, 0, 0, 0, ""]
+                self.sql.insRec("bwltab", data=data)
+            else:
+                tab = chk[0]
+                chk = self.sql.getRec("bwlent", where=[("bce_cono", "=",
+                    self.opts["conum"]), ("bce_ccod", "=", self.ccod),
+                    ("bce_scod", "=", tab)], limit=1)
+                if chk:
+                    continue
+            entd = [self.opts["conum"], self.ccod, tab, 0, "N", ""]
+            self.sql.insRec("bwlent", data=entd)
+        if err:
+            err = "Line %s: %s" % ((num + 1), err)
+            showError(self.opts["mf"].body, "Import Error", """%s
+
+Please Correct your Import File and then Try Again.""" % err)
+            self.opts["mf"].dbm.rollbackDbase()
+        else:
+            self.opts["mf"].dbm.commitDbase(True)
+        self.df.setWidget(self.df.mstFrame, state="show")
+        self.df.enableButtonsTags(state=state)
+        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+        self.loadButton()
+
+    def doImpDet(self, frt, pag, r, c, p, i, w):
+        self.impdet = w
+
+    def doImpEnd(self):
+        self.impskp = ["btb_cono"]
+        if self.mlint == "N":
+            self.impskp.append("btb_memno")
+        if self.impdet == "R":
+            self.impskp.extend(["btb_surname", "btb_names", "btb_gender",
+                "btb_add1", "btb_add2", "btb_add3", "btb_pcod", "btb_home",
+                "btb_work", "btb_cell", "btb_mail", "btb_bsano"])
+        if self.mixed == "N":
+            self.impskp.extend(["btb_pos2", "btb_rate2"])
+        self.impskp.append("btb_xflag")
+        self.ip.closeProcess()
+
+    def doImpExit(self):
+        self.impdet = None
+        self.ip.closeProcess()
 
     def doSkpCod(self, frt, pag, r, c, p, i, w):
         if not w:
@@ -411,7 +486,7 @@ Do You Want to Erase All Draws and Results?""", default="no")
         rec = self.sql.getRec("bwlent", cols=["count(*)"],
             where=[("bce_cono", "=", self.opts["conum"]), ("bce_ccod", "=",
             self.ccod)], limit=1)
-        self.df.B0.setLabel("Entered Players (%s)" % int(rec[0]), udl=0)
+        self.df.B1.setLabel("Entered Players (%s)" % int(rec[0]), udl=0)
 
     def doExit(self):
         if self.df.frt == "C":

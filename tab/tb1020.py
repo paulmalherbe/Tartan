@@ -38,6 +38,7 @@ COPYING
 """
 
 import copy, sys, time
+sys.path.insert(0, "/home/paul/Tartan-6")
 from itertools import chain
 from TartanClasses import CCD, Dbase, DBCreate, ProgressBar, SplashScreen
 from TartanClasses import Sql

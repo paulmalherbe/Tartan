@@ -1,0 +1,1176 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index f9305cc..36d6f4a 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -62,8 +62,8 @@ except:
+ try:
+     import fpdf
+     from fpdf.enums import XPos, YPos
+-except:
+-    print("Missing python fpdf module")
++except Exception as err:
++    print("Missing python fpdf module", err)
+     os._exit(1)
+ if not fpdf.fpdf.Image:
+     print("Missing python-imaging-module")
+@@ -432,6 +432,9 @@ try:
+             self.configure(style=name)
+             if size:
+                 self.configure(width=size)
++    class MyMenu(tk.Menu):
++        def __init__(self, parent, **kwargs):
++            super().__init__(parent, **kwargs)
+ 
+     class MyMenuButton(tk.Menubutton):
+         def __init__(self, parent, font="TkMenuFont", fg=None, bg=None, af=None, ab=None, relief="raised", fill="both", exp="yes", side="left", **kwargs):
+@@ -1653,7 +1656,7 @@ class TartanMenu(object):
+                 buts[nm] = MyMenuButton(self.menubar, bg=bg, fg=fg,
+                     af=bg, ab=fg, font=font, menu=m[1], text=m[2],
+                     underline=pos)
+-                mens[m[1]] = tk.Menu(buts[nm], fg="black", bg="white",
++                mens[m[1]] = MyMenu(buts[nm], fg="black", bg="white",
+                     activeforeground=fg, activebackground=bg,
+                     font=font, tearoff=False)
+                 buts[nm]["menu"] = mens[m[1]]
+@@ -1661,7 +1664,7 @@ class TartanMenu(object):
+             elif m[0] == "CM":
+                 if m[1] not in labs:
+                     labs[m[1]] = []
+-                mens[m[2]] = tk.Menu(mens[m[1]], fg="black", bg="white",
++                mens[m[2]] = MyMenu(mens[m[1]], fg="black", bg="white",
+                     activeforeground=fg, activebackground=bg,
+                     font=font, tearoff=False)
+                 m[3], pos = getUnderline(blist=labs[m[1]], text=m[3])
+@@ -5299,7 +5302,7 @@ Export - The report in the selected format will be opened
+                 showError(self.master, "Deletion Error", ok)
+             if self.frt == "C":
+                 col = (self.row * self.colq[self.pag]) + 1
+-                self.focusField(self.frt, self.pag, col)
++                self.focusField(self.frt, self.pag, col, clr=False)
+             else:
+                 self.focusField(self.first[0], self.first[1], 1)
+ 
+@@ -16619,8 +16622,6 @@ class FileImport(object):
+         try:
+             if self.ftype == "ods":
+                 self.worksh = self.workbk[w]
+-                if self.worksh.freeze_panes:
+-                    self.frozen = self.worksh.freeze_panes
+             elif self.ftype == "xls":
+                 self.worksh = self.workbk[w]
+                 if self.worksh.freeze_panes:
+@@ -16629,7 +16630,8 @@ class FileImport(object):
+                 if self.workbk[w].freeze_panes:
+                     self.frozen = self.workbk[w].freeze_panes
+                 self.worksh = self.workbk[w].values
+-        except:
++        except Exception as err:
++            print(err)
+             return "Invalid Sheet"
+ 
+     def doImpIgn(self, frt, pag, r, c, p, i, w):
+@@ -16704,101 +16706,6 @@ class FileImport(object):
+         except:
+             pass
+ 
+-    """
+-    def doImpEnd(self):
+-        if self.impdlg:
+-            self.ip.closeProcess()
+-        imperr = False
+-        if self.ftype == "csv":
+-            try:
+-                data = csv.reader(self.csvfle, quoting=csv.QUOTE_MINIMAL)
+-                self.impdat = []
+-                for row, dat in enumerate(data):
+-                    if not dat:
+-                        continue
+-                    try:
+-                        lin = []
+-                        for col in self.impcol:
+-                            d = CCD(dat[col[1]], col[2], col[3])
+-                            if d.err:
+-                                raise Exception
+-                            lin.append(d.work)
+-                        self.impdat.append(lin)
+-                    except:
+-                        if self.impign == "N":
+-                            showError(self.mf.body, "Column Error",
+-                                "Row %s Column %s %s\n\n%s is Invalid" %
+-                                (row, col[1], col[0], dat[col[1]]))
+-                            raise Exception
+-            except:
+-                imperr = True
+-        elif self.ftype == "ods":
+-            try:
+-                self.impdat = []
+-                for row, dat in enumerate(self.worksh):
+-                    if not dat:
+-                        continue
+-                    try:
+-                        lin = []
+-                        for col in self.impcol:
+-                            d = CCD(dat[col[1]], col[2], col[3])
+-                            if d.err:
+-                                raise Exception
+-                            lin.append(d.work)
+-                        self.impdat.append(lin)
+-                    except:
+-                        if self.impign == "N":
+-                            showError(self.mf.body, "Column Error",
+-                                "Row %s, Column %s\n\n%s is Invalid" %
+-                                (row, col[1], col[0]))
+-                            raise Exception
+-            except:
+-                imperr = True
+-        elif self.ftype in ("xls", "xlsx"):
+-            try:
+-                self.impdat = []
+-                for row, dat in enumerate(self.worksh):
+-                    try:
+-                        lin = []
+-                        for col, rec in enumerate(self.impcol):
+-                            cdd = dat[rec[1]]
+-                            if rec[2] in ("D1", "d1"):
+-                                if isinstance(cdd, datetime.date):
+-                                    cdd = int(cdd.strftime("%Y%m%d"))
+-                                elif isinstance(cdd, datetime.datetime):
+-                                    cdd = int(dat.strftime("%Y%m%d"))
+-                                else:
+-                                    try:
+-                                        cdd = int(cdd)
+-                                    except:
+-                                        cdd = 0
+-                                        rec[2] = "d1"
+-                            d = CCD(cdd, rec[2], rec[3])
+-                            if d.err:
+-                                raise Exception
+-                            lin.append(d.work)
+-                        self.impdat.append(lin)
+-                    except Exception as err:
+-                        if self.impign == "N":
+-                            showError(self.mf.body, "Column Error",
+-                                "Row %s, Column %s %s\n\n%s is Invalid" %
+-                                (row + 1, col + 1, rec[0], cdd))
+-                            raise Exception(err)
+-            except:
+-                imperr = True
+-        else:
+-            imperr = True
+-        if imperr:
+-            self.impdat = []
+-        else:
+-            try:
+-                infle = open(self.lastdir, "w")
+-                infle.write(os.path.dirname(os.path.normpath(self.impfle)))
+-                infle.close()
+-            except:
+-                pass
+-    """
+-
+     def doImpExit(self):
+         self.impdat = []
+         self.ip.closeProcess()
+@@ -18730,6 +18637,8 @@ class ViewPDF(object):
+                         exe, cmd = parsePrg(nam)
+                         cmd.append(pdfnam)
+                         subprocess.call(cmd)
++                    else:
++                        raise Exception("Invalid Viewer %s" % vwr)
+                 elif not FITZ:
+                     # Try and use the default pdf viewer
+                     if sys.platform == "win32":
+@@ -18834,7 +18743,7 @@ class ViewPDF(object):
+         self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat", fg=fg,
+             bg=bg, font=self.font, image=imgm, compound="left", underline=0)
+         self.bt4.pack(exp="no", padx=3, pady=3, side="right")
+-        self.bt4.menu = tk.Menu(self.bt4, font=self.font, tearoff=0)
++        self.bt4.menu = MyMenu(self.bt4, font=self.font, tearoff=0)
+         if fg and bg:
+             self.bt4.menu.configure(fg=fg, bg=bg)
+         self.bt4["menu"] = self.bt4.menu
+diff --git a/ass/ar6010.py b/ass/ar6010.py
+index fdc8b39..aace8fa 100644
+--- a/ass/ar6010.py
++++ b/ass/ar6010.py
+@@ -24,6 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
++import time
+ from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class ar6010(object):
+@@ -43,7 +44,7 @@ class ar6010(object):
+             ("ctlvtf", "vtt_cono", "vtt_acno", "vtt_styp"),
+             ("assmst", "asm_cono", "asm_group", "asm_code"),
+             ("asstrn", "ast_cono", "ast_group", "ast_code"))
+-        tabs = ["assgrp"]
++        tabs = ["chglog", "assgrp"]
+         for tab in self.tables:
+             if tab[0] not in tabs:
+                 tabs.append(tab[0])
+@@ -140,6 +141,15 @@ class ar6010(object):
+                     (tab[2], "=", self.oldgrp),
+                     (tab[3], "=", self.oldcod)]
+             self.sql.updRec(tab[0], cols=col, data=dat, where=whr)
++        dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++        if self.newgrp != self.oldgrp:
++            self.sql.insRec("chglog", data=["assmst", "U", "%03i%-3s%-7s" % \
++                (self.opts["conum"], self.oldgrp, self.oldcod), "asm_group",
++                dte, self.opts["capnm"], self.oldgrp, self.newgrp])
++        if self.newcod != self.oldcod:
++            self.sql.insRec("chglog", data=["assmst", "U", "%03i%-3s%-7s" % \
++                (self.opts["conum"], self.oldgrp, self.oldcod), "asm_code",
++                dte, self.opts["capnm"], self.oldcod, self.newcod])
+         self.df.focusField("T", 0, 1)
+ 
+     def doExit(self):
+diff --git a/bwl/bc1010.py b/bwl/bc1010.py
+index d78ea9a..4eda515 100644
+--- a/bwl/bc1010.py
++++ b/bwl/bc1010.py
+@@ -164,7 +164,7 @@ class bc1010(object):
+             but = []
+         else:
+             but = [
+-            ("Import",None,self.doImport,0,("T",0,1),(("T",0,2),("T",0,3)),
++                ("Import",None,self.doImport,0,("T",0,1),(("T",0,2),("T",0,3)),
+                 "Import Tabs and/or Ratings from a CSV or XLS File.")]
+         but.extend([
+             ("Accept",None,self.doEnd,0,("T",0,3),("T",0,0),
+@@ -753,9 +753,8 @@ class bc1010(object):
+         self.df.setWidget(self.df.mstFrame, state="hide")
+         tit = ("Import Details",)
+         r1s = (("Ratings Only", "R"), ("All Fields", "A"))
+-        fld = (
+-            (("T",0,0,0),("IRB",r1s),0,"Details","",
+-                "R","N",self.doImpDet,None,None,None),)
++        fld = ((("T",0,0,0),("IRB",r1s),0,"Details","",
++            "R","N",self.doImpDet,None,None,None),)
+         self.ip = TartanDialog(self.opts["mf"], title=tit, tops=True,
+             eflds=fld, tend=((self.doImpEnd,"y"),), txit=(self.doImpExit,))
+         self.ip.mstFrame.wait_window()
+diff --git a/bwl/bc2040.py b/bwl/bc2040.py
+index c44182d..0d3e374 100644
+--- a/bwl/bc2040.py
++++ b/bwl/bc2040.py
+@@ -24,7 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
+-from TartanClasses import GetCtl, Sql, TartanDialog
++from TartanClasses import FileImport, GetCtl, Sql, TartanDialog
+ from tartanFunctions import askQuestion, callModule, getNextCode, showError
+ 
+ class bc2040(object):
+@@ -111,7 +111,10 @@ class bc2040(object):
+                 "","N",self.doGroupName,None,None,("efld",)),
+             (("C",0,0,4),"I@bce_paid",0,"","Paid Flag (Y or N)",
+                 "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N","W"))))
+-        but = (("Entered Players",sk2,None,0,("C",0,1),("T",0,1)),)
++        but = [
++            ("Import Players",None,self.doImport,0,("C",0,1),None,
++             "Import Players from a CSV or XLS File."),
++            ("Entered Players",sk2,None,0,("C",0,1),("T",0,1))]
+         tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+         cnd = ((self.doEnd,"n"),)
+@@ -202,6 +205,78 @@ Do You Want to Erase All Draws and Results?""", default="no")
+             return "Invalid Competition Type"
+         self.cfmat = self.typ[self.sql.bwltyp_col.index("bct_cfmat")]
+         self.tsize = self.typ[self.sql.bwltyp_col.index("bct_tsize")]
++        if self.cfmat != "T":
++            self.df.butt[0][4] = None
++
++    def doImport(self):
++        state = self.df.disableButtonsTags()
++        self.df.setWidget(self.df.mstFrame, state="hide")
++        cols = [
++            ["Surname", 0, "@btb_surname", 0],
++            ["Names", 1, "@btb_names", 0],
++            ["Gender", 2, "@btb_gender", 0]]
++        err = None
++        fi = FileImport(self.opts["mf"], impcol=cols)
++        for num, line in enumerate(fi.impdat):
++            if not line[0]:
++                err = "%s Is Zero" % fi.impcol[0][0]
++                break
++            sname = line[0].upper()
++            names = line[1].upper()
++            gendr = line[2].upper()
++            chk = self.sql.getRec("bwltab", cols=["btb_tab"],
++                where=[("btb_cono", "=", self.opts["conum"]),
++                ("btb_surname", "=", sname), ("btb_names", "like", names),
++                ("btb_gender", "=", gendr)], limit=1)
++            if not chk:
++                print(sname, names)
++                tab = getNextCode(self.sql, "bwltab", "btb_tab",
++                    where=[("btb_cono", "=", self.opts["conum"])],
++                    start=self.nstart, last=900000)
++                data = [self.opts["conum"], tab, 0, line[0], line[1], line[2],
++                    "", "", "", "", "", "", "", "", 4, 5, 0, 0, 0, ""]
++                self.sql.insRec("bwltab", data=data)
++            else:
++                tab = chk[0]
++                chk = self.sql.getRec("bwlent", where=[("bce_cono", "=",
++                    self.opts["conum"]), ("bce_ccod", "=", self.ccod),
++                    ("bce_scod", "=", tab)], limit=1)
++                if chk:
++                    continue
++            entd = [self.opts["conum"], self.ccod, tab, 0, "N", ""]
++            self.sql.insRec("bwlent", data=entd)
++        if err:
++            err = "Line %s: %s" % ((num + 1), err)
++            showError(self.opts["mf"].body, "Import Error", """%s
++
++Please Correct your Import File and then Try Again.""" % err)
++            self.opts["mf"].dbm.rollbackDbase()
++        else:
++            self.opts["mf"].dbm.commitDbase(True)
++        self.df.setWidget(self.df.mstFrame, state="show")
++        self.df.enableButtonsTags(state=state)
++        self.df.focusField(self.df.frt, self.df.pag, self.df.col)
++        self.loadButton()
++
++    def doImpDet(self, frt, pag, r, c, p, i, w):
++        self.impdet = w
++
++    def doImpEnd(self):
++        self.impskp = ["btb_cono"]
++        if self.mlint == "N":
++            self.impskp.append("btb_memno")
++        if self.impdet == "R":
++            self.impskp.extend(["btb_surname", "btb_names", "btb_gender",
++                "btb_add1", "btb_add2", "btb_add3", "btb_pcod", "btb_home",
++                "btb_work", "btb_cell", "btb_mail", "btb_bsano"])
++        if self.mixed == "N":
++            self.impskp.extend(["btb_pos2", "btb_rate2"])
++        self.impskp.append("btb_xflag")
++        self.ip.closeProcess()
++
++    def doImpExit(self):
++        self.impdet = None
++        self.ip.closeProcess()
+ 
+     def doSkpCod(self, frt, pag, r, c, p, i, w):
+         if not w:
+@@ -411,7 +486,7 @@ Do You Want to Erase All Draws and Results?""", default="no")
+         rec = self.sql.getRec("bwlent", cols=["count(*)"],
+             where=[("bce_cono", "=", self.opts["conum"]), ("bce_ccod", "=",
+             self.ccod)], limit=1)
+-        self.df.B0.setLabel("Entered Players (%s)" % int(rec[0]), udl=0)
++        self.df.B1.setLabel("Entered Players (%s)" % int(rec[0]), udl=0)
+ 
+     def doExit(self):
+         if self.df.frt == "C":
+diff --git a/bwl/bc2050.py b/bwl/bc2050.py
+index bbc1899..e3486ae 100644
+--- a/bwl/bc2050.py
++++ b/bwl/bc2050.py
+@@ -69,8 +69,6 @@ class bc2050(object):
+         bwlctl = gc.getCtl("bwlctl", self.opts["conum"])
+         if not bwlctl:
+             return
+-        self.mstart = bwlctl["ctb_mstart"]
+-        self.fstart = bwlctl["ctb_fstart"]
+         self.nstart = bwlctl["ctb_nstart"]
+         self.fromad = bwlctl["ctb_emadd"]
+         t = time.localtime()
+diff --git a/bwl/bc3020.py b/bwl/bc3020.py
+index 1a538fc..b19e0f4 100644
+--- a/bwl/bc3020.py
++++ b/bwl/bc3020.py
+@@ -104,12 +104,14 @@ class bc3020(object):
+         self.whole = w
+ 
+     def doType(self, frt, pag, r, c, p, i, w):
+-        if p == 3:
++        if p == 4:
+             self.drawn = w
+-        elif p == 4:
++        elif p == 5:
+             self.bounce = w
+         else:
+             self.teams = w
++            if self.drawn == "N" and self.bounce == "N" and self.teams == "N":
++                return "No Type Selected"
+ 
+     def doEnd(self):
+         self.df.closeProcess()
+diff --git a/bwl/bc3100.py b/bwl/bc3100.py
+index d0e2fc5..5f9ea86 100644
+--- a/bwl/bc3100.py
++++ b/bwl/bc3100.py
+@@ -494,14 +494,18 @@ class bc3100(object):
+         self.keys.sort()
+         self.fpdf = MyFpdf(name=self.__class__.__name__, head=65)
+         self.lastg = None
+-        for g in self.keys:
++        if self.gamrep == "Y":
+             self.pageHeading()
+-            if self.gamrep == "Y":
++            for g in self.keys:
+                 self.doReport("G", g)
+                 if g == 0 and len(chk) > 20:
+                     self.pageHeading()
+-            if self.matrep == "Y":
++        if self.matrep == "Y":
++            self.pageHeading()
++            for g in self.keys:
+                 self.doReport("M", g)
++                if g == 0 and len(chk) > 20:
++                    self.pageHeading()
+         if self.pgame == self.games:
+             # Enter Prizes
+             for key in self.keys:
+@@ -968,9 +972,9 @@ class bc3100(object):
+             head = "Match Standings After Game Number: %s" % self.pgame
+         if group:
+             if self.cfmat in ("R", "W"):
+-                head += "  for Section: %s" % chr(64 + group)
++                head = "Section: %s %s" % (chr(64 + group), head)
+             else:
+-                head += "  for Group: %s" % chr(64 + group)
++                head = "Group: %s %s" % (chr(64 + group), head)
+         self.fpdf.drawText(head, font=["courier", "B", 16], align="C")
+         self.fpdf.drawText()
+         self.fpdf.setFont(style="B")
+diff --git a/bwl/bc6010.py b/bwl/bc6010.py
+index 0fba53f..d1dd5a7 100644
+--- a/bwl/bc6010.py
++++ b/bwl/bc6010.py
+@@ -24,6 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
++import time
+ from TartanClasses import GetCtl, SplashScreen, Sql, TartanDialog
+ from tartanFunctions import askChoice
+ 
+@@ -50,7 +51,7 @@ class bc6010(object):
+             ("bwlflt","bft_cono","bft_skip","bft_player"),
+             ("bwlgme","bcg_cono","bcg_scod","bcg_ocod"),
+             ("bwltab","btb_cono","btb_tab"))
+-        tabs = []
++        tabs = ["chglog"]
+         for tab in self.tables:
+             if tab[0] not in tabs:
+                 tabs.append(tab[0])
+@@ -204,6 +205,11 @@ class bc6010(object):
+                 dat = [self.newtab]
+                 col = [tab[x+2]]
+                 self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
++        if self.newtab != self.oldtab:
++            dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++            self.sql.insRec("chglog", data=["bwltab", "U", "%03i%06s" % \
++                (self.opts["conum"], self.oldtab), "btb_tab", dte,
++                self.opts["capnm"], self.oldtab, self.newtab])
+         if "args" not in self.opts:
+             self.df.focusField("T", 0, 1)
+ 
+diff --git a/crs/cr6010.py b/crs/cr6010.py
+index 7a03b0d..f2af179 100644
+--- a/crs/cr6010.py
++++ b/crs/cr6010.py
+@@ -24,6 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
++import time
+ from TartanClasses import GetCtl, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import askQuestion
+ 
+@@ -44,7 +45,7 @@ class cr6010(object):
+             ("genrcc", "grc_cono", "grc_acrs"),
+             ("strpom", "pom_cono", "pom_acno"),
+             ("strtrn", "stt_cono", "stt_acno", "stt_styp"))
+-        tabs = []
++        tabs = ["chglog"]
+         for tab in self.tables:
+             tabs.append(tab[0])
+         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
+@@ -175,6 +176,11 @@ class cr6010(object):
+                 dat = [self.newacc]
+                 col = [tab[2]]
+             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
++        if self.newacc != self.oldacc:
++            dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++            self.sql.insRec("chglog", data=["crsmst", "U", "%03i%-7s" % \
++                (self.opts["conum"], self.oldacc), "crm_acno", dte,
++                self.opts["capnm"], self.oldacc, self.newacc])
+         if focus:
+             self.df.focusField("T", 0, 1)
+ 
+diff --git a/doc/QST.rst b/doc/QST.rst
+index 3a10c66..9cbc37d 100644
+--- a/doc/QST.rst
++++ b/doc/QST.rst
+@@ -71,9 +71,9 @@ Bowling Clubs
+ .............
+ If you are going to use `Bowling Clubs` the following options are available.
+ 
+++ **Control Record**
++    * Create a Control record by selecting `Control Record` from the `Tabs` menu.
+ + **Tabs**
+-    * Create a Control record by selecting `Control Record` from the menu.
+-    * Create Tab records by selecting `Tabs Maintenance` from the menu.
+     * Do a draw by selecting `Tabs-In Draw` from the menu.
+     * Reprint a draw by selecting `Reprint Draw` from the menu.
+     * Print a Draw Summary by selecting `Draws Summary` from the menu.
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 89a86f0..5174151 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.23
++:Version:   6.24
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/drs/dr6010.py b/drs/dr6010.py
+index b7d946d..29a7433 100644
+--- a/drs/dr6010.py
++++ b/drs/dr6010.py
+@@ -24,6 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
++import time
+ from TartanClasses import GetCtl, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import askQuestion
+ 
+@@ -47,7 +48,7 @@ class dr6010(object):
+             ("slsiv1", "si1_cono", "si1_chain", "si1_acno"),
+             ("strmf1", "st1_cono", "st1_chn_excl", "st1_acc_excl"),
+             ("strtrn", "stt_cono", "stt_chain", "stt_acno", "stt_styp"))
+-        tabs = ["drschn"]
++        tabs = ["chglog", "drschn"]
+         for tab in self.tables:
+             tabs.append(tab[0])
+         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
+@@ -252,6 +253,15 @@ class dr6010(object):
+                 dat = [self.newchn, self.newacc]
+                 col = [tab[2], tab[3]]
+             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
++        dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++        if self.newchn != self.oldchn:
++            self.sql.insRec("chglog", data=["drsmst", "U", "%03i%-03is%-7s" % \
++                (self.opts["conum"], self.oldchn, self.oldacc), "drm_chain",
++                dte, self.opts["capnm"], self.oldgrp, self.newgrp])
++        if self.newacc != self.oldacc:
++            self.sql.insRec("chglog", data=["drsmst", "U", "%03i%-03is%-7s" % \
++                (self.opts["conum"], self.oldchn, self.oldacc), "drm_acno",
++                dte, self.opts["capnm"], self.oldacc, self.newacc])
+         if focus:
+             self.df.focusField("T", 0, 1)
+ 
+diff --git a/gen/gl6010.py b/gen/gl6010.py
+index d476663..13f39cb 100644
+--- a/gen/gl6010.py
++++ b/gen/gl6010.py
+@@ -24,6 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
++import time
+ from TartanClasses import CCD, FileImport, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import askQuestion, copyList
+ 
+@@ -78,7 +79,7 @@ class gl6010(object):
+             ("wagedc", "ced_rglco", "ced_rglno"),
+             ("wagtf2", "wt2_gl_econo", "wt2_gl_eacno"),
+             ("wagtf2", "wt2_gl_rcono", "wt2_gl_racno")]
+-        tabs = []
++        tabs = ["chglog"]
+         tables = copyList(self.tables)
+         for tab in tables:
+             chk = sql.getRec("ftable", where=[("ft_tabl", "=", tab[0])])
+@@ -216,6 +217,11 @@ class gl6010(object):
+                 p2.closeProgress()
+             if new:
+                 self.sql.insRec(tab[0], data=new)
++        if newacc != oldacc:
++            dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++            self.sql.insRec("chglog", data=["genmst", "U", "%03i%07i" % \
++                (self.opts["conum"], oldacc), "glm_acno", dte,
++                self.opts["capnm"], oldacc, newacc])
+         if self.doimp:
+             p1.closeProgress()
+             self.opts["mf"].dbm.commitDbase(ask=True)
+diff --git a/lon/ln6010.py b/lon/ln6010.py
+index 3bbe77a..70b81fc 100644
+--- a/lon/ln6010.py
++++ b/lon/ln6010.py
+@@ -24,6 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
++import time
+ from TartanClasses import GetCtl, ProgressBar, Sql, TartanDialog
+ from tartanFunctions import askQuestion, genAccNum
+ 
+@@ -41,7 +42,7 @@ class ln6010(object):
+             ("lonmf2", "lm2_cono", "lm2_acno"),
+             ("lonrte", "lrt_cono", "lrt_acno"),
+             ("lontrn", "lnt_cono", "lnt_acno"))
+-        tabs = []
++        tabs = ["chglog"]
+         for tab in self.tables:
+             tabs.append(tab[0])
+         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
+@@ -147,6 +148,11 @@ class ln6010(object):
+                 col = [tab[2]]
+                 dat = [self.newacc]
+                 self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
++        if self.newacc != self.oldacc:
++            dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++            self.sql.insRec("chglog", data=["lonmf1", "U", "%03i%-7s" %
++                (self.opts["conum"], self.oldacc), "lm1_acno", dte,
++                self.opts["capnm"], self.oldacc, self.newacc])
+         if focus:
+             self.df.focusField("T", 0, 1)
+ 
+diff --git a/ms0000.py b/ms0000.py
+index 05e57dd..22347b6 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 23)
++    VERSION = (6, 24)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -85,7 +85,6 @@ class ms0000(object):
+             ("imods", False),
+             ("output", False),
+             ("program", None),
+-            ("query", None),
+             ("rcfdir", None),
+             ("rcfile", None),
+             ("script", False),
+@@ -739,7 +738,7 @@ Do You Want to Update Your Files?""", default="yes")
+                 if add:
+                     self.usrmen.append(men)
+             # List of financial modules
+-            fmod = ["ms1020", "ms1040", "ms3010", "msy010", "msy020"]
++            fmod = ["ms1020", "ms1040", "ms3010", "msy010", "msy020", "rp1020"]
+             mods = copyList(self.mod)
+             for mod in mods:
+                 add = True
+@@ -1044,7 +1043,6 @@ System --> Change Password""")
+                     0,"N",self.finPeriod,self.psel,None,None])
+             if self.coys == 1:
+                 self.psel["where"] = [("cye_cono", "=", self.conum)]
+-                #fld[2][0][2] = 0
+                 self.getLastPeriod()
+                 fld[2][5] = self.finper
+         elif self.pertyp == "L":
+@@ -1843,11 +1841,6 @@ System --> Change Password""")
+                 sss.append(None)
+             return sss
+ 
+-    def doSave(self):
+-        fle = open(os.path.join(self.rcdic["wrkdir"], "query.txt"), "w")
+-        fle.write(self.mess + "\n")
+-        fle.close()
+-
+ if __name__ == "__main__":
+     import getopt
+     try:
+diff --git a/mst/ms3040.py b/mst/ms3040.py
+index 5d73c1b..0918346 100644
+--- a/mst/ms3040.py
++++ b/mst/ms3040.py
+@@ -25,7 +25,7 @@ COPYING
+ """
+ 
+ import time
+-from TartanClasses import CCD, RepPrt, TartanDialog
++from TartanClasses import CCD, RepPrt, Sql, TartanDialog
+ from tartanWork import tabdic
+ 
+ class ms3040(object):
+@@ -36,16 +36,28 @@ class ms3040(object):
+         self.opts["mf"].startLoop()
+ 
+     def setVariables(self):
++        self.sql = Sql(self.opts["mf"].dbm, "chglog", prog=__name__)
+         t = time.localtime()
+         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+ 
+     def mainProcess(self):
++        self.tabs = []
++        tabs = self.sql.getRec("chglog", cols=["chg_tab"], group="chg_tab",
++            order="chg_tab")
++        for tab in tabs:
++            self.tabs.append(tab[0])
+         tab = {
+             "stype": "R",
+             "tables": ("chglog",),
+             "cols": (("chg_tab", "", 0, "Table Name", "TabNam"),),
+             "group": "chg_tab",
+             "order": "chg_tab"}
++        key = {
++            "stype": "R",
++            "tables": ("chglog",),
++            "cols": (("chg_key", "", 0, "Table Key", "Table Key"),),
++            "group": "chg_key",
++            "order": "chg_key"}
+         usr = {
+             "stype": "R",
+             "tables": ("chglog",),
+@@ -61,11 +73,13 @@ class ms3040(object):
+             (("T",0,2,0),"INA",6,"Table Name","",
+                 "","N",self.doTable,tab,None,("efld",)),
+             (("T",0,2,0),"ONA",30,""),
+-            (("T",0,3,0),("IRB",r1s),0,"Order By Table","",
+-                "Y","N",self.doOrder,None,None,None),
++            (("T",0,3,0),"INA",30,"Table Key","",
++                "","N",self.doKey,key,None,("efld",)),
+             (("T",0,4,0),"INA",20,"User Login","",
+                 "","N",self.doUser,usr,None,("efld",)),
+-            (("T",0,4,0),"ONA",30,""))
++            (("T",0,4,0),"ONA",30,""),
++            (("T",0,5,0),("IRB",r1s),0,"Order By User","",
++                "Y","N",self.doOrder,None,None,None))
+         tnd = ((self.doEnd,"y"),)
+         txt = (self.doExit,)
+         self.df = TartanDialog(self.opts["mf"], tops=False,
+@@ -84,18 +98,29 @@ class ms3040(object):
+         if self.table:
+             if self.table not in tabdic:
+                 return "Invalid Table Name"
+-            self.tname = tabdic[w]["idx"][0][0]
+-            self.df.loadEntry(frt, pag, p+1, data=self.tname)
++            if self.table not in self.tabs:
++                return "No Changes for Table %s" % self.table
++            tname = tabdic[w]["idx"][0][0]
++            self.df.loadEntry(frt, pag, p+1, data=tname)
++        else:
++            self.df.loadEntry(frt, pag, p+1, data="")
++
++    def doKey(self, frt, pag, r, c, p, i, w):
++        self.key = w
+ 
+     def doUser(self, frt, pag, r, c, p, i, w):
+         self.user = w
+         if self.user:
+-            acc = self.sql.getRec("chglog", cols=["usr_fnam"],
++            acc = self.sql.getRec("ctlpwu", cols=["usr_fnam"],
+                 where=[("usr_name", "=", self.user)], limit=1)
+             if not acc:
+                 return "Invalid User Login"
+-            self.tname = acc[0]
+-            self.df.loadEntry(frt, pag, p+1, data=self.tname)
++            uname = acc[0]
++            self.df.loadEntry(frt, pag, p+1, data=uname)
++            self.byusr = "N"
++            return "sk2"
++        else:
++            self.df.loadEntry(frt, pag, p+1, data="")
+ 
+     def doOrder(self, frt, pag, r, c, p, i, w):
+         self.byusr = w
+@@ -120,11 +145,13 @@ class ms3040(object):
+             ("chg_dte", ">=", str(self.frm.work * 1000000)),
+             ("chg_dte", "<=", str((self.too.work * 1000000) + 999999))]
+         if self.byusr == "Y":
+-            odr = "chg_tab, chg_dte desc"
++            odr = "chg_tab, chg_dte"
+         else:
+-            odr = "chg_dte desc"
++            odr = "chg_dte"
+         if self.table:
+             whr.append(("chg_tab", "=", self.table))
++        if self.key:
++            whr.append(("chg_key", "=", self.key))
+         if self.user:
+             whr.append(("chg_usr", "=", self.user))
+         RepPrt(self.opts["mf"], name=self.__class__.__name__, tables=["chglog"],
+diff --git a/rtl/rt6010.py b/rtl/rt6010.py
+index 1a9a5a2..760dbd3 100644
+--- a/rtl/rt6010.py
++++ b/rtl/rt6010.py
+@@ -24,6 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
++import time
+ from TartanClasses import GetCtl, Sql, TartanDialog
+ 
+ class rt6010(object):
+@@ -40,7 +41,7 @@ class rt6010(object):
+             ("rtlmst", "rtm_cono", "rtm_code", "rtm_acno"),
+             ("rtlcon", "rtc_cono", "rtc_code", "rtc_acno"),
+             ("rtltrn", "rtt_cono", "rtt_code", "rtt_acno"))
+-        tabs = ["rtlprm"]
++        tabs = ["chglog", "rtlprm"]
+         for tab in self.tables:
+             tabs.append(tab[0])
+         self.sql = Sql(self.opts["mf"].dbm, tabs, prog=self.__class__.__name__)
+@@ -148,6 +149,15 @@ class rt6010(object):
+                 dat = [self.newprm, self.newacc]
+                 col = [tab[2], tab[3]]
+             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
++        dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++        if self.newprm != self.oldprm:
++            self.sql.insRec("chglog", data=["rtlmst", "U", "%03i%-7s" % \
++                (self.opts["conum"], self.oldprm), "rtm_code", dte,
++                self.opts["capnm"], self.oldprm, self.newprm])
++        if self.newacc != self.oldacc:
++            self.sql.insRec("chglog", data=["rtlmst", "U", "%03i%-7s" % \
++                (self.opts["conum"], self.oldacc), "rtm_acno", dte,
++                self.opts["capnm"], self.oldacc, self.newacc])
+         if focus:
+             self.df.focusField("T", 0, 1)
+ 
+diff --git a/sls/si3020.py b/sls/si3020.py
+index ab33df5..f1630e5 100644
+--- a/sls/si3020.py
++++ b/sls/si3020.py
+@@ -63,9 +63,9 @@ class si3020(object):
+         self.colsh.append(["Grp", "Product-Code", "Description", "U.O.I",
+             "Quantity", "Value", "Profit", "Prft-%", "Quantity", "Value",
+             "Profit", "Prft-%"])
+-        self.forms = [("UA", 3), ("NA", 20), ("NA", 30), ("NA", 10), ("SI", 9),
+-            ("SI", 9), ("SI", 9), ("SD", 7.2), ("SI", 9), ("SI", 9), ("SI", 9),
+-            ("SD", 7.2)]
++        self.forms = [("UA", 3), ("NA", 20), ("NA", 30), ("NA", 10),
++            ("SD", 12.2), ("SD", 12.2), ("SD", 12.2), ("SD", 7.2),
++            ("SD", 12.2), ("SD", 12.2), ("SD", 12.2), ("SD", 7.2)]
+         self.stot = [0] * 6
+         self.gtot = [0] * 6
+         return True
+@@ -184,7 +184,7 @@ class si3020(object):
+ 
+     def printReport(self, recs):
+         p = ProgressBar(self.opts["mf"].body, mxs=len(recs), esc=True)
+-        self.head = "%03u %-138s" % (self.opts["conum"], self.opts["conam"])
++        self.head = "%03u %-156s" % (self.opts["conum"], self.opts["conam"])
+         self.fpdf = MyFpdf(name=self.__class__.__name__, head=self.head)
+         lstgrp = ""
+         self.pglin = 999
+@@ -251,21 +251,21 @@ class si3020(object):
+                 y_cst = c
+                 y_sls = s
+                 break
+-        mq = CCD(float(ASD(0) - ASD(m_qty)), "SI", 9)
+-        mc = CCD(float(ASD(0) - ASD(m_cst)), "SI", 9)
+-        ms = CCD(float(ASD(0) - ASD(m_sls)), "SI", 9)
++        mq = CCD(float(ASD(0) - ASD(m_qty)), "SD", 12.2)
++        mc = CCD(float(ASD(0) - ASD(m_cst)), "SD", 12.2)
++        ms = CCD(float(ASD(0) - ASD(m_sls)), "SD", 12.2)
+         mp = float(ASD(ms.work) - ASD(mc.work))
+-        mp = CCD(mp, "SI", 9)
++        mp = CCD(mp, "SD", 12.2)
+         if ms.work == 0:
+             mn = 0
+         else:
+             mn = round((mp.work * 100 / ms.work), 2)
+         mn = CCD(mn, "SD", 7.2)
+-        yq = CCD(float(ASD(0) - ASD(y_qty)), "SI", 9)
+-        yc = CCD(float(ASD(0) - ASD(y_cst)), "SI", 9)
+-        ys = CCD(float(ASD(0) - ASD(y_sls)), "SI", 9)
++        yq = CCD(float(ASD(0) - ASD(y_qty)), "SD", 12.2)
++        yc = CCD(float(ASD(0) - ASD(y_cst)), "SD", 12.2)
++        ys = CCD(float(ASD(0) - ASD(y_sls)), "SD", 12.2)
+         yp = float(ASD(ys.work) - ASD(yc.work))
+-        yp = CCD(yp, "SI", 9)
++        yp = CCD(yp, "SD", 12.2)
+         if not ys.work:
+             yn = 0
+         else:
+@@ -298,11 +298,11 @@ class si3020(object):
+         self.fpdf.drawText("%s %s %s     %s %s" % \
+             ("Group:", self.grp.disp, grpd, "Location:", self.locd))
+         self.fpdf.drawText()
+-        self.fpdf.drawText("%-62s %-36s %-5s%-36s " % ("",
+-            "*********** Month T0 Date **********", "",
+-            "*********** Year To Date ***********"))
+-        self.fpdf.drawText("%-20s %-30s %-10s %9s %9s %9s %7s     "\
+-            "%9s %9s %9s %7s" % ("Product-Code", "Description", "U.O.I",
++        self.fpdf.drawText("%-62s %-45s %-5s%-45s " % ("",
++            "*************** Month T0 Date ***************", "",
++            "*************** Year To Date ****************"))
++        self.fpdf.drawText("%-20s %-30s %-10s %12s %12s %12s %7s     "\
++            "%12s %12s %12s %7s" % ("Product-Code", "Description", "U.O.I",
+             "Quantity ", "Value ", "Profit ", "Prft-% ",
+             "Quantity ", "Value ", "Profit ", "Prft-% "))
+         self.fpdf.underLine(txt=self.head)
+@@ -317,17 +317,17 @@ class si3020(object):
+ 
+     def groupTotal(self):
+         self.fpdf.drawText()
+-        mq = CCD(self.stot[0], "SI", 9)
+-        ms = CCD(self.stot[1], "SI", 9)
+-        mp = CCD(self.stot[2], "SI", 9)
++        mq = CCD(self.stot[0], "SD", 12.2)
++        ms = CCD(self.stot[1], "SD", 12.2)
++        mp = CCD(self.stot[2], "SD", 12.2)
+         if ms.work == 0:
+             mn = 0
+         else:
+             mn = round((mp.work * 100 / ms.work), 2)
+         mn = CCD(mn, "SD", 7.2)
+-        yq = CCD(self.stot[3], "SI", 9)
+-        ys = CCD(self.stot[4], "SI", 9)
+-        yp = CCD(self.stot[5], "SI", 9)
++        yq = CCD(self.stot[3], "SD", 12.2)
++        ys = CCD(self.stot[4], "SD", 12.2)
++        yp = CCD(self.stot[5], "SD", 12.2)
+         if ys.work == 0:
+             yn = 0
+         else:
+@@ -339,17 +339,17 @@ class si3020(object):
+         self.stot = [0] * 6
+ 
+     def grandTotal(self):
+-        mq = CCD(self.gtot[0], "SI", 9)
+-        ms = CCD(self.gtot[1], "SI", 9)
+-        mp = CCD(self.gtot[2], "SI", 9)
++        mq = CCD(self.gtot[0], "SD", 12.2)
++        ms = CCD(self.gtot[1], "SD", 12.2)
++        mp = CCD(self.gtot[2], "SD", 12.2)
+         if ms.work == 0:
+             mn = 0
+         else:
+             mn = round((mp.work * 100 / ms.work), 2)
+         mn = CCD(mn, "SD", 7.2)
+-        yq = CCD(self.gtot[3], "SI", 9)
+-        ys = CCD(self.gtot[4], "SI", 9)
+-        yp = CCD(self.gtot[5], "SI", 9)
++        yq = CCD(self.gtot[3], "SD", 12.2)
++        ys = CCD(self.gtot[4], "SD", 12.2)
++        yp = CCD(self.gtot[5], "SD", 12.2)
+         if ys.work == 0:
+             yn = 0
+         else:
+diff --git a/str/st6010.py b/str/st6010.py
+index 5550d32..901092d 100644
+--- a/str/st6010.py
++++ b/str/st6010.py
+@@ -24,6 +24,7 @@ COPYING
+     along with this program. If not, see <https://www.gnu.org/licenses/>.
+ """
+ 
++import time
+ from TartanClasses import FileImport, GetCtl, ProgressBar, Sql, TartanDialog
+ 
+ class st6010(object):
+@@ -48,7 +49,7 @@ class st6010(object):
+             ("strrcp", "srr_cono", "srr_rgroup", "srr_rcode"),
+             ("strtrn", "stt_cono", "stt_group", "stt_code"),
+             ("strvar", "stv_cono", "stv_group", "stv_code"))
+-        tabs = ["strgrp"]
++        tabs = ["chglog", "strgrp"]
+         for tab in self.tables:
+             if not tabs.count(tab[0]):
+                 tabs.append(tab[0])
+@@ -223,6 +224,15 @@ class st6010(object):
+                 dat = [self.newgrp, self.newcod]
+                 col = [tab[2], tab[3]]
+             self.sql.updRec(tab[0], where=whr, data=dat, cols=col)
++        dte = int("%04i%02i%02i%02i%02i%02i" % time.localtime()[:-3])
++        if self.newgrp != self.oldgrp:
++            self.sql.insRec("chglog", data=["strmf1", "U", "%03i%-3s%-20s" % \
++                (self.opts["conum"], self.oldgrp, self.oldcod), "st1_group",
++                dte, self.opts["capnm"], self.oldgrp, self.newgrp])
++        if self.newcod != self.oldcod:
++            self.sql.insRec("chglog", data=["strmf1", "U", "%03i%-3s%-20s" % \
++                (self.opts["conum"], self.oldgrp, self.oldcod), "st1_code",
++                dte, self.opts["capnm"], self.oldcod, self.newcod])
+ 
+     def doExit(self):
+         self.df.closeProcess()
+diff --git a/str/stc310.py b/str/stc310.py
+index 5e820ba..ca0af67 100644
+--- a/str/stc310.py
++++ b/str/stc310.py
+@@ -186,11 +186,9 @@ class stc310(object):
+                 # Account Names
+                 if x in (4, 6):
+                     continue
+-            elif x == 3:
+-                data.append(0)
+-                data.append(0)
+-                break
+             data.append(self.df.t_work[0][0][x])
++        if self.glint == "N":
++            data.extend([0, 0])
+         if self.new == "Y":
+             self.sql.insRec("strgrp", data=data)
+         elif data != self.acc[:len(data)]:
+diff --git a/tab/tb1010.py b/tab/tb1010.py
+index 3b69825..c77f6a1 100644
+--- a/tab/tb1010.py
++++ b/tab/tb1010.py
+@@ -256,7 +256,7 @@ class tb1010(object):
+                         ddd.append(d)
+                 fmt += "\n"
+                 tabdic[self.tab]["idx"].append(ddd)
+-            fle = os.path.join(getPrgPath()[1], "stdtab.py")
++            fle = os.path.join(getPrgPath()[0], "stdtab.py")
+             outf = open(fle, "w")
+             outf.write("""tabdic = {""")
+             tabs = list(tabdic.keys())
+diff --git a/tab/tb1020.py b/tab/tb1020.py
+index 3de9fbc..6796340 100644
+--- a/tab/tb1020.py
++++ b/tab/tb1020.py
+@@ -38,6 +38,7 @@ COPYING
+ """
+ 
+ import copy, sys, time
++sys.path.insert(0, "/home/paul/Tartan-6")
+ from itertools import chain
+ from TartanClasses import CCD, Dbase, DBCreate, ProgressBar, SplashScreen
+ from TartanClasses import Sql
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index c8a3c3a..5e9bc78 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -72,7 +72,7 @@ def placeWindow(window, parent=None, place="C", size=None, expose=False):
+         wh = window.winfo_reqheight()
+     if parent:
+         try:
+-            import tkinter as tk
++            from TartanClasses import tk
+             w = tk.Toplevel()
+             w.geometry("1x1+0+0")
+             w.update()
+@@ -100,10 +100,10 @@ def placeWindow(window, parent=None, place="C", size=None, expose=False):
+ 
+ def cutpasteMenu(event):
+     # Cut, copy and paste menu
+-    from TartanClasses import tk, tkfont
++    from TartanClasses import tkfont, MyMenu
+     wid = event.widget
+     font = tkfont.Font(font=("Arial", 10))
+-    wid.menu = tk.Menu(wid, tearoff=False, takefocus=0, font=font)
++    wid.menu = MyMenu(wid, tearoff=False, takefocus=0, font=font)
+     image = getImage("Cut", (20, 20))
+     wid.menu.add_command(label="Cut", image=image, compound="left",
+         accelerator="Ctl-X", font=font)
+@@ -176,7 +176,7 @@ def showWarning(screen=None, head="", mess=""):
+ def getFontSize(tk=None, width=None, height=None, font=10):
+     if tk is None:
+         try:
+-            import tkinter as tk
++            from TartanClasses import tk
+         except:
+             return 800, 600, 10
+     plus = True
+@@ -2850,7 +2850,7 @@ def doWriteExport(**args):
+                 if type(valc) in (list, tuple):
+                     valc = valc[0]
+                 if args["forms"][colc][0][0].lower() == "d" or \
+-                   args["forms"][colc][0][1].lower() in ("d", "i", "l"):
++                   args["forms"][colc][0][1].lower() in ("d", "i", "l", "s"):
+                     if line:
+                         line = "%s,%s" % (line, valc)
+                     else:
+diff --git a/tartanWork.py b/tartanWork.py
+index 13eafd1..4dfddbf 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -4108,7 +4108,7 @@ tarmen = {
+         ["PYNN","gl_rp","gl3070",1,"Notes Listing"],
+         ["PYYN","gl_rp","gl3080",1,"Bank Reconciliation"],
+         ["PYNN","gl_rp","gl3090",1,"Imported Bank Statements"],
+-        ["PYNN","gl_tb","gl6010",5,"Change Account Numbers"],
++        ["PYNY","gl_tb","gl6010",5,"Change Account Numbers"],
+         ["PYNY","gl_tb","gl6020",5,"Copy Masterfile Records"],
+         ["PYYN","gl_tb","gl6030",1,"Integrated Controls Report"],
+         ["PYYN","gl_tb","gl6040",1,"Intercompany Accounts Report"],
+@@ -4145,7 +4145,7 @@ tarmen = {
+         ["PYNN","cr_rp","cr3090",1,"Name and Address Labels"],
+         ["PYNN","cr_rp","cr3100",1,"Notes Listing"],
+         ["PYNN","cr_rp","cr3110",1,"Purchases History"],
+-        ["PYNN","cr_tb","cr6010",5,"Change Account Numbers"],
++        ["PYNY","cr_tb","cr6010",5,"Change Account Numbers"],
+         ["PYNN","cr_tb","cr6020",3,"Transaction Reallocations"],
+         ["PYNY","cr_tb","cr6030",5,"Account Redundancy"],
+         ["PYNY","mm_cr","cr4010",0,"Interrogation"],
+@@ -4189,7 +4189,7 @@ tarmen = {
+         ["PYNN","dr_rp","dr3100",1,"Notes Listing"],
+         ["PYNN","dr_rp","dr3110",1,"Sales History"],
+         ["PYNN","dr_rp","dr3120",1,"Interest Chargeable"],
+-        ["PYNN","dr_tb","dr6010",5,"Change Account Numbers"],
++        ["PYNY","dr_tb","dr6010",5,"Change Account Numbers"],
+         ["PYNN","dr_tb","dr6020",3,"Transaction Reallocations"],
+         ["PYNY","dr_tb","dr6030",5,"Account Redundancy"],
+         ["PYNN","dr_tb","dr6040",3,"Populate Credit Ratings"],
+@@ -4234,7 +4234,7 @@ tarmen = {
+         ["PYNN","st_rp","st3100",1,"Notes Listing"],
+         ["PYNN","st_rp","st3110",1,"Item Labels"],
+         ["PYNN","st_rp","st3120",1,"Stock to Order"],
+-        ["PYNN","st_tb","st6010",5,"Change Product Codes"],
++        ["PYNY","st_tb","st6010",5,"Change Product Codes"],
+         ["PYYY","st_tb","st6020",5,"Revalue Stock Records"],
+         ["PYNY","st_tb","st6030",5,"Stock Redundancy"],
+         ["PYYY","st_tb","st6040",5,"Cancel Purchase Orders"],
+@@ -4257,7 +4257,7 @@ tarmen = {
+         ["PYNN","si_rp","si3070",1,"Salesman's Sales History"],
+         ["PYNN","si_rp","si3080",1,"Sales Documents Reprint"],
+         ["PYYN","si_rp","si3090",1,"Cancelled Sales Documents"],
+-        ["PYNN","si_tb","si6010",5,"Change Customer Order Number"],
++        ["PYNY","si_tb","si6010",5,"Change Customer Order Number"],
+         ["PYNN","si_tb","si6020",5,"Cancel Outstanding Documents"],
+         ["F","mm_si","doManual SLS",0,"Help"]],
+ 
+@@ -4283,7 +4283,7 @@ tarmen = {
+         ["PYYN","ar_rp","ar3030",1,"Asset Statements"],
+         ["PYYN","ar_rp","ar3040",1,"Asset Register"],
+         ["PYNN","ar_rp","ar3050",1,"Notes Listing"],
+-        ["PYNN","ar_tb","ar6010",5,"Change Asset Codes"],
++        ["PYNY","ar_tb","ar6010",5,"Change Asset Codes"],
+         ["PYYY","mm_ar","ar4010",0,"Interrogation"],
+         ["F","mm_ar","doManual ASS",0,"Help"]],
+ 
+@@ -4332,7 +4332,7 @@ tarmen = {
+         ["PYNN","ln_rp","ln3030",1,"Balances Listing"],
+         ["PYYN","ln_rp","ln3040",1,"Statements"],
+         ["PYNN","ln_rp","ln3050",1,"Notes Listing"],
+-        ["PYNN","ln_tb","ln6010",5,"Change Account Numbers"],
++        ["PYNY","ln_tb","ln6010",5,"Change Account Numbers"],
+         ["PYLY","mm_ln","ln4010",0,"Interrogation"],
+         ["F","mm_ln","doManual LON",0,"Help"]],
+ 
+@@ -4387,7 +4387,7 @@ tarmen = {
+         ["PYNN","rt_rp","rt3030",1,"Master Listing"],
+         ["PYNN","rt_rp","rt3040",1,"Statements"],
+         ["PYNN","rt_rp","rt3050",1,"Notes Listing"],
+-        ["PYNN","rt_tb","rt6010",5,"Change Account Numbers"],
++        ["PYNY","rt_tb","rt6010",5,"Change Account Numbers"],
+         ["PYNY","mm_rt","rt4010",1,"Interrogation"],
+         ["PYNY","mm_rt","rtm010",4,"Month End Routine",0],
+         ["F","mm_rt","doManual RTL",0,"Help"]],
+@@ -4499,7 +4499,7 @@ tarmen = {
+         ["PYNN","bc_cc","bc2070",2,"Capture Game Results"],
+         ["PYNN","bc_cc","bc3100",1,"Match Results Report"],
+         ["PYNN","bc_cc","bc3110",1,"Contact Request Forms"],
+-        ["PYNN","bc_tb","bc6010",3,"Change Tab Numbers"],
++        ["PYNY","bc_tb","bc6010",3,"Change Tab Numbers"],
+         ["PYNN","bc_tb","bc6020",3,"Delete Visitors' Tabs"],
+         ["PYNN","bc_tb","bc6030",3,"Competition Envelopes"],
+         ["PYNN","bc_tb","bc6040",3,"Clear History"],
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 3e5bf61..cf652b1 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -196,7 +196,7 @@ Tartan Systems Upgrade
+             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+             stderr=subprocess.PIPE, close_fds=True)
+         prt = proc.stdout.readlines()
+-        skp = ["ding.wav", "doc", "ms0000", "pkgprg", "readme.md",
++        skp = ["ding.wav", "doc", "ms0000", "pkgprg", "readme.md", "tab",
+             "tartan", "uty"]
+         cnt = 0
+         for line in prt:

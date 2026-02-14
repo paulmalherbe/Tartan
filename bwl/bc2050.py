@@ -69,8 +69,6 @@ class bc2050(object):
         bwlctl = gc.getCtl("bwlctl", self.opts["conum"])
         if not bwlctl:
             return
-        self.mstart = bwlctl["ctb_mstart"]
-        self.fstart = bwlctl["ctb_fstart"]
         self.nstart = bwlctl["ctb_nstart"]
         self.fromad = bwlctl["ctb_emadd"]
         t = time.localtime()
