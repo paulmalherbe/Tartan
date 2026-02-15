@@ -7,7 +7,7 @@ AUTHOR
     Written by Paul Malherbe, <paul@tartan.co.za>
 
 COPYING
-    Copyright (C) 2004-2025 Paul Malherbe.
+    Copyright (C) 2004-2026 Paul Malherbe.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -275,16 +275,16 @@ Options:
                     continue
                 ver = chkMod(mod[0])
                 if not ver:
-                    print("%-16s: Not Installed" % mod[1])
+                    print("%-16s: Not Available" % mod[1])
                 else:
                     try:
-                        from importlib.metadata import version
+                        from importlib.metadata import versionss
                         ver = version(mod[1])
                     except:
                         try:
                             ver = getattr(ver, mod[2])
                         except Exception as err:
-                            print("%-16s: Installed" % mod[1], err)
+                            print("%-16s: Installed" % mod[1])
                             continue
                         if type(ver) == list:
                             ver = "%s.%s.%s" % tuple(ver)
@@ -318,7 +318,7 @@ Options:
         self.mf = None
         self.loop = False
         self.rcdic = None
-        main = "Tartan Systems - Copyright %s 2004-2025 Paul Malherbe" % \
+        main = "Tartan Systems - Copyright %s 2004-2026 Paul Malherbe" % \
             chr(0xa9)
         while not self.rcdic:
             self.rcdic = loadRcFile(self.rcfile, default=True)

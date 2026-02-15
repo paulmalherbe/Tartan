@@ -146,7 +146,7 @@ if windows:
         stdout=subprocess.PIPE, close_fds=True)
     for l in proc.stdout:
         name = l.strip().decode("utf-8")
-        if name and name != "Server":
+        if name and name.lower().startswith("win"):
             names.append(name)
     if names:
         vcheck = input("Use Virtual Machines (y/n): ")
@@ -434,7 +434,7 @@ if windows:
         if bit in ("7", "8", "32"):
             cmd = "WINEARCH=win32 WINEPREFIX=%s /usr/bin/wine" % WPFX
         else:
-            cmd = "WINEARCH=win64 WINEPREFIX=%s /usr/bin/wine64" % WPFX
+            cmd = "WINEARCH=win64 WINEPREFIX=%s /usr/bin/wine" % WPFX
         xpth = "%s/dosdevices/x:" % WPFX
         if not os.path.exists(xpth):
             os.symlink(home, xpth)
