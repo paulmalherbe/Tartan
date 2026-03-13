@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 24)
+    VERSION = (6, 25)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -833,6 +833,8 @@ System --> Change Password""")
                 else:
                     getattr(self, prg)()
             except SystemExit:
+                if dbopend:
+                    self.dbm.closeDbase()
                 os._exit(0)
             except Exception as err:
                 if self.xdisplay:

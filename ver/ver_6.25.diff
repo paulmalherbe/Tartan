@@ -1,0 +1,457 @@
+diff --git a/TartanClasses.py b/TartanClasses.py
+index be38895..aa9be00 100644
+--- a/TartanClasses.py
++++ b/TartanClasses.py
+@@ -784,7 +784,7 @@ try:
+                 ft = self.opts["mf"].rcdic["dft"]
+                 fs = self.opts["mf"].rcdic["mfs"]
+             else:
+-                ft = "Arial"
++                ft = "Helvetica"
+                 fs = 14
+             twidth = ww + 1
+             while twidth > ww:
+@@ -1891,6 +1891,9 @@ class Dbase(object):
+             self.rcdic = loadRcFile()
+         else:
+             self.rcdic = rcdic
++        if self.rcdic == "error":
++            print("Invalid rcdic")
++            sys.exit()
+         check = ["dbase", "dbname", "dbhost", "dbdir", "dbport",
+             "dbuser", "dbpwd", "wrkdir"]
+         for key in self.rcdic:
+@@ -11789,7 +11792,7 @@ class PrintCharges(object):
+             drm = self.sql.getRec("drsmst", where=[("drm_cono", "=",
+                 self.conum), ("drm_chain", "=", rci[rcc.index("dci_chain")]),
+                 ("drm_acno", "=", rci[rcc.index("dci_acno")])], limit=1)
+-            # Use accounts name else manager
++            # Use accounts email else managers
+             eml = drm[dmc.index("drm_acc_email")]
+             if not eml:
+                 eml = drm[dmc.index("drm_mgr_email")]
+@@ -11799,7 +11802,7 @@ class PrintCharges(object):
+                     self.form.newdic[d][txt] = drm[dmc.index(fld)]
+             self.form.account_details("drm", dmc, drm, 0)
+             self.form.document_date(rci[rcc.index("dci_date")])
+-            self.doBody(dmc, drm, rcc, rci, tdc)
++            self.doBody(rcc, rci, tdc)
+             self.doTotal(tdc)
+             self.doTail(tdc)
+             if self.splash:
+@@ -11812,13 +11815,12 @@ class PrintCharges(object):
+             self.repeml[2] = self.emadd
+             self.doPrint()
+ 
+-    def doBody(self, dmc, drm, rcc, rci, tdc):
+-        page = 0
+-        count = 0
++    def doBody(self, rcc, rci, tdc):
+         self.total_taxable = 0
+         self.total_nontaxable = 0
+         self.total_tax = 0
+         self.total_value = 0
++        count = self.doHeader(1, tdc)
+         ldic = {}
+         for cod in self.form.body:
+             if cod == "line_value":
+@@ -11828,10 +11830,6 @@ class PrintCharges(object):
+                     rci[rcc.index(cod)])
+                 if not des[-1]:
+                     del des[-1]
+-            elif cod in dmc:
+-                ldic[cod] = CCD(drm[dmc.index(cod)],
+-                    self.form.tptp[cod][0][1],
+-                    self.form.tptp[cod][0][2])
+             else:
+                 ldic[cod] = CCD(rci[rcc.index(cod)],
+                     self.form.tptp[cod][0][1],
+@@ -11850,9 +11848,6 @@ class PrintCharges(object):
+         self.total_value = float(ASD(self.total_value) + ASD(incamt))
+         ldic["line_value"] = CCD(incamt, "SD", 11.2)
+         for n, l in enumerate(des):
+-            #if count == self.form.maxlines:
+-            #    page = self.doCfwd(page)
+-            count = self.doHeader(page, tdc)
+             if n == 0 and len(des) == 1:
+                 incl = copyList(self.form.body)
+             elif n + 1 == len(des):
+@@ -13504,22 +13499,23 @@ class PrintTabDraw(object):
+                                 if tab == "0":
+                                     tab = ""
+                             self.fpdf.drawText(tab, x=x, y=yaxis, w=32.5,
+-                                h=12, font=["Arial", "B", 24], align="C",
++                                h=12, font=["Helvetica", "B", 24], align="C",
+                                 border="TLR")
+-                            self.fpdf.setFont("Arial", "B", 10)
++                            self.fpdf.setFont("Helvetica", "B", 10)
+                             if not greens[grn][rnk][side][pos]:
+                                 nam = " \n "
+                             else:
+                                 nam = greens[grn][rnk][side][pos][1]
+                             if len(self.fpdf.multi_cell(32.5, 5, nam,
+-                                    border="LRB", split_only=True)) == 1:
++                                    border="LRB", dry_run=True,
++                                    output="LINES")) == 1:
+                                 nam = "%s\n " % nam
+                             self.fpdf.drawText(nam, x=x, y=yaxis+12, w=32.5,
+                                 h=6, align="C", border="LRB", ctyp="M")
+                         if side == 0:
+                             txt = "%s%s" % (grn, rnk)
+                             self.fpdf.drawText(txt, x=x+32.5, y=yaxis,
+-                                w=15, h=24, font=["Arial", "BI", 24],
++                                w=15, h=24, font=["Helvetica", "BI", 24],
+                                 fill=1, border="TLB", ln=0)
+         key = "%s_%s" % (self.conum, self.date)
+         pdfnam = getModName(self.mf.rcdic["wrkdir"], "draw", key, ext="pdf")
+@@ -13536,7 +13532,7 @@ class PrintTabDraw(object):
+         if htyp == "C":
+             self.fpdf.add_page(orientation="L")
+             self.fpdf.doOrientation("set", "L")
+-            self.fpdf.setFont("Arial", "B", 24)
++            self.fpdf.setFont("Helvetica", "B", 24)
+             self.fpdf.drawText(txt, align="C")
+             self.fpdf.drawText(" ")
+             self.fpdf.drawText(" ")
+@@ -13552,10 +13548,10 @@ class PrintTabDraw(object):
+                     else:
+                         ln = 0
+                     self.fpdf.drawText(txt, w=32.5, h=10, align="C", fill=1,
+-                        font=["Arial", "B", 24], border="TLRB", ln=ln)
++                        font=["Helvetica", "B", 24], border="TLRB", ln=ln)
+                     if x == 0 and txt == "Lead":
+                         self.fpdf.drawText("RK", w=15, h=10, align="C", fill=1,
+-                            font=["Arial", "BI", 24], border="TLRB", ln=ln)
++                            font=["Helvetica", "BI", 24], border="TLRB", ln=ln)
+             return
+         self.fpdf.add_page()
+         if htyp == "A":
+@@ -16725,8 +16721,7 @@ class MyFpdf(fpdf.FPDF):
+                     String - Heading or
+                     List / Tuple - (Heading, ("Family", "Style", Size))
+     auto        - Automatic page breaks
+-    foot        - Turn footer on or off
+-    """
++    foot        - Turn footer on or off """
+     def __init__(self, orientation="P", unit="mm", fmat="A4", font="courier", name="", head="", auto=False, foot=True):
+         self.unit = unit
+         self.fmat = fmat
+@@ -16862,10 +16857,10 @@ class MyFpdf(fpdf.FPDF):
+             new_x = XPos.LMARGIN
+             new_y = YPos.NEXT
+         if ctyp == "S":
+-            self.cell(w=w, h=h, txt=txt, border=border, align=align,
++            self.cell(w=w, h=h, text=txt, border=border, align=align,
+                 new_x=new_x, new_y=new_y, fill=fill)
+         else:
+-            self.multi_cell(w=w, h=h, txt=txt, border=border, align=align,
++            self.multi_cell(w, h, text=txt, border=border, align=align,
+                 new_x=new_x, new_y=new_y, fill=fill)
+ 
+     def setFont(self, family="", style="", size=0, default=False):
+@@ -16891,10 +16886,12 @@ class MyFpdf(fpdf.FPDF):
+         if txt.count(self.suc):
+             if t == "D":
+                 y = self.get_y()
+-            self.cell(w=0, h=self.font[2], ln=1, txt=txt)
++            self.cell(w=0, h=self.font[2], text=txt, new_x=XPos.LMARGIN,
++                new_y=YPos.NEXT)
+             if t == "D":
+                 self.set_y(y + .5)
+-                self.cell(w=0, h=self.font[2], ln=1, txt=txt)
++                self.cell(w=0, h=self.font[2], text=txt, new_x=XPos.LMARGIN,
++                    new_y=YPos.NEXT)
+         else:
+             if not x:
+                 x = self.x
+@@ -16919,16 +16916,17 @@ class MyFpdf(fpdf.FPDF):
+             return
+         self.set_y(-15)
+         if self.font[1] > 8:
+-            self.set_font("Arial", "I", 8)
++            self.set_font("Helvetica", "I", 8)
+         else:
+-            self.set_font("Arial", "I", self.font[1])
++            self.set_font("Helvetica", "I", self.font[1])
+         if self.title:
+             txt = "Tartan Systems (%s) %s" % (self.title, self.sysdt)
+         else:
+             txt = "Tartan Systems %s" % self.sysdt
+-        self.cell(w=0, h=10, txt=txt, border=0, ln=0, align="L")
+-        self.cell(w=0, h=10, txt="Page " + str(self.page_no()) + "/{nb}",
+-            border=0, ln=0, align="R")
++        self.cell(w=0, h=10, text=txt, border=0, new_x=XPos.RIGHT,
++            new_y=YPos.TOP, align="L")
++        self.cell(w=0, h=10, text="Page " + str(self.page_no()) + "/{nb}",
++            border=0, new_x=XPos.RIGHT, new_y=YPos.TOP, align="R")
+ 
+     def newPage(self, lines=1, lhgt=None):
+         if self.page:
+@@ -17108,10 +17106,16 @@ class DrawForm(MyFpdf):
+             self.setFont(font, style, size)
+             if border and not self.line_width:
+                 self.set_line_width(0.2)
++            if not ln:
++                new_x = XPos.RIGHT
++                new_y = YPos.TOP
++            else:
++                new_x = XPos.LMARGIN
++                new_y = YPos.NEXT
+             self.set_xy(x1, y1)
+             try:
+-                self.cell(w=x2-x1, h=y2-y1, txt=text, border=border, ln=ln,
+-                    align=align, fill=fill)
++                self.cell(w=x2-x1, h=y2-y1, text=text, border=border,
++                    new_x=new_x, new_y=new_y, align=align, fill=fill)
+             except Exception as err:
+                 print(err)
+ 
+@@ -17131,8 +17135,11 @@ class DrawForm(MyFpdf):
+             if border and not self.line_width:
+                 self.set_line_width(0.2)
+             self.set_xy(x1, y1)
+-            self.multi_cell(w=x2-x1, h=y2-y1, txt=text, border=border,
+-                fill=fill)
++            try:
++                self.multi_cell(w=x2-x1, h=y2-y1, text=text, border=border,
++                    fill=fill)
++            except Exception as err:
++                print(err)
+ 
+     def doLine(self, x1=0, y1=0, x2=0, y2=0, font="courier", colour=0, thick=0):
+         font = font.strip().lower()
+@@ -17397,7 +17404,11 @@ class DrawForm(MyFpdf):
+         x2 = self.newdic[key][tdc.index("tpd_mrg_x2")]
+         y1 = self.newdic[key][tdc.index("tpd_mrg_y1")]
+         y2 = self.newdic[key][tdc.index("tpd_mrg_y2")]
+-        return self.multi_cell(w=x2-x1, h=y2-y1, txt=text, split_only=True)
++        try:
++            return self.multi_cell(w=x2-x1, h=y2-y1, text=text, dry_run=True,
++                output="LINES")
++        except:
++            return [text]
+ 
+     def doGetData(self, mrgcod):
+         if mrgcod and mrgcod in self.tptp and self.tptp[mrgcod][1]:
+@@ -18458,14 +18469,14 @@ class MakeManual(object):
+ 
+     def setVariables(self):
+         self.fonts = {
+-            "head1": ("Arial", "B", 18),
+-            "head2": ("Arial", "B", 16),
+-            "head3": ("Arial", "B", 14),
+-            "head4": ("Arial", "B", 12),
+-            "head5": ("Arial", "B", 10),
+-            "bodyb": ("Arial", "B", 10),
+-            "bodyi": ("Arial", "I", 10),
+-            "bodyn": ("Arial", "", 10)}
++            "head1": ("Helvetica", "B", 18),
++            "head2": ("Helvetica", "B", 16),
++            "head3": ("Helvetica", "B", 14),
++            "head4": ("Helvetica", "B", 12),
++            "head5": ("Helvetica", "B", 10),
++            "bodyb": ("Helvetica", "B", 10),
++            "bodyi": ("Helvetica", "I", 10),
++            "bodyn": ("Helvetica", "", 10)}
+         self.fpdf = MyFpdf(name="Manual", head=80, font=self.fonts["bodyn"],
+             auto=True)
+         return True
+@@ -19306,6 +19317,8 @@ class ViewPDF(object):
+                     annot = annot.next
+ 
+     def showLinks(self, event=None):
++        if not str(type(event.widget)).count("Canvas"):
++            return
+         if not self.maxi:
+             d = self.cv.canvasy(0)
+             x = event.x / self.zoom
+@@ -19324,7 +19337,9 @@ class ViewPDF(object):
+         x = event.x / self.zoom
+         y = (event.y + d) / self.zoom
+         for lk in self.links:
+-            if x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
++            if not str(type(event.widget)).count("Canvas"):
++                self.win.config(cursor="arrow")
++            elif x >= lk.x0 and x <= lk.x1 and y >= lk.y0 and y <= lk.y1:
+                 self.win.config(cursor="hand2")
+             else:
+                 self.win.config(cursor="arrow")
+diff --git a/doc/SYS.rst b/doc/SYS.rst
+index 5174151..22989f8 100644
+--- a/doc/SYS.rst
++++ b/doc/SYS.rst
+@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
+ =================================
+ .. _GPL: http://www.gnu.org/licenses/gpl.html
+ 
+-:Version:   6.24
++:Version:   6.25
+ :Author:    Paul Malherbe
+ :Contact:   paul@tartan.co.za
+ :Home:      http://www.tartan.co.za
+diff --git a/drs/dr2030.py b/drs/dr2030.py
+index f14f019..5f0ed4b 100644
+--- a/drs/dr2030.py
++++ b/drs/dr2030.py
+@@ -1,6 +1,6 @@
+ """
+ SYNOPSIS
+-    Debtors Ledger - Raising Recurring Charges.
++    Debtors Ledger - Raising Recurring Charges. Allowed for changes to fpdf.
+ 
+     This file is part of Tartan Systems (TARTAN).
+ 
+diff --git a/ms0000.py b/ms0000.py
+index d4982c4..1294084 100755
+--- a/ms0000.py
++++ b/ms0000.py
+@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
+     temp = tuple(os.environ["TARVER"].split("."))
+     VERSION = (int(temp[0]), int(temp[1].rstrip()))
+ else:
+-    VERSION = (6, 24)
++    VERSION = (6, 25)
+     os.environ["TARVER"] = "%s.%s" % VERSION
+ 
+ class ms0000(object):
+@@ -833,6 +833,8 @@ System --> Change Password""")
+                 else:
+                     getattr(self, prg)()
+             except SystemExit:
++                if dbopend:
++                    self.dbm.closeDbase()
+                 os._exit(0)
+             except Exception as err:
+                 if self.xdisplay:
+diff --git a/sls/si3090.py b/sls/si3090.py
+index a7c57f6..51a3637 100644
+--- a/sls/si3090.py
++++ b/sls/si3090.py
+@@ -77,7 +77,7 @@ class si3090(object):
+         hed = ["Cancelled Sales %s" % self.dtyp]
+         tab = ["slsiv1", "drsmst"]
+         col = ["si1_rtn", "si1_docno", "si1_date", "si1_acno",
+-            "drm_name", "si1_invno"]
++            "drm_name", "si1_capnm"]
+         whr = [
+             ("si1_cono", "=", self.opts["conum"]),
+             ("si1_date", "between", self.sdte, self.edte),
+@@ -93,7 +93,7 @@ class si3090(object):
+         cols = []
+         dics = self.sql.slsiv1_dic.copy()
+         dics.update(self.sql.drsmst_dic)
+-        for c in col[:5]:
++        for c in col[:6]:
+             cols.append((c, dics[c][2], dics[c][3], dics[c][5]))
+         RepPrt(self.opts["mf"], name=self.__class__.__name__, tables=data,
+             ttype="D", heads=hed, cols=cols, repprt=self.df.repprt,
+diff --git a/tartanFunctions.py b/tartanFunctions.py
+index ed9289a..e988333 100644
+--- a/tartanFunctions.py
++++ b/tartanFunctions.py
+@@ -102,7 +102,7 @@ def cutpasteMenu(event):
+     # Cut, copy and paste menu
+     from TartanClasses import tkfont, MyMenu
+     wid = event.widget
+-    font = tkfont.Font(font=("Arial", 10))
++    font = tkfont.Font(font=("Helvetica", 10))
+     wid.menu = MyMenu(wid, tearoff=False, takefocus=0, font=font)
+     image = getImage("Cut", (20, 20))
+     wid.menu.add_command(label="Cut", image=image, compound="left",
+@@ -257,7 +257,7 @@ def loadRcFile(rcfile=None, default=False):
+         "errs": ["Y"],
+         "wrkf": ["D"],
+         "wrka": ["N"],
+-        "mft": ["DejaVu Sans", "Arial"],
++        "mft": ["DejaVu Sans", "Helvetica"],
+         "mfs": [0],
+         "dft": ["DejaVu Sans Mono", "Courier New"],
+         "dfs": [0],
+diff --git a/tartanWork.py b/tartanWork.py
+index b7b7140..ae7561a 100644
+--- a/tartanWork.py
++++ b/tartanWork.py
+@@ -698,7 +698,17 @@ payeRates = {
+             [370500, 77362, 31],
+             [237100, 42678, 26],
+             [0, 0, 18]],
+-        "allow": [17235, 9444, 3145, 0]}}
++        "allow": [17235, 9444, 3145, 0]},
++    "2027": {
++        "rates": [
++            [1878600, 666339, 45],
++            [887000, 259783, 41],
++            [695800, 185215, 39],
++            [530200, 125599, 36],
++            [383100, 79998, 31],
++            [245100, 44118, 26],
++            [0, 0, 18]],
++        "allow": [17820, 9765, 3249, 0]}}
+ siteRates = {
+     "2004": 60000,
+     "2005": 60000,
+@@ -722,7 +732,8 @@ siteRates = {
+     "2023": 0,
+     "2024": 0,
+     "2025": 0,
+-    "2026": 0}
++    "2026": 0,
++    "2027": 0}
+ uifRates = {
+     "2004": [1.00, 1.00],
+     "2005": [1.00, 1.00],
+@@ -746,7 +757,8 @@ uifRates = {
+     "2023": [1.00, 1.00],
+     "2024": [1.00, 1.00],
+     "2025": [1.00, 1.00],
+-    "2026": [1.00, 1.00]}
++    "2026": [1.00, 1.00],
++    "2027": [1.00, 1.00]}
+ sdlRates = {
+     "2004": [0.00, 1.00],
+     "2005": [0.00, 1.00],
+@@ -770,7 +782,8 @@ sdlRates = {
+     "2023": [0.00, 1.00],
+     "2024": [0.00, 1.00],
+     "2025": [0.00, 1.00],
+-    "2026": [0.00, 1.00]}
++    "2026": [0.00, 1.00],
++    "2027": [0.00, 1.00]}
+ # Labels
+ labels = {
+     "L7159": {
+diff --git a/uty/pkgprg.py b/uty/pkgprg.py
+index 52092eb..fedb33c 100644
+--- a/uty/pkgprg.py
++++ b/uty/pkgprg.py
+@@ -228,6 +228,9 @@ Tartan Systems Upgrade
+                             ofle.write("%2s) %s %s, %s - %s\n" % \
+                                 (cnt, mtyp, ttt[0], mmm[3], l[4]))
+                     break
++        if upgpip:
++            cnt += 1
++            ofle.write("""%2s) Updated all python modules to the latest SECURITY updates.\n""" % cnt)
+         cnt += 1
+         ofle.write("""%2s) Other minor changes, fixes and enhancements.
+ 
+@@ -534,7 +537,7 @@ if publish:
+     exeCmd("rsync -az /tmp/Manual.pdf "\
+         "%s:/var/www/tartan.co.za/Updates/" % sv)
+     exeCmd("ssh %s chmod a+rx /var/www/tartan.co.za/Updates/*" % sv)
+-    exeCmd("ssh %s chown paul:paul /var/www/tartan.co.za/Updates/*" % sv)
++    exeCmd("ssh %s chown www-data:www-data /var/www/tartan.co.za/Updates/*" % sv)
+     if verinc and windows:
+         # Sourceforge
+         os.chdir("%s/%s" % (bd, bx))
+diff --git a/wag/wgc510.py b/wag/wgc510.py
+index 1c880de..d6246f0 100644
+--- a/wag/wgc510.py
++++ b/wag/wgc510.py
+@@ -1,6 +1,6 @@
+ """
+ SYNOPSIS
+-    Salaries & Wages PAYE, UIF and SDL Tables.
++    Salaries & Wages PAYE, UIF and SDL Tables updated to 2027.
+ 
+     This file is part of Tartan Systems (TARTAN).
+ 

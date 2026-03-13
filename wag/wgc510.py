@@ -1,6 +1,6 @@
 """
 SYNOPSIS
-    Salaries & Wages PAYE, UIF and SDL Tables.
+    Salaries & Wages PAYE, UIF and SDL Tables updated to 2027.
 
     This file is part of Tartan Systems (TARTAN).
 

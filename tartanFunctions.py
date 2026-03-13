@@ -102,7 +102,7 @@ def cutpasteMenu(event):
     # Cut, copy and paste menu
     from TartanClasses import tkfont, MyMenu
     wid = event.widget
-    font = tkfont.Font(font=("Arial", 10))
+    font = tkfont.Font(font=("Helvetica", 10))
     wid.menu = MyMenu(wid, tearoff=False, takefocus=0, font=font)
     image = getImage("Cut", (20, 20))
     wid.menu.add_command(label="Cut", image=image, compound="left",
@@ -257,7 +257,7 @@ def loadRcFile(rcfile=None, default=False):
         "errs": ["Y"],
         "wrkf": ["D"],
         "wrka": ["N"],
-        "mft": ["DejaVu Sans", "Arial"],
+        "mft": ["DejaVu Sans", "Helvetica"],
         "mfs": [0],
         "dft": ["DejaVu Sans Mono", "Courier New"],
         "dfs": [0],

@@ -77,7 +77,7 @@ class si3090(object):
         hed = ["Cancelled Sales %s" % self.dtyp]
         tab = ["slsiv1", "drsmst"]
         col = ["si1_rtn", "si1_docno", "si1_date", "si1_acno",
-            "drm_name", "si1_invno"]
+            "drm_name", "si1_capnm"]
         whr = [
             ("si1_cono", "=", self.opts["conum"]),
             ("si1_date", "between", self.sdte, self.edte),
@@ -93,7 +93,7 @@ class si3090(object):
         cols = []
         dics = self.sql.slsiv1_dic.copy()
         dics.update(self.sql.drsmst_dic)
-        for c in col[:5]:
+        for c in col[:6]:
             cols.append((c, dics[c][2], dics[c][3], dics[c][5]))
         RepPrt(self.opts["mf"], name=self.__class__.__name__, tables=data,
             ttype="D", heads=hed, cols=cols, repprt=self.df.repprt,

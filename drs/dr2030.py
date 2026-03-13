@@ -1,6 +1,6 @@
 """
 SYNOPSIS
-    Debtors Ledger - Raising Recurring Charges.
+    Debtors Ledger - Raising Recurring Charges. Allowed for changes to fpdf.
 
     This file is part of Tartan Systems (TARTAN).
 

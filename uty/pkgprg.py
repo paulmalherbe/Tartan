@@ -228,6 +228,9 @@ Tartan Systems Upgrade
                             ofle.write("%2s) %s %s, %s - %s\n" % \
                                 (cnt, mtyp, ttt[0], mmm[3], l[4]))
                     break
+        if upgpip:
+            cnt += 1
+            ofle.write("""%2s) Updated all python modules to the latest SECURITY updates.\n""" % cnt)
         cnt += 1
         ofle.write("""%2s) Other minor changes, fixes and enhancements.
 
@@ -534,7 +537,7 @@ if publish:
     exeCmd("rsync -az /tmp/Manual.pdf "\
         "%s:/var/www/tartan.co.za/Updates/" % sv)
     exeCmd("ssh %s chmod a+rx /var/www/tartan.co.za/Updates/*" % sv)
-    exeCmd("ssh %s chown paul:paul /var/www/tartan.co.za/Updates/*" % sv)
+    exeCmd("ssh %s chown www-data:www-data /var/www/tartan.co.za/Updates/*" % sv)
     if verinc and windows:
         # Sourceforge
         os.chdir("%s/%s" % (bd, bx))

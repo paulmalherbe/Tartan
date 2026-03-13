@@ -1,4 +1,17 @@
-changes = """ver_6.24 2026-02-14
+changes = """ver_6.25 2026-03-13
+===================
+
+ 1) Modified Debtors Ledger, Data Capture - Recurring Charges
+ 2) Modified Sales Invoicing, Reporting - Cancelled Sales Documents
+ 3) Modified Salaries and Wages, File Maintenance - PAYE Tables
+ 4) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.24 2026-02-15
 ===================
 
  1) Modified Asset Register, Toolbox - Change Asset Codes
