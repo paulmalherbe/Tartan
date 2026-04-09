@@ -56,10 +56,10 @@ Use this routine to maintain booking contacts. The fields are self explanatory w
 
 Calendar (BK)
 .............
-Use this routine to display a booking's calendar showing all bookings currently entered. Double Left Clicking on an existing booking will display the booking and allow modifications and all the normal booking features as per the `Bookings (BK)`_ below. Right Clicking on an existing booking will display short deatisl of the booking. While in the calendar the following buttons are available:
+Use this routine to display a booking's calendar showing all bookings currently entered. Double Left Clicking on an existing booking will display the booking and allow modifications and all the normal booking features as per the `Bookings (BK)`_ below. Right Clicking on an existing booking will display short details of the booking. While in the calendar the following buttons are available:
 
 + **New Booking** - Selecting this button will allow the creation of a new booking as per `Bookings (BK)`_ below.
-+ **Search Bookings** Selecting this button will display all the current bookings and will allow you to search and display a specific booking.
++ **Search Bookings** - Selecting this button will display all the current bookings and will allow you to search and display a specific booking.
 + **Deposits List** - Selecting this button will enter the `Deposits Listing (BK)`_ routine as detailed above.
 + **Arrivals List** - Selecting this button will enter the `Arrivals Listing (BK)`_ routine as detailed above.
 + **Exit** - Select this button to exit out of the calendar.

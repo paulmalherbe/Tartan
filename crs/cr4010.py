@@ -52,6 +52,7 @@ class cr4010(object):
         self.fromad = crsctl["ctc_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
+        self.sysdtw = 20250228
         self.curdt = int(self.sysdtw / 100)
         self.paidup = "N"
         return True

@@ -1967,13 +1967,13 @@ tabdic = {
             [0, "usr_name", "NA", 20.0, "Login Name", "Login-Name"],
             [1, "usr_fnam", "NA", 30.0, "Full Name", "Full-Name"],
             [2, "usr_emadd", "TX", 50.0, "Email Address", "Email-Address"],
-            [3, "usr_celno", "TX", 20.0, "Mobile Number", "Mobile"],
+            [3, "usr_celno", "TX", 20.0, "Mobile Number", "Mobile-Number"],
             [4, "usr_pwd", "HA", 30.0, "Password", "Password"],
             [5, "usr_last", "d1", 10.0, "Last Change", "Last-Chged"],
             [6, "usr_acoy", "TX", 30.0, "Allowed Companies",
-                "Allowed Companies"],
+                "Allowed-Companies"],
             [7, "usr_dcoy", "TX", 30.0, "DisAllowed Companies",
-                "DisAllowed Companies"],
+                "DisAllowed-Companies"],
             [8, "usr_lvl", "UI", 1.0, "Security Level", "S"]],
         "idx": [
             ["User Passwords", 1, "U", "usr_name"]]},
@@ -7363,7 +7363,7 @@ if "SPOS" in os.environ:
             "total_value": [["", "SD", 13.2, "Total Document Value"], []],
             "total_vouchers": [["", "SD", 13.2, "Total Vouchers Value"], []]
             }}
-    tarmen["msmen"].append(["MM","mm_ps","Point of Sale"])
+    tarmen["msmen"].insert(10, ["MM","mm_ps","Point of Sale"])
     tarmen["psmen"] = []
     tarmen["psmod"] = [
         ["PYNY","mm_ps","psc110",5,"Terminal Records"],

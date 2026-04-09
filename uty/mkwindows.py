@@ -40,18 +40,18 @@ HOM = str(pathlib.Path.home())
 if "WINEPREFIX" in os.environ:
     MAP = "x:"
 else:
-    MAP = "\\\\home\\paul"
+    MAP = os.path.join("home", "paul")
 if sys.maxsize > 2**32:
     PFX = "64"
 else:
     PFX = "32"
 DPT = os.path.join("c:\\", "Tartan", "prg")     # Directory for pyinstaller exe
-EXE = os.path.join("%s\\" % MAP, "TartanExe")   # Destination of installer
+EXE = os.path.join(MAP, "TartanExe")            # Destination of installer
 if "WINEPREFIX" in os.environ:
-    SRC = os.path.join("%s\\" % MAP, "TartanSve")   # Repository of tartan.zip
+    SRC = os.path.join(MAP, "TartanSve")        # Repository of tartan.zip
 else:
     SRC = HOM
-TMP = os.path.join("%s\\" % HOM, "Temp")        # Working Directory
+TMP = os.path.join(HOM, "Temp")                 # Working Directory
 onefle = False                                  # Generate a single file
 UPG = False                                     # Upgrade python modules
 opts, args = getopt.getopt(sys.argv[1:], "a:d:e:hos:t:u")
@@ -67,12 +67,12 @@ for o, v in opts:
 Usage: python mkwindows.py [options]
 
     -a Architecture as in 7, 8, 32 and 64
-    -d The Installed Path e.g. c:\Tartan\prg
-    -e The Destination Path e.g. x:\TartanExe
+    -d The Installed Path e.g. c:\\Tartan\\prg
+    -e The Destination Path e.g. x:\\TartanExe
     -h Print this Usage
     -o Generate Onefile
-    -s The Source path e.g. x:\TartanSve
-    -t Temporary Work Directory e.g. x:\Temp
+    -s The Source path e.g. x:\\TartanSve
+    -t Temporary Work Directory e.g. x:\\Temp
     -u Upgrade python modules
 """)
         sys.exit()
@@ -95,7 +95,7 @@ shutil.rmtree(TMP, ignore_errors=True)
 # Create new installation directories
 os.makedirs(TMP)
 os.chmod(HOM, 0o777)
-for pth in ("fnt", "thm", "uty"):
+for pth in ("fnt", "uty"):
     os.makedirs(os.path.join(DPT, pth))
 # Enter TMP directory
 os.chdir(TMP)
@@ -137,6 +137,9 @@ else:
     cmd.append("onedir.spec")
 subprocess.call(cmd, stdout=out, stderr=out)
 # Copy files to DPT
+shutil.copytree("doc", os.path.join(DPT, "doc"))
+shutil.copytree("snd", os.path.join(DPT, "snd"))
+shutil.copytree("thm", os.path.join(DPT, "thm"))
 shutil.copy("tartan.ico", DPT)
 if onefle:
     shutil.copy(os.path.join("dist", "ms0000.exe"), DPT)
@@ -148,14 +151,17 @@ if "WINEPREFIX" in os.environ:
         shutil.copy("ucrtbase.7", os.path.join(DPT, "ucrtbase.dll"))
     elif PFX == "8":
         shutil.copy("ucrtbase.8", os.path.join(DPT, "ucrtbase.dll"))
-subprocess.call([ISC, ISS], stdout=out, stderr=out)
-if "WINEPREFIX" in os.environ:
-    shutil.copy(os.path.join("Output", "Tartan.exe"),
-        os.path.join(EXE, "tartan-6-%s.exe" % PFX))
-else:
-    shutil.copy(os.path.join("Output", "Tartan.exe"),
-        os.path.join(HOM, "tartan-6-%s.exe" % PFX))
+try:
+    subprocess.call([ISC, ISS], stdout=out, stderr=out)
+    if "WINEPREFIX" in os.environ:
+        shutil.copy(os.path.join("Output", "Tartan.exe"),
+            os.path.join(EXE, "tartan-6-%s.exe" % PFX))
+    else:
+        shutil.copy(os.path.join("Output", "Tartan.exe"),
+            os.path.join(HOM, "tartan-6-%s.exe" % PFX))
+except Exception as err:
+    print("ERR", err)
 os.chdir(HOM)
-shutil.rmtree(TMP)
-shutil.rmtree(DPT)
+#shutil.rmtree(TMP)
+#shutil.rmtree(DPT)
 out.close()

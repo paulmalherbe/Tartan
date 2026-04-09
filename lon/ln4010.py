@@ -256,7 +256,7 @@ class ln4010(object):
         state = self.df.disableButtonsTags()
         SelectChoice(self.df.nb.Page2, tit, col, data)
         self.df.enableButtonsTags(state=state)
-        self.df.focusField("T", 2, 1)
+        self.doTrans1()
 
     def doNotes(self):
         state = self.df.disableButtonsTags()

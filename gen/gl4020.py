@@ -386,6 +386,7 @@ class gl4020(object):
                 self.s_acno = self.gen_dic["glm_acno"]
                 self.accumData()
             self.nextRepRecord()
+        self.storeRepRecord()
         amt = self.mth[self.mths + 1]
         if self.s_print == "N":
             pass
@@ -403,7 +404,6 @@ class gl4020(object):
         if self.s_store == "Y":
             self.storeBalances()
         self.clearData()
-        self.storeRepRecord()
 
     def doTotal(self):
         for x in range(0, self.mths + 2):

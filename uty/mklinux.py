@@ -76,7 +76,7 @@ shutil.rmtree(TMP, ignore_errors=True)
 # Create new installation directories
 prgdir = os.path.join(DPT, "prg")
 os.makedirs(prgdir)
-for pth in ("fnt", "thm", "uty"):
+for pth in ("fnt", "uty"):
     os.makedirs(os.path.join(prgdir, pth))
 os.makedirs(TMP)
 # Enter source directory
@@ -117,6 +117,7 @@ if onefle:
 else:
     subprocess.call(["pyinstaller", "onedir.spec"], stdout=out, stderr=out)
 # Copy files to DPT
+shutil.copytree("thm", os.path.join(prgdir, "thm"))
 shutil.copy("tartan.ico", prgdir)
 if onefle:
     shutil.copy(os.path.join("dist", "ms0000"), prgdir)

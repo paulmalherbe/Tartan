@@ -1,4 +1,21 @@
-changes = """ver_6.25 2026-03-13
+changes = """ver_6.26 2026-04-09
+===================
+
+ 1) Modified Creditors Ledger - Interrogation
+ 2) Modified General Ledger, Interrogation - Interrogation (Financials)
+ 3) Modified Loans Ledger - Interrogation
+ 4) Modified Stores Ledger, Data Capture - Purchase Orders
+ 5) Modified Creditors Ledger - Interrogation
+ 6) Modified OFX Bank Importing to cater for single line documents.
+ 7) Updated all python modules to latest SECURITY updates.
+ 8) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.
+
+ver_6.25 2026-03-13
 ===================
 
  1) Modified Debtors Ledger, Data Capture - Recurring Charges
@@ -11,7 +28,7 @@ NB:
 You can only upgrade to this version if your current version is 5.5 or later.
 If you have an older version than 5.5 please contact me for assistance.
 
-ver_6.24 2026-02-15
+ver_6.24 2026-03-03
 ===================
 
  1) Modified Asset Register, Toolbox - Change Asset Codes

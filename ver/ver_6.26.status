@@ -1,0 +1,27 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   TartanClasses.py
+	modified:   crs/cr4010.py
+	modified:   doc/BKM.rst
+	modified:   doc/SYS.rst
+	modified:   gen/gl4020.py
+	modified:   lon/ln4010.py
+	modified:   ms0000.py
+	modified:   str/st2010.py
+	modified:   tartanFunctions.py
+	modified:   tartanWork.py
+	modified:   uty/mklinux.py
+	modified:   uty/mkwindows.py
+	modified:   uty/onedir.spec
+	modified:   uty/onefle.spec
+	modified:   uty/pkgprg.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	ver/ver_6.26.status
+
+no changes added to commit (use "git add" and/or "git commit -a")

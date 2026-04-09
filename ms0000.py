@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 25)
+    VERSION = (6, 26)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -278,12 +278,12 @@ Options:
                     print("%-16s: Not Available" % mod[1])
                 else:
                     try:
-                        from importlib.metadata import versionss
+                        from importlib.metadata import version
                         ver = version(mod[1])
                     except:
                         try:
                             ver = getattr(ver, mod[2])
-                        except Exception as err:
+                        except:
                             print("%-16s: Installed" % mod[1])
                             continue
                         if type(ver) == list:
@@ -1498,7 +1498,7 @@ System --> Change Password""")
             else:
                 os.spawnv(os.P_WAIT, "/bin/tar",
                     ("tar", "-xzf", fle, "-C", upgdir))
-                shutil.copytree("%s/tartan" % upgdir, getPrgPath()[1],
+                shutil.copytree("%s/tartan" % upgdir, getPrgPath()[0],
                     dirs_exist_ok=True)
                 shutil.rmtree("%s/tartan" % upgdir)
             os._exit(0)

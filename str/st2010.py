@@ -828,6 +828,8 @@ class st2010(object):
                     repprt=self.pr.repprt, repeml=self.pr.repeml,
                     copy=self.acttyp.lower())
                 self.df.setWidget(self.df.mstFrame, state="show")
+            # Clear total and focus
+            self.df.setViewPort(None, 0)
             self.df.focusField("T", 0, 1)
 
     def doRibbon(self):

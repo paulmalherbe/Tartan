@@ -36,10 +36,10 @@ from tartanFunctions import copyList, dateDiff, doPrinter, doWriteExport
 from tartanFunctions import getColors, getCost, getFileName, getFontSize
 from tartanFunctions import getImage, getModName, getPeriods, getPrgPath
 from tartanFunctions import getPrinters, getSell, getSingleRecords, getTrn
-from tartanFunctions import getUnderline, importTkinter, loadRcFile
-from tartanFunctions import luhnFunc, makeArray, mthendDate, parsePrg
-from tartanFunctions import printPDF, projectDate, removeFunctions, sendMail
-from tartanFunctions import showError, showException, showWarning, doPublish
+from tartanFunctions import getUnderline, loadRcFile, luhnFunc, makeArray
+from tartanFunctions import mthendDate, parsePrg, printPDF, projectDate
+from tartanFunctions import removeFunctions, sendMail, showError
+from tartanFunctions import showException, showWarning, doPublish
 from tartanFunctions import unbindAllWidgets, getManager, placeWindow
 from tartanFunctions import cutpasteMenu
 import tartanWork
@@ -127,14 +127,24 @@ try:
 except:
     OFX = False
 # ========================================================
+# RGB color tuple
+# ========================================================
+def rgb(col):
+    if type(col) == int:
+        return int(col / 65536), int(col / 256) % 256, col % 256
+    if col[0] == "#":
+        col = col.replace("#", "")
+        col = (col[0:2], col[2:4], col[4:6])
+        return tuple([int(x, 16) for x in col])
+# ========================================================
 # Tkinter, ttk and PIL imports
 # ========================================================
 try:
-    tk, ttk = importTkinter()
-    if not tk:
-        raise Exception
-    import tkinter.filedialog as tkfile
+    import tkinter as tk
+    import tkinter.ttk as ttk
     import tkinter.font as tkfont
+    import tkinter.filedialog as tkfile
+    from PIL import Image, ImageTk
     try:
         from tkcolorpicker import askcolor
         CPICK = True
@@ -146,7 +156,6 @@ try:
         TKCAL = True
     except:
         TKCAL = False
-    from PIL import Image, ImageTk
 
     # Stock images and icons and others
     tkinter_umlauts = [
@@ -169,11 +178,11 @@ try:
         def addButton(self, text, cmd, row=0, spn=1):
             if row not in self.rows:
                 self.rows[row] = 0
+            self.columnconfigure(self.rows[row], weight=1)
             text, pos = getUnderline(widget=self, text=text)
             but = MyButton(self, cmd=cmd, text=text, underline=pos)
             but.grid(column=self.rows[row], row=row, columnspan=spn,
-                sticky="ew")
-            self.columnconfigure(self.rows[row], weight=1)
+                sticky="ew", padx=0, pady=0)
             self.rows[row] += spn
             return but
 
@@ -423,15 +432,14 @@ try:
             super().__init__(parent, **kwargs)
             style = ttk.Style()
             if color and type(color) in (list, tuple):
-                name = "%s.%s" % (color[0].capitalize(), name)
-                style.configure(name,
-                    foreground=color[0],
-                    background=color[1])
-            elif color:
+                name = "%s%s.%s" % (color[0].capitalize(), color[1], name)
+                style.configure(name, foreground=color[0], background=color[1])
+            elif color and name == "TLabel":
                 name = "CLabel.TLabel"
             self.configure(style=name)
             if size:
                 self.configure(width=size)
+
     class MyMenu(tk.Menu):
         def __init__(self, parent, **kwargs):
             super().__init__(parent, **kwargs)
@@ -769,8 +777,12 @@ try:
             ww = int(self.window.winfo_screenwidth())
             wh = int(self.window.winfo_screenheight() * .9)
             # Style and fonts and colours
-            style = ttk.Style()
-            style.configure("TScrollbar", arrowsize=30)
+            self.style = ttk.Style()
+            try:
+                self.style.configure("As.Horizontal.TScrollbar", arrowsize=30)
+                self.style.configure("As.Vertical.TScrollbar", arrowsize=30)
+            except:
+                pass
             if "mf" in self.opts:
                 self.nbg = self.opts["mf"].rcdic["nbg"]
                 self.nfg = self.opts["mf"].rcdic["nfg"]
@@ -836,7 +848,8 @@ try:
             # Left frames
             lframe = MyFrame(self.cframe)
             lframe.pack(fill="y", side="left")
-            spc = ttk.Scrollbar(lframe, orient="horizontal")
+            spc = ttk.Scrollbar(lframe, style="As.Horizontal.TScrollbar",
+                orient="horizontal")
             spc.pack(fill="x", side="bottom", expand=False)
             lframeh = MyFrame(lframe)
             lframeh.pack(fill="x")
@@ -845,10 +858,11 @@ try:
             # Right frames
             rframe = MyFrame(self.cframe)
             rframe.pack(fill="both", expand="yes", side="left")
-            hsb = ttk.Scrollbar(rframe, orient="horizontal",
-                command=self._xview)
+            hsb = ttk.Scrollbar(rframe, style="As.Horizontal.TScrollbar",
+                orient="horizontal", command=self._xview)
             hsb.pack(fill="x", side="bottom", expand=False)
-            vsb = ttk.Scrollbar(rframe, orient="vertical",
+            vsb = ttk.Scrollbar(rframe, style="As.Vertical.TScrollbar",
+                orient="vertical",
                 command=self._yview)
             vsb.pack(fill="y", side="right", expand=False)
             rframeh = MyFrame(rframe)
@@ -1127,7 +1141,7 @@ except Exception as err:
     GUI = False
 
 if GUI and TKCAL:
-    class MyCal(tk.Toplevel, object):
+    class MyCalendar(tk.Toplevel, object):
         def __init__(self, widget=None, **kw):
             super().__init__(relief="raised", pady=2)
             self.wm_overrideredirect(True)
@@ -1179,16 +1193,6 @@ if GUI and TKCAL:
             self.date = self.mycal.get_date()
             self.destroy()
 # =========================================================
-def rgb(col):
-    # RGB color tuple
-    if type(col) == int:
-        return int(col / 65536), int(col / 256) % 256, col % 256
-    if col[0] == "#":
-        col = col.replace("#", "")
-        col = (col[0:2], col[2:4], col[4:6])
-        return tuple([int(x, 16) for x in col])
-# =========================================================
-
 class MainFrame(object):
     def __init__(self, title=None, rcdic=None, xdisplay=True):
         if not rcdic:
@@ -1209,7 +1213,7 @@ class MainFrame(object):
                     print("Missing Tkinter and/or ttk modules")
                     sys.exit()
                 if not title:
-                    title = "Tartan Systems - Copyright %s 2004-2024 "\
+                    title = "Tartan Systems - Copyright %s 2004-2026 "\
                         "Paul Malherbe" % chr(0xa9)
                 self.window = MkWindow(title=title, icon="tartan",
                     size=self.geo, resiz=False).newwin
@@ -1241,13 +1245,13 @@ class MainFrame(object):
         themes = self.style.theme_names()
         if self.rcdic["theme"] in themes:
             self.style.theme_use(self.rcdic["theme"])
-        if butt:
-            self.style.configure("MyButton.TButton",
-                font=(self.rcdic["mft"], self.rcdic["dfs"]))
+        else:
+            self.style.theme_use("clam")
         if self.rcdic["theme"] in ("alt", "clam", "classic", "default"):
             self.style.configure("MyButton.TButton",
                 foreground=self.rcdic["bfg"],
                 background=self.rcdic["bbg"],
+                font=(self.rcdic["mft"], self.rcdic["dfs"]),
                 padding=2)
             self.style.map("MyButton.TButton",
                 foreground=[
@@ -1258,6 +1262,9 @@ class MainFrame(object):
                     ("active", self.rcdic["fbg"]),
                     ("disabled", self.rcdic["dbg"]),
                     ("focus", self.rcdic["fbg"])])
+        elif butt:
+            self.style.configure("MyButton.TButton",
+                font=(self.rcdic["mft"], self.rcdic["dfs"]))
         if tk.TkVersion >= 8.5:
             self.style.configure("MyCheckbutton.TCheckbutton")
             self.style.map("MyCheckbutton.TCheckbutton",
@@ -1442,20 +1449,30 @@ class MkWindow(object):
             # Which must be in the Tartan root folder i.e. where
             # ms0000.py or ms0000.exe resides
             try:
-                ign = ("ImageLib", "pkgIndex", "pkgIndex_package")
-                tdir = os.path.join(sys.path[0], "thm")
-                for root, dirs, files in os.walk(tdir):
-                    for fle in files:
-                        pth = os.path.join(root, fle)
-                        nam = os.path.basename(pth)
-                        tst = nam.split(".")
-                        if tst[-1] == "tcl" and tst[-2] not in ign:
-                            try:
-                                self.newwin.tk.eval("source {%s}" % pth)
-                            except:
-                                continue
+                from pathlib import Path
+                style = ttk.Style()
+                thms = style.theme_names()
+                ign = ("black", "breeze", "ImageLib", "pkgIndex",
+                    "pkgIndex_package")
+                tdir = Path(os.path.join(getPrgPath()[0], "thm"))
+                fles = list(tdir.rglob("*.tcl"))
+                for pth in fles:
+                    nam = os.path.basename(pth).split(".tcl")[0]
+                    if nam not in ign and nam not in thms:
+                        try:
+                            self.newwin.tk.call("source", pth)
+                        except:
+                            pass
             except:
                 pass
+            if "SPOS" in os.environ:
+                # Rounded Frame
+                if "RoundedFrame" not in style.element_names():
+                    self.img = getImage("white")
+                    style.element_create("RoundedFrame", "image", self.img,
+                        border=16, sticky="nsew")
+                    style.layout("RoundedFrame",
+                        [("RoundedFrame", {"sticky": "nsew"})])
             # Enable button to show hidden files
             try:
                 try:
@@ -1627,9 +1644,9 @@ class TartanMenu(object):
             fg = self.mf.rcdic["nfg"]
             bg = self.mf.rcdic["nbg"]
         style = ttk.Style()
-        style.configure("Menu.TLabel", foreground=fg, background=bg)
+        style.configure("Mnu.TLabel", foreground=fg, background=bg)
         self.mf.head.configure(text="Tartan Systems Menu (%s)" % self.usr,
-            style="Menu.TLabel")
+            style="Mnu.TLabel")
         self.menubar = MyFrame(self.mf.body)
         labs = {}
         mens = {}
@@ -1740,7 +1757,7 @@ class TartanMenu(object):
             self.image.config(bg=self.mf.rcdic["nbg"])
             self.image.create_text(int(iwth / 2), int(ihgt / 2) - 60,
                 text="Tartan Systems", font=("Helvetica", 60), fill="white")
-        self.image.pack(fill="both", expand="yes")
+        self.image.pack(fill="both", expand="yes", pady=1)
         self.mf.updateStatus("Select an Option from the Menu")
         self.menubar.focus_force()
         self.mf.startLoop()
@@ -1840,7 +1857,7 @@ class SplashScreen(object):
 
 Please enjoy yourself while you wait ..."""
         self.label = MyLabel(self.frame, text=text, font=("Helvetica", 16),
-            justify="center")
+            justify="center", padding=5)
         self.label.pack(fill="both", expand="yes")
         if self.scrn:
             self.frame.place(anchor="center", relx=0.5, rely=0.5)
@@ -4602,7 +4619,7 @@ Export - The report in the selected format will be opened
                 if self.clicks and typ[0] == "I":
                     b.bind("<ButtonRelease-1>",
                         functools.partial(self.clicks, (pag, col, b)))
-                b.grid(row=0, column=num)
+                b.grid(row=0, column=num, padx=2)
                 e_dic[col].append([b, var, (val[1], cr)])
             if self.mf.rcdic["ttip"] == "Y" and len(fld) == 13 and fld[12]:
                 ToolTip(hbox, fld[12])
@@ -4656,7 +4673,7 @@ Export - The report in the selected format will be opened
             mast = getattr(self.nb, "Page%s" % pag)
         else:
             mast = self.mstFrame
-        frame = MyFrame(mast, borderwidth=2)
+        frame = MyFrame(mast, borderwidth=2, relief="ridge")
         frame.grid(column=0)
         # Create left label heading
         if len(self.colf[pag][0]) > 11 and self.colf[pag][0][11]:
@@ -4705,8 +4722,8 @@ Export - The report in the selected format will be opened
             f1 = fld[8]                         # F1 Key
         if self.dolab and col == 0:
             t_dic = self.colLabel[pag]
-            t_dic[row] = MyLabel(frame, color=True, text=txt)
-            t_dic[row].grid(row=row+1, column=col, sticky="ew")
+            t_dic[row] = MyLabel(frame, color=False, text=txt)
+            t_dic[row].grid(row=row+1, column=col, sticky="nsew", pady=1)
         e_dic = self.colEntry[pag]
         c_dic = self.colCompl[pag]
         l_dic = self.colListl[pag]
@@ -4823,7 +4840,7 @@ Export - The report in the selected format will be opened
                 fwid = self.colEntry[pag][self.pos]
             grb = fwid.grab_current()
             fwid.configure(state="disabled")
-            cal = MyCal(fwid)
+            cal = MyCalendar(fwid)
             if grb:
                 grb.grab_set()
             fwid.configure(state="normal")
@@ -6847,9 +6864,9 @@ class SelectChoice(object):
             col = list(col)
             if len(col) == 4:
                 col.append("N")
-            elif col[4] == "F":
+            elif col[4] == "F" and not fltr:
                 fltr = True
-            if col[4] == "Y":
+            elif col[4] == "Y":
                 self.srch = num
             if self.headings:
                 self.cols.append(col[1])
@@ -8100,6 +8117,7 @@ class TartanConfig(object):
         if self.dbskp:
             self.df.loadEntry("T", 0, 0, data=self.rcfile)
             self.df.doKeyPressed("T", 0, 0, self.rcfile)
+            self.df.topEntry[0][0].bindtags(('',))
             self.dbase = self.rcdic["dbase"]
             self.df.disableTag(0)
             self.doEnd()
@@ -8283,7 +8301,13 @@ class TartanConfig(object):
                         else:
                             color[x][y] = "#000000"
                     self.df.doKeyPressed(frt, pag, p+idx+y, data=color[x][y])
-            return "ff9"
+            # Check if button is an image
+            lout = self.mf.style.layout("TButton")
+            if lout[0][0] == "Button.button":
+                self.df.doKeyPressed(frt, pag, 9, "D")
+                return "ff20"
+            else:
+                return "ff9"
         else:
             # Button
             for x in range(3):
@@ -10829,14 +10853,14 @@ and Create It.""",
 Bowl's Clubs -> File Maintenance -> Control Record
 
 and Create It.""",
-            "cshctl": """Missing cshctl Record for Company %s, Please Run
-
-Cash Analysis -> Control Record
-
-and Create It.""",
             "crsctl": """Missing crsctl Record for Company %s, Please Run
 
 Creditor's Ledger -> File Maintenance -> Control Record
+
+and Create It.""",
+            "cshctl": """Missing cshctl Record for Company %s, Please Run
+
+Cash Analysis -> Control Record
 
 and Create It.""",
             "ctlctl": """Missing ctlctl Record for Company %s, Please Run
@@ -13800,9 +13824,25 @@ class BankImport(object):
                     break
 
     def importOfxTool(self, fname):
+        test = open(fname, "r")
+        line = test.readlines()
+        if len(line) == 1:
+            try:
+                line = line[0].replace(" >", ">")
+                line = line.replace("><", ">\n<")
+            except Exception as err:
+                print(err)
+                return
+            fname = os.path.join(self.mf.rcdic["wrkdir"], "tempfle.ofx")
+            ofl = open(fname, "w")
+            ofl.write(line)
+            ofl.close()
         parser = OFXTree()
-        parser.parse(fname)
-        ofx = parser.convert()
+        try:
+            parser.parse(fname)
+            ofx = parser.convert()
+        except Exception as err:
+            print(err)
         if not ofx.statements[0].account.acctid.count(self.bankac):
             showError(self.mf.body, "File Error %s" % fname,
                 "The File Must Contain the Bank Account Number.")
@@ -16765,7 +16805,7 @@ class MyFpdf(fpdf.FPDF):
     def setValues(self, name, head, font="", border=""):
         # Add TTF Fonts
         try:
-            for pth in glob.glob(os.path.join(getPrgPath()[1], "fnt/*.ttf")):
+            for pth in glob.glob(os.path.join(getPrgPath()[0], "fnt/*.ttf")):
                 nam = os.path.basename(pth)
                 self.add_font(nam, "", pth, uni=True)
         except:
@@ -16989,14 +17029,6 @@ class TartanLabel(MyFpdf):
         self.set_xy(posX, posY)
         line_width = self.lab_width - self.padding
         self.multi_cell(line_width, self.line_height, text, 0, "L")
-
-    def _putcatalog(self):
-        self._out("/Type /Catalog")
-        # Disable the page scaling option in the printing dialog
-        self._out("/ViewerPreferences [/PrintScaling /None]")
-        self._out("/Pages 1 0 R")
-        self._out("/OpenAction [3 0 R /XYZ null null 1]")
-        self._out("/PageLayout /OneColumn")
 
 class DrawForm(MyFpdf):
     """
@@ -17917,6 +17949,7 @@ class ExportDbase(object):
                 self.opts["mf"].startLoop()
 
     def doVariables(self):
+        self.cono = []
         self.noco = []
         self.coys = []
         self.skip = ("ldraws", "lentry", "lfixed", "ltrans", "lprize")
@@ -17934,6 +17967,9 @@ class ExportDbase(object):
             prog=__name__)
         if self.sqf.error:
             return
+        cc = self.sqf.getRec("ctlmst", cols=["ctm_cono"])
+        for c in cc:
+            self.cono.append(c[0])
         self.cv = self.sqf.getRec("verupd", cols=["ver_version"],
             limit=1)[0]
         self.wrkdir = self.opts["mf"].rcdic["wrkdir"]
@@ -17967,6 +18003,9 @@ class ExportDbase(object):
         txt = (self.doExit,)
         self.df = TartanDialog(self.opts["mf"], tops=True, title=tit,
             eflds=fld, butt=but, tend=tnd, txit=txt)
+        if len(self.cono) == 1:
+            self.df.loadEntry("T", 0, 0, data="S")
+            self.df.doKeyPressed("T", 0, 1, 1)
 
     def doTyp(self, frt, pag, r, c, p, i, w):
         if w == "M":
@@ -18701,20 +18740,33 @@ class ViewPDF(object):
             self.siz = [rect[3], rect[2]]
         self.rotate = 0
         # Theme and fonts
-        self.style = ttk.Style()
-        if not self.mf:
-            self.style.theme_use("clam")
+        style = ttk.Style()
+        style.theme_use("clam")
+        bg = style.lookup("TButton", "background")
+        fg = style.lookup("TButton", "foreground")
+        try:
+            for s in style.map("TButton")["background"]:
+                if s[0] == "active":
+                    bf = s[1]
+                    break
+        except:
+            bf = bg
         self.font = ["Helvetica", 12]
-        self.style.configure("pdf.TFrame", font=self.font)
-        self.style.configure("pdf.TLabel", font=self.font)
-        self.style.configure("pdf.TButton", font=self.font, relief="flat")
-        self.style.configure("pdf.TEntry", font=self.font, height=4)
-        self.style.configure("pdfbold.TLabel", font=self.font + ["bold"])
-        fg = self.style.lookup("pdf.TButton", "foreground")
-        bg = self.style.lookup("pdf.TButton", "background")
-        self.style.configure("pdf.TRadiobutton", width=5, font=self.font)
+        style.configure("pdf.TFrame", font=self.font,
+            background=bg, foreground=fg)
+        style.configure("pdf.TLabel", font=self.font,
+            background=bg, foreground=fg)
+        style.configure("pdf.TButton", font=self.font, relief="flat",
+            background=bg, foreground=fg, padding="10 5 10 5")
+        style.map("pdf.TButton",
+            foreground=[("focus", "black"),("active", "black")],
+            background=[("focus", bf),("active", bf)])
+        style.configure("pdf.TEntry", font=self.font, height=4)
+        style.configure("pdfbold.TLabel", font=self.font + ["bold"],
+            background=bg, foreground=fg)
+        style.configure("pdf.TRadiobutton", width=5, font=self.font)
         # Create arrowless scrollbars
-        self.style.layout("h.TScrollbar", [
+        style.layout("NoArrow.TScrollbar", [
             ("Horizontal.Scrollbar.trough", {
                 "children": [("Horizontal.Scrollbar.thumb", {
                     "expand": "1",
@@ -18723,7 +18775,8 @@ class ViewPDF(object):
         # Widgets
         fr1 = MyFrame(self.win)
         fr1.pack(side="top", fill="x")
-        fr2 = MyFrame(fr1, borderwidth=1, relief="raised")
+        fr2 = MyFrame(fr1, borderwidth=1, relief="raised",
+            style="pdf.TFrame", bg=bg)
         fr2.pack(fill="x", expand="yes")
         # Buttons and Entries
         if self.lastpg > 1:
@@ -18793,18 +18846,19 @@ class ViewPDF(object):
             "Button to UnZoom. Ctrl plus the Numeric Keypad +- Keys can "\
             "also be used. Use F11 to toggle full screen.")
         self.bt5.pack(padx=3, pady=3, side="right")
-        self.bt6 = MyButton(fr2, text="Rotate", style="pdf.TButton")
-        self.bt6.bind("<Button-1>", self.doRotate)
-        self.bt6.bind("<Button-3>", self.doRotate)
-        ToolTip(self.bt6, "Left Button to Rotate 90 degrees to the Left "\
-            "and Right Button to Rotate to the Right. Ctrl plus the l and "\
-            "r Keys can also be used.")
-        self.bt6.pack(padx=3, pady=3, side="right")
+        if not self.mf:
+            self.bt6 = MyButton(fr2, text="Rotate", style="pdf.TButton")
+            self.bt6.bind("<Button-1>", self.doRotate)
+            self.bt6.bind("<Button-3>", self.doRotate)
+            ToolTip(self.bt6, "Left Button to Rotate 90 degrees to the Left "\
+                "and Right Button to Rotate to the Right. Ctrl plus the l and "\
+                "r Keys can also be used.")
+            self.bt6.pack(padx=3, pady=3, side="right")
         fr1.update_idletasks()
         # Canvas
         self.cv = tk.Canvas(self.win, highlightthickness=0)
         self.horz = ttk.Scrollbar(self.win, orient="horizontal",
-            style="h.TScrollbar")
+            style="NoArrow.TScrollbar")
         self.horz.config(command=self.cv.xview)
         self.cv.config(xscrollcommand=self.horz.set)
         self.horz.pack(fill="x", expand="no", side="bottom")
@@ -18861,6 +18915,8 @@ class ViewPDF(object):
         # Display 1st page
         self.showPage()
         self.win.wait_window()
+        if self.mf:
+            self.mf.setThemeFont()
 
     def doPassword(self):
         def enterPwd(event=None):
@@ -19056,6 +19112,10 @@ class ViewPDF(object):
             frm = 4
         else:
             frm = 1
+        if self.mf:
+            but = 6
+        else:
+            but = 7
         if unbind:
             if key:
                 self.cvbinds = []
@@ -19063,14 +19123,14 @@ class ViewPDF(object):
                     if exc is None or bind != exc:
                         self.cvbinds.append((bind, self.win.bind(bind)))
                         self.win.unbind(bind)
-            for x in range(frm, 6):
+            for x in range(frm, but):
                 bt = getattr(self, "bt%s" % x)
                 bt.configure(state="disabled")
         else:
             if key:
                 for bind in self.cvbinds:
                     self.win.bind(bind[0], bind[1])
-            for x in range(frm, 6):
+            for x in range(frm, but):
                 bt = getattr(self, "bt%s" % x)
                 bt.configure(state="normal")
         self.win.update_idletasks()

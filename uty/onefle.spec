@@ -3,9 +3,7 @@ import sys
 from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
-data = [
-    ('doc/*', 'doc'),
-    ('../pygal/css/*.css', 'pygal/css')]
+data = [('../pygal/css/*.css', 'pygal/css')]
 if sys.version_info[:2][0] == "2":
     data.append(('c:/windows/system32/api-ms-win-crt-*.dll', '.'))
 data.extend(collect_data_files('tkinterhtml'))

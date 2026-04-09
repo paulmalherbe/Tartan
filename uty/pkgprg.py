@@ -182,63 +182,21 @@ else:
 os.chdir(pypath)
 if newver and newver != "%s.%s" % VERSION:
     try:
-        # Create changes.txt
-        sys.path.insert(0, pypath)
-        from tartanWork import allsys, pkgs, tarmen
-        ofle = open("changes.txt", "w")
-        ofle.write("""
-Tartan Systems Upgrade
-----------------------\n""")
-        new = {}
-        for p in pkgs:
-            new[pkgs[p]] = p
-        proc = subprocess.Popen("git status", shell=True, bufsize=0,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, close_fds=True)
-        prt = proc.stdout.readlines()
-        skp = ["ding.wav", "doc", "ms0000", "pkgprg", "readme.md", "tab",
-            "tartan", "uty"]
-        cnt = 0
-        for line in prt:
-            line = line.decode("utf-8").replace("\n", "")
-            if line.count("modified"):
-                mtyp = "Modified"
-            elif line.count("new file"):
-                mtyp = "Added"
-            else:
-                continue
-            skip = False
-            for s in skp:
-                if line.lower().count(s):
-                    skip = True
-                    break
-            if skip:
-                continue
-            mod = line.split()[1].split("/")
-            sss = new[mod[0]]
-            if mod[0] == "sls":
-                ttt = ["Sales Invoicing"]
-            else:
-                ttt = allsys[mod[0].upper()]
-            for l in tarmen["%smod" % sss]:
-                if l[2] == mod[1].replace(".py", ""):
-                    cnt += 1
-                    for mmm in tarmen["%smen" % sss]:
-                        if mmm[2] == l[1]:
-                            ofle.write("%2s) %s %s, %s - %s\n" % \
-                                (cnt, mtyp, ttt[0], mmm[3], l[4]))
-                    break
-        if upgpip:
+        if not os.path.exists("changes.txt"):
+            # Create changes.txt
+            sys.path.insert(0, os.path.join(pypath, "uty"))
+            import mkchgs
+            if upgpip:
+                cnt += 1
+                ofle.write("""%2s) Updated all python modules to the latest SECURITY updates.\n""" % cnt)
             cnt += 1
-            ofle.write("""%2s) Updated all python modules to the latest SECURITY updates.\n""" % cnt)
-        cnt += 1
-        ofle.write("""%2s) Other minor changes, fixes and enhancements.
+            ofle.write("""%2s) Other minor changes, fixes and enhancements.
 
 NB:
 --
 You can only upgrade to this version if your current version is 5.5 or later.
 If you have an older version than 5.5 please contact me for assistance.\n""" % cnt)
-        ofle.close()
+            ofle.close()
         # Change version number in ms0000.py, SYS.rst, Downloads.rst
         old = open("ms0000.py", "r")
         lin = old.readlines()
@@ -299,7 +257,7 @@ If you have an older version than 5.5 please contact me for assistance.\n""" % c
         exeCmd(sta)
         dif += " > ver/ver_%s.%s.diff" % tuple(cver)
         exeCmd(dif)
-        if os.path.isfile("changes.txt"):
+        if os.path.exists("changes.txt"):
             exeCmd("mv changes.txt ver/ver_%s.%s.changes" % (cver[0], cver[1]))
         # Create changes module
         chg = open("tarchg.py", "w")
@@ -371,6 +329,12 @@ if incunc:
         "mst/*0.py rca/*0.py rtl/*0.py scp/*0.py sls/*0.py str/*0.py "\
         "tab/*0.py ms0000.py TartanClasses.py tartanFunctions.py "\
         "tartanImages.py tartanWork.py uty/*0.py wag/*0.py" % bd)
+    # Update the zip with fonts
+    exeCmd("zip -qr %s/tarzip fnt" % bd)
+    # Update the zip with sound
+    exeCmd("zip -qr %s/tarzip snd" % bd)
+    # Update the zip with themes
+    exeCmd("zip -qr %s/tarzip thm" % bd)
 # Create a new system directory
 if os.path.exists("%s/%s" % (bd, dist)):
     shutil.rmtree("%s/%s" % (bd, dist))
@@ -404,7 +368,7 @@ os.chdir(bd)
 zipfle = "%s-%s" % (dist, vv)
 if os.path.exists("%s/%s/%s.zip" % (bd, bs, zipfle)):
     os.remove("%s/%s/%s.zip" % (bd, bs, zipfle))
-exeCmd("zip -qr %s/%s/%s %s --exclude \.git\*" % (bd, bs, zipfle, dist))
+exeCmd("zip -qr %s/%s/%s %s --exclude .git/*" % (bd, bs, zipfle, dist))
 if windows:
     # Python windows executable
     if names:
@@ -431,24 +395,25 @@ if windows:
                     cmd += " -u"
                 exeCmd("ssh paul@%s python %s" % (name, cmd))
                 exeCmd("scp paul@%s:tartan-6-%s.exe %s/%s" % (bit, bd, bx))
-    for bit in bits:
-        print("Packaging %s bit" % bit)
-        WPFX = "%s/.wine%s" % (bd, bit)
-        if bit in ("7", "8", "32"):
-            cmd = "WINEARCH=win32 WINEPREFIX=%s /usr/bin/wine" % WPFX
-        else:
-            cmd = "WINEARCH=win64 WINEPREFIX=%s /usr/bin/wine" % WPFX
-        xpth = "%s/dosdevices/x:" % WPFX
-        if not os.path.exists(xpth):
-            os.symlink(home, xpth)
-        cmd = "%s cmd /c python %s/uty/mkwindows.py -a%s" % (cmd, bv, bit)
-        if onefle:
-            cmd += " -o"
-        if upgpip:
-            cmd += " -u"
-        if tmpfle:
-            cmd += " -t%s" % tmpfle
-        exeCmd(cmd)
+    else:
+        for bit in bits:
+            print("Packaging %s bit" % bit)
+            WPFX = "%s/.wine%s" % (bd, bit)
+            if bit in ("7", "8", "32"):
+                cmd = "WINEARCH=win32 WINEPREFIX=%s /usr/bin/wine" % WPFX
+            else:
+                cmd = "WINEARCH=win64 WINEPREFIX=%s /usr/bin/wine" % WPFX
+            xpth = "%s/dosdevices/x:" % WPFX
+            if not os.path.exists(xpth):
+                os.symlink(home, xpth)
+            cmd = "%s cmd /c python %s/uty/mkwindows.py -a%s" % (cmd, bv, bit)
+            if onefle:
+                cmd += " -o"
+            if upgpip:
+                cmd += " -u"
+            if tmpfle:
+                cmd += " -t%s" % tmpfle
+            exeCmd(cmd)
 if linux:
     cmd = "python %s/uty/mklinux.py" % bv
     if onefle:
@@ -555,10 +520,9 @@ if publish:
         exeCmd("cp -p %s/%s/Tartan* %s/tempcd/" % (bd, bx, bd))
         exeCmd("cp -pr %s/%s/* %s/tempcd/Other/" % (bd, bx, bd))
         exeCmd("rm %s/tempcd/Other/Tartan*" % bd)
-        exeCmd("rm %s/tempcd/Other/Rnehol*" % bd)
         exeCmd("rm %s/tempcd/Other/??????-[5,6]*.exe" % bd)
         auto = open("%s/tempcd/AUTORUN.INF" % bd, "w")
-        auto.write("""[autorun]
+        auto.write(r"""[autorun]
     shell\install=&Install
     shell\install\command=Tartan_%s.%s-64.exe
 """ % (cver[0], cver[1]))
@@ -571,7 +535,7 @@ if publish:
         exeCmd("mkisofs -r -J -l -D -V 'Tartan Systems %s.%s' "\
             "-p 'Paul Malherbe paul@tartan.co.za' -copyright 'Paul "\
             "Malherbe' -o %s/TartanCD/Tartan.iso -graft-points "\
-            "/\=%s/tempcd" % (cver[0], cver[1], bd, bd))
+            "/\\=%s/tempcd" % (cver[0], cver[1], bd, bd))
         shutil.rmtree("%s/tempcd" % bd)
 if email:
     # Email Users
