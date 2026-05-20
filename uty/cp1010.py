@@ -24,6 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import importlib
 from TartanClasses import GetCtl, Sql, TartanDialog
 from tartanWork import allsys
 
@@ -134,8 +135,8 @@ class cp1010:
             return "Invalid System"
         self.syscod = w
         self.ttt["data"] = []
-        exec("from tartanWork import %strtp as trtp" % allsys[w][1].lower())
-        setattr(self, "trtp", locals()["trtp"])
+        com = importlib.import_module("tartanWork")
+        self.trtp = getattr(com, "%strtp" % allsys[w][1].lower())
         for n, t in enumerate(self.trtp):
             self.ttt["data"].append((n+1, t[1]))
         self.df.loadEntry(frt, pag, p+1, data=allsys[self.syscod][0])

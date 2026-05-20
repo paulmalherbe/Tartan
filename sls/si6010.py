@@ -96,7 +96,6 @@ class si6010(object):
     def doNewOrd(self, frt, pag, r, c, p, i, w):
         self.ordno = w
         self.ref2 = self.ordno.strip()[:9]
-        print(self.ref2)
 
     def doEnd(self):
         self.sql.updRec("slsiv1", cols=["si1_cus_ord"], data=[self.ordno],

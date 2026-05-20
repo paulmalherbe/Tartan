@@ -320,8 +320,8 @@ Use this routine to create competition type records as follows:
 + **Expunge Games** - Which games, if any, must be expunged i.e. cleared. The games must be comma separated e.g. 1,2
 + **Retain Percentage** - What percentage of the shots of the games, not expunged, must be retained when split into groups.
 + **Number of Drawn Games** - The number of games which are randomly drawn. Enter 99 for a Round Robin.
-+ **Strict S v S** - Whether the competition is strictly strength versus strength i.e. teams could play each other again before the last game.
-+ **Different Drawn Games Scoring** - Whether or not drawn games have a different scoring format from strength versus strength games.
++ **Teams Can Repeat** - *Yes* means teams can play against the same team again. *Last Only* means teams can only play against the same team again in the Final Game. *Never* means teams will never play against the same team again.
++ **Different Drawn Games Scoring** - *None* means that all games have the same scoring format. *Drawn* means that drawn games have their own scoring format. *Round* means that all rounds could have their own scoring format. *Group* means that all rounds and all groups in that round could have there own scoring format.
 + **Points Format** - The formats for Drawn and Strength V Strength games.
     + **Skins** - Whether or not to have skins.
     + **Number of Ends per Skin** - If skins were selected then enter the number of games per skin.
@@ -345,7 +345,7 @@ Use this routine to capture entries in a competition as follows:
 In the event of drawn games enter all player's codes else enter only the skip's codes.
 
 + **Code** - The player's code as created in `Tab's Maintenance (BC)`_ or you can enter a zero to enter a new player as per `Tab's Maintenance (BC)`_.
-+ **Group** - The team's code, if relevant i.e. H or V if the competition type is Teams and a valid Group Number if the competition type is R/R (G). Valid groups can be created by executing the Bowling Clubs, League, Club Records module.
++ **Group** - The team's code, if relevant i.e. H or V if the competition type is Teams and a valid Numeric Group Number if the competition type is R/R (G). Valid groups can be created by entering a 0.
 + **P** - Whether or not the player has paid, Y or N.
 
 Entries Listing (BC)
@@ -374,10 +374,9 @@ If the first draw of a Tournament competition is a Manual Draw, use `Change Draw
     + **Pair Home with Away Skips** - This only applies to the first drawn game.
         + **No** - Standard random draw where anyone could be paired with anyone.
         + **Yes** - An attempt will be made to pair visitors with local members.
-    + **Number of Groups** - The number of groups, if applicable, to split the players into.
-    + **Smallest Group** - Select which group will have the least number of teams, if applicable.
+    + **Number of Groups** - The number of groups, if applicable, to split the players into. Once entered you will have to enter the number of skips per group i.e. If there are 24 skips and you enter 3 groups it will be 8 skips per group.
+    + **Group per Green** - Whether to allocate greens to groups. This only applies to the final game. For each group enter the green code. For the last group you can enter two green e.g. B,C and these will be allocated randomly.
     + **Greens** - The greens to be used, comma separated e.g. A,B,C will default to 6 rinks per green. You can default a green to seven by entering A7,B7,C which would give us 20 rinks. You can also exclude rinks by entering rinks to be used e.g. A2345,B345 which would give us 7 rinks.
-    + **Group per Green** - Whether to allocate greens to groups. This only applies to the final game.
     + **Print Cards** - Whether or not to print score cards.
     + **Card Type** - If available, select the type of scorecard to print.
         + **Ends** - A scorecard showing all ends.

@@ -488,6 +488,28 @@ class tb1020(object):
                             if d.count(col):
                                 sql.delRec(tab[0], where=[(tab[1], "=", d[0]),
                                     (tab[2], "=", d[1])])
+            # Update bwlpts to new version
+            if self.table == "bwlpts":
+                sql = Sql(self.dbm, "bwlpts")
+                recs = sql.getRec("bwlpts", where=[("bcp_round", "=", 0)],
+                    order="bcp_cono, bcp_code, bcp_ptyp")
+                pts = {}
+                for rec in recs:
+                    if rec[0] not in pts:
+                        pts[rec[0]] = {}
+                    if rec[1] not in pts[rec[0]]:
+                        pts[rec[0]][rec[1]] = [rec[3:]]
+                    else:
+                        pts[rec[0]][rec[1]].append(rec[3:])
+                for coy in pts:
+                    for pt in pts[coy]:
+                        if len(pts[coy][pt]) == 2 and \
+                                pts[coy][pt][0] == pts[coy][pt][1]:
+                            sql.delRec("bwlpts", where=[("bcp_cono",
+                                "=", coy), ("bcp_code", "=", pt)])
+                            dat = [coy, pt, "N"]
+                            dat.extend(pts[coy][pt][0])
+                            sql.insRec("bwlpts", data=dat)
         self.dbm.commitDbase()
 
     def doCleanDatabase(self):

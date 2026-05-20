@@ -189,7 +189,7 @@ class st3020(object):
             state = "hide"
         else:
             state = "show"
-        for x in range(3, len(self.df.rvs)): 
+        for x in range(3, len(self.df.rvs)):
             self.df.setWidget(self.df.topEntry[0][8][x][0], state=state)
 
     def doEnd(self):

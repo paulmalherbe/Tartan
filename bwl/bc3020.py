@@ -316,7 +316,7 @@ class bc3020(object):
         frm = CCD(self.start // 100, "d2", 7).disp
         too = CCD(self.end // 100, "D2", 7).disp
         self.fpdf.setFont("Arial", "B", 15)
-        if os.path.isfile(self.image):
+        if self.image:
             self.fpdf.image(self.image, 10, 10, 15, 11)
             self.fpdf.cell(20)
         x = self.fpdf.get_x()

@@ -27,7 +27,7 @@ COPYING
 import time
 from TartanClasses import CCD, MyFpdf, PrintCards, Sql, TartanDialog
 from tartanFunctions import askQuestion, copyList, doPrinter, getModName
-from tartanFunctions import showError
+from tartanFunctions import getPtsRec, showError
 
 class bc2060(object):
     def __init__(self, **opts):
@@ -129,7 +129,7 @@ class bc2060(object):
                     continue
                 if gme[3] in ("", "D", "S") and gme[4]:
                     self.draws[gme[0]] = gme[1:]
-        elif self.cfmat in ("D", "K", "R", "W", "X"):
+        elif self.cfmat in ("D", "K", "R", "X"):
             return "Draw Not Yet Done"
         else:
             ok = askQuestion(self.opts["mf"].body, "Manual Draw",
@@ -155,7 +155,7 @@ class bc2060(object):
 
     def doGame(self, frt, pag, r, c, p, i, w):
         if w not in self.draws:
-            return "Invalid Game Number"
+            return "Invalid Game Number or Already Completed"
         self.game = w
         self.gtyp = self.draws[w][0]
         self.date = self.draws[w][1]
@@ -199,13 +199,15 @@ class bc2060(object):
 
     def doSkpCod(self, frt, pag, r, c, p, i, w):
         skp = self.sql.getRec(tables=["bwlgme", "bwltab"], cols=["btb_surname",
-            "btb_names", "bcg_ocod", "bcg_rink"], where=[("bcg_cono", "=",
-            self.opts["conum"]), ("bcg_ccod", "=", self.ccod), ("bcg_scod",
-            "=", w), ("bcg_game", "=", self.game), ("btb_cono=bcg_cono",),
+            "btb_names", "bcg_ocod", "bcg_rink", "bcg_group"],
+            where=[("bcg_cono", "=", self.opts["conum"]),
+            ("bcg_ccod", "=", self.ccod), ("bcg_scod", "=", w),
+            ("bcg_game", "=", self.game), ("btb_cono=bcg_cono",),
             ("btb_tab=bcg_scod",)], limit=1)
         if not skp:
             return "Invalid Skip Code"
         self.skip = w
+        self.sgrp = skp[4]
         if skp[1]:
             name = "%s, %s" % tuple(skp[:2])
         else:
@@ -223,19 +225,22 @@ class bc2060(object):
             self.df.loadEntry(frt, pag, p+3, data=name)
         if not self.manual and skp[3]:
             self.df.loadEntry(frt, pag, p+4, data=skp[3])
-        if self.cfmat in ("D", "K", "R", "W"):
+        if self.cfmat in ("D", "K", "R"):
             if skp[2]:
                 self.new_opp = skp[2]
             return "sk3"
 
     def doOppCod(self, frt, pag, r, c, p, i, w):
         opp = self.sql.getRec(tables=["bwlgme", "bwltab"], cols=["btb_surname",
-            "btb_names", "bcg_ocod", "bcg_rink"], where=[("bcg_cono", "=",
-            self.opts["conum"]), ("bcg_ccod", "=", self.ccod), ("bcg_scod",
-            "=", w), ("bcg_game", "=", self.game), ("btb_cono=bcg_cono",),
+            "btb_names", "bcg_ocod", "bcg_rink", "bcg_group"],
+            where=[("bcg_cono", "=", self.opts["conum"]),
+            ("bcg_ccod", "=", self.ccod), ("bcg_scod", "=", w),
+            ("bcg_game", "=", self.game), ("btb_cono=bcg_cono",),
             ("btb_tab=bcg_scod",)], limit=1)
         if not opp:
             return "Invalid Opponents Code"
+        if opp[4] != self.sgrp:
+            return "Different Groups"
         self.new_opp = w
         self.chg_skp = opp[2]
         if opp[1]:
@@ -409,7 +414,7 @@ class bc2060(object):
                 nam = skp[1].strip()
                 if skp[2]:
                     nam = "%s, %s" % (nam, skp[2].split()[0])
-                a = CCD(nam, "NA", 30)
+                a = CCD(nam, "RW", 30)
                 b = CCD(skp[4], "UA", 2)
                 if opp:
                     nam = opp[1].strip()
@@ -417,7 +422,7 @@ class bc2060(object):
                         nam = "%s, %s" % (nam, opp[2].split()[0])
                 else:
                     nam = "Unknown"
-                c = CCD(nam, "NA", 30)
+                c = CCD(nam, "RW", 30)
                 self.printLine(a.disp, " %s " % b.disp, c.disp, h)
                 self.pglin += 1
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],
@@ -470,15 +475,18 @@ class bc2060(object):
 
     def printCards(self):
         recs = []
-        bwlpts = self.sql.getRec("bwlpts", where=[("bcp_cono",
-            "=", self.opts["conum"]), ("bcp_code", "=", self.ctyp),
-            ("bcp_ptyp", "=", self.gtyp)], limit=1)
-        skins = bwlpts[self.sql.bwlpts_col.index("bcp_skins")]
-        sends = bwlpts[self.sql.bwlpts_col.index("bcp_sends")]
-        recs = self.sql.getRec("bwlgme", cols=["bcg_scod",
-            "bcg_ocod", "bcg_rink"], where=[("bcg_cono", "=",
-            self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
-            ("bcg_game", "=", self.game)], order="bcg_rink")
+        pts = getPtsRec(self.sql, self.opts["conum"], self.ccod,
+            self.ctyp, self.game)
+        if not pts:
+            showError(self.opts["mf"].window, "Error",
+                "Cannot Find Points Record (%s)" % self.ctyp)
+            self.doQuit()
+        skins = pts[self.sql.bwlpts_col.index("bcp_skins")]
+        sends = pts[self.sql.bwlpts_col.index("bcp_sends")]
+        recs = self.sql.getRec("bwlgme", cols=["bcg_scod", "bcg_ocod",
+            "bcg_rink"], where=[("bcg_cono", "=", self.opts["conum"]),
+            ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", self.game)],
+            order="bcg_rink")
         chk = []
         skips = []
         for rec in recs:

@@ -78,7 +78,7 @@ class bc3090(object):
         if ret:
             return ret
         self.df.loadEntry(frt, pag, p+1, data=self.cdes)
-        if self.cfmat in ("R", "W"):
+        if self.cfmat == "R":
             self.excfin = "N"
             self.df.loadEntry(frt, pag, p+2, data=self.excfin)
             return "sk2"
@@ -96,8 +96,8 @@ class bc3090(object):
         self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
         self.games = bwltyp[self.sql.bwltyp_col.index("bct_games")]
         if self.cfmat in ("D", "K"):
-            return "Knockout Competitions has No Summary"
-        if self.cfmat in ("R", "W"):
+            return "Knockout Competition has No Summary"
+        if self.cfmat in ("R", "Z"):
             games = self.sql.getRec("bwlgme", cols=["count(*)"],
                 where=[("bcg_cono", "=", self.opts["conum"]),
                 ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", 1)],
@@ -165,6 +165,10 @@ class bc3090(object):
             elif rnk[0] and rnk[0][1] in ("1", "6"):
                 endrk.append(rnk[0])
         data = []
+        chk = self.sql.getRec("bwlgme", cols=["max(bcg_game)"],
+            where=[("bcg_cono", "=", self.opts["conum"]),
+            ("bcg_ccod", "=", self.ccod)], limit=1)
+        qty = chk[0]
         for skip in skips:
             nam = skip[1].strip()
             if skip[2]:
@@ -178,8 +182,13 @@ class bc3090(object):
                 self.opts["conum"]), ("bcg_ccod", "=", self.ccod),
                 ("bcg_scod", "=", skip[0]), ("bcg_game", "<=", lgame)],
                 order="bcg_group, bcg_game")
+            for x in range(qty - len(games), 0, -1):
+                games.append([self.opts["conum"], self.ccod, 900001,
+                    len(games)+1, "D", 0, 0, "", 0, 0, 0, 0, 0, 0, 0])
             for game in games:
                 gme = game[self.sql.bwlgme_col.index("bcg_game")]
+                if gme > lgame:
+                    continue
                 grp = game[self.sql.bwlgme_col.index("bcg_group")]
                 opp = game[self.sql.bwlgme_col.index("bcg_ocod")]
                 sfo = game[self.sql.bwlgme_col.index("bcg_sfor")]
@@ -207,6 +216,8 @@ class bc3090(object):
                     elif rnk in rks:
                         dup[1] = "X"
                     rks.append(rnk)
+            if len(dat) < qty:
+                dat.extend([0, "", 0, 0, 0])
             dup.append("%s" % eds)
             if grp:
                 dat.insert(2, chr(64 + grp))
@@ -217,9 +228,9 @@ class bc3090(object):
             ("Draw Summary Sheet", 16, "C")]
         cols = [
             ["a", "UI",  6, "Skp",  "y"],
-            ["b", "NA", 29, "Name", "y"]]
+            ["b", "RW", 29, "Name", "y"]]
         if grp:
-            if self.cfmat in ("R", "W"):
+            if self.cfmat in ("R", "Z"):
                 cols.append(["c", "UA",  1, "S",    "y"])
             else:
                 cols.append(["c", "UA",  1, "G",    "y"])

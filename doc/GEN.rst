@@ -135,7 +135,7 @@ Use this routine to create, amend and delete `Financial Statements (GL)`_ report
         + **Add** - Add the value to the storage
         + **Subtract** - Subtract the value from the storage
         + **Ignore** - Do not add nor subtract the value
-    + **Chart Label**
+    + **Chart Label** - Enter a label to enable automatic chart generation when printing a *Financial Statement* report.
 + **Stored (S)**
     + **Description** - The description of the stored value
     + **Highlight** - Whether to print the line in bold characters.
@@ -173,7 +173,7 @@ Use this routine to create, amend and delete `Financial Statements (GL)`_ report
         + **Add** - Add the value to the storage
         + **Subtract** - Subtract the value from the storage
         + **Ignore** - Do not add nor subtract the value
-    + **Chart Label**
+    + **Chart Label** - Enter a label to enable automatic chart generation when printing a *Financial Statement* report.
 + **Uline (U)**
     + **Highlight** - Whether to print the line in bold characters.
     + **Underline Type**
@@ -556,6 +556,16 @@ Use this routine to produce financial statements using the information as set up
 + **Ignore Zeros** - Select whether or not to ignore lines with zero balances.
 + **Print Options** - Select whether or not to include the selected options on the report heading.
 + **Account Numbers** - Select whether or not to include the account numbers in the report.
+
+After the report has been generated and if *Month* was selected as the *Report Type* you will be able to generate a chart as follows:
+
++ **Action** - Select one of the following options.
+    + **Automatic** - This option will only be available if *Chart Labels* have been set in the Report Generator.
+    + **Manual** - Select this option to manually select items to appear in the chart.
+    + **Exit** - Select this option to exit.
++ **Select Chart** - Select the type of chart to generate.
++ **Draw Legend** - Select whether to draw a legend, if available.
++ **View As** - Select whether to view the chart as a *PDF* file or *SVG* file, if available.
 
 Chart of Accounts (GL)
 ++++++++++++++++++++++

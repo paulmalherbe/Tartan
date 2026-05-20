@@ -399,7 +399,7 @@ class tb1050:
                 "Would you like to COMMIT Deletions?" % qtot
             self.opts["mf"].dbm.commitDbase(ask=True, mess=mess, default="no")
         self.opts["mf"].closeLoop()
-    
+
     def doExit(self):
         self.df.closeProcess()
         self.opts["mf"].closeLoop()

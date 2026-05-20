@@ -52,7 +52,6 @@ class cr4010(object):
         self.fromad = crsctl["ctc_emadd"]
         t = time.localtime()
         self.sysdtw = (t[0] * 10000) + (t[1] * 100) + t[2]
-        self.sysdtw = 20250228
         self.curdt = int(self.sysdtw / 100)
         self.paidup = "N"
         return True
@@ -332,8 +331,7 @@ class cr4010(object):
                     data.append([
                         dat[col.index("eml_too")],
                         dat[col.index("eml_dtt")],
-                    dat [col.index("eml_sta")],
-                        dat[col.index("eml_sub")]])
+                    dat[col.index("eml_sta")], dat[col.index("eml_sub")]])
                 tit = "Mail for Account: %s - %s" % (self.acno, self.name)
                 col = (
                     ("eml_too", "Recipient", 20, "TX"),

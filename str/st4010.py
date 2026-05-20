@@ -25,7 +25,7 @@ COPYING
 """
 
 import time
-from TartanClasses import ASD, Balances, CCD, GetCtl, NotesCreate, PrintInvoice 
+from TartanClasses import ASD, Balances, CCD, GetCtl, NotesCreate, PrintInvoice
 from TartanClasses import PrintOrder, RepPrt, Sql, SRec, TabPrt, TartanDialog
 from tartanFunctions import askChoice, getMarkup
 from tartanWork import mthnam, sttrtp

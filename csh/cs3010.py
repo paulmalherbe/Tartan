@@ -90,7 +90,7 @@ class cs3010(object):
         tnd = ((self.doEnd,"Y"), )
         txt = (self.doExit, )
         self.df = TartanDialog(self.opts["mf"], title=self.tit, eflds=fld,
-            tend=tnd, txit=txt, view=("N","V"), mail = ("Y","N"))
+            tend=tnd, txit=txt, view=("N","V"), mail=("Y","N"))
 
     def doFrom(self, frt, pag, r, c, p, i, w):
         self.fm = w

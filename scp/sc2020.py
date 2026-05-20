@@ -104,7 +104,7 @@ class sc2020(object):
                 "S","N",self.doQuaSec,None,None,None),
             (("T",0,7,0),("IRB",r2s),0,"Closed-Up","",
                 "Y","N",self.doClosed,None,None,None)]
-        if "test"in self.opts:
+        if "test" in self.opts:
             fld[0][5] = self.opts["test"]
         tnd = ((self.doEnd,"y"),)
         txt = (self.doExit,)

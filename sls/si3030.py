@@ -301,7 +301,7 @@ class si3030(object):
         y = int(self.per / 100)
         m = int(self.per % 100)
         start = datetime.date(y, m, 1)
-        end = mthendDate(int(start.strftime("%Y%m%d")) )
+        end = mthendDate(int(start.strftime("%Y%m%d")))
         end = datetime.date((end // 10000), (end // 100 % 100), end % 100)
         days = start.weekday()
         if days < 5:

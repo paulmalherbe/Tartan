@@ -1,0 +1,60 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   TartanClasses.py
+	modified:   bwl/bc1040.py
+	modified:   bwl/bc2010.py
+	modified:   bwl/bc2040.py
+	modified:   bwl/bc2050.py
+	modified:   bwl/bc2060.py
+	modified:   bwl/bc2070.py
+	modified:   bwl/bc3020.py
+	modified:   bwl/bc3070.py
+	modified:   bwl/bc3080.py
+	modified:   bwl/bc3090.py
+	modified:   bwl/bc3100.py
+	modified:   bwl/bc6020.py
+	modified:   bwl/bc6030.py
+	modified:   crs/cr3110.py
+	modified:   crs/cr4010.py
+	modified:   csh/cs3010.py
+	modified:   doc/BWL.rst
+	modified:   doc/CTL.rst
+	modified:   doc/GEN.rst
+	modified:   doc/SYS.rst
+	deleted:    doc/mystylesheet
+	modified:   drs/dr3020.py
+	modified:   gen/gl1030.py
+	modified:   gen/gl2020.py
+	modified:   gen/gl3050.py
+	modified:   gen/gl6020.py
+	modified:   lon/ln3020.py
+	modified:   mem/ml1010.py
+	modified:   mem/ml3020.py
+	modified:   ms0000.py
+	modified:   mst/ms3010.py
+	modified:   readme.md
+	modified:   rtl/rt3020.py
+	modified:   scp/sc2020.py
+	modified:   sls/si3030.py
+	modified:   sls/si6010.py
+	modified:   str/st3020.py
+	modified:   str/st4010.py
+	modified:   tab/tb1020.py
+	modified:   tab/tb1050.py
+	modified:   tartanFunctions.py
+	modified:   tartanWork.py
+	modified:   uty/cp1010.py
+	modified:   uty/mkwindows.py
+	modified:   uty/pkgprg.py
+	modified:   wag/sl4010.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	err
+	ver/ver_6.27.status
+
+no changes added to commit (use "git add" and/or "git commit -a")

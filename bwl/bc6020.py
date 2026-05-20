@@ -123,7 +123,7 @@ class bc6020(object):
         odr = "btb_tab"
         tabs = self.sql.getRec("bwltab", join=jon, cols=col, where=whr,
             group=grp, order=odr)
-        dels = "Delete These Tabs\n=================\n"
+        dels = ""
         for tab in tabs:
             if tab[1] and tab[1] >= self.delent:
                 continue
@@ -139,6 +139,8 @@ class bc6020(object):
                     break
             if not found:
                 # Delete the tab
+                if not dels:
+                    dels = "Delete These Tabs\n=================\n"
                 dels += "%s %s, %s\n" % (tab[0], tab[2], tab[3])
                 self.sql.delRec("bwltab", where=[("btb_cono", "=",
                     self.opts["conum"]), ("btb_tab", "=", tab[0])])

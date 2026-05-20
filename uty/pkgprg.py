@@ -64,7 +64,7 @@ if not os.path.isdir(vd):
     sys.exit()
 sys.path.append(vd)
 from tartanFunctions import findFile, sendMail
-from ms0000 import VERSION
+from ms0000 import VERSION as over
 
 bits = []
 home = str(pathlib.Path.home())
@@ -162,7 +162,7 @@ if not pypath:
 for dd in (bx, bo, bs):
     if not os.path.exists(os.path.join(bd, dd)):
         os.makedirs(os.path.join(bd, dd))
-cver = list(VERSION)
+cver = list(over)
 if not newver:
     if verinc:
         vinc = input("Increment Version (y/n): ")
@@ -180,23 +180,12 @@ else:
         cver[x] = int(cver[x])
 # Change to pypath directory
 os.chdir(pypath)
-if newver and newver != "%s.%s" % VERSION:
+if newver and newver != "%s.%s" % over:
     try:
         if not os.path.exists("changes.txt"):
             # Create changes.txt
             sys.path.insert(0, os.path.join(pypath, "uty"))
             import mkchgs
-            if upgpip:
-                cnt += 1
-                ofle.write("""%2s) Updated all python modules to the latest SECURITY updates.\n""" % cnt)
-            cnt += 1
-            ofle.write("""%2s) Other minor changes, fixes and enhancements.
-
-NB:
---
-You can only upgrade to this version if your current version is 5.5 or later.
-If you have an older version than 5.5 please contact me for assistance.\n""" % cnt)
-            ofle.close()
         # Change version number in ms0000.py, SYS.rst, Downloads.rst
         old = open("ms0000.py", "r")
         lin = old.readlines()
@@ -448,7 +437,7 @@ if publish:
     rst.close()
     # Move Current tgz to Old
     exeCmd("mv %s/%s/%s_%s.%s.tgz %s/%s/" %
-        (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+        (bd, bx, cs, over[0], over[1], bd, bo))
     # Create Source tgz
     os.chdir(bd)
     exeCmd("tar -czf %s/%s/%s_%s.%s.tgz %s" %
@@ -460,23 +449,27 @@ if publish:
     if windows:
         # Rename Windows exe's
         if "32" in bits:
-            exeCmd("mv %s/%s/%s_%s.%s-32.exe %s/%s/" %
-                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+            chk =  "%s/%s/%s_%s.%s-32.exe" % (bd, bx, cs, over[0], over[1])
+            if os.path.exists(chk):
+                exeCmd("mv %s %s/%s/" % (chk, bd, bo))
             exeCmd("mv %s/%s/%s-%s-32.exe %s/%s/%s_%s.%s-32.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "64" in bits:
-            exeCmd("mv %s/%s/%s_%s.%s-64.exe %s/%s/" %
-                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+            chk =  "%s/%s/%s_%s.%s-64.exe" % (bd, bx, cs, over[0], over[1])
+            if os.path.exists(chk):
+                exeCmd("mv %s %s/%s/" % (chk, bd, bo))
             exeCmd("mv %s/%s/%s-%s-64.exe %s/%s/%s_%s.%s-64.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "8" in bits:
-            exeCmd("mv %s/%s/%s_%s.%s-8.exe %s/%s/" %
-                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+            chk =  "%s/%s/%s_%s.%s-8.exe" % (bd, bx, cs, over[0], over[1])
+            if os.path.exists(chk):
+                exeCmd("mv %s %s/%s/" % (chk, bd, bo))
             exeCmd("mv %s/%s/%s-%s-8.exe %s/%s/%s_%s.%s-8.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
         if "7" in bits:
-            exeCmd("mv %s/%s/%s_%s.%s-7.exe %s/%s/" %
-                (bd, bx, cs, VERSION[0], VERSION[1], bd, bo))
+            chk =  "%s/%s/%s_%s.%s-7.exe" % (bd, bx, cs, over[0], over[1])
+            if os.path.exists(chk):
+                exeCmd("mv %s %s/%s/" % (chk, bd, bo))
             exeCmd("mv %s/%s/%s-%s-7.exe %s/%s/%s_%s.%s-7.exe" %
                 (bd, bx, dist, vv, bd, bx, cs, cver[0], cver[1]))
     print("Version Number is %s.%s" % tuple(cver))

@@ -324,23 +324,23 @@ def dateDiff(date1, date2, ptype="years"):
     """
     import datetime, time
 
-    def M(d):
+    def dM(d):
         return ((d.year * 12) + d.month)
 
-    def D(d1, d2):
+    def dD(d1, d2):
         return (d1.toordinal() - d2.toordinal())
 
-    def I(ymd):
+    def dI(ymd):
         return datetime.date(*time.strptime(ymd, "%Y%m%d")[:3])
 
-    date1 = I(str(date1))
-    date2 = I(str(date2))
+    date1 = dI(str(date1))
+    date2 = dI(str(date2))
     if ptype.lower() == "days":
-        days = D(date2, date1)
+        days = dD(date2, date1)
         if days <= 0:
             return 0
         return days
-    months = M(date2) - M(date1)
+    months = dM(date2) - dM(date1)
     if ptype.lower() == "months":
         return months
     if ptype.lower() == "years":
@@ -383,19 +383,19 @@ def doAutoAge(dbm, system, cono=None, chain=None, acno=None, pbar=None):
     tdt = "%s_trdt" % pfx
     cdt = "%s_curdt" % pfx
     amt = "%s_tramt" % pfx
-    cr = sql.getRec(tab, where=crw, order=tdt)     # Credit transactions
+    cr = sql.getRec(tab, where=crw, order=tdt)      # Credit transactions
     if cr:
-        dr = sql.getRec(tab, where=drw, order=tdt) # Debit transactions
+        dr = sql.getRec(tab, where=drw, order=tdt)  # Debit transactions
         if dr:
-            for cno, ctr in enumerate(cr):         # For each credit transaction
+            for cno, ctr in enumerate(cr):          # For each cr transaction
                 if pbar:
                     pbar.displayProgress()
-                ccdt = ctr[col.index(cdt)]         # Current period
-                cbal = ctr[col.index(amt)]         # Credit amount
-                camt = cbal                        # Amount to allocate
-                for dno, dtr in enumerate(dr):     # For each debit transaction
-                    dcdt = dtr[col.index(cdt)]     # Current period
-                    dbal = dtr[col.index(amt)]     # Debit amount
+                ccdt = ctr[col.index(cdt)]          # Current period
+                cbal = ctr[col.index(amt)]          # Credit amount
+                camt = cbal                         # Amount to allocate
+                for dno, dtr in enumerate(dr):      # For each dr transaction
+                    dcdt = dtr[col.index(cdt)]      # Current period
+                    dbal = dtr[col.index(amt)]      # Debit amount
                     if not dbal:
                         continue
                     damt = float(ASD(dbal) + ASD(camt))
@@ -783,8 +783,7 @@ def doPrinter(mf=None, conum=None, pdfnam=None, splash=True, header=None, repprt
     try:
         if repprt[1].lower() == "v" or repprt[2].lower() == "view":
             # View Document
-            chk = pdfnam.split(".")[-1]
-            if chk == "svg":
+            if pdfnam.endswith("svg"):
                 import webbrowser
                 webbrowser.open_new(pdfnam)
             else:
@@ -1215,7 +1214,7 @@ def doWriteExport(**args):
                             if not stot[colx]:
                                 stot[colx] = ["%s%s" % (cola, rowx + 1),
                                     "%s%s" % (cola, rowx + 1)]
-                                if not colx in gtot:
+                                if colx not in gtot:
                                     gtot[colx] = ["%s%s" % (cola, rowx + 1), ""]
                             else:
                                 stot[colx][1] = "%s%s" % (cola, rowx + 1)
@@ -1780,6 +1779,20 @@ def getGreens(text, needed, keep=None):
                 break
         num = chk[num]
     return greens, first, endrks, None
+
+def getPtsRec(sql, cono, ccod, ctyp, game=None):
+    gtyp = sql.getRec("bwlgme", cols=["bcg_type"], where=[("bcg_cono", "=",
+        cono), ("bcg_ccod", "=", ccod), ("bcg_game", "=", game)], limit=1)
+    where = [
+        ("bcp_cono", "=", cono),
+        ("bcp_code", "=", ctyp),
+        ("bcp_ptyp", "in", (gtyp[0], "N"))]
+    bwlpts = sql.getRec("bwlpts", where=where)
+    if len(bwlpts) == 1:
+        return bwlpts[0]
+    for pts in bwlpts:
+        if pts[3] == game:
+            return pts
 
 def getImage(name, siz=None, fle=None):
     import base64, io
@@ -2366,7 +2379,7 @@ def getVatRate(sql, cono, code, date=None):
 def httpDownload(url, dest=None, check=False):
     import requests
     try:
-        data = requests.get(url)
+        data = requests.get(url, timeout=5)
         if dest is None:
             return data.content.decode("utf-8").rstrip()
         with open(dest, "wb") as file:
@@ -3012,8 +3025,8 @@ def showDialog(screen, dtype, title, mess, butt=None, dflt=None):
                 mb = MyMessageBox(screen, dtype, title=title, mess=mess,
                     butt=butt, dflt=dflt)
                 return mb.answer
-            except:
-                raise Exception
+            except Exception as err:
+                raise Exception(err)
     except Exception as err:
         print("%s\n%s" % (mess, err))
 

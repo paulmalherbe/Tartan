@@ -3,7 +3,7 @@ Tartan Systems - Reference Manual
 =================================
 .. _GPL: http://www.gnu.org/licenses/gpl.html
 
-:Version:   6.26
+:Version:   6.27
 :Author:    Paul Malherbe
 :Contact:   paul@tartan.co.za
 :Home:      http://www.tartan.co.za
@@ -62,7 +62,6 @@ The following dependencies must be installed using pip:
 
 Additionally, the following dependencies should also be installed using pip or, at a later stage, using the -m command line option.
 
-+ cairosvg              # SVG to PDF File Converter
 + docutils              # Used to display licence
 + importlib             # Used to import modules
 + markdown              # Bulk Mail - Enable Markdown Format
@@ -84,7 +83,7 @@ Additionally, the following dependencies should also be installed using pip or, 
 
 And, depending on your database needs:
 
-+ Postgresql            # psycopg2-binary
++ Postgresql            # psycopg and psycopg-binary
 
 Then download the following file from https://tartan.co.za
 
@@ -265,12 +264,12 @@ Use this routine to create or amend user's records, permissions etc.
 
 .. csv-table:: **Examples**
   :header: "Coy", "SS", "Prog", "Password", "Meaning"
-  :widths: 6, 6, 6, 10, 55
+  :widths: 4, 4, 6, 10, 50
 
   "0", "gl", "    ", "    ", "All G/L modules for all companies would be denied."
   "0", "gl", "2032", "    ", "G/L payments data capture for all companies would be denied."
   "0", "gl", "    ", "abcd", "All G/L modules for all companies would require the password."
-  "0", "gl", "2032", "abcd", "G/L payments data capture for all companies would require the password."
+  "0", "gl", "2032", "abcd", "G/L payments data capture for all companies would require the pwd."
 
 Upgrade System
 ..............

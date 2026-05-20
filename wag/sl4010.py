@@ -273,7 +273,6 @@ class sl4010(object):
         self.df.focusField(self.df.frt, self.df.pag, self.df.col)
 
     def doPrintOption(self, opt):
-        print(opt)
         if opt == "N":
             return
         self.head = "%03u %-93s" % (self.opts["conum"], self.opts["conam"])

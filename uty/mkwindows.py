@@ -28,13 +28,31 @@ def doUpgrade():
         if len(mod) == 4 and mod[3] != "win32":
             continue
         mods.append(mod[1])
+    cmd = "python -m pip -q install %s --user --upgrade"
     for mod in mods:
         try:
-            os.system("python -m pip -q install %s --user "\
-                "--no-warn-script-location --upgrade" % mod)
+            exe = cmd % mod
+            subprocess.run(exe.split(), check=True)
+            if mod == "psycopg":
+                exe = cmd % "psycopg-binary"
+                try:
+                    subprocess.run(exe.split(), check=True,
+                        stderr=subprocess.DEVNULL)
+                except Exception as err:
+                    raise Exception(err)
             print("Upgraded", mod)
         except Exception as err:
-            print(err)
+            if mod == "psycopg":
+                os.system("python -m pip -q uninstall %s -y" % mod)
+                try:
+                    mod = "psycopg2-binary==2.9.9"
+                    exe = cmd % mod
+                    subprocess.run(exe.split(), check=True)
+                    print("Upgraded %s" % mod)
+                except Exception as err:
+                    print("ERR", err)
+            else:
+                print("ERR", err)
 
 HOM = str(pathlib.Path.home())
 if "WINEPREFIX" in os.environ:

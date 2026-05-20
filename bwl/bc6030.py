@@ -116,7 +116,7 @@ class bc6030:
             mems = ("Skip", "Second", "Lead")
         elif self.tsiz == 4:
             mems = ("Skip", "Third", "Second", "Lead")
-        font=("Courier", "B", 24)
+        font = ("Courier", "B", 24)
         fpdf = MyFpdf(name=__name__, orientation="P", fmat="A4", head=80,
             foot=False)
         pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],

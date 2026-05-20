@@ -36,14 +36,13 @@ Required
 
 Optional
 --------
-+ cairosvg        - Used to convert svg to pdf
 + docutils        - Used to display licence
 + importlib       - Used to import modules
 + markdown        - Used for bulk mailing
 + ofxtools        - Required for ofx file imports
 + openpyxl        - Used to read and write xlsx spreadsheets
 + progress        - Used as a cli progressbar
-+ psycopg2        - Required for postgresql databases
++ psycopg         - Required for postgresql databases
 + pyaes           - Used for cryptography
 + pycryptodome    - Used for crytography
 + pyexcel         - Used to read xls spreadsheets

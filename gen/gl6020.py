@@ -42,7 +42,7 @@ class gl6020(object):
         if self.sql.error:
             return
         chk = self.sql.getRec("gentrn", where=[("glt_cono", "=",
-            self.opts["conum"])])
+            self.opts["conum"])], limit=1)
         if chk:
             showError(self.opts["mf"].body, "Import Error",
                 "General Ledger Transactions Exist.")

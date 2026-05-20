@@ -340,7 +340,7 @@ Remember that all existing budgets for this financial period will be replaced!""
                     mtha = 0
                 else:
                     mtha = round(tots[0] / len(self.mths), 2)
-                for mth in  self.mths:
+                for mth in self.mths:
                     bals.append((mth, mtha))
             elif self.use == "A":
                 bals = self.sql.getRec("gentrn", cols=["glt_curdt",

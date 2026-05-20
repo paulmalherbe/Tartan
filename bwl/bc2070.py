@@ -30,8 +30,9 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from TartanClasses import ASD, TartanDialog, Sql
-from tartanFunctions import askChoice, askQuestion, copyList, showError
+from TartanClasses import ASD, TartanDialog, PwdConfirm, Sql
+from tartanFunctions import askChoice, askQuestion, copyList, getPtsRec
+from tartanFunctions import showError
 
 class bc2070(object):
     def __init__(self, **opts):
@@ -66,7 +67,7 @@ class bc2070(object):
             "where": [("bcg_cono", "=", self.opts["conum"])],
             "whera": [("T", "bcg_ccod", 0, 0)],
             "group": "bcg_game"}
-        skp = {
+        self.gskp = {
             "stype": "R",
             "tables": ("bwlent", "bwltab", "bwlgme"),
             "cols": (
@@ -96,7 +97,7 @@ class bc2070(object):
             (("T",0,0,0),"IUI",2,"Ends Completed","",
                 0,"N",self.doEndsFin,None,None,("efld",)),
             (("C",0,0,0),"I@bcg_scod",0,"","",
-                "","N",self.doSkpCod,skp,None,("efld",)),
+                "","N",self.doSkpCod,self.gskp,None,("efld",)),
             (("C",0,0,0),"ONA",30,"Skp-Name"),
             (("C",0,0,0),"I@bcg_sfor",0,"","",
                 "","N",self.doShots,None,None,("efld",)),
@@ -135,7 +136,7 @@ class bc2070(object):
         self.cfmat = bwltyp[self.sql.bwltyp_col.index("bct_cfmat")]
         self.groups = bwltyp[self.sql.bwltyp_col.index("bct_groups")]
         self.grgame = bwltyp[self.sql.bwltyp_col.index("bct_grgame")]
-        if self.cfmat in ("R", "W"):
+        if self.cfmat == "R":
             games = self.sql.getRec("bwlgme", cols=["count(*)"],
                 where=[("bcg_cono", "=", self.opts["conum"]),
                 ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", 1)],
@@ -170,8 +171,8 @@ class bc2070(object):
         self.df.loadEntry(frt, pag, p + 3, data=self.ends)
 
     def doGamCod(self, frt, pag, r, c, p, i, w):
-        chk = self.sql.getRec("bwlgme", cols=["bcg_aflag",
-            "sum(bcg_ocod)"], where=[("bcg_cono", "=", self.opts["conum"]),
+        chk = self.sql.getRec("bwlgme", cols=["bcg_aflag", "sum(bcg_ocod)"],
+            where=[("bcg_cono", "=", self.opts["conum"]),
             ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", w)],
             group="bcg_aflag")
         if not chk:
@@ -179,7 +180,25 @@ class bc2070(object):
         for ck in chk:
             if not ck[0] and not ck[1]:
                 return "Invalid Game Number, Not Yet Drawn"
-        if w != self.games:
+        self.gcod = w
+        pts = getPtsRec(self.sql, self.opts["conum"], self.ccod,
+            self.code, self.gcod)
+        if not pts:
+            showError(self.opts["mf"].window, "Error",
+                "Cannot Find Points Record (%s)" % self.code)
+            self.doQuit()
+        self.skins = pts[self.sql.bwlpts_col.index("bcp_skins")]
+        self.sends = pts[self.sql.bwlpts_col.index("bcp_sends")]
+        self.ponly = pts[self.sql.bwlpts_col.index("bcp_p_only")]
+        self.epts = pts[self.sql.bwlpts_col.index("bcp_e_points")]
+        self.spts = pts[self.sql.bwlpts_col.index("bcp_s_points")]
+        self.gpts = pts[self.sql.bwlpts_col.index("bcp_g_points")]
+        self.bpts = pts[self.sql.bwlpts_col.index("bcp_bonus")]
+        dif = pts[self.sql.bwlpts_col.index("bcp_win_by")]
+        self.win_by = [dif, dif * -1]
+        dif = pts[self.sql.bwlpts_col.index("bcp_lose_by")]
+        self.lose_by = [dif, dif * -1]
+        if self.gcod != self.games:
             col = [
                 "bcg_game",
                 "bcg_type",
@@ -189,12 +208,18 @@ class bc2070(object):
             whr = [
                 ("bcg_cono", "=", self.opts["conum"]),
                 ("bcg_ccod", "=", self.ccod),
-                ("bcg_game", ">", w)]
+                ("bcg_game", ">", self.gcod)]
             drwn = self.sql.getRec("bwlgme", cols=col, where=whr,
                 group="bcg_game, bcg_type", order="bcg_game")
             drawn = []
             for n, d in enumerate(drwn):
-                if d[1] == "S" and d[2]:
+                if self.cfmat == "R":
+                    break
+                elif self.cfmat in ("D", "K"):
+                    if d[3] or d[4]:
+                        drawn = "X"
+                        break
+                elif d[1] == "S" and d[2]:
                     if d[3] or d[4]:
                         drawn = "X"
                         break
@@ -228,7 +253,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                     return "rf"
                 col = ["bcg_date", "bcg_ocod", "bcg_rink"]
                 dat = [0, 0, ""]
-                if self.groups == "Y" and w == self.grgame:
+                if self.groups == "Y" and self.gcod == self.grgame:
                     col.append("bcg_group")
                     dat.append(0)
                 col.extend(["bcg_sfor", "bcg_sagt", "bcg_points",
@@ -243,31 +268,48 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                 self.opts["mf"].dbm.commitDbase()
         elif chk[0] in ("A", "S"):
             return "Invalid Game Number, Abandoned or Skipped"
-        self.gcod = w
-        gtyp = self.sql.getRec("bwlgme", cols=["bcg_type"],
-            where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod",
-            "=", self.ccod), ("bcg_game", "=", w)], limit=1)[0]
-        bwlpts = self.sql.getRec("bwlpts", where=[("bcp_cono",
-            "=", self.opts["conum"]), ("bcp_code", "=", self.code),
-            ("bcp_ptyp", "=", gtyp)], limit=1)
-        if not bwlpts:
-            bwlpts = [self.opts["conum"], 0, "D", "N", 0, "N",
-                0, 0, 1, "N", 0, 0, ""]
-        self.skins = bwlpts[self.sql.bwlpts_col.index("bcp_skins")]
-        self.sends = bwlpts[self.sql.bwlpts_col.index("bcp_sends")]
-        self.ponly = bwlpts[self.sql.bwlpts_col.index("bcp_p_only")]
-        self.epts = bwlpts[self.sql.bwlpts_col.index("bcp_e_points")]
-        self.spts = bwlpts[self.sql.bwlpts_col.index("bcp_s_points")]
-        self.gpts = bwlpts[self.sql.bwlpts_col.index("bcp_g_points")]
-        self.bpts = bwlpts[self.sql.bwlpts_col.index("bcp_bonus")]
-        dif = bwlpts[self.sql.bwlpts_col.index("bcp_win_by")]
-        self.win_by = [dif, dif * -1]
-        dif = bwlpts[self.sql.bwlpts_col.index("bcp_lose_by")]
-        self.lose_by = [dif, dif * -1]
+        if self.cfmat == "R":
+            state = "Select bcg_scod, bcg_rink from bwlgme where "\
+                "bcg_cono = %s and bcg_ccod = %s and bcg_game = %s "\
+                "group by bcg_rink having sum(bcg_points) = 0 "\
+                "order by bcg_scod" % (self.opts["conum"], self.ccod,
+                self.gcod)
+            skps = self.sql.sqlRec(state)
+            data = []
+            for skp in skps:
+                nam = self.sql.getRec("bwltab", cols=["btb_surname",
+                    "btb_names"], where=[("btb_cono", "=", self.opts["conum"]),
+                    ("btb_tab", "=", skp[0])], limit=1)
+                data.append([skp[0], nam[0], nam[1], skp[1]])
+            self.df.colf[0][0][8] = {
+                "stype":  "C",
+                "titl":   "Uncaptured Skips",
+                "heads": ["Cod", "Surname", "Names", "RK"],
+                "data":   data,
+                "retn":   "D"}
 
     def doEndsFin(self, frt, pag, r, c, p, i, w):
-        self.bonus = self.bpts
         if w != self.ends:
+            skp = self.sql.getRec("bwlent", cols=["count(*)"],
+                where=[("bce_cono", "=", self.opts["conum"]),
+                ("bce_ccod", "=", self.ccod)], limit=1)[0]
+            chk = self.sql.getRec("bwlgme", cols=["sum(bcg_points)"],
+                where=[("bcg_cono", "=", self.opts["conum"]),
+                ("bcg_ccod", "=", self.ccod), ("bcg_game", "=", self.gcod)],
+                limit=1)
+            tot = 0
+            if self.epts:
+                tot += (self.epts * self.ends)
+            if self.spts:
+                tot += self.spts * int(self.ends / self.sends)
+            if self.gpts:
+                tot += self.gpts
+            if self.bpts == "Y":
+                tot += 1
+            if self.skins == "Y" and self.gcod <= self.sends:
+                tot += self.ends * self.spts
+            if (tot * (skp // 2)) == chk[0]:
+                return "All Results Already Captured"
             if not w:
                 but = (("Exit",1),("Skipped",2),("Abandoned",3))
                 ok = askChoice(self.opts["mf"].body, head="Zero Ends",
@@ -289,24 +331,33 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                         self.gcod)])
                 self.opts["mf"].dbm.commitDbase()
                 return "xt"
+
             ok = askQuestion(self.opts["mf"].body, head="Shortened",
                 mess="Was This Game Shortened?", default="no")
             if ok == "no":
                 return "rf"
-            if self.bonus == "Y":
+            if self.bpts == "Y":
                 ok = askQuestion(self.opts["mf"].body, head="Bonus Points",
                     mess="Must Bonus Points Still be Awarded?", default="no")
                 if ok == "no":
-                    self.bonus = "N"
+                    self.bpts = "N"
         self.totpts = (w * self.epts) + self.gpts
         if self.skins == "Y":
             self.totpts = self.totpts + (int(w / self.sends) * self.spts)
-        if self.bonus == "Y":
+        if self.bpts == "Y":
             self.maxpts = float(ASD(self.totpts) + ASD(1))
         else:
             self.maxpts = self.totpts
 
     def doSkpCod(self, frt, pag, r, c, p, i, w):
+        if w == 999999 and self.cfmat == "T":
+            cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
+                system="BWL", code="AutoP")
+            if cf.flag == "no":
+                return "rf"
+            self.doPopulate()
+            self.opts["mf"].dbm.commitDbase()
+            return "xt"
         chk = self.sql.getRec(tables=["bwlgme", "bwltab"], cols=["btb_surname",
             "btb_names", "bcg_ocod", "bcg_sfor", "bcg_sagt", "bcg_points"],
             where=[("bcg_cono", "=", self.opts["conum"]), ("bcg_ccod", "=",
@@ -315,13 +366,21 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
         if not chk:
             return "Invalid Skip Code"
         if chk[3] or chk[4] or chk[5]:
-            ok = askQuestion(self.opts["mf"].body, head="Already Entered",
-                mess="""This Card Has Already Been Entered, Re-Enter?
+            mess = "This Card Has Already Been Entered, Re-Enter?"
+            if self.ponly == "Y":
+                mess = """This Card Has Already Been Entered, Re-Enter?
+
+            Points:            %s""" % chk[5]
+            else:
+                mess = """This Card Has Already Been Entered, Re-Enter?
 
             Shots For:        %s
-            Shots Against:    %s
-            Points:            %s""" % (chk[3], chk[4], chk[5]),
-                default="no")
+            Shots Against:    %s""" % (chk[3], chk[4])
+            if chk[5]:
+                mess += """
+            Points:            %s""" % chk[5]
+            ok = askQuestion(self.opts["mf"].body, head="Already Entered",
+                mess=mess, default="no")
             if ok == "no":
                 return "rf"
             self.reenter = True
@@ -364,14 +423,93 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
             self.mpts = self.totpts
             return "sk2"
 
+    def doPopulate(self):
+        import random
+        random.seed()
+        col = ["bcg_sfor", "bcg_sagt", "bcg_points", "bcg_a_sfor",
+            "bcg_a_sagt", "bcg_a_points"]
+        recs = self.sql.getRec("bwlgme", cols=["bcg_scod", "bcg_ocod",
+            "bcg_a_sfor", "bcg_a_sagt", "bcg_a_points"], where=[("bcg_cono",
+            "=", self.opts["conum"]), ("bcg_ccod","=",self.ccod),
+            ("bcg_game", "=", self.gcod)])
+        done = []
+        for rec in recs:
+            if rec[0] in done:
+                continue
+            if rec[0] > 900000 or rec[1] > 900000:
+                continue
+            efor = eagt = pfor = pagt = 0
+            s = [0, 0]
+            for rnd in range(self.ends):
+                f = random.randint(0, 6)
+                a = 6 - f
+                if f == a:
+                    efor += .5
+                    eagt += .5
+                elif f > a:
+                    efor += 1
+                else:
+                    eagt += 1
+                if self.skins and self.sends:
+                    if (rnd + 1) % self.sends:
+                        s[0] += f
+                        s[1] += a
+                    else:
+                        if s[0] == s[1]:
+                            pfor += (self.spts // 2)
+                            pagt += (self.spts // 2)
+                        elif s[0] > s[1]:
+                            pfor += self.spts
+                        else:
+                            pagt += self.spts
+                        s = [0, 0]
+            if self.epts:
+                pfor = efor * self.epts
+                pagt = eagt * self.epts
+            if self.gpts:
+                if efor > eagt:
+                    pfor += self.gpts
+                elif eagt > efor:
+                    pagt += self.gpts
+                else:
+                    pfor += int(self.gpts / 2)
+                    pagt += int(self.gpts / 2)
+            tpts = pfor + pagt
+            if tpts < self.totpts:
+                diff = self.totpts - tpts
+                if pfor > pagt:
+                    pfor += diff
+                else:
+                    pagt += diff
+            whr = [
+                ("bcg_cono", "=", self.opts["conum"]),
+                ("bcg_ccod", "=", self.ccod),
+                ("bcg_game", "=", self.gcod),
+                ("bcg_scod", "=", rec[0])]
+            dat = [efor, eagt, pfor]
+            dat.append(float(ASD(rec[2]) + ASD(efor)))
+            dat.append(float(ASD(rec[3]) + ASD(eagt)))
+            dat.append(float(ASD(rec[4]) + ASD(pfor)))
+            self.sql.updRec("bwlgme", cols=col, data=dat, where=whr)
+            whr = [
+                ("bcg_cono", "=", self.opts["conum"]),
+                ("bcg_ccod", "=", self.ccod),
+                ("bcg_game", "=", self.gcod),
+                ("bcg_scod", "=", rec[1])]
+            dat = [eagt, efor, pagt]
+            dat.append(float(ASD(rec[2]) + ASD(eagt)))
+            dat.append(float(ASD(rec[3]) + ASD(efor)))
+            dat.append(float(ASD(rec[4]) + ASD(pagt)))
+            self.sql.updRec("bwlgme", cols=col, data=dat, where=whr)
+
     def doShots(self, frt, pag, r, c, p, i, w):
         if i == 2:
             self.s_for = w
-            if self.cfmat in ("D", "K", "R"):
+            if self.cfmat in ("D", "K"):
                 self.p_for = 0
                 self.df.loadEntry(frt, pag, p + 1, data=0)
                 return "sk1"
-            if not self.s_for or (not self.totpts and self.bonus != "Y"):
+            if not self.s_for or (not self.totpts and self.bpts != "Y"):
                 self.p_for = w
                 self.df.loadEntry(frt, pag, p + 1, data=0)
                 return "sk1"
@@ -381,24 +519,12 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                 self.p_agt = 0
                 self.df.loadEntry(frt, pag, p + 1, data=0)
                 return "sk1"
-            if self.cfmat == "R":
-                if self.s_for == self.s_agt:
-                    self.p_for = self.p_agt = .5
-                elif self.s_for > self.s_agt:
-                    self.p_for = 1
-                    self.p_agt = 0
-                else:
-                    self.p_for = 0
-                    self.p_agt = 1
-                self.df.loadEntry(frt, pag, p - 3, data=self.p_for)
-                self.df.loadEntry(frt, pag, p + 1, data=self.p_agt)
-                return "sk1"
-            if not self.s_agt or (not self.totpts and self.bonus != "Y"):
+            if not self.s_agt or (not self.totpts and self.bpts != "Y"):
                 self.p_agt = w
                 self.df.loadEntry(frt, pag, p + 1, data=0)
                 return "sk1"
             self.mpts = self.totpts
-            if self.bonus == "N":
+            if self.bpts == "N":
                 return
             diff = float(ASD(self.s_for) - ASD(self.s_agt))
             if not diff:
@@ -425,7 +551,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                 name = chk[0]
             self.df.loadEntry(frt, pag, p + 2, data=name)
             if self.ponly == "Y":
-                self.s_for = w
+                self.s_for = 0
                 return "sk3"
             else:
                 return "sk2"
@@ -435,7 +561,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
         else:
             self.p_agt = w
         if self.ponly == "Y":
-            self.s_agt = self.p_agt
+            self.s_agt = 0
         tot = float(ASD(self.p_for) + ASD(self.p_agt))
         if tot == self.mpts:
             return
@@ -479,8 +605,19 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                     self.s_for, self.p_agt, self.s_agt, self.s_for,
                     self.p_agt, aflag], where=w)
             self.opts["mf"].dbm.commitDbase()
+            if self.cfmat == "R":
+                dat = self.df.colf[0][0][8]["data"]
+                new = []
+                for d in dat:
+                    if self.skp == d[0]:
+                        continue
+                    if self.opp == d[0]:
+                        continue
+                    new.append(d)
+                self.df.colf[0][0][8]["data"] = new
             if self.reenter:
-                self.doLoadCards()
+                if self.doLoadCards():
+                    self.df.advanceLine(0)
             else:
                 self.df.advanceLine(0)
 
@@ -497,7 +634,7 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
         recs = self.sql.getRec("bwlgme", cols=["bcg_scod", "bcg_ocod"],
             where=whr, order="bcg_scod")
         if not recs:
-            return
+            return True
         self.df.clearFrame("C", 0)
         self.df.focusField("C", 0, 1)
         skips = []
@@ -520,7 +657,8 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
             else:
                 name = skp[0]
             self.df.loadEntry("C", 0, idx + 1, data=name)
-            self.df.loadEntry("C", 0, idx + 2, data=skp[2])
+            if self.ponly == "N":
+                self.df.loadEntry("C", 0, idx + 2, data=skp[2])
             self.df.loadEntry("C", 0, idx + 3, data=skp[4])
             if self.cfmat in ("D", "K"):
                 tab = self.sql.getRec("bwltab", cols=col[:2],
@@ -539,7 +677,8 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
             else:
                 name = opp[0]
             self.df.loadEntry("C", 0, idx + 5, data=name)
-            self.df.loadEntry("C", 0, idx + 6, data=opp[2])
+            if self.ponly == "N":
+                self.df.loadEntry("C", 0, idx + 6, data=opp[2])
             self.df.loadEntry("C", 0, idx + 7, data=opp[4])
             self.df.advanceLine(0)
             if seq < 17:
@@ -567,14 +706,21 @@ Do You Still Want to Continue?""" % (text, word, plural, text), default="no")
                     fors = c[self.sql.bwlgme_col.index("bcg_sfor")]
                     agts = c[self.sql.bwlgme_col.index("bcg_sagt")]
                 if not fors and not agts:
-                    msc.append(c[self.sql.bwlgme_col.index("bcg_rink")])
+                    if self.cfmat in ("D", "K"):
+                        msc.append([scod, ocod])
+                    else:
+                        msc.append(c[self.sql.bwlgme_col.index("bcg_rink")])
             if msc:
-                txt = ""
-                msc = sorted(set(msc))
-                txt = ", ".join(msc)
-                showError(self.opts["mf"].body, "Error", "The Following "\
-                    "Rinks Still Need to be Captured.\n\n%s" % txt)
-                self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+                if self.cfmat in ("D", "K"):
+                    showError(self.opts["mf"].body, "Error", "The Following "\
+                        "Games Still Need to be Captured.\n\n%s" % str(msc))
+                else:
+                    txt = ""
+                    msc = sorted(set(msc))
+                    txt = ", ".join(msc)
+                    showError(self.opts["mf"].body, "Error", "The Following "\
+                        "Rinks Still Need to be Captured.\n\n%s" % txt)
+                    self.df.focusField(self.df.frt, self.df.pag, self.df.col)
                 return
             if self.cfmat in ("D", "K") and self.gcod != self.games:
                 # Delete Next Round's Records

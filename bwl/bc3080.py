@@ -154,21 +154,43 @@ Only 1 trial end per game and burnt ends must be re-played."""),
             ("bct_cono", "=", self.opts["conum"]),
             ("bct_code", "=", self.ctyp)]
         rec = self.sql.getRec("bwltyp", where=whr, limit=1)
-        ldic = {}
+        tdic = {}
+        pdic = {}
         for col in self.sql.bwltyp_col[3:]:
-            ldic[col] = rec[self.sql.bwltyp_col.index(col)]
+            tdic[col] = rec[self.sql.bwltyp_col.index(col)]
         whr = [
             ("bcp_cono", "=", self.opts["conum"]),
             ("bcp_code", "=", self.ctyp)]
-        rec = self.sql.getRec("bwlpts", where=whr)
-        for r in rec:
-            if r[self.sql.bwlpts_col.index("bcp_ptyp")] == "D":
-                ptyp = "drawn"
+        rec = self.sql.getRec("bwlpts", where=whr, order="bcp_ptyp")
+        flg = tdic["bct_pdiff"]
+        chk = copyList(rec)
+        new = []
+        rnd = []
+        for n, r in enumerate(chk):
+            if n and flg == "N":
+                continue
+            if r[2] == "N":
+                new.append(r)
+            elif not r[3]:
+                new.append(r)
+            elif r != chk[-1] and chk[n+1][2] == r[2] and chk[n+1][4:] == r[4:]:
+                rnd.append(r[3])
+            elif rnd:
+                rnd.append(r[3])
+                r[3] = rnd
+                new.append(r)
+                rnd = []
             else:
-                ptyp = "svs"
-            ldic[ptyp] = {}
+                new.append(r)
+        for n, r in enumerate(new):
+            if n and flg == "N":
+                continue
+            ptyp = "%s%s" % (
+                r[self.sql.bwlpts_col.index("bcp_ptyp")],
+                r[self.sql.bwlpts_col.index("bcp_round")])
+            pdic[ptyp] = {}
             for col in self.sql.bwlpts_col[3:]:
-                ldic[ptyp][col] = r[self.sql.bwlpts_col.index(col)]
+                pdic[ptyp][col] = r[self.sql.bwlpts_col.index(col)]
         if self.card:
             self.fpdf = MyFpdf(auto=True)
             self.fpdf.set_margins(55, 5, 55)
@@ -187,56 +209,55 @@ Only 1 trial end per game and burnt ends must be re-played."""),
             self.fpdf.add_page()
             self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_cfmat"][4],
                 h=h, ln=0)
-            if ldic["bct_cfmat"] == "T":
+            if tdic["bct_cfmat"] == "T":
                 txt = "Tournament"
-            elif ldic["bct_cfmat"] in ("D", "K"):
+            elif tdic["bct_cfmat"] in ("D", "K"):
                 txt = "Knockout"
-            elif ldic["bct_cfmat"] in ("R", "W"):
+            elif tdic["bct_cfmat"] == "R":
                 txt = "Round Robin"
             else:
                 txt = "Match"
             self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
             self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_tsize"][4],
                 h=h, ln=0)
-            self.fpdf.drawText(txt=ldic["bct_tsize"], x=x1, h=h, ctyp="M")
-            #if ldic["bct_cfmat"] in ("D", "K", "R", "W"):
-            #    return
-            self.fpdf.drawText(txt="Draw", h=h, ln=0)
-            if ldic["bct_drawn"] == ldic["bct_games"]:
-                txt = "All Games will be Random Draws."
-            else:
-                if ldic["bct_drawn"] == 1:
-                    txt = "The First Game will be a Random Draw and "\
-                        "thereafter"
+            self.fpdf.drawText(txt=tdic["bct_tsize"], x=x1, h=h, ctyp="M")
+            if not tdic["bct_cfmat"] in ("D", "K", "R"):
+                self.fpdf.drawText(txt="Draw", h=h, ln=0)
+                if tdic["bct_drawn"] == tdic["bct_games"]:
+                    txt = "All Games will be Random Draws."
                 else:
-                    txt = "The First %s Games will be Random Draws and "\
-                        "thereafter" % ldic["bct_drawn"]
-                if ldic["bct_strict"] == "Y":
-                    txt += " Strict Strength v Strength."
-                else:
-                    txt += " Strength v Strength."
-            self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
-            if ldic["bct_games"]:
+                    if tdic["bct_drawn"] == 1:
+                        txt = "The First Game will be a Random Draw and "\
+                            "thereafter"
+                    else:
+                        txt = "The First %s Games will be Random Draws and "\
+                            "thereafter" % tdic["bct_drawn"]
+                    if tdic["bct_strict"] == "Y":
+                        txt += " Strict Strength v Strength."
+                    else:
+                        txt += " Strength v Strength."
+                self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+            if tdic["bct_games"]:
                 self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_games"][4],
                     h=h, ln=0)
-                self.fpdf.drawText(txt=ldic["bct_games"], x=x1, h=h, ctyp="M")
+                self.fpdf.drawText(txt=tdic["bct_games"], x=x1, h=h, ctyp="M")
             self.fpdf.drawText(txt=self.sql.bwltyp_dic["bct_ends"][4],h=h,ln=0)
-            self.fpdf.drawText(txt=ldic["bct_ends"], x=x1, h=h, ctyp="M")
-            if ldic["bct_grgame"]:
+            self.fpdf.drawText(txt=tdic["bct_ends"], x=x1, h=h, ctyp="M")
+            if tdic["bct_grgame"]:
                 self.fpdf.drawText(txt="Groups", h=h, ln=0)
                 txt = "Teams will be Split into Groups After Game %s." % \
-                    ldic["bct_grgame"]
+                    tdic["bct_grgame"]
                 self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
-                if ldic["bct_adjust"] == "Y":
+                if tdic["bct_adjust"] == "Y":
                     txt = "With the Exception of Group A, the Scores will be "\
                         "Adjusted as follows:"
                     self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
-                    if ldic["bct_expunge"]:
-                        gms = ldic["bct_expunge"].split(",")
+                    if tdic["bct_expunge"]:
+                        gms = tdic["bct_expunge"].split(",")
                         if len(gms) == 1:
                             txt = "Game %s will be Expunged" % gms[0]
                         else:
-                            txt = "Games %s" % gms[0]
+                            txt = "Game %s" % gms[0]
                             for n, g in enumerate(gms[1:]):
                                 if n == len(gms) - 2:
                                     txt = "%s and %s" % (txt, g)
@@ -244,76 +265,96 @@ Only 1 trial end per game and burnt ends must be re-played."""),
                                     txt = "%s, %s" % (txt, g)
                             txt = "%s will be Expunged." % txt
                         self.fpdf.drawText(txt=txt, x=x2, h=h, ctyp="M")
-                    if ldic["bct_percent"]:
-                        if ldic["bct_expunge"]:
+                    if tdic["bct_percent"]:
+                        if tdic["bct_expunge"]:
                             txt = "The Balance of the Games"
                         else:
                             txt = "All Games"
                         txt = "%s will Retain %s%s of their score." % (txt,
-                            ldic["bct_percent"], "%")
+                            tdic["bct_percent"], "%")
                         self.fpdf.drawText(txt=txt, x=x2, h=h, ctyp="M")
-            # Points
-            self.fpdf.drawText(h=h)
-            if ldic["bct_pdiff"] == "Y":
-                nums = ["drawn", "svs"]
-            else:
-                nums = ["drawn"]
-            for ptyp in nums:
-                if ldic["bct_pdiff"] == "N":
-                    txt = "Scoring for All Games"
-                elif ptyp == "drawn":
-                    txt = "Scoring for Drawn Games"
-                else:
-                    txt = "Scoring for S v S Games"
-                self.fpdf.drawText(txt=txt, h=h)
-                self.fpdf.underLine(h=h, txt=txt)
-                if ldic[ptyp]["bcp_sends"]:
-                    self.fpdf.drawText(txt="Skins", h=h, ln=0)
-                    self.fpdf.drawText(txt="Each Set of %s Ends will "\
-                        "Constitute a Skin." % ldic[ptyp]["bcp_sends"], x=x1,
-                        h=h, ctyp="M")
-                self.fpdf.drawText(txt="Points", h=h, ln=0)
-                txt = ""
-                pts = 0
-                if ldic[ptyp]["bcp_e_points"]:
-                    if ldic[ptyp]["bcp_e_points"] == 1:
-                        txt = "%s Point per End" % ldic[ptyp]["bcp_e_points"]
-                    else:
-                        txt = "%s Points per End" % ldic[ptyp]["bcp_e_points"]
-                    self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
-                    pts += (ldic[ptyp]["bcp_e_points"] * ldic["bct_ends"])
-                if ldic[ptyp]["bcp_s_points"]:
-                    if ldic[ptyp]["bcp_s_points"] == 1:
-                        txt = "%s Point per Skin" % ldic[ptyp]["bcp_s_points"]
-                    else:
-                        txt = "%s Points per Skin" % ldic[ptyp]["bcp_s_points"]
-                    self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
-                    pts += (ldic[ptyp]["bcp_s_points"] *
-                        int(ldic["bct_ends"] / ldic[ptyp]["bcp_sends"]))
-                if ldic[ptyp]["bcp_g_points"]:
-                    if ldic[ptyp]["bcp_g_points"] == 1:
-                        txt = "%s Point per Game" % ldic[ptyp]["bcp_g_points"]
-                    else:
-                        txt = "%s Points per Game" % ldic[ptyp]["bcp_g_points"]
-                    self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
-                    pts += ldic[ptyp]["bcp_g_points"]
-                if ldic[ptyp]["bcp_bonus"] == "Y":
-                    txt = "1 Bonus Point will be Awarded as Follows:"
-                    self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
-                    txt = "Winning by %s or More Shots or" % \
-                        (ldic[ptyp]["bcp_win_by"] + 1)
-                    self.fpdf.drawText(txt=txt, x=x2, h=h, ctyp="M")
-                    txt = "Losing by %s or Less Shots" % \
-                        (ldic[ptyp]["bcp_lose_by"] - 1)
-                    self.fpdf.drawText(txt=txt, x=x2, h=h, ctyp="M")
-                    pts += 1
-                if pts:
-                    if pts == 1:
-                        txt = "Point"
-                    else:
-                        txt = "Points"
-                    txt = "Therefore a Maximum of %s %s per Game." % (pts, txt)
-                    self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+
+            def getText(ptyp, txt):
+                # Return Headings
+                if ptyp[1] == "[":
+                    data = ptyp.split("[")[1].split("]")
+                    rnds = data[0]
+                    txt += "s Rounds %s to %s" % (rnds[0], rnds[-1])
+                elif int(ptyp[1]):
+                    txt += " Round %s" % ptyp[1]
+                return txt
+
+            if not tdic["bct_cfmat"] in ("D", "K"):
+                # Points
+                self.fpdf.drawText(h=h)
+                nums = []
+                for k in pdic:
+                    nums.append(k)
+                for ptyp in nums:
+                    txt = None
+                    if flg == "N":
+                        txt = "Scoring for All Games"
+                    elif ptyp[0] == "D":
+                        txt = "Scoring for Drawn Game"
+                        txt = getText(ptyp, txt)
+                    elif ptyp[0] == "S":
+                        txt = "Scoring for SvS Game"
+                        txt = getText(ptyp, txt)
+                    if txt:
+                        self.fpdf.drawText(txt=txt, h=h)
+                        self.fpdf.underLine(h=h, txt=txt)
+                    if pdic[ptyp]["bcp_sends"]:
+                        self.fpdf.drawText(txt="Skins", h=h, ln=0)
+                        self.fpdf.drawText(txt="Each Set of %s Ends will "\
+                            "Constitute a Skin." % pdic[ptyp]["bcp_sends"],
+                            x=x1, h=h, ctyp="M")
+                    self.fpdf.drawText(txt="Points", h=h, ln=0)
+                    txt = ""
+                    pts = 0
+                    if pdic[ptyp]["bcp_e_points"]:
+                        if pdic[ptyp]["bcp_e_points"] == 1:
+                            txt = "1 Point per End"
+                        else:
+                            txt = "%s Points per End" % pdic[ptyp][
+                                "bcp_e_points"]
+                        self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+                        pts += (pdic[ptyp]["bcp_e_points"] * tdic["bct_ends"])
+                    if pdic[ptyp]["bcp_s_points"]:
+                        if pdic[ptyp]["bcp_s_points"] == 1:
+                            txt = "1 Point per Skin"
+                        else:
+                            txt = "%s Points per Skin" % pdic[ptyp][
+                                "bcp_s_points"]
+                        self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+                        pts += (pdic[ptyp]["bcp_s_points"] *
+                            int(tdic["bct_ends"] / pdic[ptyp]["bcp_sends"]))
+                    if pdic[ptyp]["bcp_g_points"]:
+                        if pdic[ptyp]["bcp_g_points"] == 1:
+                            txt = "1 Point per Game"
+                        else:
+                            txt = "%s Points per Game" % pdic[ptyp][
+                                "bcp_g_points"]
+                        self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+                        pts += pdic[ptyp]["bcp_g_points"]
+                    if pdic[ptyp]["bcp_bonus"] == "Y":
+                        txt = "1 Bonus Point will be Awarded as Follows:"
+                        self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+                        txt = "Winning by %s or More Shots or" % \
+                            (pdic[ptyp]["bcp_win_by"] + 1)
+                        self.fpdf.drawText(txt=txt, x=x2, h=h, ctyp="M")
+                        txt = "Losing by %s or Less Shots" % \
+                            (pdic[ptyp]["bcp_lose_by"] - 1)
+                        self.fpdf.drawText(txt=txt, x=x2, h=h, ctyp="M")
+                        pts += 1
+                    if pts:
+                        if pts == 1:
+                            txt = "Point"
+                        else:
+                            txt = "Points"
+                        txt = "Therefore a Maximum of %s %s per Game." % (
+                            pts, txt)
+                        self.fpdf.drawText(txt=txt, x=x1, h=h, ctyp="M")
+                        self.fpdf.drawText()
             # Notes
             if self.notes:
                 txt = "Notes"

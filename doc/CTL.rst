@@ -52,19 +52,20 @@ Use this routine to create department records if departments were enabled in the
 
 Module Passwords Maintenance
 ............................
-Use this routine to set passwords to override certain security limitations e.g. locked general ledger account, inhibit the sale of items at prices under cost or inhibit sales to a debtor exceeding their credit limit.
+Only the Administrator has access to this routine. Use this routine to set passwords to override certain security limitations e.g. *Locked General Ledger Account*, *Inhibit the Sale of Items at Prices Under Cost*, *Inhibit Sales to a Debtor Exceeding their Credit Limit* or *Accessing *Finalised Financial Periods*.
 
 + **Company** - Enter the company number or 0 for all companies.
 + **System** - The relevant system code. F1 will show all system codes.
-+ **Code** - The relevant restrictions code. F1 will show existing overrides and the `All Codes` button will show all available restrictions.
++ **Code** - The relevant restriction code. F1 will show existing overrides and the `All Codes` button will show all available restrictions.
 + **Password** - The password required to override this restriction.
 
 .. csv-table:: **Examples**
   :header: "Coy", "System", "Code", "Description"
-  :widths: 5, 8, 20, 50
+  :widths: 8, 10, 20, 40
 
   "  0", "MST", "TarBck", "Allow Database Backup"
   "  0", "MST", "TarRes", "Allow Database Restore"
+  "  0", "MST", "AllowFinal", "Allow Override of Finalised Period"
 
 Module Passwords Listing
 ........................

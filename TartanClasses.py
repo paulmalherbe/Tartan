@@ -113,11 +113,6 @@ try:
     PYGAL = True
 except:
     PYGAL = False
-try:
-    import cairosvg
-    CVTSVG = True
-except:
-    CVTSVG = False
 # ========================================================
 # OfxTools import
 # ========================================================
@@ -144,7 +139,7 @@ try:
     import tkinter.ttk as ttk
     import tkinter.font as tkfont
     import tkinter.filedialog as tkfile
-    from PIL import Image, ImageTk
+    from PIL import Image, ImageDraw, ImageFont, ImageTk
     try:
         from tkcolorpicker import askcolor
         CPICK = True
@@ -254,6 +249,321 @@ try:
                 pass
             return "break"
 
+    class MyCharts(object):
+        def __init__(self, ctyp, titl, xcol, data, legnd, flenam):
+            colors = [
+                ("Red", "black"),
+                ("Blue", "white"),
+                ("Green", "white"),
+                ("Orange", "black"),
+                ("Violet", "black"),
+                ("Cyan", "black"),
+                ("Black", "white"),
+                ("Pink", "black"),
+                ("Grey", "white"),
+                ("Indigo", "white"),
+                ("Brown", "white"),
+                ("Yellow", "black")]
+            self.clrs = []
+            while len(data) > len(self.clrs):
+                self.clrs.extend(colors)
+            self.ctyp = ctyp
+            self.titl = titl
+            self.xcol = xcol
+            self.data = data
+            self.legnd = legnd
+            if ctyp in ("L", "B"):
+                max_val = 0
+                min_val = 0
+                for dat in data:
+                    for val in dat[2:]:
+                        if val > max_val:
+                            max_val = val
+                        if val < min_val:
+                            min_val = val
+            elif ctyp == "S":
+                max_val = 0
+                min_val = 0
+                for x in range(len(self.xcol)):
+                    pp = 0
+                    mm = 0
+                    for d in data:
+                        val = d[2+x]
+                        if val < 0:
+                            mm += val
+                        else:
+                            pp += val
+                    if pp > max_val:
+                        max_val = pp
+                    if mm < min_val:
+                        min_val = mm
+            if ctyp in ("L", "B", "S"):
+                lim = 12
+                tot = max_val - min_val
+                if (tot // 100) < lim:
+                    self.skp = 100
+                elif (tot // 1000) < lim:
+                    self.skp = 1000
+                else:
+                    self.skp = 10000
+                    while (tot // self.skp) > lim:
+                        self.skp += 10000
+                x = 0
+                while x > min_val:
+                    x -= self.skp
+                y = 0
+                while y < max_val:
+                    y += self.skp
+                self.min_val, self.max_val = x, y
+            if ctyp == "P":
+                oo = "P"
+                self.pieChart()
+            elif ctyp == "L":
+                oo = "L"
+                self.lineChart()
+            else:
+                oo = "L"
+                self.barChart()
+            # Make pdf
+            pdf = MyFpdf(orientation=oo)
+            pdf.add_page()
+            pdf.image(self.img, x="c")
+            pdf.output(flenam)
+
+        def pieChart(self):
+            # Image Setup
+            width, height = 500*4, 800*4
+            # Text Fonts
+            nfont = ImageFont.load_default(size=40)
+            tfont = ImageFont.load_default(size=56)
+            self.img = Image.new("RGB", (width, height), "white")
+            draw = ImageDraw.Draw(self.img)
+            total = sum(self.data[0][2:])
+            # Pie chart parameters
+            radius = 800
+            cx, cy = 1000, 1100
+            bbox = [cx - radius, cy - radius, cx + radius, cy + radius]
+            # Draw Title
+            titl = self.titl.split("\n")
+            for n, t in enumerate(titl):
+                x = (self.img.width // 2)
+                draw.text((x, 80*n), text=t.strip(), font=tfont,
+                    fill="black", anchor="mt")
+            # Draw Pie Slices starting at 12 o'clock
+            start_a = -90
+            cnt = 0
+            for num, val in enumerate(self.data[0][2:]):
+                if val == 0:
+                    continue
+                angle = round((val / total) * 360, 1)
+                angle = (val / total) * 360
+                end_a = start_a + angle
+                # Draw slice
+                draw.pieslice(bbox, start=start_a, end=end_a,
+                    fill=self.clrs[num][0], outline="white")
+                if angle > 10:
+                    # Draw Text in Slice
+                    rad = (bbox[2] - bbox[0]) / 3  # Position
+                    ma = math.radians(start_a + (end_a - start_a) / 2)
+                    t_x = cx + rad * math.cos(ma)
+                    t_y = cy + rad * math.sin(ma)
+                    draw.text((t_x, t_y), f"{self.xcol[num]}", font=nfont,
+                        fill=self.clrs[num][1], anchor="mm")
+                start_a = end_a
+                cnt += 1
+            if self.legnd:
+                # Draw Legends at Bottom
+                leg_x = 100
+                leg_y = 2000
+                for num, val in enumerate(self.data[0][2:]):
+                    draw.rectangle([leg_x, leg_y + 200, leg_x + 60,
+                        leg_y + 240], fill=self.clrs[num][0])
+                    txt = CCD(val, "UI", 12).work
+                    txt = f"{self.xcol[num]}: {val:,}"
+                    try:
+                        if sys.platform == "win32":
+                            typ = "Consolas.ttf"
+                        else:
+                            typ = "DejaVuSansMono.ttf"
+                        fnt = ImageFont.truetype(typ, 30)
+                    except OSError:
+                        fnt = nfont
+                    draw.text((leg_x + 80, leg_y + 220), txt, fill="black",
+                        font=fnt, anchor="lm")
+                    if not (num + 1) % 4:
+                        leg_x = 100
+                        leg_y += 48
+                    else:
+                        leg_x += (width - 100) // 4
+            # Resize Image
+            self.img = self.img.resize((500, 800), resample=1)
+
+        def lineChart(self):
+            # Image Setup
+            width, height = 800*4, 500*4
+            m_l, m_r, m_t, m_b = 320, 200, 320, 400
+            nfont = ImageFont.load_default(size=40)
+            tfont = ImageFont.load_default(size=56)
+            chart_w, chart_h = width - m_l - m_r, height - m_t - m_b
+            self.img = Image.new("RGB", (width, height), "white")
+            draw = ImageDraw.Draw(self.img)
+            # Draw Title
+            titl = self.titl.split("\n")
+            for n, t in enumerate(titl):
+                x = (self.img.width // 2)
+                draw.text((x, 80*n), text=t.strip(), font=tfont, fill="black",
+                    anchor="mt")
+            # Calculate Scaling
+            y_scale = chart_h / (self.max_val - self.min_val)
+            # Draw Grid Lines and Labels
+            y_sv0 = y_sv1 = height - m_b
+            for i in range(self.min_val, self.max_val + 1, self.skp):
+                hgt = i * y_scale
+                if hgt < 0:
+                    if y_sv0 == y_sv1:
+                        y_pos = y_sv1
+                        y_sv0 = y_sv1 + hgt
+                    else:
+                        y_pos = y_sv0 - hgt
+                else:
+                    y_pos = y_sv0 - hgt
+                draw.line([(m_l, y_pos), (width - m_r, y_pos)],
+                    fill="lightgrey", width=1)
+                draw.text((m_l - 40, y_pos), f"{i:,}", fill="black",
+                    font=nfont, anchor="rm")
+            # Plot Lines
+            for num, lab in enumerate(self.data):
+                dat = lab[2:]
+                points = []
+                for i, val in enumerate(dat):
+                    x = m_l + (i * (chart_w / 11))
+                    y = y_sv0 - (val * y_scale)
+                    points.append((x, y))
+                draw.line(points, fill=self.clrs[num][0], width=3)
+            # Draw Y-Axis
+            draw.line([(m_l, m_t), (m_l, y_sv1)], fill="black", width=2)
+            # Draw X-Axis
+            draw.line([(m_l, y_sv0), (width - m_r, y_sv0)], fill="black",
+                width=2)
+            # Draw Labels
+            for i, mth in enumerate(self.xcol):
+                x_pos = m_l + (i * (chart_w / 11))
+                draw.text((x_pos, y_sv1 + 40), mth, fill="black",
+                    font=nfont, anchor="mt")
+            # Draw Legends at Bottom
+            leg_x = m_l
+            leg_y = y_sv1
+            for num, lab in enumerate(self.data):
+                nam = lab[1]
+                draw.rectangle([leg_x, leg_y + 200, leg_x + 60, leg_y + 240],
+                    fill=self.clrs[num][0])
+                draw.text((leg_x + 80, leg_y + 220), nam, fill="black",
+                    font=nfont, anchor="lm")
+                if not (num + 1) % 4:
+                    leg_x = m_l
+                    leg_y += 48
+                else:
+                    leg_x += chart_w // 4
+            # Resize Image
+            self.img = self.img.resize((800, 500), resample=1)
+
+        def barChart(self):
+            # Chart Configuration & Dimensions
+            width, height = 800*4, 500*4
+            m_l, m_r, m_t, m_b = 320, 200, 320, 400
+            nfont = ImageFont.load_default(size=40)
+            tfont = ImageFont.load_default(size=56)
+            chart_w, chart_h = width - m_l - m_r, height - m_t - m_b
+            # Setup Image
+            self.img = Image.new("RGB", (width, height), "white")
+            draw = ImageDraw.Draw(self.img)
+            # Draw Title
+            titl = self.titl.split("\n")
+            for n, t in enumerate(titl):
+                x = (self.img.width // 2)
+                draw.text((x, 80*n), text=t.strip(), font=tfont, fill="black",
+                    anchor="mt")
+            # Calculate Scaling
+            y_scale = chart_h / (self.max_val - self.min_val)
+            # Draw Grid Lines and Labels
+            y_sv0 = y_sv1 = height - m_b
+            for i in range(self.min_val, self.max_val + 1, self.skp):
+                hgt = i * y_scale
+                if hgt < 0:
+                    if y_sv0 == y_sv1:
+                        y_pos = y_sv1
+                        y_sv0 = y_sv1 + hgt
+                    else:
+                        y_pos = y_sv0 - hgt
+                else:
+                    y_pos = y_sv0 - hgt
+                if int(y_pos) < m_t:
+                    break
+                draw.line([(m_l, y_pos), (width - m_r, y_pos)],
+                    fill="lightgrey", width=1)
+                draw.text((m_l - 40, y_pos), f"{i:,}", fill="black",
+                    font=nfont, anchor="rm")
+            # Draw Bars
+            bar_w = (chart_w / len(self.xcol)) * 0.9
+            bar_s = (chart_w / len(self.xcol)) * 0.1
+            for i in range(len(self.xcol)):
+                if self.ctyp == "B":
+                    mth_x = m_l + (i * (bar_w + bar_s)) + bar_s
+                    for j, expense in enumerate(self.data):
+                        bar_h = expense[2:][i] * y_scale
+                        x0 = mth_x + (j * (bar_w / len(self.data)))
+                        y0 = y_sv0 - bar_h
+                        x1 = x0 + (bar_w / len(self.data))
+                        y1 = y_sv0
+                        if y1 < y0:
+                            draw.rectangle([x0, y1, x1, y0],
+                                fill=self.clrs[j][0], outline="white")
+                        else:
+                            draw.rectangle([x0, y0, x1, y1],
+                                fill=self.clrs[j][0], outline="white")
+                else:
+                    bp = y_sv0
+                    bm = y_sv0
+                    mth_x = m_l + (bar_s / 2) + i * (bar_w + bar_s)
+                    for j, dat in enumerate(self.data):
+                        x0 = mth_x
+                        val = dat[2:][i]
+                        h = val * y_scale
+                        if val < 0:
+                            y0 = bm
+                            y1 = bm - h
+                            bm = y1
+                        else:
+                            y0 = bp - h
+                            y1 = bp
+                            bp = y0
+                        draw.rectangle([x0, y0, x0 + bar_w, y1],
+                            fill=self.clrs[j][0], outline="white")
+                # X-axis Labels
+                draw.text((mth_x + bar_w/3, y_sv1 + 40), self.xcol[i],
+                    font=nfont, fill="black")
+            # Y-Axis
+            draw.line([(m_l, m_t), (m_l, y_sv1)], fill="black", width=2)
+            # X-Axis
+            draw.line([(m_l, y_sv0), (width - m_r, y_sv0)], fill="black",
+                width=2)
+            # Draw Legend at the Bottom
+            leg_x = m_l
+            leg_y = y_sv1
+            for num, lab in enumerate(self.data):
+                nam = lab[1]
+                draw.rectangle([leg_x, leg_y + 200, leg_x + 80, leg_y + 240],
+                    fill=self.clrs[num][0])
+                draw.text((leg_x + 100, leg_y + 220), nam, fill="black",
+                    font=nfont, anchor="lm")
+                if not (num + 1) % 4:
+                    leg_x = m_l
+                    leg_y += 48
+                else:
+                    leg_x += chart_w // 4
+            # Resize Image
+            self.img = self.img.resize((800, 500), resample=1)
+
     class MyCheckButton(ttk.Checkbutton):
         def __init__(self, parent, **kwargs):
             if "style" not in kwargs:
@@ -361,7 +671,8 @@ try:
                         yscrollcommand=yScroll.set)
                     yScroll["command"] = self.lb.yview
                 else:
-                    self.lb = tk.Listbox(self.lf, width=wdth, height=len(words))
+                    self.lb = tk.Listbox(self.lf, width=wdth,
+                        height=len(words))
                 self.lb.bind("<Double-Button-1>", self.list_aut)
                 self.lb.bind("<KP_Enter>", self.list_aut)
                 self.lb.bind("<Return>", self.list_aut)
@@ -550,9 +861,9 @@ try:
                 for bind in b.bind():
                     if "<Key-Alt_L>" in bind:
                         self.binds.append(bind)
-                ecmd = lambda event, num=num: self.doNavigate(event, num)
-                b.bind("<Left>", ecmd)
-                b.bind("<Right>", ecmd)
+                #ecmd = lambda event, num=num: self.doNavigate(event, num)
+                b.bind("<Left>", functools.partial(self.doEcmd, num))
+                b.bind("<Right>", functools.partial(self.doEcmd, num))
                 if len(but) == 3:
                     ToolTip(b, but[2])
                 self.butts.append(b)
@@ -616,6 +927,9 @@ try:
             if not self.parent:
                 self.msgwin.quit()
 
+        def doEcmd(self, num, event):
+            return self.doNavigate(event, num)
+
         def doNavigate(self, event, num):
             if event.keysym == "Left":
                 if num == 0:
@@ -641,8 +955,7 @@ try:
             self.bind("<Right>", self.goRight)
             if cmd:
                 vvv = kwargs["variable"]
-                ecmd = lambda var=vvv, opt=cmd[1]: cmd[0](var, opt)
-                self.configure(command=ecmd)
+                self.configure(command=functools.partial(cmd[0], vvv, cmd[1]))
 
         def goLeft(self, event):
             childs = self.parent.winfo_children()
@@ -1924,16 +2237,20 @@ class Dbase(object):
             if check:
                 raise Exception("Invalid rcdic")
             if self.dbase == "PgSQL":
-                import psycopg2 as engine
                 try:
-                    # Typecast the numeric datatype as Float not Decimal
-                    pgx = engine.extensions
-                    NUM = pgx.new_type(pgx.DECIMAL.values, "NUM",
-                        lambda d, c: float(d) if d is not None else None)
-                    pgx.register_type(NUM)
-                except Exception as err:
-                    raise Exception("Typecast Error (%s)" % err)
-                self.dbmod = "psycopg2"
+                    import psycopg as engine
+                    self.dbmod = "psycopg"
+                except:
+                    import psycopg2 as engine
+                    self.dbmod = "psycopg2"
+                    try:
+                        # Typecast the numeric datatype as Float not Decimal
+                        pgx = engine.extensions
+                        NUM = pgx.new_type(pgx.DECIMAL.values, "NUM",
+                            lambda d, c: float(d) if d is not None else None)
+                        pgx.register_type(NUM)
+                    except Exception as err:
+                        raise Exception("Psycopg2 Error (%s)" % err)
                 self.dbf = "%s"
             elif self.dbase == "SQLite":
                 from sqlite3 import dbapi2 as engine
@@ -2064,6 +2381,10 @@ class Dbase(object):
                 if self.dbpwd:
                     dsn += " password=%s" % self.dbpwd
                 self.db = self.engine.connect(dsn)
+                if self.dbmod == "psycopg":
+                    # Typecast the numeric datatype as Float not Decimal
+                    self.db.adapters.register_loader("numeric",
+                        self.engine.types.numeric.FloatLoader)
             else:
                 self.db = self.engine.connect(database=self.dbdsn)
                 self.db.text_factory = str
@@ -2406,6 +2727,20 @@ class Sql(object):
         xprt    = Blank the export flag
         pbar    = ProgressBar object
         """
+        # Multiple inserts
+        def multiples():
+            if type(pbar) in (list, tuple):
+                if pbar[0] == "t":
+                    pbar[1].update()
+                elif pbar[0]:
+                    pbar[1].displayProgress(onum)
+            elif pbar:
+                pbar.displayProgress(onum)
+            self.sqlRec(("Insert into %s %s values %s" %
+                (table, nfld, self.nfmt), self.ndat))
+            self.nfmt = ""
+            self.ndat = []
+
         if table not in self.tables:
             showError(None, "insRec Error",
                 "Table %s Not In Sql Tables\n\nIn module %s" %
@@ -2454,19 +2789,6 @@ class Sql(object):
             # Not testing for unique and format with multple rows
             unique = False
             dofmt = False
-        # Multiple inserts
-        def multiples():
-            if type(pbar) in (list, tuple):
-                if pbar[0] == "t":
-                    pbar[1].update()
-                elif pbar[0]:
-                    pbar[1].displayProgress(onum)
-            elif pbar:
-                pbar.displayProgress(onum)
-            self.sqlRec(("Insert into %s %s values %s" %
-                (table, nfld, self.nfmt), self.ndat))
-            self.nfmt = ""
-            self.ndat = []
         # Create data
         self.ndat = []
         for onum, odat in enumerate(data):
@@ -2943,6 +3265,9 @@ class CCD(object):
         elif types in ("CB", "RB", "RW", "TS"):
             self.err = ""
             self.work = self.disp = self.data = data
+            if types == "RW" and type(data) == str and size:
+                while len(self.disp) < size:
+                    self.disp += " "
             return
         # ======================================================================
         # Work around for None
@@ -4024,8 +4349,8 @@ Export - The report in the selected format will be opened
                     self.eflds.append(tuple(a))
                 # Email message and additional attachments
                 row += 1
-                self.eflds.append((
-                    ("T",0,row,col),("IRB",yns),0,"E-Mail Message","",
+                self.eflds.append(
+                    (("T",0,row,col),("IRB",yns),0,"E-Mail Message","",
                         "N","N",self.setMess,None,None,None))
                 if self.mail[1].lower() == "y":
                     # View/Print emailed document
@@ -8139,8 +8464,10 @@ class TartanConfig(object):
 
     def doEngine(self, frt, pag, r, c, p, i, w):
         if w == "P":
-            txt = "psycopg2"
-            mod = "psycopg2"
+            txt = "psycopg"
+            mod = "psycopg"
+            if not chkMod(mod):
+                mod = "psycopg2"
         else:
             txt = "pysqlite"
             mod = "sqlite3"
@@ -8209,7 +8536,7 @@ class TartanConfig(object):
                     fle = os.path.join(os.getenv("HOME"),
                             ".config/mimeapps.list")
                     assoc = None
-                    if  os.path.isfile(fle):
+                    if os.path.isfile(fle):
                         with open(fle, "r") as opf:
                             for lin in opf:
                                 if lin.count("Added Associations"):
@@ -9828,8 +10155,8 @@ class FinReport(object):
      25  glr_cbase   UA   1.0  Calculation Base (p/a/s)        B
      26  glr_ctype   UA   1.0  Calculation Type (+ - * /)      C
      27  glr_camnt   SD  13.2  Percent or Amount               Amount
-     28  glr_label   NA  10.0  Chart Label, Space = None       Label
-     29 glr_xflag    UA   1.0  Export Flag                     X
+     28  glr_label   TX  30.0  Chart Label, Space = None       Chart-Label
+     29  glr_xflag   UA   1.0  Export Flag                     X
 
     as well as the following parameters:
 
@@ -13826,12 +14153,13 @@ class BankImport(object):
     def importOfxTool(self, fname):
         test = open(fname, "r")
         line = test.readlines()
+        test.close()
         if len(line) == 1:
             try:
-                line = line[0].replace(" >", ">")
+                line = line[0].replace("OFX >", "OFX>")
                 line = line.replace("><", ">\n<")
             except Exception as err:
-                print(err)
+                showError(self.mf.body, "OFX Error", err)
                 return
             fname = os.path.join(self.mf.rcdic["wrkdir"], "tempfle.ofx")
             ofl = open(fname, "w")
@@ -13842,7 +14170,8 @@ class BankImport(object):
             parser.parse(fname)
             ofx = parser.convert()
         except Exception as err:
-            print(err)
+            showError(self.mf.body, "OFX Error", err)
+            return
         if not ofx.statements[0].account.acctid.count(self.bankac):
             showError(self.mf.body, "File Error %s" % fname,
                 "The File Must Contain the Bank Account Number.")
@@ -15975,8 +16304,6 @@ class CreateChart(object):
     xcol     - The x-axis's column labels
     """
     def __init__(self, mf, conum, conam, periods, title, achart, mchart, xlab=None, ylab=None, xcol=None):
-        if not PYGAL:
-            return
         self.mf = mf
         self.conum = conum
         self.conam = conam
@@ -16013,24 +16340,21 @@ class CreateChart(object):
             ("Bar Normal","B"),
             ("Bar Stacked","S"),
             ("Pie Chart","P"))
-        r3s = (("PDF","P"),("SVG","S"))
-        r4s = (("Yes","Y"),("No","N"))
+        r3s = (("Yes","Y"),("No","N"))
+        if PYGAL:
+            r4s = (("PDF","P"),("SVG","S"))
+        else:
+            self.vwr = "P"
         fld = [
             (("T",0,0,0),("IRB",r1s),0,"Action","Select Action",
                 "M","N",self.doAct,None,None,None,None),
             (("T",0,1,0),("IRB",r2s),0,"Select Chart","",
-                "L","N",self.doCht,None,None,None,None)]
-        if CVTSVG:
-            fld.append((("T",0,2,0),("IRB",r3s),0,"View As","",
+                "L","N",self.doCht,None,None,None,None),
+            (("T",0,2,0),("IRB",r3s),0,"Draw Legend","",
+                "Y","N",self.doLeg,None,None,None,None)]
+        if PYGAL:
+            fld.append((("T",0,3,0),("IRB",r4s),0,"View As","",
                 "P","N",self.doVwr,None,None,None,None))
-            idx = 3
-        else:
-            self.vwr = "S"
-            idx = 2
-        fld.append((("T",0,idx,0),("IRB",r4s),0,"Show Labels","",
-            "Y","N",self.doLab,None,None,None,None))
-        fld.append((("T",0,idx+1,0),("IRB",r4s),0,"Show Legends","",
-            "Y","N",self.doLeg,None,None,None,None))
         self.dc = TartanDialog(self.mf, tops=True, title=tit, eflds=fld,
             tend=((self.doChtEnd, "y"),), txit=(self.doChtExit,),
             mail=("Y","N"))
@@ -16064,15 +16388,15 @@ class CreateChart(object):
         if w == "P" and len(self.chart) > 1:
             return "Only One Range of Values Allowed for a Pie Chart"
         self.cht = w
-
-    def doVwr(self, frt, pag, r, c, p, i, w):
-        self.vwr = w
-
-    def doLab(self, frt, pag, r, c, p, i, w):
-        self.lab = bool(w == "Y")
+        if self.cht != "P":
+            self.leg = True
+            return "sk1"
 
     def doLeg(self, frt, pag, r, c, p, i, w):
         self.leg = bool(w == "Y")
+
+    def doVwr(self, frt, pag, r, c, p, i, w):
+        self.vwr = w
 
     def doChtEnd(self):
         self.repprt = ["Y", "V", "view"]
@@ -16108,47 +16432,55 @@ class CreateChart(object):
                 if m > 12:
                     y += 1
                     m = 1
+        data = []
+        for dat in self.chart:
+            d = dat[:2]
+            for v in dat[2:len(self.xcol)+2]:
+                d.append(v)
+            data.append(d)
         # Generate Chart
-        flenam = getModName(self.mf.rcdic["wrkdir"], "chart",
-            self.conum, ext="svg")
-        if self.cht == "B":
-            chart = pygal.Bar(print_labels=self.lab, show_legend=self.leg)
-        elif self.cht == "S":
-            chart = pygal.StackedBar(print_labels=self.lab,
-                show_legend=self.leg)
-        elif self.cht == "L":
-            chart = pygal.Line(print_labels=self.lab, show_legend=self.leg)
-        elif self.cht == "P":
-            chart = pygal.Pie(print_labels=self.lab, show_legend=self.leg)
         if self.cht == "P":
             titl = "%s - %s" % tuple(self.title[0])
-            titl = "%s\n%s for Period %s to %s (%s)" % (titl, self.chart[0][1],
+            titl = "%s\n%s for Period %s to %s (%s)" % (titl, data[0][1],
                 self.s_per.disp, self.e_per.disp, self.title[1])
         else:
             titl = self.title[0][0]
             titl = "%s\n%s for Period %s to %s (%s)" % (titl, self.title[0][1],
                 self.s_per.disp, self.e_per.disp, self.title[1])
-        chart.title = titl
-        if self.cht == "P":
-            for seq, dat in enumerate(self.xcol):
-                chart.add(dat, [{"value": self.chart[0][seq+2], "label": dat}])
+        if self.vwr == "S":
+            pdfnam = getModName(self.mf.rcdic["wrkdir"], "chart",
+                self.conum, ext="svg")
+            if self.cht == "B":
+                chart = pygal.Bar(print_labels=True, show_legend=True,
+                    legend_at_bottom=True)
+            elif self.cht == "S":
+                chart = pygal.StackedBar(print_labels=True, show_legend=True,
+                    legend_at_bottom=True)
+            elif self.cht == "L":
+                chart = pygal.Line(print_labels=True, show_legend=True,
+                    legend_at_bottom=True)
+            elif self.cht == "P":
+                chart = pygal.Pie(print_labels=True, show_legend=self.leg)
+            chart.title = titl
+            if self.cht == "P":
+                for seq, dat in enumerate(self.xcol):
+                    chart.add(dat, [{"value": data[0][seq+2],
+                        "label": dat}])
+            else:
+                chart.x_labels = self.xcol
+                if self.xlab:
+                    chart.x_title = self.xlab
+                if self.ylab:
+                    chart.y_title = self.ylab
+                for l in data:
+                    chart.add(l[1], l[2:])
+            chart.render_to_file(pdfnam)
         else:
-            chart.x_labels = self.xcol
-            if self.xlab:
-                chart.x_title = self.xlab
-            if self.ylab:
-                chart.y_title = self.ylab
-            for l in self.chart:
-                chart.add(l[1], l[2:])
-        chart.render_to_file(flenam)
-        if CVTSVG and self.vwr == "P":
-            # Convert to PDF
-            self.pdfnam = flenam.replace("svg", "pdf")
-            cairosvg.svg2pdf(file_obj=open(flenam, "rb"), write_to=self.pdfnam)
-        else:
-            self.pdfnam = flenam
+            pdfnam = getModName(self.mf.rcdic["wrkdir"], "chart",
+                self.conum, ext="pdf")
+            MyCharts(self.cht, titl, self.xcol, data, self.leg, pdfnam)
         # Print or Display the Chart
-        doPrinter(mf=self.mf, conum=self.conum, pdfnam=self.pdfnam,
+        doPrinter(mf=self.mf, conum=self.conum, pdfnam=pdfnam,
             header=self.title[0], repprt=self.repprt, repeml=self.repeml)
         # Return focus
         self.dc.focusField("T", 0, 1)
@@ -16769,6 +17101,7 @@ class MyFpdf(fpdf.FPDF):
             self.foot = foot
         else:
             self.foot = False
+        self.l_margin = 10
         self.suc = chr(151)
         t = time.localtime()
         self.sysdt = time.strftime("%d %B %Y %H:%M:%S", t)
@@ -18602,13 +18935,13 @@ class MakeManual(object):
         self.fpdf.drawText()
         for num, dat in enumerate(self.heads):
             txt = dat.replace('",', "").replace('"', "")
-            wid = int(self.widths[num].replace(',', "")) * self.fpdf.cwth
+            wid = int(self.widths[num].replace(",", "")) * self.fpdf.cwth
             self.fpdf.drawText(txt, w=wid, border="TLRB", fill=True, ln=0)
         self.fpdf.drawText()
         for line in self.table:
             data = line.replace('"', "").split(", ")
             for num, dat in enumerate(data):
-                wid = int(self.widths[num].replace(',', "")) * self.fpdf.cwth
+                wid = int(self.widths[num].replace(",", "")) * self.fpdf.cwth
                 self.fpdf.drawText(dat, w=wid, border="TLRB", ln=0)
             self.fpdf.drawText()
 
@@ -18804,7 +19137,7 @@ class ViewPDF(object):
             self.bt3.pack(padx=3, pady=3, side="left")
         # Draw menu
         imgm = getImage("menu", siz=(20, 20))
-        self.bt4 = MyMenuButton (fr2, text="Menu", relief="flat", fg=fg,
+        self.bt4 = MyMenuButton(fr2, text="Menu", relief="flat", fg=fg,
             bg=bg, font=self.font, image=imgm, compound="left", underline=0)
         self.bt4.pack(exp="no", padx=3, pady=3, side="right")
         self.bt4.menu = MyMenu(self.bt4, font=self.font, tearoff=0)
@@ -18922,9 +19255,11 @@ class ViewPDF(object):
         def enterPwd(event=None):
             self.pwd = ent.get().strip()
             frm.destroy()
+
         def exitFrm(event=None):
             self.pwd = None
             frm.destroy()
+
         frm = MyFrame()
         frm.pack()
         lab = MyLabel(frm, text="Enter Password")
@@ -19450,7 +19785,7 @@ class ViewPDF(object):
             self.efrom = infle.readline().rstrip()
             infle.close()
         else:
-           self.efrom = ""
+            self.efrom = ""
         tit = "Email Document"
         fld = (
             (("T",0,0,0),"ITX",30,"From Address","",

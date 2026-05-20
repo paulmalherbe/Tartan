@@ -24,6 +24,8 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+import sys
+sys.path.insert(0, "/home/paul/Tartan-6")
 from TartanClasses import TartanDialog, Sql
 from tartanFunctions import askQuestion, callModule, getNextCode
 
@@ -59,9 +61,10 @@ class bc1040(object):
             ("K/Out (D)", "D"),
             ("K/Out (N)", "K"),
             ("R/Robin", "R"),
-            ("R/R (G)", "W"),
             ("Teams", "X"))
         r2s = (("Yes", "Y"), ("No", "N"))
+        r3s = (("Yes", "Y"), ("Last", "N"), ("Never", "X"))
+        r4s = (("None", "N"), ("Drawn", "Y"), ("Round", "R"))
         fld = (
             (("T",0,0,0),"I@bct_code",0,"","",
                 0,"Y",self.doTypCod,typ,None,("efld",)),
@@ -75,26 +78,23 @@ Tournament: The default format for tournaments.
 K/Out (D): This is for all Drawn Knockout Competitions.
 K/Out (N): This is for Normal Knockout Competitions.
 R/Robin: This is for Round Robin Competitions.
-R/R (G): This is for Round Robin Group Competitions.
 Teams: This is for Team Competitions e.g. Club V Club.
 """),
             (("T",0,3,0),"I@bct_tsize",0,"","",
                 4,"N",self.doTSize,None,None,("notzero",)),
             (("T",0,4,0),"I@bct_games",0,"","",
-                0,"N",self.doGames,None,None,("efld",)),
+                0,"N",self.doGames,None,None,("notzero",)),
             (("T",0,5,0),"I@bct_ends",0,"","",
                 21,"N",self.doEnds,None,None,("notzero",)),
             (("T",0,6,0),("IRB",r2s),0,"Groups by Position","",
-                "N","N",self.doGroups,None,None,None,None,
-                "Yes means that teams will be split into Groups after "\
-                "a certain number of games based on position. No means "\
-                "that teams will not be split into groups"),
+                "N","N",self.doGroups,None,None,None,None,"""Yes means that teams will be split into Groups after a certain number of games based on position.
+No means that teams will not be split into groups"""),
             (("T",0,7,0),"I@bct_grgame",0,"","",
                 0,"N",self.doGrGame,None,None,("efld",)),
             (("T",0,8,0),("IRB",r2s),0,"Adjust Scores","",
-                "N","N",self.doAdjust,None,None,None,None,
-                "Whether or Not to Modify the Scores of Groups, Other "\
-                "than Group A, when the Teams are Split into Groups."),
+                "N","N",self.doAdjust,None,None,None,None,"Whether or Not "\
+                "to Modify the Scores of Groups, Other than Group A, when "\
+                "the Teams are Split into Groups."),
             (("T",0,9,0),"I@bct_expunge",0,"","",
                 "","N",None,None,None,("efld",),None,
                 "These Comma Separated Game Scores will be Cleared when "\
@@ -105,16 +105,16 @@ Teams: This is for Team Competitions e.g. Club V Club.
                 "Will be Retained when Teams are Split into Groups."),
             (("T",0,11,0),"I@bct_drawn",0,"","",
                 1,"N",self.doDrawn,None,None,("efld",)),
-            (("T",0,12,0),("IRB",r2s),0,"Strict S v S",
-                "Strict Strength v Strength",
-                "N","N",self.doSvS,None,None,None,None,
-                "Yes means that teams could play against each other, again, "\
-                "in ANY game. No means that teams could only play against "\
-                "each other, again, in the FINAL game."),
-            (("T",0,13,0),("IRB",r2s),0,"Different Drawn Games Scoring","",
-                "N","N",self.doDiff,None,None,None,None,
-                "Yes means that Drawn Games have a Different Scoring Format "\
-                "from Strength V Strength Games."))
+            (("T",0,12,0),("IRB",r3s),0,"Teams Can Repeat",
+                "Teams Can Play the Same Teams Again",
+                "N","N",None,None,None,None,None,
+                """Yes means that teams could play against each other again in ANY game.
+Last means that teams could play against each other again in the FINAL game.
+Never means that teams should never play against each other again."""),
+            (("T",0,13,0),("IRB",r4s),0,"Different Scoring Formats","",
+                "N","N",self.doDiff,None,None,None,None,"""None means that All Games Have the Same Scoring Format.
+Drawn means that Drawn and SvS Games have their own Scoring Format.
+Round means Each Round has its own Scoring Format."""))
         but = (
             ("Print", None, self.doPrint,0,("T",0,2),None),
             ("Quit", None, self.doExit,1,None,None))
@@ -176,6 +176,8 @@ Changes Could Adversely Affect them.
 Are you Sure this is what you Want to Do?""", default="no")
             if ok == "no":
                 return "ff1"
+            self.sql.delRec("bwlpts", where=[("bcp_cono", "=",
+                self.opts["conum"]), ("bcp_code", "=", self.ctype)])
 
     def doCFmat(self, frt, pag, r, c, p, i, w):
         self.cfmat = w
@@ -189,14 +191,12 @@ Are you Sure this is what you Want to Do?""", default="no")
             return "sk1"
 
     def doGames(self, frt, pag, r, c, p, i, w):
-        if self.cfmat != "W" and not w:
-            return "Invalid Number of Games"
         self.games = w
 
     def doEnds(self, frt, pag, r, c, p, i, w):
         self.ends = w
-        if self.cfmat in ("D", "K", "R", "W", "X"):
-            if self.cfmat in ("D", "K", "R", "W"):
+        if self.cfmat in ("D", "K", "R", "X"):
+            if self.cfmat in ("D", "K", "R"):
                 defaults = ["N", 0, "N", "", 0, 0, "N", "N"]
             else:
                 defaults = ["N", 0, "N", "", 0, self.games, "N", "N"]
@@ -218,6 +218,7 @@ Are you Sure this is what you Want to Do?""", default="no")
     def doGrGame(self, frt, pag, r, c, p, i, w):
         if not w:
             return "Invalid Game Number"
+        self.grgame = w
 
     def doAdjust(self, frt, pag, r, c, p, i, w):
         self.adjust = w
@@ -235,17 +236,14 @@ Are you Sure this is what you Want to Do?""", default="no")
             self.df.loadEntry(frt, pag, p+2, data="N")
             return "sk2"
 
-    def doSvS(self, frt, pag, r, c, p, i, w):
-        if not self.drawn:
-            self.pdiff = "N"
-            self.df.loadEntry(frt, pag, p+1, data="N")
-            return "sk1"
-
     def doDiff(self, frt, pag, r, c, p, i, w):
+        if w == "G" and self.groups == "N":
+            return "Groups Not Enabled"
         self.pdiff = w
 
     def doEnd(self):
-        data = [self.opts["conum"]] + self.df.t_work[0][0]
+        data = [self.opts["conum"]]
+        data.extend(self.df.t_work[0][0])
         if self.newtyp:
             self.sql.insRec("bwltyp", data=data)
         elif data != self.old[:len(data)]:
@@ -253,19 +251,35 @@ Are you Sure this is what you Want to Do?""", default="no")
             data.append(self.old[col.index("bct_xflag")])
             self.sql.updRec("bwltyp", data=data, where=[("bct_cono", "=",
                 self.opts["conum"]), ("bct_code", "=", self.ctype)])
-        self.perr = False
         self.df.setWidget(self.df.mstFrame, state="hide")
-        if self.pdiff == "Y":
-            self.doPtsFmt("D")
-        if not self.perr:
-            if self.pdiff == "Y":
-                self.doPtsFmt("S")
-            else:
-                self.doPtsFmt("B")
+        self.perr = False
+        if self.cfmat in ("D", "K"):
+            chk = self.sql.getRec("bwlpts", where=[("bcp_cono", "=",
+                self.opts["conum"]), ("bcp_code", "=", self.ctype)],
+                limit=1)
+            if not chk:
+                dat = [self.opts["conum"], self.ctype, "N", 0, "N", 0,
+                    "N", 0, 0, 0, "N", 0, 0]
+                self.sql.insRec("bwlpts", data=dat)
+            self.perr = False
+        elif self.pdiff == "N":
+            self.doPtsFmt("N", 0)
+        elif self.pdiff == "Y":
+            self.doPtsFmt("D", 0)
+            if not self.perr:
+                self.doPtsFmt("S", 0)
+        elif self.pdiff == "R":
+            for gme in range(1, (self.games + 1)):
+                if gme <= self.drawn:
+                    self.doPtsFmt("RD", gme)
+                else:
+                    self.doPtsFmt("RS", gme)
+                if self.perr:
+                    break
         self.df.setWidget(self.df.mstFrame, state="show")
         if self.perr:
             self.opts["mf"].dbm.rollbackDbase()
-            self.df.focusField(self.df.frt, self.df.pag, self.df.col)
+            self.df.focusField("T", 0, 1)
         else:
             self.opts["mf"].dbm.commitDbase()
             if "args" in self.opts:
@@ -273,51 +287,60 @@ Are you Sure this is what you Want to Do?""", default="no")
             else:
                 self.df.focusField("T", 0, 1)
 
-    def doPtsFmt(self, flag=None):
+    def doPtsFmt(self, flag=None, prnd=0):
         self.flag = flag
-        if flag == "D":
-            txt = "Points Format for Drawn Games"
-        elif flag == "S":
-            txt = "Points Format for SvS Games"
+        self.prnd = prnd
+        if not prnd:
+            if flag == "N":
+                txt = "Scoring Format for All Games"
+            elif flag == "D":
+                txt = "Scoring Format for Drawn Games"
+            elif flag == "S":
+                txt = "Scoring Format for SvS Games"
         else:
-            txt = "Points Format"
+            txt = "Scoring Format for Round %s" % prnd
         tit = (txt,)
         r1s = (("Yes", "Y"), ("No", "N"))
-        fld = (
-            (("T",0,0,0),("IRB",r1s),0,"Skins","",
+        fld = [
+            [("T",0,0,0),"OUI",1,"Round","",
+                prnd,"N",None,None,None,("efld",)],
+            (("T",0,1,0),("IRB",r1s),0,"Skins","",
                 "N","N",self.doSkins,None,None,None),
-            (("T",0,1,0),"I@bcp_sends",0,"","",
-                0,"N",self.doEndsPerSkin,None,None,("efld",)),
-            (("T",0,2,0),("IRB",r1s),0,"Points Only","",
+            (("T",0,2,0),"I@bcp_sends",0,"","",
+                0,"N",self.doEndsPerSkin,None,None,("notzero",)),
+            (("T",0,3,0),("IRB",r1s),0,"Points Only","",
                 "N","N",self.doOnly,None,None,None,None,
                 "Yes means that No Shots are to be captured and that only "\
                 "Points will be used to determine positions. No means that "\
                 "Shots and Points are to be captured and used to determine "\
                 "positions."),
-            (("T",0,3,0),"I@bcp_e_points",0,"","",
+            (("T",0,4,0),"I@bcp_e_points",0,"","",
                 0,"N",self.doPoints,None,None,("efld",)),
-            (("T",0,4,0),"I@bcp_s_points",0,"","",
+            (("T",0,5,0),"I@bcp_s_points",0,"","",
                 0,"N",None,None,None,("efld",)),
-            (("T",0,5,0),"I@bcp_g_points",0,"","",
+            (("T",0,6,0),"I@bcp_g_points",0,"","",
                 0,"N",None,None,None,("efld",)),
-            (("T",0,6,0),("IRB",r1s),0,"Bonus Points","",
+            (("T",0,7,0),("IRB",r1s),0,"Bonus Points","",
                 "N","N",self.doBonus,None,None,None),
-            (("T",0,7,0),"I@bcp_win_by",0,"","",
+            (("T",0,8,0),"I@bcp_win_by",0,"","",
                 0,"N",None,None,None,("efld",)),
-            (("T",0,8,0),"I@bcp_lose_by",0,"","",
-                0,"N",None,None,None,("efld",)))
+            (("T",0,9,0),"I@bcp_lose_by",0,"","",
+                0,"N",None,None,None,("efld",))]
         but = (("Quit", None, self.doPExit,1,None,None),)
         tnd = ((self.doPEnd,"y"),)
         txt = (self.doPExit,)
         self.pf = TartanDialog(self.opts["mf"], tops=True, title=tit,
-            eflds=fld, butt=but, tend=tnd, txit=txt)
-        if self.flag in ("D", "S"):
-            ptyp = self.flag
+            eflds=fld, butt=but, tend=tnd, txit=txt, focus=False)
+        if self.flag in ("D", "S", "N"):
+            ptype = self.flag
+        elif self.flag[1] == "D":
+            ptype = "D"
         else:
-            ptyp = "D"
+            ptype = "S"
         acc = self.sql.getRec("bwlpts", where=[("bcp_cono",
             "=", self.opts["conum"]), ("bcp_code", "=", self.ctype),
-            ("bcp_ptyp", "=", ptyp)], limit=1)
+            ("bcp_ptyp", "=", ptype), ("bcp_round", "=", self.prnd)],
+            limit=1)
         if acc:
             self.newpts = False
             for num, dat in enumerate(acc[3:-1]):
@@ -330,7 +353,7 @@ Are you Sure this is what you Want to Do?""", default="no")
     def doSkins(self, frt, pag, r, c, p, i, w):
         self.skins = w
         if self.skins == "N":
-            self.df.loadEntry(frt, pag, p+1, data=0)
+            self.pf.loadEntry(frt, pag, p+1, data=0)
             return "sk1"
 
     def doEndsPerSkin(self, frt, pag, r, c, p, i, w):
@@ -342,34 +365,26 @@ Are you Sure this is what you Want to Do?""", default="no")
 
     def doPoints(self, frt, pag, r, c, p, i, w):
         if self.skins == "N":
-            self.df.loadEntry(frt, pag, p+1, data=0)
+            self.pf.loadEntry(frt, pag, p+1, data=0)
             return "sk1"
 
     def doBonus(self, frt, pag, r, c, p, i, w):
         if w == "N":
-            self.df.loadEntry(frt, pag, p+1, data=0)
-            self.df.loadEntry(frt, pag, p+2, data=0)
+            self.pf.loadEntry(frt, pag, p+1, data=0)
+            self.pf.loadEntry(frt, pag, p+2, data=0)
             return "nd"
 
     def doPEnd(self):
-        self.pf.closeProcess()
-        data = [self.opts["conum"], self.ctype, ""]
-        data.extend(self.pf.t_work[0][0])
-        if self.flag == "B":
-            if not self.newpts:
-                self.sql.delRec("bwlpts", where=[("bcp_cono", "=",
-                    self.opts["conum"]), ("bcp_code", "=", self.ctype)])
-            data[2] = "D"
-            self.sql.insRec("bwlpts", data=data)
-            data[2] = "S"
-            self.sql.insRec("bwlpts", data=data)
+        if self.flag in ("D", "S", "N"):
+            ptype = self.flag
+        elif self.flag[1] == "D":
+            ptype = "D"
         else:
-            if not self.newpts:
-                self.sql.delRec("bwlpts", where=[("bcp_cono", "=",
-                    self.opts["conum"]), ("bcp_code", "=", self.ctype),
-                    ("bcp_ptyp", "=", self.flag)])
-            data[2] = self.flag
-            self.sql.insRec("bwlpts", data=data)
+            ptype = "S"
+        data = [self.opts["conum"], self.ctype, ptype]
+        data.extend(self.pf.t_work[0][0])
+        self.sql.insRec("bwlpts", data=data)
+        self.pf.closeProcess()
 
     def doPExit(self):
         self.perr = True
@@ -387,5 +402,15 @@ Are you Sure this is what you Want to Do?""", default="no")
         if "args" not in self.opts:
             if "wait" not in self.opts:
                 self.opts["mf"].closeLoop()
+
+if __name__ == "__main__":
+    from TartanClasses import Dbase, MainFrame
+    from tartanFunctions import loadRcFile
+    rcdic = loadRcFile(rcfile="/home/paul/rcf/hermanus")
+    mf = MainFrame(rcdic=rcdic)
+    mf.dbm = Dbase(rcdic=rcdic)
+    mf.dbm.openDbase()
+    opts = {"mf": mf, "conum": 1, "conam": "Test"}
+    bc1040(**opts)
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

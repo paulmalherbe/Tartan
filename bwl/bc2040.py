@@ -24,7 +24,7 @@ COPYING
     along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-from TartanClasses import FileImport, GetCtl, Sql, TartanDialog
+from TartanClasses import FileImport, GetCtl, PwdConfirm, Sql, TartanDialog
 from tartanFunctions import askQuestion, callModule, getNextCode, showError
 
 class bc2040(object):
@@ -36,7 +36,7 @@ class bc2040(object):
 
     def setVariables(self):
         self.sql = Sql(self.opts["mf"].dbm, ["bwlcmp", "bwltab", "bwlent",
-            "bwltyp", "bwlgme", "bwltms", "bwlrnd", "bwlclb"],
+            "bwltyp", "bwlgme", "bwltms", "bwlrnd"],
             prog=self.__class__.__name__)
         if self.sql.error:
             return
@@ -62,7 +62,8 @@ class bc2040(object):
             "tables": ("bwltyp",),
             "cols": (
                 ("bct_code", "", 0, "Cod"),
-                ("bct_desc", "", 0, "Description", "Y")),
+                ("bct_desc", "", 0, "Description", "Y"),
+                ("bct_cfmat", "", 0, "F")),
             "where": [("bct_cono", "=", self.opts["conum"])]}
         sk1 = {
             "stype": "R",
@@ -87,12 +88,6 @@ class bc2040(object):
                 ("btb_tab=bce_scod",)],
             "whera": [("T", "bce_ccod", 0, 0)],
             "order": "btb_surname"}
-        grp = {
-            "stype": "R",
-            "tables": ("bwlclb",),
-            "cols": (
-                ("bcc_code", "", 0, "Cod"),
-                ("bcc_name", "", 0, "Name", "Y"))}
         fld = (
             (("T",0,0,0),"I@bcm_code",0,"Code","Competition Code",
                 "","Y",self.doCmpCod,com,None,("efld",)),
@@ -106,10 +101,9 @@ class bc2040(object):
                 "","Y",self.doSkpCod,sk1,None,("efld",)),
             (("C",0,0,1),"ONA",30,"Name"),
             (("C",0,0,2),"I@bce_tcod",0,"Grp","Group Code",
-                "","N",self.doGroup,grp,self.doDelSkp,("efld",)),
-            (("C",0,0,3),"I@bcc_name",0,"Name","Group Name",
-                "","N",self.doGroupName,None,None,("efld",)),
-            (("C",0,0,4),"I@bce_paid",0,"","Paid Flag (Y or N)",
+                "","N",self.doGroup,None,self.doDelSkp,("in",("H","V"))),
+            (("C",0,0,3),"O@bcc_name",0,"Group Name"),
+            (("C",0,0,4),"I@bce_paid",0,"","Paid Flag (Y, N or W)",
                 "N","N",self.doPaid,None,self.doDelSkp,("in", ("Y","N","W"))))
         but = [
             ("Import Players",None,self.doImport,0,("C",0,1),None,
@@ -229,7 +223,6 @@ Do You Want to Erase All Draws and Results?""", default="no")
                 ("btb_surname", "=", sname), ("btb_names", "like", names),
                 ("btb_gender", "=", gendr)], limit=1)
             if not chk:
-                print(sname, names)
                 tab = getNextCode(self.sql, "bwltab", "btb_tab",
                     where=[("btb_cono", "=", self.opts["conum"])],
                     start=self.nstart, last=900000)
@@ -288,6 +281,13 @@ Please Correct your Import File and then Try Again.""" % err)
             if not cod:
                 return "Invalid Skip Code"
             self.df.loadEntry(frt, pag, p, data=cod)
+        elif w > 999900 and self.cfmat == "T":
+            cf = PwdConfirm(self.opts["mf"], conum=self.opts["conum"],
+                system="BWL", code="AutoE")
+            if cf.flag == "no":
+                return "rf"
+            self.drawSkips(w % 100)
+            return "xt"
         else:
             cod = w
         if cod not in self.skips:
@@ -309,13 +309,6 @@ Please Correct your Import File and then Try Again.""" % err)
                 self.df.loadEntry(frt, pag, p+3, data="Home")
             elif ent[0] == "V":
                 self.df.loadEntry(frt, pag, p+3, data="Visitor")
-            elif ent[0]:
-                coy = self.sql.getRec("bwlclb", where=[("bcc_code", "=",
-                    int(ent[0].strip()))], limit=1)
-                if coy:
-                    self.df.loadEntry(frt, pag, p+3, data=coy[1])
-                else:
-                    return "Invalid Club/Group Code"
             self.df.loadEntry(frt, pag, p+4, data=ent[1])
         else:
             self.newent = True
@@ -328,41 +321,26 @@ Please Correct your Import File and then Try Again.""" % err)
                 name = "Visitor"
             self.df.loadEntry(frt, pag, p+2, data=self.tcod)
             self.df.loadEntry(frt, pag, p+3, data=name)
-        elif self.cfmat != "W":
+        else:
             self.tcod = ""
             return "sk3"
 
-    def doGroup(self, frt, pag, r, c, p, i, w):
-        if not w:
-            return "Invalid Group Code"
-        self.tcod = w
-        if self.cfmat == "W":
-            cod = int(self.tcod.strip())
-            coy = self.sql.getRec("bwlclb", where=[("bcc_code", "=", cod)],
-                limit=1)
-            if not coy:
-                ok = askQuestion(self.opts["mf"].body, head="Group Code",
-                    mess="Do You Want to Create this Group", default="yes")
-                if ok == "no":
-                    return "Invalid Group Code"
-                else:
-                    self.df.loadEntry(frt, pag, p+1, data="")
-                    return
-            self.df.loadEntry(frt, pag, p+1, data=coy[1])
-        elif self.cfmat == "X":
-            if self.tcod == "H":
-                self.df.loadEntry(frt, pag, p+1, data="Home")
-            elif self.tcod == "V":
-                self.df.loadEntry(frt, pag, p+1, data="Visitor")
-            else:
-                return "Invalid Group Code"
-        return "sk1"
+    def drawSkips(self, qty):
+        self.sql.delRec("bwlent", where=[("bce_cono", "=", self.opts["conum"]),
+            ("bce_ccod", "=", self.ccod)])
+        dat = [self.opts["conum"], self.ccod, 0, "", "N"]
+        skps = self.sql.getRec("bwltab", cols=["btb_tab"], limit=qty)
+        for skp in skps:
+            dat[2] = skp[0]
+            self.sql.insRec("bwlent", data=dat)
 
-    def doGroupName(self, frt, pag, r, c, p, i, w):
-        if not w:
-            return "rf"
-        self.sql.insRec("bwlclb", data=[self.tcod, w, "N"])
-            
+    def doGroup(self, frt, pag, r, c, p, i, w):
+        self.tcod = w
+        if self.tcod == "H":
+            self.df.loadEntry(frt, pag, p+1, data="Home")
+        else:
+            self.df.loadEntry(frt, pag, p+1, data="Visitor")
+
     def doNewCode(self):
         r1s = (("Male","M"), ("Female","F"))
         r2s = (("Skip",4), ("Third",3), ("Second",2), ("Lead",1))
@@ -395,7 +373,7 @@ Please Correct your Import File and then Try Again.""" % err)
         return self.newcod
 
     def doNMail(self, frt, pag, r, c, p, i, w):
-        if self.cfmat in ("T", "K", "R", "W", "X"):
+        if self.cfmat in ("T", "K", "R", "X"):
             if self.dbase in ("C", "P"):
                 self.new.loadEntry(frt, pag, p+1, data=4)
             else:

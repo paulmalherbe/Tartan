@@ -138,7 +138,7 @@ class ln3020(object):
             state = "hide"
         else:
             state = "show"
-        for x in range(3, len(self.df.rvs)): 
+        for x in range(3, len(self.df.rvs)):
             self.df.setWidget(self.df.topEntry[0][5][x][0], state=state)
 
     def doEnd(self):

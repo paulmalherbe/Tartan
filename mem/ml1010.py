@@ -1310,7 +1310,6 @@ Names:   %s
             where=[("btb_cono", "=", self.opts["conum"])],
             start=start, last=last)
 
-
     def doTrans1(self):
         self.df.focusField("T", 6, 1)
 

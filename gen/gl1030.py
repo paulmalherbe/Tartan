@@ -242,7 +242,7 @@ class gl1030(object):
                 "","N",None,None,None,("notzero",)),
             (("T",4,13,0),("IRB",ras),0,pts[13],"",
                 "A","N",None,None,None,None),
-            (("T",4,14,0),"INA",10,"Chart Label","",
+            (("T",4,14,0),"ITX",30,"Chart Label","",
                 "","N",None,None,None,None),
             (("T",5,0,0),"INA",30,"Description","",
                 "","N",None,None,None,("notblank",)),
@@ -278,7 +278,7 @@ class gl1030(object):
                 "","N",None,None,None,("notzero",)),
             (("T",6,8,0),("IRB",ras),0,pts[13],"",
                 "A","N",None,None,None,None),
-            (("T",6,9,0),"INA",10,"Chart Label","",
+            (("T",6,9,0),"ITX",30,"Chart Label","",
                 "","N",None,None,None,None),
             (("T",7,0,0),("IRB",ryn),0,pts[6],"",
                 "Y","N",None,None,None,None),
@@ -359,7 +359,7 @@ class gl1030(object):
         self.df.setWidget(self.df.B1, "disabled")
 
     def doGenRpt(self):
-        if not "args" in self.opts:
+        if "args" not in self.opts:
             chk = self.sql.getRec("genmst", where=[("glm_cono", "=",
                 self.selcoy), ("glm_fstp", "<>", "N")])
             if not chk:
@@ -544,7 +544,7 @@ class gl1030(object):
                     where=[("glr_cono", "=", self.selcoy), ("glr_repno",
                     "=", self.repno), ("glr_group", "=", lg)], limit=1)
                 if chk:
-                     desc = chk[0]
+                    desc = chk[0]
                 else:
                     desc = rec[2]
                 self.getList(["G", desc, rec[0], 0, sign, norm, lg])

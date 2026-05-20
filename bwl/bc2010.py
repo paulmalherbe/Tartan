@@ -1302,7 +1302,7 @@ Try to Allocate Different Rinks""" % self.weeks),
                     elif nm == 1:
                         self.thirds -= 1
                     elif nm == 2:
-                            self.seconds -= 1
+                        self.seconds -= 1
                     else:
                         self.leads -= 1
         tmp = sorted(self.tdata, key=itemgetter(2, 3), reverse=True)

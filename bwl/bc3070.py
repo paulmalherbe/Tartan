@@ -63,7 +63,7 @@ class bc3070(object):
                 ("bcm_date", "", 0, "Date")),
             "where": [("bcm_cono", "=", self.opts["conum"])]}
         r1s = (("All", "A"), ("Paid", "P"), ("Unpaid", "U"))
-        r2s = (("Alphabtic", "A"), ("Numeric", "N"))
+        r2s = (("Alphabetic", "A"), ("Numeric", "N"))
         fld = (
             (("T",0,0,0),"I@bcm_code",0,"","",
                 "","N",self.doCmpCod,com,None,("notzero",)),
@@ -135,7 +135,7 @@ class bc3070(object):
                 self.fpdf.drawText(txt=rec[4], w=cwth*41, h=5, ln=0)
                 idx = 5
                 if self.ctyp == "X":
-                    self.fpdf.drawText(txt=rec[idx], w=cwth*2, h=5, ln=0)
+                    self.fpdf.drawText(txt=rec[idx], w=cwth*4, h=5, ln=0)
                     idx += 1
                 self.fpdf.drawText(txt=rec[idx], w=cwth*2, h=5, ln=1)
             pdfnam = getModName(self.opts["mf"].rcdic["wrkdir"],

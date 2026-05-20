@@ -1,0 +1,42 @@
+
+Tartan Systems Upgrade
+----------------------
+ 1) Modified Creditors Ledger, Reporting - Purchases History
+ 2) Modified Creditors Ledger - Interrogation
+ 3) Modified Cash Analysis - Income and Expenditure Report
+ 4) Modified Debtors Ledger, Reporting - Transaction Audit Trail
+ 5) Modified General Ledger, File Maintenance - Report Generator
+ 6) Modified General Ledger, Data Capture - Budgets
+ 7) Modified General Ledger, Reporting - Financial Statements
+ 8) Modified General Ledger, Toolbox - Copy Masterfile Records
+ 9) Modified Loans Ledger, Reporting - Transaction Audit Trail
+10) Modified Members Ledger - Member Records
+11) Modified Members Ledger, Reporting - Transaction Audit Trail
+12) Modified Master Control, Reporting - V.A.T. Statement
+13) Modified Rentals Ledger (Basic), Reporting - Transaction Audit Trail
+14) Modified Sectional Competitions - Competiton Draw
+15) Modified Sales Invoicing, Reporting - Period Sales By Product
+16) Modified Sales Invoicing, Toolbox - Change Customer Order Number
+17) Modified Stores Ledger, Reporting - Transaction Audit Trail
+18) Modified Stores Ledger - Interrogation
+19) Modified Salaries and Wages - Help
+20) Modified Bowling Clubs, Competitions - Competition Types
+21) Modified Bowling Clubs, Tabs - Tabs-In Draw
+22) Modified Bowling Clubs, Competitions - Capture Entries
+23) Modified Bowling Clubs, Competitions - Competiton Draw
+24) Modified Bowling Clubs, Competitions - Change Draw
+25) Modified Bowling Clubs, Competitions - Capture Game Results
+26) Modified Bowling Clubs, Tabs - Tabs-In Summary
+27) Modified Bowling Clubs, Competitions - List Entries
+28) Modified Bowling Clubs, Competitions - Competition Format
+29) Modified Bowling Clubs, Competitions - Draw Summary
+30) Modified Bowling Clubs, Competitions - Match Results Report
+31) Modified Bowling Clubs, Toolbox - Delete Visitors' Tabs
+32) Modified Bowling Clubs, Toolbox - Competition Envelopes
+33) Updated all python modules to latest SECURITY updates.
+34) Other minor changes, fixes and enhancements.
+
+NB:
+--
+You can only upgrade to this version if your current version is 5.5 or later.
+If you have an older version than 5.5 please contact me for assistance.

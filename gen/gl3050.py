@@ -106,7 +106,7 @@ class gl3050(object):
             7: ["Last-Year", "CD", 17.2],
             8: ["Last-3-Years", "CD", 17.2],
             9: ["Open-Bal", "CD", 17.2],
-           10: ["Close-Bal", "CD", 17.2]}
+            10: ["Close-Bal", "CD", 17.2]}
         m = self.s_per % 100
         for x in range(0, 12):
             self.titles[x+11] = [mthnam[m][1], "CD", 17.2]
@@ -1633,10 +1633,7 @@ Custom  - Customised Report"""),
                         ldic["mp8"].work, ldic["mp9"].work, ldic["mp10"].work,
                         ldic["mp11"].work, ldic["mp12"].work])
                 if ltp in ("L", "T", "G") and des.work:
-                    dsc = des.work
-                    for x in ("/", "{", "}"):
-                        dsc = dsc.replace(x, "/%s" % x)
-                    self.mchart.append([ltp, dsc, ldic["mp1"].work,
+                    self.mchart.append([ltp, des.work, ldic["mp1"].work,
                         ldic["mp2"].work, ldic["mp3"].work, ldic["mp4"].work,
                         ldic["mp5"].work, ldic["mp6"].work, ldic["mp7"].work,
                         ldic["mp8"].work, ldic["mp9"].work, ldic["mp10"].work,

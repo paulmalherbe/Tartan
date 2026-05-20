@@ -65,7 +65,7 @@ if "TARVER" in os.environ:
     temp = tuple(os.environ["TARVER"].split("."))
     VERSION = (int(temp[0]), int(temp[1].rstrip()))
 else:
-    VERSION = (6, 26)
+    VERSION = (6, 27)
     os.environ["TARVER"] = "%s.%s" % VERSION
 
 class ms0000(object):
@@ -236,8 +236,11 @@ Options:
                         continue
                     print("Installing/Upgrading", mod[1])
                     try:
-                        if mod[1] == "psycopg2":
-                            chke(cmd + [mod[1] + "-binary"])
+                        if mod[1] == "psycopg" and sys.platform == "win32":
+                            try:
+                                chke(cmd + [mod[1] + "-binary"])
+                            except:
+                                chke(cmd + [mod[1] + "2-binary"])
                         else:
                             chke(cmd + [mod[1]])
                     except:
@@ -274,6 +277,8 @@ Options:
                 if len(mod) == 4 and sys.platform != mod[3]:
                     continue
                 ver = chkMod(mod[0])
+                if not ver and mod[0] == "psycopg":
+                    ver = chkMod("psycopg2")
                 if not ver:
                     print("%-16s: Not Available" % mod[1])
                 else:
@@ -376,7 +381,7 @@ Options:
                     ("-v", self.cv[1]),
                     ("-x", True)]
                 DBCreate(dbm=self.dbm, opts=opts)
-                self.tarUpd(True)
+                self.tarUpd()
         # Open the database
         self.dbm.openDbase()
         # Check for ctlsys and if missing call msc110
@@ -389,9 +394,6 @@ Options:
             self.doExit()
         # Close dbase
         self.dbm.closeDbase()
-        if not self.program or self.program != "tarUpd":
-            # Check Tartan Version and File Formats
-            self.doVersionCheck()
         if self.user:
             # Check if user details supplied are valid
             self.userReadCheck(user=self.user["name"], pwd=self.user["pwd"],
@@ -405,6 +407,9 @@ Options:
         if not self.user:
             # Exit if not valid user
             self.doExit()
+        if not self.program or self.program != "tarUpd":
+            # Check Tartan Version and File Formats
+            self.doVersionCheck()
         if self.program:
             # Excecute module without the menu
             mods = copyList(self.usrmod)
@@ -500,7 +505,7 @@ Email paul@tartan.co.za, with your version number, for assistance.""" % ov)
                 """Your Version of TARTAN (%s) Is Older than the File Formats!
 
 Do You Want to Upgrade TARTAN Now?""" % self.cv[1], default="yes")
-            if ok == "yes":
+            if ok == "yes" and self.user["lvl"] == 9:
                 self.sysUpd()
             self.doExit()
         err = bool(ov != self.cv[0])
@@ -542,14 +547,21 @@ Do You Want to Upgrade TARTAN Now?""" % self.cv[1], default="yes")
                 sp.closeSplash()
         self.dbm.closeDbase()
         if chg or err:
-            ok = askQuestion(scrn, "Version Error",
-                """Your File Formats Need Updating,
+            if self.user["lvl"] < 8:
+                mess = """Your File Formats Need Updating.
 
-Do You Want to Update Your Files?""", default="yes")
-            if ok == "yes":
-                self.tarUpd(True)
-            else:
+Please ask you System Manager to Update them."""
+                showInfo(scrn, "Version Error", mess)
                 self.doExit()
+            else:
+                mess = """Your File Formats Need Updating.
+
+Do You Want to Update Your Files?"""
+                ok = askQuestion(scrn, "Version Error", mess, default="yes")
+                if ok == "yes":
+                    self.tarUpd()
+                else:
+                    self.doExit()
 
     def userLogin(self):
         if not self.dbm.dbopen:
@@ -1436,7 +1448,7 @@ System --> Change Password""")
         try:
             ver = httpDownload("%s/Updates/current" % self.weburl)
             if ver is None:
-                raise Exception("Cannot Access Server")
+                raise Exception("Cannot Access %s" % self.weburl)
             v = ver.split(".")
             self.nv = (int(v[0]), int(v[1]))
             self.nt = "%s.%s" % self.nv
@@ -1513,17 +1525,8 @@ System --> Change Password""")
         self.su.closeProcess()
         self.mf.closeLoop()
 
-    def tarUpd(self, dbcreate=False):
-        if not dbcreate:
-            # Check if database is backed up
-            if self.mf.window:
-                ok = askQuestion(self.mf.window, "Backup",
-                    "Have You Backed Up the Database?", default="no")
-            else:
-                ok = input("Have You Backed Up the Database? (yes/no) ")
-            if ok != "yes":
-                return
-        elif self.xdisplay:
+    def tarUpd(self):
+        if self.xdisplay:
             self.mf.head.configure(text="Update File Formats (tarUpd)")
             self.mf.updateStatus("")
         dbopen = self.dbm.dbopen
